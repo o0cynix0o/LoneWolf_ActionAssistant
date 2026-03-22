@@ -1,0 +1,22 @@
+# Runtime and player data
+saves/*
+!saves/.gitkeep
+data/last-save.txt
+
+# Local CRT/reference data not intended for redistribution
+data/crt.json
+data/rh-crtneg.png
+data/rh-crtpos.png
+
+# Local scratch and test folders
+tmp-*/
+
+# Local docs / handoff notes
+agent.md
+
+# Editor and OS noise
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+

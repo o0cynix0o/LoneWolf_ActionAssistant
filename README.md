@@ -1,0 +1,283 @@
+# Lone Wolf Action Assistant
+
+A PowerShell terminal companion for the Kai-era **Lone Wolf** gamebooks.
+
+This project is built to act like a digital Action Chart and play aid, not a replacement for the books. It handles the bookkeeping that tends to slow play down: character state, inventory, combat math, saves, notes, healing, book progression, stats, and achievements.
+
+## What It Does
+
+- Screen-based terminal UI with ASCII banners and color-coded panels
+- New Kai character creation with random starting Combat Skill and Endurance
+- Kai discipline selection, including Weaponskill weapon assignment
+- Inventory slot tracking for weapons, backpack items, special items, and gold
+- Section tracking with Healing support for non-combat sections
+- Meal handling with Hunting support
+- Potion handling for:
+  - Healing Potion / Laumspur Potion
+  - Concentrated Laumspur
+- Combat assistant with:
+  - combat ratio calculation
+  - random number rolls
+  - manual or data-driven CRT resolution
+  - auto-resolve support
+  - round logs and combat summaries
+- Special item intelligence for:
+  - Shield
+  - Chainmail Waistcoat / Wastecoat
+  - Sommerswerd
+- JSON save/load with autosave support
+- Numbered save picker and remembered last-used save
+- Book completion summaries with live campaign stats
+- Achievement system with current unlocks, progress, and planned phase-two ideas
+- Death tracking with death-only rewind checkpoints
+
+## Scope
+
+- Focused on the **Kai** ruleset
+- Intended for use alongside the books
+- Does **not** include book text
+- Designed to stay flexible when book-specific exceptions come up
+
+## Requirements
+
+- Windows PowerShell `5.1` or PowerShell `7+`
+- Windows terminal with color support recommended
+
+## Project Files
+
+- `lonewolf.ps1`
+  Main terminal application
+- `data/kai-disciplines.json`
+  Kai discipline list and selection data
+- `data/weaponskill-map.json`
+  Weaponskill roll mapping
+- `data/crt.json`
+  Data-driven Combat Results Table used by `DataFile` mode
+- `data/crt.template.json`
+  Template CRT schema
+- `data/last-save.txt`
+  Last-used save path cache created by the app
+- `saves/`
+  JSON save files created during play
+
+## Quick Start
+
+Run the app from PowerShell:
+
+```powershell
+.\lonewolf.ps1
+```
+
+Launch and load a save immediately:
+
+```powershell
+.\lonewolf.ps1 -Load .\saves\Cynix-book1.json
+```
+
+If you run `load` inside the app, it scans the save folder, lists saves by number, and remembers the last one you used as the default.
+
+## Core Commands
+
+### Campaign
+
+```text
+new
+sheet
+disciplines
+section [n]
+complete
+history
+stats [combat|survival]
+achievements [view]
+help
+quit
+```
+
+### Notes and Inventory
+
+```text
+inv
+add [type name [qty]]
+drop [type slot]
+gold [delta]
+notes
+note [text]
+note remove [n]
+```
+
+Examples:
+
+```text
+add backpack Potion of Laumspur
+add special Sommerswerd
+drop backpack 2
+note White Pass
+note remove 1
+```
+
+### Survival and Manual Adjustments
+
+```text
+meal
+potion
+healcheck
+end [delta]
+setend [current]
+setmaxend [max]
+setcs
+die [cause]
+rewind [n]
+```
+
+Use `end -1` for section damage and `end +1` for simple recovery without changing max END.
+
+### Combat
+
+```text
+combat start
+combat round
+combat next
+combat auto
+combat status
+combat log [n|all|book n]
+combat evade
+combat stop
+fight [enemy cs end]
+mode [manual|data]
+```
+
+Quick examples:
+
+```text
+combat start Giak 12 10
+combat auto
+combat log all
+combat log book 2
+fight Giak 12 10
+```
+
+While combat is active, pressing `Enter` advances one round.
+
+## Combat Modes
+
+### `DataFile`
+
+Reads CRT results from `data/crt.json` and applies them automatically.
+
+This is the smoother mode and supports full fight automation when the data file covers the needed ratios and rolls.
+
+### `ManualCRT`
+
+Still calculates the combat ratio and random number for you, but asks you to enter the losses from your own Combat Results Table.
+
+This is useful if you want to rely on the printed book or a separately sourced table.
+
+## Item Intelligence
+
+Some items are now handled automatically instead of needing manual stat edits.
+
+- `Shield`
+  Adds `+2 Combat Skill`
+- `Chainmail Waistcoat` / `Chainmail Wastecoat`
+  Adds `+4 Endurance`
+- `Sommerswerd`
+  Counts as a weapon-like Special Item
+  Gives `+8 Combat Skill` in combat
+  Gives `+10 total` if Weaponskill is `Short Sword`, `Sword`, or `Broadsword`
+  Doubles enemy END loss against undead when active
+- `Potion of Laumspur` / `Healing Potion`
+  Restores `4 END`
+- `Concentrated Laumspur`
+  Restores `8 END`
+  The `potion` command prefers it first when available
+
+## Stats and Achievements
+
+The app tracks live book stats and run history, including:
+
+- sections visited
+- winning-path section count
+- END lost and regained
+- gold gained and spent
+- meals, Hunting meals, starvation hits
+- potions used and potion END restored
+- fights, wins, defeats, evades, and rounds fought
+- highest enemy CS and END faced / defeated
+- fastest, easiest, and longest fights
+- weapon usage and weapon victories
+- Mindblast usage and wins
+- deaths, rewinds, and manual recovery shortcuts
+
+Commands:
+
+```text
+stats
+stats combat
+stats survival
+achievements
+achievements unlocked
+achievements locked
+achievements recent
+achievements progress
+achievements planned
+```
+
+## Death and Rewind Flow
+
+Instant-death sections are handled with:
+
+```text
+die [cause]
+```
+
+After death, the app can rewind to earlier safe section checkpoints:
+
+```text
+rewind
+rewind 2
+```
+
+Rewind is only available while dead. This keeps normal play honest while still supporting the way Lone Wolf books often ask you to go back and choose another path after a fatal section.
+
+## Book Progression
+
+When you finish a book, use:
+
+```text
+complete
+```
+
+The app will:
+
+- archive the completed book
+- advance to the next book
+- restore END to full
+- reset section tracking for the new book
+- offer the next Kai discipline if one is due
+- show a completion summary with stats and an in-universe sendoff
+
+## Save Compatibility
+
+Save files are JSON-based and normalized on load so the project can evolve without constantly breaking older saves.
+
+The app creates and updates runtime files during normal use:
+
+- save JSON files in `saves/`
+- backup saves when a manual patch is needed
+- `data/last-save.txt`
+
+## Recommended Play Flow
+
+1. Run `new` or `load`.
+2. Read the book normally.
+3. Use `section`, `note`, `add`, `drop`, `gold`, `meal`, and `potion` as needed.
+4. Use `combat start` or `fight` when combat begins.
+5. Use `save` or autosave for checkpoints.
+6. Use `complete` when you finish a book.
+
+## Notes
+
+- The project is focused on being useful and fast in play, not academically complete.
+- Book-specific exceptions still happen. Manual controls like `setcs`, `setend`, `setmaxend`, notes, and inventory edits are intentionally kept available.
+- Item intelligence is still expanding as new items are encountered during playthroughs.
+
