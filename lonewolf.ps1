@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.0'
+$script:LWAppVersion = '0.7.1'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -2388,6 +2388,10 @@ function Get-LWChainmailItemNames {
     return @('Chainmail Waistcoat', 'Chainmail Wastecoat', 'Chainmail')
 }
 
+function Get-LWPaddedLeatherItemNames {
+    return @('Padded Leather Waistcoat', 'Padded Leather Wastecoat', 'Padded Leather Waste Coat', 'Padded Leather')
+}
+
 function Get-LWShieldItemNames {
     return @('Shield')
 }
@@ -2486,6 +2490,16 @@ function Get-LWStateChainmailEnduranceBonus {
 
     if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWChainmailItemNames)) {
         return 4
+    }
+
+    return 0
+}
+
+function Get-LWStatePaddedLeatherEnduranceBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWPaddedLeatherItemNames) -Type 'special') {
+        return 2
     }
 
     return 0
@@ -2709,11 +2723,16 @@ function Ensure-LWEquipmentBonusState {
     if (-not (Test-LWPropertyExists -Object $State -Name 'EquipmentBonuses') -or $null -eq $State.EquipmentBonuses) {
         $State | Add-Member -Force -NotePropertyName EquipmentBonuses -NotePropertyValue ([pscustomobject]@{
                 ChainmailEndurance = 0
+                PaddedLeatherEndurance = 0
             })
     }
 
     if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'ChainmailEndurance') -or $null -eq $State.EquipmentBonuses.ChainmailEndurance) {
         $State.EquipmentBonuses | Add-Member -Force -NotePropertyName ChainmailEndurance -NotePropertyValue 0
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'PaddedLeatherEndurance') -or $null -eq $State.EquipmentBonuses.PaddedLeatherEndurance) {
+        $State.EquipmentBonuses | Add-Member -Force -NotePropertyName PaddedLeatherEndurance -NotePropertyValue 0
     }
 }
 
@@ -2727,7 +2746,13 @@ function Sync-LWStateEquipmentBonuses {
 
     $desiredChainmail = Get-LWStateChainmailEnduranceBonus -State $State
     $appliedChainmail = [int]$State.EquipmentBonuses.ChainmailEndurance
-    $delta = $desiredChainmail - $appliedChainmail
+    $chainmailDelta = $desiredChainmail - $appliedChainmail
+
+    $desiredPaddedLeather = Get-LWStatePaddedLeatherEnduranceBonus -State $State
+    $appliedPaddedLeather = [int]$State.EquipmentBonuses.PaddedLeatherEndurance
+    $paddedLeatherDelta = $desiredPaddedLeather - $appliedPaddedLeather
+
+    $delta = $chainmailDelta + $paddedLeatherDelta
 
     if ($delta -eq 0) {
         return
@@ -2745,10 +2770,17 @@ function Sync-LWStateEquipmentBonuses {
     $State.Character.EnduranceMax = $newMax
     $State.Character.EnduranceCurrent = $newCurrent
     $State.EquipmentBonuses.ChainmailEndurance = $desiredChainmail
+    $State.EquipmentBonuses.PaddedLeatherEndurance = $desiredPaddedLeather
 
     if ($WriteMessages) {
-        $direction = if ($delta -gt 0) { 'applied' } else { 'removed' }
-        Write-LWInfo ("Chainmail Waistcoat bonus {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $delta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
+        if ($chainmailDelta -ne 0) {
+            $direction = if ($chainmailDelta -gt 0) { 'applied' } else { 'removed' }
+            Write-LWInfo ("Chainmail Waistcoat bonus {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $chainmailDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
+        }
+        if ($paddedLeatherDelta -ne 0) {
+            $direction = if ($paddedLeatherDelta -gt 0) { 'applied' } else { 'removed' }
+            Write-LWInfo ("Padded Leather Waistcoat bonus {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $paddedLeatherDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
+        }
     }
 }
 
@@ -2913,6 +2945,7 @@ function New-LWDefaultState {
         Achievements      = (New-LWAchievementState)
         EquipmentBonuses  = [pscustomobject]@{
             ChainmailEndurance = 0
+            PaddedLeatherEndurance = 0
         }
         Settings          = [pscustomobject]@{
             CombatMode = 'ManualCRT'
@@ -5752,6 +5785,10 @@ function Show-LWInventory {
         Write-LWSubtle '  Silver Helm: +2 Combat Skill while carried as a Special Item.'
         Write-Host ''
     }
+    if ((Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState) -gt 0) {
+        Write-LWSubtle '  Padded Leather Waistcoat: +2 Endurance while carried as a Special Item.'
+        Write-Host ''
+    }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
     Write-LWSubtle '  Use drop <type> <slot> to remove by slot number, or drop <type> all to clear a section.'
     Write-LWSubtle '  Use recover <type> or recover all to restore stashed gear from a bulk drop.'
@@ -5789,9 +5826,17 @@ function Show-LWSheet {
     }
 
     $chainmailBonus = Get-LWStateChainmailEnduranceBonus -State $script:GameState
+    $paddedLeatherBonus = Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState
     $enduranceText = "{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax
+    $enduranceNotes = @()
     if ($chainmailBonus -gt 0) {
-        $enduranceText += " (Chainmail +$chainmailBonus)"
+        $enduranceNotes += "Chainmail +$chainmailBonus"
+    }
+    if ($paddedLeatherBonus -gt 0) {
+        $enduranceNotes += "Padded Leather +$paddedLeatherBonus"
+    }
+    if ($enduranceNotes.Count -gt 0) {
+        $enduranceText += " ({0})" -f ($enduranceNotes -join ', ')
     }
 
     Write-LWPanelHeader -Title 'Character Sheet' -AccentColor 'Cyan'
@@ -5813,6 +5858,9 @@ function Show-LWSheet {
     }
     if ($silverHelmBonus -gt 0) {
         Write-LWKeyValue -Label 'Silver Helm' -Value ("+{0} Combat Skill" -f $silverHelmBonus) -ValueColor 'DarkYellow'
+    }
+    if ($paddedLeatherBonus -gt 0) {
+        Write-LWKeyValue -Label 'Padded Leather' -Value ("+{0} Endurance" -f $paddedLeatherBonus) -ValueColor 'DarkYellow'
     }
     Write-LWKeyValue -Label 'Combat Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
     Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
@@ -8474,7 +8522,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, and Padded Leather Waistcoat adds +2 END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'

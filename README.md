@@ -24,7 +24,9 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - round logs and combat summaries
 - Special item intelligence for:
   - Shield
+  - Silver Helm
   - Chainmail Waistcoat / Wastecoat
+  - Padded Leather Waistcoat / Wastecoat
   - Sommerswerd
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
@@ -266,6 +268,9 @@ Some items are now handled automatically instead of needing manual stat edits.
   Gives `+1 Combat Skill` in Book 3 / Kalte only
 - `Chainmail Waistcoat` / `Chainmail Wastecoat`
   Adds `+4 Endurance`
+- `Padded Leather Waistcoat` / `Padded Leather Wastecoat`
+  Counts as a Special Item that is treated as worn automatically
+  Adds `+2 Endurance`
 - `Sommerswerd`
   Available from Book 2 onward
   Counts as a weapon-like Special Item
