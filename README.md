@@ -181,6 +181,11 @@ During combat setup, the app can also track enemy-specific effects like:
 - `Mindforce`
   Applies its extra END loss automatically each round
   Checks `Mindshield` automatically and blocks the effect when owned
+- `Knockout attempts`
+  Available from Book 3 onward
+  Edged weapons take `-2 Combat Skill`
+  Unarmed combat, `Warhammer`, `Quarterstaff`, and `Mace` take no extra knockout penalty
+  When the foe reaches zero END, the fight ends as a knockout instead of a kill
 
 ## Run Modes
 

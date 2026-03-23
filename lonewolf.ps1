@@ -692,6 +692,7 @@ function Get-LWOutcomeColor {
 
     switch ($Outcome) {
         'Victory' { return 'Green' }
+        'Knockout' { return 'Green' }
         'Defeat' { return 'Red' }
         'Evaded' { return 'Yellow' }
         'In Progress' { return 'Cyan' }
@@ -2313,6 +2314,10 @@ function Get-LWBoneSwordWeaponNames {
     return @('Bone Sword', 'Bone Sword +1(K)', 'Bone Sowrd', 'Bone Sowrd +1(K)')
 }
 
+function Get-LWNonEdgeKnockoutWeaponNames {
+    return @('Warhammer', 'Quarterstaff', 'Mace')
+}
+
 function Get-LWHealingPotionItemNames {
     return @('Healing Potion', 'Laumspur Potion', 'Potion of Laumspur', 'Laumspur')
 }
@@ -2420,6 +2425,22 @@ function Test-LWStateIsInKalte {
     return ([int]$State.Character.BookNumber -eq 3)
 }
 
+function Test-LWCombatKnockoutAvailable {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return ([int]$State.Character.BookNumber -ge 3)
+}
+
+function Test-LWWeaponIsNonEdgeForKnockout {
+    param([string]$Weapon)
+
+    if ([string]::IsNullOrWhiteSpace($Weapon)) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWNonEdgeKnockoutWeaponNames) -Target $Weapon)))
+}
+
 function Test-LWWeaponIsSommerswerd {
     param([string]$Weapon)
 
@@ -2474,6 +2495,27 @@ function Get-LWStateBoneSwordCombatSkillBonus {
     }
 
     return 0
+}
+
+function Get-LWCombatKnockoutCombatSkillPenalty {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    if (-not [bool]$State.Combat.AttemptKnockout) {
+        return 0
+    }
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if ([string]::IsNullOrWhiteSpace($activeWeapon)) {
+        return 0
+    }
+    if (Test-LWWeaponIsNonEdgeForKnockout -Weapon $activeWeapon) {
+        return 0
+    }
+
+    return 2
 }
 
 function Get-LWStateSommerswerdCombatSkillBonus {
@@ -2678,6 +2720,7 @@ function New-LWCombatState {
         EnemyUsesMindforce        = $false
         EnemyImmuneToMindblast    = $false
         UseMindblast              = $false
+        AttemptKnockout           = $false
         CanEvade                  = $false
         EquippedWeapon            = $null
         SommerswerdSuppressed     = $false
@@ -2873,6 +2916,9 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyUsesMindforce') -or $null -eq $State.Combat.EnemyUsesMindforce) {
         $State.Combat | Add-Member -Force -NotePropertyName EnemyUsesMindforce -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'AttemptKnockout') -or $null -eq $State.Combat.AttemptKnockout) {
+        $State.Combat | Add-Member -Force -NotePropertyName AttemptKnockout -NotePropertyValue $false
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SommerswerdSuppressed') -or $null -eq $State.Combat.SommerswerdSuppressed) {
         $State.Combat | Add-Member -Force -NotePropertyName SommerswerdSuppressed -NotePropertyValue $false
@@ -3313,6 +3359,33 @@ function Register-LWCombatResolved {
 
     switch ([string]$Summary.Outcome) {
         'Victory' {
+            $stats.Victories = [int]$stats.Victories + 1
+            if ((Test-LWPropertyExists -Object $Summary -Name 'Mindblast') -and $Summary.Mindblast) {
+                $stats.MindblastVictories = [int]$stats.MindblastVictories + 1
+            }
+            $weaponName = Get-LWCombatDisplayWeapon -Weapon ([string]$Summary.Weapon)
+            Add-LWBookNamedCount -PropertyName 'WeaponVictories' -Name $weaponName
+
+            $summaryRounds = if ((Test-LWPropertyExists -Object $Summary -Name 'RoundCount') -and $null -ne $Summary.RoundCount) { [int]$Summary.RoundCount } else { 0 }
+            $summaryRatio = if ((Test-LWPropertyExists -Object $Summary -Name 'CombatRatio') -and $null -ne $Summary.CombatRatio) { [int]$Summary.CombatRatio } else { $null }
+            if ($null -ne $Summary.EnemyCombatSkill -and [int]$Summary.EnemyCombatSkill -gt [int]$stats.HighestEnemyCombatSkillDefeated) {
+                $stats.HighestEnemyCombatSkillDefeated = [int]$Summary.EnemyCombatSkill
+            }
+            if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyEnduranceMax') -and $null -ne $Summary.EnemyEnduranceMax -and [int]$Summary.EnemyEnduranceMax -gt [int]$stats.HighestEnemyEnduranceDefeated) {
+                $stats.HighestEnemyEnduranceDefeated = [int]$Summary.EnemyEnduranceMax
+            }
+
+            if ($summaryRounds -gt 0 -and ([int]$stats.FastestVictoryRounds -eq 0 -or $summaryRounds -lt [int]$stats.FastestVictoryRounds)) {
+                $stats.FastestVictoryRounds = $summaryRounds
+                $stats.FastestVictoryEnemyName = [string]$Summary.EnemyName
+            }
+
+            if ($null -ne $summaryRatio -and ($null -eq $stats.EasiestVictoryRatio -or [int]$summaryRatio -gt [int]$stats.EasiestVictoryRatio)) {
+                $stats.EasiestVictoryRatio = [int]$summaryRatio
+                $stats.EasiestVictoryEnemyName = [string]$Summary.EnemyName
+            }
+        }
+        'Knockout' {
             $stats.Victories = [int]$stats.Victories + 1
             if ((Test-LWPropertyExists -Object $Summary -Name 'Mindblast') -and $Summary.Mindblast) {
                 $stats.MindblastVictories = [int]$stats.MindblastVictories + 1
@@ -4740,7 +4813,7 @@ function Get-LWRunCombatEntries {
 }
 
 function Get-LWRunVictoryEntries {
-    return @(Get-LWRunCombatEntries | Where-Object { [string]$_.Outcome -eq 'Victory' })
+    return @(Get-LWRunCombatEntries | Where-Object { @('Victory', 'Knockout') -contains [string]$_.Outcome })
 }
 
 function Get-LWRunTotalRounds {
@@ -4818,7 +4891,7 @@ function Rebuild-LWAchievementProgressFlags {
 function Update-LWAchievementProgressFlagsFromSummary {
     param([Parameter(Mandatory = $true)][object]$Summary)
 
-    if (-not (Test-LWHasState) -or [string]$Summary.Outcome -ne 'Victory') {
+    if (-not (Test-LWHasState) -or @('Victory', 'Knockout') -notcontains [string]$Summary.Outcome) {
         return
     }
 
@@ -6063,6 +6136,17 @@ function Get-LWCombatBreakdownFromState {
         $notes += 'Mindblast +2'
     }
 
+    $knockoutPenalty = Get-LWCombatKnockoutCombatSkillPenalty -State $State
+    if ([bool]$State.Combat.AttemptKnockout) {
+        if ($knockoutPenalty -gt 0) {
+            $playerCombatSkill -= $knockoutPenalty
+            $notes += "Knockout attempt -$knockoutPenalty"
+        }
+        else {
+            $notes += 'Knockout attempt (no CS penalty)'
+        }
+    }
+
     if ([string]::IsNullOrWhiteSpace([string]$State.Combat.EquippedWeapon)) {
         $playerCombatSkill -= 4
         $notes += 'Unarmed -4'
@@ -6407,6 +6491,7 @@ function Show-LWCombatTacticalPanel {
         [Parameter(Mandatory = $true)][bool]$UseMindblast,
         [Parameter(Mandatory = $true)][bool]$EnemyIsUndead,
         [Parameter(Mandatory = $true)][string]$MindforceStatus,
+        [Parameter(Mandatory = $true)][string]$KnockoutStatus,
         [Parameter(Mandatory = $true)][bool]$CanEvade,
         [Parameter(Mandatory = $true)][string]$Mode,
         [object[]]$Notes = @(),
@@ -6426,6 +6511,8 @@ function Show-LWCombatTacticalPanel {
         $mindforceColor = 'Cyan'
     }
     Write-LWKeyValue -Label 'Mindforce' -Value $MindforceStatus -ValueColor $mindforceColor
+    $knockoutColor = if ($KnockoutStatus -like 'Attempt*') { 'Yellow' } else { 'Gray' }
+    Write-LWKeyValue -Label 'Knockout' -Value $KnockoutStatus -ValueColor $knockoutColor
     if ($UsesSommerswerd) {
         $sommerswerdStatus = if ($SommerswerdSuppressed) { 'Suppressed' } elseif ($EnemyIsUndead) { 'Active (undead x2)' } else { 'Active' }
         Write-LWKeyValue -Label 'Sommerswerd' -Value $sommerswerdStatus -ValueColor $(if ($SommerswerdSuppressed) { 'Yellow' } else { 'DarkYellow' })
@@ -6461,6 +6548,7 @@ function Get-LWCurrentCombatLogEntry {
         EnemyEnd   = $script:GameState.Combat.EnemyEnduranceCurrent
         EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
         MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
+        AttemptKnockout = [bool]$script:GameState.Combat.AttemptKnockout
         Log        = @($script:GameState.Combat.Log)
     }
 }
@@ -6593,12 +6681,13 @@ function Show-LWCombatSummary {
     $mode = if ((Test-LWPropertyExists -Object $Summary -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.Mode)) { [string]$Summary.Mode } else { $script:GameState.Settings.CombatMode }
     $canEvade = (Test-LWPropertyExists -Object $Summary -Name 'CanEvade') -and [bool]$Summary.CanEvade
     $mindforceStatus = if (-not $enemyUsesMindforce) { 'Off' } elseif ($mindforceBlocked) { 'Blocked by Mindshield' } else { 'Active (-2 END/round)' }
+    $knockoutStatus = if ((Test-LWPropertyExists -Object $Summary -Name 'AttemptKnockout') -and [bool]$Summary.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }
 
     Write-LWPanelHeader -Title 'Combat Summary' -AccentColor 'DarkRed'
     Write-LWKeyValue -Label 'Enemy' -Value $Summary.EnemyName -ValueColor 'White'
     Write-LWKeyValue -Label 'Outcome' -Value $Summary.Outcome -ValueColor (Get-LWOutcomeColor -Outcome $Summary.Outcome)
     Show-LWCombatDuelPanel -Title 'Aftermath' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
-    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -CanEvade:$canEvade -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
+    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -CanEvade:$canEvade -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
     Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round Recap'
     Write-LWSubtle '  Use combat log for the full round-by-round archive.'
 }
@@ -6611,10 +6700,11 @@ function Show-LWCombatStatus {
 
     $breakdown = Get-LWCombatBreakdown
     $mindforceStatus = if (-not [bool]$script:GameState.Combat.EnemyUsesMindforce) { 'Off' } elseif (Test-LWCombatMindforceBlockedByMindshield -State $script:GameState) { 'Blocked by Mindshield' } else { 'Active (-2 END/round)' }
+    $knockoutStatus = if ([bool]$script:GameState.Combat.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }
     Write-LWPanelHeader -Title 'Combat Status' -AccentColor 'Red'
     Write-LWKeyValue -Label 'Enemy' -Value $script:GameState.Combat.EnemyName -ValueColor 'White'
     Show-LWCombatDuelPanel -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$script:GameState.Character.EnduranceCurrent) -PlayerMax ([int]$script:GameState.Character.EnduranceMax) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
-    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -CanEvade:([bool]$script:GameState.Combat.CanEvade) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
+    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -CanEvade:([bool]$script:GameState.Combat.CanEvade) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
     Show-LWCombatRecentRounds -Rounds @($script:GameState.Combat.Log) -Count 3
     Show-LWCombatPromptHint
 }
@@ -6730,7 +6820,14 @@ function Resolve-LWCombatRound {
         $outcome = 'Defeat'
     }
     elseif ($newEnemyEnd -le 0) {
-        $outcome = 'Victory'
+        if ([bool]$State.Combat.AttemptKnockout) {
+            $outcome = 'Knockout'
+            $messages += ("{0} is knocked unconscious." -f [string]$State.Combat.EnemyName)
+            $specialNotes += 'Knockout'
+        }
+        else {
+            $outcome = 'Victory'
+        }
     }
 
     return [pscustomobject]@{
@@ -6837,6 +6934,7 @@ function Start-LWCombat {
 
     $equippedWeapon = Select-LWCombatWeapon -DefaultWeapon (Get-LWPreferredCombatWeapon -State $script:GameState)
     $sommerswerdSuppressed = $false
+    $attemptKnockout = $false
     if (Test-LWWeaponIsSommerswerd -Weapon $equippedWeapon) {
         if ((Get-LWCurrentDifficulty) -eq 'Veteran') {
             $textAllowsSommerswerd = Read-LWYesNo -Prompt 'Does the text explicitly allow the Sommerswerd''s power in this combat?' -Default $false
@@ -6848,6 +6946,25 @@ function Start-LWCombat {
 
         if (-not $sommerswerdSuppressed -and -not $useQuickDefaults) {
             $sommerswerdSuppressed = Read-LWYesNo -Prompt 'Is the Sommerswerd suppressed or unable to function in this combat?' -Default $false
+        }
+    }
+
+    if (Test-LWCombatKnockoutAvailable -State $script:GameState) {
+        $attemptKnockout = Read-LWYesNo -Prompt 'Try to knock this foe unconscious?' -Default $false
+        if ($attemptKnockout) {
+            $knockoutPenalty = Get-LWCombatKnockoutCombatSkillPenalty -State ([pscustomobject]@{
+                    Character = $script:GameState.Character
+                    Combat    = [pscustomobject]@{
+                        AttemptKnockout = $true
+                        EquippedWeapon  = $equippedWeapon
+                    }
+                }) -Weapon $equippedWeapon
+            if ($knockoutPenalty -gt 0) {
+                Write-LWWarn "Knockout attempt will apply -$knockoutPenalty Combat Skill with $((Get-LWCombatDisplayWeapon -Weapon $equippedWeapon))."
+            }
+            else {
+                Write-LWInfo 'Knockout attempt has no extra Combat Skill penalty with this weapon.'
+            }
         }
     }
 
@@ -6881,6 +6998,7 @@ function Start-LWCombat {
         EnemyUsesMindforce        = $enemyUsesMindforce
         EnemyImmuneToMindblast    = $enemyImmune
         UseMindblast              = $useMindblast
+        AttemptKnockout           = $attemptKnockout
         CanEvade                  = $canEvade
         EquippedWeapon            = $equippedWeapon
         SommerswerdSuppressed     = $sommerswerdSuppressed
@@ -6928,6 +7046,7 @@ function Stop-LWCombat {
         EnemyIsUndead     = [bool]$script:GameState.Combat.EnemyIsUndead
         EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
         MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
+        AttemptKnockout   = [bool]$script:GameState.Combat.AttemptKnockout
         Weapon            = $script:GameState.Combat.EquippedWeapon
         SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
         Mindblast         = [bool]$script:GameState.Combat.UseMindblast
@@ -7025,6 +7144,10 @@ function Invoke-LWCombatRound {
     }
     if ($resolution.Outcome -eq 'Victory') {
         [void](Stop-LWCombat -Outcome 'Victory' -SkipAutosave:$SkipAutosave)
+        return $resolution
+    }
+    if ($resolution.Outcome -eq 'Knockout') {
+        [void](Stop-LWCombat -Outcome 'Knockout' -SkipAutosave:$SkipAutosave)
         return $resolution
     }
 
@@ -7869,6 +7992,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'In Book 3 and later, combat can attempt a knockout: edged weapons take -2 CS, while unarmed, Warhammer, Quarterstaff, and Mace do not.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion works with both Healing Potion and Laumspur Potion item names.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion now prefers Concentrated Laumspur first and restores 8 END when one is available.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use die for instant-death sections. After death, use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
