@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.2'
+$script:LWAppVersion = '0.7.3'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -2545,6 +2545,16 @@ function Test-LWStateIsInKalte {
     param([Parameter(Mandatory = $true)][object]$State)
 
     return ([int]$State.Character.BookNumber -eq 3)
+}
+
+function Get-LWStateHuntingMealRestrictionReason {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWStateIsInKalte -State $State) {
+        return 'Hunting cannot be used for meals anywhere in Kalte (Book 3).'
+    }
+
+    return $null
 }
 
 function Test-LWCombatKnockoutAvailable {
@@ -6511,42 +6521,45 @@ function Use-LWMeal {
         return
     }
 
-    $consumeMeal = $true
     if (Test-LWDiscipline -Name 'Hunting') {
-        $isWasteland = Read-LWYesNo -Prompt 'Are you in a wasteland or desert where Hunting does not help?' -Default $false
-        if (-not $isWasteland) {
-            Register-LWMealCoveredByHunting
-            Write-LWInfo 'Hunting covers the meal. No backpack item spent.'
-            return
+        $huntingRestrictionReason = Get-LWStateHuntingMealRestrictionReason -State $script:GameState
+        if (-not [string]::IsNullOrWhiteSpace($huntingRestrictionReason)) {
+            Write-LWInfo $huntingRestrictionReason
+        }
+        else {
+            $isWasteland = Read-LWYesNo -Prompt 'Are you in a wasteland or desert where Hunting does not help?' -Default $false
+            if (-not $isWasteland) {
+                Register-LWMealCoveredByHunting
+                Write-LWInfo 'Hunting covers the meal. No backpack item spent.'
+                return
+            }
         }
     }
 
-    if ($consumeMeal) {
-        if ((Get-LWBackpackItemCount -Name 'Meal') -gt 0) {
-            Remove-LWInventoryItem -Type 'backpack' -Name 'Meal' -Quantity 1
-            Register-LWMealConsumed
-            Write-LWInfo 'Meal consumed.'
-            return
-        }
-
-        Write-LWWarn 'No Meal available. Lose 3 Endurance.'
-        Register-LWStarvationPenalty
-        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 3 -Source 'starvation'
-        $before = [int]$script:GameState.Character.EnduranceCurrent
-        $script:GameState.Character.EnduranceCurrent -= [int]$lossResolution.AppliedLoss
-        if ($script:GameState.Character.EnduranceCurrent -lt 0) {
-            $script:GameState.Character.EnduranceCurrent = 0
-        }
-        Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
-        if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
-            Write-LWInfo ([string]$lossResolution.Note)
-        }
-        Write-LWInfo "Endurance now $($script:GameState.Character.EnduranceCurrent)."
-        if (Invoke-LWFatalEnduranceCheck -Cause 'Starved to death after failing to find a meal.') {
-            return
-        }
-        Invoke-LWMaybeAutosave
+    if ((Get-LWBackpackItemCount -Name 'Meal') -gt 0) {
+        Remove-LWInventoryItem -Type 'backpack' -Name 'Meal' -Quantity 1
+        Register-LWMealConsumed
+        Write-LWInfo 'Meal consumed.'
+        return
     }
+
+    Write-LWWarn 'No Meal available. Lose 3 Endurance.'
+    Register-LWStarvationPenalty
+    $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 3 -Source 'starvation'
+    $before = [int]$script:GameState.Character.EnduranceCurrent
+    $script:GameState.Character.EnduranceCurrent -= [int]$lossResolution.AppliedLoss
+    if ($script:GameState.Character.EnduranceCurrent -lt 0) {
+        $script:GameState.Character.EnduranceCurrent = 0
+    }
+    Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+    if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+        Write-LWInfo ([string]$lossResolution.Note)
+    }
+    Write-LWInfo "Endurance now $($script:GameState.Character.EnduranceCurrent)."
+    if (Invoke-LWFatalEnduranceCheck -Cause 'Starved to death after failing to find a meal.') {
+        return
+    }
+    Invoke-LWMaybeAutosave
 }
 
 function Use-LWHealingPotion {

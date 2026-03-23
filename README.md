@@ -12,7 +12,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
 - Inventory slot tracking for weapons (`2`), backpack items (`8`), special items (`12`), and gold
 - Section tracking with Healing support for non-combat sections
-- Meal handling with Hunting support
+- Meal handling with Hunting support, including Book 3 / Kalte restrictions
 - Potion handling for:
   - Healing Potion / Laumspur Potion
   - Concentrated Laumspur
