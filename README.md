@@ -73,7 +73,7 @@ Run the app from PowerShell:
 Launch and load a save immediately:
 
 ```powershell
-.\lonewolf.ps1 -Load .\saves\Cynix-book1.json
+.\lonewolf.ps1 -Load .\saves\your-save.json
 ```
 
 If you run `load` inside the app, it scans the save folder, lists saves by number, and remembers the last one you used as the default.

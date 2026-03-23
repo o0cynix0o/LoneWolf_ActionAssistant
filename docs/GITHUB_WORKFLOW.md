@@ -14,7 +14,7 @@ This repo is set up so the public project stays clean while local play data stay
 
 ## Normal Update Flow
 
-From `C:\Scripts\Lone Wolf`:
+From the repo root:
 
 ```powershell
 git status
@@ -23,8 +23,8 @@ git status
 Review what changed. Then run lightweight validation:
 
 ```powershell
-powershell -NoProfile -Command "$tokens=$null; $errors=$null; [void][System.Management.Automation.Language.Parser]::ParseFile('C:\Scripts\Lone Wolf\lonewolf.ps1',[ref]$tokens,[ref]$errors); if($errors){ $errors | ForEach-Object Message }"
-pwsh -NoProfile -Command "$tokens=$null; $errors=$null; [void][System.Management.Automation.Language.Parser]::ParseFile('C:\Scripts\Lone Wolf\lonewolf.ps1',[ref]$tokens,[ref]$errors); if($errors){ $errors | ForEach-Object Message }"
+powershell -NoProfile -Command "$tokens=$null; $errors=$null; [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\\lonewolf.ps1'),[ref]$tokens,[ref]$errors); if($errors){ $errors | ForEach-Object Message }"
+pwsh -NoProfile -Command "$tokens=$null; $errors=$null; [void][System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\\lonewolf.ps1'),[ref]$tokens,[ref]$errors); if($errors){ $errors | ForEach-Object Message }"
 ```
 
 Stage and commit:
