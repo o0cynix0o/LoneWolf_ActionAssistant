@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.1'
+$script:LWAppVersion = '0.7.2'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -5638,7 +5638,7 @@ function Get-LWInventoryTypeCapacity {
     switch ($Type) {
         'weapon' { return 2 }
         'backpack' { return 8 }
-        'special' { return $null }
+        'special' { return 12 }
     }
 }
 
@@ -5723,7 +5723,8 @@ function Show-LWInventorySlotsSection {
 
     if ($null -ne $capacity) {
         Write-Host ("  {0} ({1}/{2})" -f $label, $items.Count, $capacity) -ForegroundColor $labelColor
-        for ($i = 0; $i -lt $capacity; $i++) {
+        $slotCount = [Math]::Max([int]$capacity, [int]$items.Count)
+        for ($i = 0; $i -lt $slotCount; $i++) {
             $slotText = if ($i -lt $items.Count) { [string]$items[$i] } else { '(empty)' }
             $slotColor = if ($i -lt $items.Count) { 'Gray' } else { 'DarkGray' }
             Write-Host ("    {0,2}. " -f ($i + 1)) -NoNewline -ForegroundColor DarkGray
@@ -5752,7 +5753,7 @@ function Show-LWInventorySummary {
     Write-LWPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
     Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWList -Items $weapons)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpack.Count, (Format-LWList -Items $backpack)) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Special Items' -Value ("{0}  {1}" -f $special.Count, (Format-LWList -Items $special)) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWList -Items $special)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
 }
 
@@ -6039,36 +6040,22 @@ function Add-LWInventoryItem {
         return
     }
 
+    $capacity = Get-LWInventoryTypeCapacity -Type $Type
+    $label = Get-LWInventoryTypeLabel -Type $Type
+    $current = @(Get-LWInventoryItems -Type $Type)
+    if ($null -ne $capacity -and (($current.Count + $Quantity) -gt $capacity)) {
+        Write-LWWarn ("You can only carry {0} {1}." -f $capacity, $label.ToLowerInvariant())
+        return
+    }
+
+    for ($i = 0; $i -lt $Quantity; $i++) {
+        $current += $Name
+    }
+
     switch ($Type) {
-        'weapon' {
-            $current = @($script:GameState.Inventory.Weapons)
-            if (($current.Count + $Quantity) -gt 2) {
-                Write-LWWarn 'You can only carry 2 weapons.'
-                return
-            }
-            for ($i = 0; $i -lt $Quantity; $i++) {
-                $current += $Name
-            }
-            $script:GameState.Inventory.Weapons = $current
-        }
-        'backpack' {
-            $current = @($script:GameState.Inventory.BackpackItems)
-            if (($current.Count + $Quantity) -gt 8) {
-                Write-LWWarn 'You can only carry 8 backpack items.'
-                return
-            }
-            for ($i = 0; $i -lt $Quantity; $i++) {
-                $current += $Name
-            }
-            $script:GameState.Inventory.BackpackItems = $current
-        }
-        'special' {
-            $current = @($script:GameState.Inventory.SpecialItems)
-            for ($i = 0; $i -lt $Quantity; $i++) {
-                $current += $Name
-            }
-            $script:GameState.Inventory.SpecialItems = $current
-        }
+        'weapon' { $script:GameState.Inventory.Weapons = $current }
+        'backpack' { $script:GameState.Inventory.BackpackItems = $current }
+        'special' { $script:GameState.Inventory.SpecialItems = $current }
     }
 
     Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $Name
@@ -6193,18 +6180,15 @@ function Remove-LWInventoryItemBySlot {
     $items = @(Get-LWInventoryItems -Type $Type)
     $label = Get-LWInventoryTypeLabel -Type $Type
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
+    $maxSlot = if ($null -ne $capacity) { [Math]::Max([int]$capacity, [int]$items.Count) } else { [int]$items.Count }
 
     if ($items.Count -eq 0) {
         Write-LWWarn "$label is empty."
         return
     }
 
-    if ($null -ne $capacity -and $Slot -gt $capacity) {
-        Write-LWWarn "$label slot must be between 1 and $capacity."
-        return
-    }
-    if ($null -eq $capacity -and $Slot -gt $items.Count) {
-        Write-LWWarn "$label slot must be between 1 and $($items.Count)."
+    if ($Slot -gt $maxSlot) {
+        Write-LWWarn "$label slot must be between 1 and $maxSlot."
         return
     }
     if ($Slot -gt $items.Count) {
@@ -8517,7 +8501,7 @@ function Show-LWHelp {
     Write-LWPanelHeader -Title 'Tips' -AccentColor 'DarkYellow'
     Write-LWBulletItem -Text 'While combat is active, pressing Enter advances one round.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Quick start syntax: combat start Giak 12 10' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Use inv to see exact weapon and backpack slots, including empty spaces.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use inv to see exact weapon, backpack, and special-item slots, including empty spaces.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
