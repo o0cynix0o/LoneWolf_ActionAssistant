@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.6.9'
+$script:LWAppVersion = '0.7.0'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -390,6 +390,53 @@ function Show-LWCombatLogScreen {
     Write-LWSubtle '  No combat log available.'
 }
 
+function Show-LWModesScreen {
+    $screenData = $script:LWUi.ScreenData
+    $selectedDifficulty = if ($null -ne $screenData -and (Test-LWPropertyExists -Object $screenData -Name 'Difficulty')) { Get-LWNormalizedDifficultyName -Difficulty ([string]$screenData.Difficulty) } elseif (Test-LWHasState) { Get-LWCurrentDifficulty } else { 'Normal' }
+    $selectedPermadeath = if ($null -ne $screenData -and (Test-LWPropertyExists -Object $screenData -Name 'Permadeath')) { [bool]$screenData.Permadeath } elseif (Test-LWHasState) { [bool](Test-LWPermadeathEnabled) } else { $false }
+    $view = if ($null -ne $screenData -and (Test-LWPropertyExists -Object $screenData -Name 'View') -and -not [string]::IsNullOrWhiteSpace([string]$screenData.View)) { [string]$screenData.View } else { 'reference' }
+    $poolLabel = Get-LWModeAchievementPoolLabel -State ([pscustomobject]@{ Run = [pscustomobject]@{ Difficulty = $selectedDifficulty; Permadeath = $selectedPermadeath; IntegrityState = 'Clean' } })
+
+    Write-LWPanelHeader -Title 'Run Modes' -AccentColor 'Magenta'
+    if (Test-LWHasState) {
+        Write-LWKeyValue -Label 'Current Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
+        Write-LWKeyValue -Label 'Permadeath' -Value $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
+        Write-LWKeyValue -Label 'Run Integrity' -Value ([string]$script:GameState.Run.IntegrityState) -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState))
+        Write-LWKeyValue -Label 'Achievement Pool' -Value (Get-LWModeAchievementPoolLabel) -ValueColor 'DarkYellow'
+        Write-Host ''
+    }
+
+    if ($view -eq 'setup' -or $view -eq 'confirm') {
+        Write-LWPanelHeader -Title 'Selected Run Setup' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Difficulty' -Value $selectedDifficulty -ValueColor (Get-LWDifficultyColor -Difficulty $selectedDifficulty)
+        Write-LWKeyValue -Label 'Permadeath' -Value $(if ($selectedPermadeath) { 'On' } else { 'Off' }) -ValueColor $(if ($selectedPermadeath) { 'Red' } else { 'Gray' })
+        Write-LWKeyValue -Label 'Achievement Pool' -Value $poolLabel -ValueColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Locked For Run' -Value 'Yes' -ValueColor 'Yellow'
+        Write-Host ''
+    }
+
+    Write-LWPanelHeader -Title 'Difficulty Options' -AccentColor 'Cyan'
+    $definitions = @(Get-LWDifficultyDefinitions)
+    for ($i = 0; $i -lt $definitions.Count; $i++) {
+        $entry = $definitions[$i]
+        $marker = if ([string]$entry.Name -eq $selectedDifficulty) { '>' } else { ' ' }
+        Write-Host ("  {0} [{1}] {2}" -f $marker, ($i + 1), $entry.Name) -ForegroundColor (Get-LWDifficultyColor -Difficulty ([string]$entry.Name))
+        Write-LWSubtle ("      {0}" -f [string]$entry.Description)
+        Write-LWSubtle ("      {0}" -f [string]$entry.AchievementNote)
+    }
+
+    Write-LWPanelHeader -Title 'Run Rules' -AccentColor 'DarkYellow'
+    Write-LWBulletItem -Text 'Difficulty is chosen at run start and stays locked for the entire run.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Permadeath can be enabled at run start, cannot be turned off, deletes the save on death, and disables rewind.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Story mode cannot be combined with Permadeath.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'If locked run settings are edited outside the assistant, challenge achievements are disabled for that run.' -TextColor 'Gray'
+
+    if ($view -eq 'reference') {
+        Write-Host ''
+        Write-LWSubtle '  Use modes anytime to review the rules for each run setting.'
+    }
+}
+
 function Show-LWDeathScreen {
     if (-not (Test-LWHasState)) {
         Show-LWWelcomeScreen -NoBanner
@@ -412,12 +459,17 @@ function Show-LWDeathScreen {
     Write-LWKeyValue -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
     Write-LWKeyValue -Label 'Book' -Value $bookLabel -ValueColor 'White'
     Write-LWKeyValue -Label 'Section' -Value ([string]$deathState.Section) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
+    Write-LWKeyValue -Label 'Permadeath' -Value $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
     Write-LWKeyValue -Label 'Death Type' -Value $deathType -ValueColor 'Red'
     Write-LWKeyValue -Label 'Cause' -Value $causeText -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Rewinds Available' -Value ([string]$rewindsAvailable) -ValueColor $(if ($rewindsAvailable -gt 0) { 'Yellow' } else { 'DarkGray' })
 
     Write-LWPanelHeader -Title 'Next Step' -AccentColor 'DarkYellow'
-    if ($rewindsAvailable -gt 0) {
+    if (Test-LWPermadeathEnabled) {
+        Write-LWBulletItem -Text 'Permadeath claimed this run. The save was deleted and cannot be rewound.' -TextColor 'Gray'
+    }
+    elseif ($rewindsAvailable -gt 0) {
         Write-LWBulletItem -Text 'Use rewind to return to the previous safe section.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Use rewind <n> to step back more than one section.' -TextColor 'Gray'
     }
@@ -532,6 +584,10 @@ function Refresh-LWScreen {
                 else {
                     Show-LWWelcomeScreen -NoBanner
                 }
+            }
+            'modes' {
+                Write-LWBanner
+                Show-LWModesScreen
             }
             'help' {
                 Write-LWBanner
@@ -663,6 +719,29 @@ function Get-LWModeColor {
     switch ($Mode) {
         'DataFile' { return 'Green' }
         'ManualCRT' { return 'Yellow' }
+        default { return 'Gray' }
+    }
+}
+
+function Get-LWDifficultyColor {
+    param([string]$Difficulty)
+
+    switch ([string]$Difficulty) {
+        'Story' { return 'Magenta' }
+        'Easy' { return 'Green' }
+        'Normal' { return 'Cyan' }
+        'Hard' { return 'Yellow' }
+        'Veteran' { return 'Red' }
+        default { return 'Gray' }
+    }
+}
+
+function Get-LWIntegrityColor {
+    param([string]$IntegrityState)
+
+    switch ([string]$IntegrityState) {
+        'Clean' { return 'Green' }
+        'Tampered' { return 'Red' }
         default { return 'Gray' }
     }
 }
@@ -851,6 +930,315 @@ function Format-LWBookLabel {
     return "$BookNumber - $title"
 }
 
+function Get-LWDifficultyDefinitions {
+    return @(
+        [pscustomobject]@{
+            Name            = 'Story'
+            Description     = 'No normal END loss. Story and universal achievements only.'
+            AchievementNote = 'Universal + Story achievements'
+            PermadeathAllowed = $false
+        },
+        [pscustomobject]@{
+            Name            = 'Easy'
+            Description     = 'Incoming END loss is halved.'
+            AchievementNote = 'Universal achievements only'
+            PermadeathAllowed = $true
+        },
+        [pscustomobject]@{
+            Name            = 'Normal'
+            Description     = 'Standard Lone Wolf rules.'
+            AchievementNote = 'Universal + Combat achievements'
+            PermadeathAllowed = $true
+        },
+        [pscustomobject]@{
+            Name            = 'Hard'
+            Description     = 'Sommerswerd bonus halved. Healing capped at 10 END per book.'
+            AchievementNote = 'Universal + Combat + Challenge achievements'
+            PermadeathAllowed = $true
+        },
+        [pscustomobject]@{
+            Name            = 'Veteran'
+            Description     = 'Hard rules plus Sommerswerd only when the text allows it.'
+            AchievementNote = 'Universal + Combat + Challenge achievements'
+            PermadeathAllowed = $true
+        }
+    )
+}
+
+function Get-LWNormalizedDifficultyName {
+    param([string]$Difficulty = '')
+
+    $target = if ([string]::IsNullOrWhiteSpace($Difficulty)) { 'Normal' } else { $Difficulty.Trim() }
+    foreach ($entry in @(Get-LWDifficultyDefinitions)) {
+        if ([string]$entry.Name -ieq $target) {
+            return [string]$entry.Name
+        }
+    }
+
+    switch ($target.ToLowerInvariant()) {
+        'storymode' { return 'Story' }
+        'easymode' { return 'Easy' }
+        'hardmode' { return 'Hard' }
+        default { return 'Normal' }
+    }
+}
+
+function Get-LWDifficultyDefinition {
+    param([string]$Difficulty = '')
+
+    $normalized = Get-LWNormalizedDifficultyName -Difficulty $Difficulty
+    foreach ($entry in @(Get-LWDifficultyDefinitions)) {
+        if ([string]$entry.Name -eq $normalized) {
+            return $entry
+        }
+    }
+
+    return $null
+}
+
+function New-LWRunState {
+    param(
+        [string]$Difficulty = 'Normal',
+        [bool]$Permadeath = $false
+    )
+
+    $normalizedDifficulty = Get-LWNormalizedDifficultyName -Difficulty $Difficulty
+    if ($normalizedDifficulty -eq 'Story') {
+        $Permadeath = $false
+    }
+
+    return [pscustomobject]@{
+        Id             = ([guid]::NewGuid().ToString())
+        Difficulty     = $normalizedDifficulty
+        Permadeath     = [bool]$Permadeath
+        Status         = 'Active'
+        StartedOn      = (Get-Date).ToString('o')
+        CompletedOn    = $null
+        IntegrityState = 'Clean'
+        IntegrityNote  = $null
+        Signature      = $null
+    }
+}
+
+function New-LWRunArchiveEntry {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Status = ''
+    )
+
+    $run = if ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run) { $State.Run } else { $null }
+    $campaign = $null
+    $previousState = $script:GameState
+    try {
+        $script:GameState = $State
+        $campaign = Get-LWCampaignSummary
+    }
+    finally {
+        $script:GameState = $previousState
+    }
+
+    return [pscustomobject]@{
+        RunId          = $(if ($null -ne $run) { [string]$run.Id } else { ([guid]::NewGuid().ToString()) })
+        CharacterName  = [string]$State.Character.Name
+        Difficulty     = $(if ($null -ne $run) { [string]$run.Difficulty } else { 'Normal' })
+        Permadeath     = $(if ($null -ne $run) { [bool]$run.Permadeath } else { $false })
+        IntegrityState = $(if ($null -ne $run) { [string]$run.IntegrityState } else { 'Clean' })
+        Status         = $(if ([string]::IsNullOrWhiteSpace($Status)) { if ($null -ne $run) { [string]$run.Status } else { 'Archived' } } else { $Status })
+        StartedOn      = $(if ($null -ne $run) { [string]$run.StartedOn } else { $null })
+        EndedOn        = (Get-Date).ToString('o')
+        LastBook       = [int]$State.Character.BookNumber
+        CompletedBooks = @($State.Character.CompletedBooks)
+        Summary        = $campaign
+    }
+}
+
+function Ensure-LWRunState {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Run') -or $null -eq $State.Run) {
+        $State | Add-Member -Force -NotePropertyName Run -NotePropertyValue (New-LWRunState)
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Id') -or [string]::IsNullOrWhiteSpace([string]$State.Run.Id)) {
+        $State.Run | Add-Member -Force -NotePropertyName Id -NotePropertyValue ([guid]::NewGuid().ToString())
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Difficulty')) {
+        $State.Run | Add-Member -Force -NotePropertyName Difficulty -NotePropertyValue 'Normal'
+    }
+    else {
+        $State.Run.Difficulty = Get-LWNormalizedDifficultyName -Difficulty ([string]$State.Run.Difficulty)
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Permadeath') -or $null -eq $State.Run.Permadeath) {
+        $State.Run | Add-Member -Force -NotePropertyName Permadeath -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Status') -or [string]::IsNullOrWhiteSpace([string]$State.Run.Status)) {
+        $State.Run | Add-Member -Force -NotePropertyName Status -NotePropertyValue 'Active'
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'StartedOn') -or [string]::IsNullOrWhiteSpace([string]$State.Run.StartedOn)) {
+        $State.Run | Add-Member -Force -NotePropertyName StartedOn -NotePropertyValue (Get-Date).ToString('o')
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'CompletedOn')) {
+        $State.Run | Add-Member -Force -NotePropertyName CompletedOn -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'IntegrityState') -or [string]::IsNullOrWhiteSpace([string]$State.Run.IntegrityState)) {
+        $State.Run | Add-Member -Force -NotePropertyName IntegrityState -NotePropertyValue 'Clean'
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'IntegrityNote')) {
+        $State.Run | Add-Member -Force -NotePropertyName IntegrityNote -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Signature')) {
+        $State.Run | Add-Member -Force -NotePropertyName Signature -NotePropertyValue $null
+    }
+}
+
+function Ensure-LWRunHistory {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'RunHistory') -or $null -eq $State.RunHistory) {
+        $State | Add-Member -Force -NotePropertyName RunHistory -NotePropertyValue @()
+        return
+    }
+
+    $State.RunHistory = @($State.RunHistory)
+}
+
+function Get-LWRunSignaturePayload {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    Ensure-LWRunState -State $State
+
+    $completedBooks = @()
+    if ($null -ne $State.Character -and (Test-LWPropertyExists -Object $State.Character -Name 'CompletedBooks') -and $null -ne $State.Character.CompletedBooks) {
+        $completedBooks = @($State.Character.CompletedBooks | ForEach-Object { [int]$_ } | Sort-Object)
+    }
+
+    return @(
+        [string]$State.Run.Id,
+        [string]$State.Run.Difficulty,
+        [string]([bool]$State.Run.Permadeath),
+        [string]$State.Run.Status,
+        [string]$State.Run.StartedOn,
+        [string]([int]$State.Character.BookNumber),
+        [string]([int]$State.CurrentSection),
+        ($completedBooks -join ',')
+    ) -join '|'
+}
+
+function Get-LWStringHash {
+    param([string]$Text = '')
+
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha.ComputeHash($bytes)
+    }
+    finally {
+        $sha.Dispose()
+    }
+
+    return ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
+}
+
+function Get-LWRunSignature {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Get-LWStringHash -Text (Get-LWRunSignaturePayload -State $State))
+}
+
+function Mark-LWRunTampered {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Reason = 'Run settings were modified outside the assistant.'
+    )
+
+    Ensure-LWRunState -State $State
+    $State.Run.IntegrityState = 'Tampered'
+    $State.Run.IntegrityNote = $Reason
+}
+
+function Sync-LWRunIntegrityState {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    Ensure-LWRunState -State $State
+
+    if ([string]$State.Run.Difficulty -eq 'Story' -and [bool]$State.Run.Permadeath) {
+        $State.Run.Permadeath = $false
+        Mark-LWRunTampered -State $State -Reason 'Story mode cannot be combined with Permadeath.'
+    }
+
+    $computed = Get-LWRunSignature -State $State
+    $stored = [string]$State.Run.Signature
+
+    if ([string]::IsNullOrWhiteSpace($stored)) {
+        $State.Run.Signature = $computed
+        if ([string]$State.Run.IntegrityState -ne 'Tampered') {
+            $State.Run.IntegrityState = 'Clean'
+            $State.Run.IntegrityNote = $null
+        }
+        return
+    }
+
+    if ([string]$State.Run.IntegrityState -eq 'Tampered') {
+        $State.Run.Signature = $computed
+        return
+    }
+
+    if ($stored -ne $computed) {
+        Mark-LWRunTampered -State $State -Reason 'Locked run settings or signed progress fields were edited outside the assistant.'
+        $State.Run.Signature = $computed
+        return
+    }
+
+    $State.Run.IntegrityState = 'Clean'
+    $State.Run.IntegrityNote = $null
+    $State.Run.Signature = $computed
+}
+
+function Get-LWCurrentDifficulty {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State) {
+        return 'Normal'
+    }
+
+    if ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run -and (Test-LWPropertyExists -Object $State.Run -Name 'Difficulty')) {
+        return (Get-LWNormalizedDifficultyName -Difficulty ([string]$State.Run.Difficulty))
+    }
+
+    return 'Normal'
+}
+
+function Test-LWPermadeathEnabled {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State) {
+        return $false
+    }
+
+    if ((Get-LWCurrentDifficulty -State $State) -eq 'Story') {
+        return $false
+    }
+
+    return ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run -and (Test-LWPropertyExists -Object $State.Run -Name 'Permadeath') -and [bool]$State.Run.Permadeath)
+}
+
+function Test-LWRunTampered {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State) {
+        return $false
+    }
+
+    return ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run -and (Test-LWPropertyExists -Object $State.Run -Name 'IntegrityState') -and [string]$State.Run.IntegrityState -eq 'Tampered')
+}
+
+function Test-LWDifficultyAllowsChallengeAchievements {
+    param([object]$State = $script:GameState)
+
+    return (@('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty -State $State))
+}
+
 function Get-LWKaiRankTitle {
     param([int]$DisciplineCount)
 
@@ -900,42 +1288,75 @@ function New-LWAchievementState {
     }
 }
 
+function New-LWAchievementDefinition {
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Category,
+        [Parameter(Mandatory = $true)][string]$Description,
+        [bool]$Backfill = $false,
+        [string]$ModePool = 'Universal',
+        [string[]]$RequiredDifficulty = @(),
+        [bool]$RequiresPermadeath = $false
+    )
+
+    return [pscustomobject]@{
+        Id                 = $Id
+        Name               = $Name
+        Category           = $Category
+        Description        = $Description
+        Backfill           = [bool]$Backfill
+        ModePool           = $ModePool
+        RequiredDifficulty = @($RequiredDifficulty)
+        RequiresPermadeath = [bool]$RequiresPermadeath
+    }
+}
+
 function Get-LWAchievementDefinitions {
     return @(
-        [pscustomobject]@{ Id = 'first_blood'; Name = 'First Blood'; Category = 'Combat'; Description = 'Win your first combat.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'swift_blade'; Name = 'Swift Blade'; Category = 'Combat'; Description = 'Win a fight in a single round.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'untouchable'; Name = 'Untouchable'; Category = 'Combat'; Description = 'Win a fight without losing any Endurance.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'against_the_odds'; Name = 'Against the Odds'; Category = 'Combat'; Description = 'Win a fight at combat ratio 0 or lower.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'mind_over_matter'; Name = 'Mind Over Matter'; Category = 'Combat'; Description = 'Win a fight using Mindblast.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'giant_slayer'; Name = 'Giant-Slayer'; Category = 'Combat'; Description = 'Defeat an enemy with Combat Skill 18 or higher.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'monster_hunter'; Name = 'Monster-Hunter'; Category = 'Combat'; Description = 'Defeat an enemy with Endurance 30 or higher.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'back_from_the_brink'; Name = 'Back From the Brink'; Category = 'Combat'; Description = 'Win a fight with only 1 Endurance remaining.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'kai_veteran'; Name = 'Kai Veteran'; Category = 'Combat'; Description = 'Win 10 combats in a single run.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'weapon_master'; Name = 'Weapon Master'; Category = 'Combat'; Description = 'Win 10 combats with the same weapon.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'seasoned_fighter'; Name = 'Seasoned Fighter'; Category = 'Combat'; Description = 'Fight 25 total rounds in a single run.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'endurance_duelist'; Name = 'Endurance Duelist'; Category = 'Combat'; Description = 'Survive a fight lasting 5 or more rounds.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'easy_pickings'; Name = 'Easy Pickings'; Category = 'Combat'; Description = 'Win a fight at combat ratio 15 or higher.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'trail_survivor'; Name = 'Trail Survivor'; Category = 'Survival'; Description = 'Eat your first meal.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'hunters_instinct'; Name = 'Hunter''s Instinct'; Category = 'Survival'; Description = 'Have Hunting cover 5 meals.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'herbal_relief'; Name = 'Herbal Relief'; Category = 'Survival'; Description = 'Use your first Laumspur potion.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'second_wind'; Name = 'Second Wind'; Category = 'Survival'; Description = 'Restore 10 Endurance through Healing.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'loaded_purse'; Name = 'Loaded Purse'; Category = 'Survival'; Description = 'Reach 50 Gold Crowns.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'hard_lessons'; Name = 'Hard Lessons'; Category = 'Survival'; Description = 'Suffer your first starvation penalty.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'still_standing'; Name = 'Still Standing'; Category = 'Survival'; Description = 'Survive 3 deaths in a single run.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'deep_draught'; Name = 'Deep Draught'; Category = 'Survival'; Description = 'Use a dose of Concentrated Laumspur.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'pathfinder'; Name = 'Pathfinder'; Category = 'Journey'; Description = 'Visit 25 sections in a single book.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'long_road'; Name = 'Long Road'; Category = 'Journey'; Description = 'Visit 50 sections in a single book.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'no_quarter'; Name = 'No Quarter'; Category = 'Journey'; Description = 'Win 5 combats in a single book.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'sun_sword'; Name = 'Sun-sword'; Category = 'Journey'; Description = 'Claim the Sommerswerd.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'fully_armed'; Name = 'Fully Armed'; Category = 'Journey'; Description = 'Carry two weapons and a Shield at the same time.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'relic_hunter'; Name = 'Relic Hunter'; Category = 'Journey'; Description = 'Carry five Special Items at the same time.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'book_one_complete'; Name = 'Book One Complete'; Category = 'Journey'; Description = 'Complete Book 1.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'book_two_complete'; Name = 'Book Two Complete'; Category = 'Journey'; Description = 'Complete Book 2.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'grave_bane'; Name = 'Grave-Bane'; Category = 'Combat'; Description = 'Defeat an undead enemy with the Sommerswerd.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'true_path'; Name = 'True Path'; Category = 'Legend'; Description = 'Complete a book without using rewind.'; Backfill = $false },
-        [pscustomobject]@{ Id = 'unbroken'; Name = 'Unbroken'; Category = 'Legend'; Description = 'Complete a book without dying.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'wolf_of_sommerlund'; Name = 'Wolf of Sommerlund'; Category = 'Legend'; Description = 'Complete a book without a combat defeat.'; Backfill = $true },
-        [pscustomobject]@{ Id = 'iron_wolf'; Name = 'Iron Wolf'; Category = 'Legend'; Description = 'Complete a book with no deaths, no rewinds, and no manual recovery shortcuts.'; Backfill = $false }
+        (New-LWAchievementDefinition -Id 'first_blood' -Name 'First Blood' -Category 'Combat' -Description 'Win your first combat.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'swift_blade' -Name 'Swift Blade' -Category 'Combat' -Description 'Win a fight in a single round.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'untouchable' -Name 'Untouchable' -Category 'Combat' -Description 'Win a fight without losing any Endurance.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'against_the_odds' -Name 'Against the Odds' -Category 'Combat' -Description 'Win a fight at combat ratio 0 or lower.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'mind_over_matter' -Name 'Mind Over Matter' -Category 'Combat' -Description 'Win a fight using Mindblast.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'giant_slayer' -Name 'Giant-Slayer' -Category 'Combat' -Description 'Defeat an enemy with Combat Skill 18 or higher.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'monster_hunter' -Name 'Monster-Hunter' -Category 'Combat' -Description 'Defeat an enemy with Endurance 30 or higher.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'back_from_the_brink' -Name 'Back From the Brink' -Category 'Combat' -Description 'Win a fight with only 1 Endurance remaining.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'kai_veteran' -Name 'Kai Veteran' -Category 'Combat' -Description 'Win 10 combats in a single run.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'weapon_master' -Name 'Weapon Master' -Category 'Combat' -Description 'Win 10 combats with the same weapon.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'seasoned_fighter' -Name 'Seasoned Fighter' -Category 'Combat' -Description 'Fight 25 total rounds in a single run.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'endurance_duelist' -Name 'Endurance Duelist' -Category 'Combat' -Description 'Survive a fight lasting 5 or more rounds.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'easy_pickings' -Name 'Easy Pickings' -Category 'Combat' -Description 'Win a fight at combat ratio 15 or higher.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'trail_survivor' -Name 'Trail Survivor' -Category 'Survival' -Description 'Eat your first meal.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'hunters_instinct' -Name 'Hunter''s Instinct' -Category 'Survival' -Description 'Have Hunting cover 5 meals.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'herbal_relief' -Name 'Herbal Relief' -Category 'Survival' -Description 'Use your first Laumspur potion.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'second_wind' -Name 'Second Wind' -Category 'Survival' -Description 'Restore 10 Endurance through Healing.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'loaded_purse' -Name 'Loaded Purse' -Category 'Survival' -Description 'Reach 50 Gold Crowns.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'hard_lessons' -Name 'Hard Lessons' -Category 'Survival' -Description 'Suffer your first starvation penalty.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'still_standing' -Name 'Still Standing' -Category 'Survival' -Description 'Survive 3 deaths in a single run.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'deep_draught' -Name 'Deep Draught' -Category 'Survival' -Description 'Use a dose of Concentrated Laumspur.' -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'pathfinder' -Name 'Pathfinder' -Category 'Journey' -Description 'Visit 25 sections in a single book.' -Backfill:$true -ModePool 'Exploration'),
+        (New-LWAchievementDefinition -Id 'long_road' -Name 'Long Road' -Category 'Journey' -Description 'Visit 50 sections in a single book.' -Backfill:$true -ModePool 'Exploration'),
+        (New-LWAchievementDefinition -Id 'no_quarter' -Name 'No Quarter' -Category 'Journey' -Description 'Win 5 combats in a single book.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'sun_sword' -Name 'Sun-sword' -Category 'Journey' -Description 'Claim the Sommerswerd.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'fully_armed' -Name 'Fully Armed' -Category 'Journey' -Description 'Carry two weapons and a Shield at the same time.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'relic_hunter' -Name 'Relic Hunter' -Category 'Journey' -Description 'Carry five Special Items at the same time.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'book_one_complete' -Name 'Book One Complete' -Category 'Journey' -Description 'Complete Book 1.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'book_two_complete' -Name 'Book Two Complete' -Category 'Journey' -Description 'Complete Book 2.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'grave_bane' -Name 'Grave-Bane' -Category 'Combat' -Description 'Defeat an undead enemy with the Sommerswerd.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'true_path' -Name 'True Path' -Category 'Legend' -Description 'Complete a book without using rewind.' -ModePool 'Exploration'),
+        (New-LWAchievementDefinition -Id 'unbroken' -Name 'Unbroken' -Category 'Legend' -Description 'Complete a book without dying.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'wolf_of_sommerlund' -Name 'Wolf of Sommerlund' -Category 'Legend' -Description 'Complete a book without a combat defeat.' -Backfill:$true -ModePool 'Combat'),
+        (New-LWAchievementDefinition -Id 'iron_wolf' -Name 'Iron Wolf' -Category 'Legend' -Description 'Complete a book with no deaths, no rewinds, and no manual recovery shortcuts.' -ModePool 'Challenge' -RequiredDifficulty @('Hard', 'Veteran')),
+        (New-LWAchievementDefinition -Id 'gentle_path' -Name 'A Gentle Path' -Category 'Story' -Description 'Complete a book in Story mode.' -ModePool 'Story' -RequiredDifficulty @('Story')),
+        (New-LWAchievementDefinition -Id 'all_too_easy' -Name 'All Too Easy' -Category 'Story' -Description 'Win a combat in Story mode.' -ModePool 'Story' -RequiredDifficulty @('Story')),
+        (New-LWAchievementDefinition -Id 'bedtime_tale' -Name 'Bedtime Tale' -Category 'Story' -Description 'Finish Book 1 in Story mode.' -ModePool 'Story' -RequiredDifficulty @('Story')),
+        (New-LWAchievementDefinition -Id 'hard_road' -Name 'Hard Road' -Category 'Legend' -Description 'Complete a book on Hard.' -ModePool 'Challenge' -RequiredDifficulty @('Hard')),
+        (New-LWAchievementDefinition -Id 'lean_healing' -Name 'Lean Healing' -Category 'Legend' -Description 'Complete a Hard book after pushing Healing to its 10 END cap.' -ModePool 'Challenge' -RequiredDifficulty @('Hard')),
+        (New-LWAchievementDefinition -Id 'veteran_of_sommerlund' -Name 'Veteran of Sommerlund' -Category 'Legend' -Description 'Complete a book on Veteran.' -ModePool 'Challenge' -RequiredDifficulty @('Veteran')),
+        (New-LWAchievementDefinition -Id 'by_the_text' -Name 'By the Text' -Category 'Legend' -Description 'Complete a Veteran book without ever using unauthorized Sommerswerd power.' -ModePool 'Challenge' -RequiredDifficulty @('Veteran')),
+        (New-LWAchievementDefinition -Id 'only_one_life' -Name 'Only One Life' -Category 'Legend' -Description 'Complete a book with Permadeath enabled.' -ModePool 'Challenge' -RequiresPermadeath:$true),
+        (New-LWAchievementDefinition -Id 'mortal_wolf' -Name 'Mortal Wolf' -Category 'Legend' -Description 'Complete a Hard or Veteran book with Permadeath enabled.' -ModePool 'Challenge' -RequiredDifficulty @('Hard', 'Veteran') -RequiresPermadeath:$true)
     )
 }
 
@@ -1278,13 +1699,40 @@ function Register-LWDeath {
     $script:GameState.DeathState.Section = $entry.Section
     $script:GameState.DeathState.RecordedOn = $entry.RecordedOn
     $script:GameState.DeathHistory = @($script:GameState.DeathHistory) + @($entry)
+    if ((Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and $null -ne $script:GameState.Run) {
+        $script:GameState.Run.Status = 'Failed'
+        $script:GameState.Run.CompletedOn = $entry.RecordedOn
+    }
     Register-LWDeathStat -Type $entry.Type
     [void](Sync-LWAchievements -Context 'death' -Data $entry)
+
+    if (Test-LWPermadeathEnabled) {
+        $path = if ((Test-LWPropertyExists -Object $script:GameState.Settings -Name 'SavePath')) { [string]$script:GameState.Settings.SavePath } else { $null }
+        if (-not [string]::IsNullOrWhiteSpace($path) -and (Test-Path -LiteralPath $path)) {
+            try {
+                Remove-Item -LiteralPath $path -Force
+                Write-LWError "Permadeath is active. Deleted save file: $path"
+            }
+            catch {
+                Write-LWError "Permadeath is active, but the save file could not be deleted: $path"
+            }
+        }
+        else {
+            Write-LWError 'Permadeath is active. This run cannot be resumed from a save.'
+        }
+
+        $script:GameState.Settings.AutoSave = $false
+        $script:GameState.Settings.SavePath = $null
+    }
 
     return $entry
 }
 
 function Get-LWAvailableRewindCount {
+    if (Test-LWPermadeathEnabled) {
+        return 0
+    }
+
     if (-not (Test-LWHasState) -or -not (Test-LWPropertyExists -Object $script:GameState -Name 'SectionCheckpoints') -or $null -eq $script:GameState.SectionCheckpoints) {
         return 0
     }
@@ -1393,6 +1841,10 @@ function Invoke-LWRewind {
     }
     if (-not (Test-LWDeathActive)) {
         Write-LWWarn 'rewind is only available after a death.'
+        return
+    }
+    if (Test-LWPermadeathEnabled) {
+        Write-LWWarn 'Permadeath disables rewind for this run.'
         return
     }
 
@@ -1990,11 +2442,12 @@ function Get-LWStateSommerswerdCombatSkillBonus {
         return 0
     }
 
+    $baseBonus = 8
     if (Test-LWStateHasSommerswerdWeaponskill -State $State) {
-        return 10
+        $baseBonus = 10
     }
 
-    return 8
+    return (Get-LWModeAdjustedSommerswerdBonus -BaseBonus $baseBonus -State $State)
 }
 
 function Get-LWStateSommerswerdFallbackWeaponskillBonus {
@@ -2205,9 +2658,11 @@ function New-LWDefaultState {
         Combat            = (New-LWCombatState)
         History           = @()
         BookHistory       = @()
+        RunHistory        = @()
         SectionCheckpoints = @()
         DeathState        = (New-LWDeathState)
         DeathHistory      = @()
+        Run              = (New-LWRunState)
         CurrentBookStats  = (New-LWBookStats -BookNumber 1 -StartSection 1)
         Achievements      = (New-LWAchievementState)
         EquipmentBonuses  = [pscustomobject]@{
@@ -2284,6 +2739,8 @@ function Normalize-LWState {
 
     Ensure-LWDeathState -State $State
     Ensure-LWAchievementState -State $State
+    Ensure-LWRunState -State $State
+    Ensure-LWRunHistory -State $State
 
     if (-not (Test-LWPropertyExists -Object $State -Name 'SectionHealingResolved')) {
         $State | Add-Member -NotePropertyName SectionHealingResolved -NotePropertyValue $false
@@ -2387,6 +2844,7 @@ function Normalize-LWState {
     Normalize-LWCombatHistoryMetadata -State $State
     Ensure-LWEquipmentBonusState -State $State
     Sync-LWStateEquipmentBonuses -State $State
+    Sync-LWRunIntegrityState -State $State
 
     if (@($State.SectionCheckpoints).Count -eq 0 -and $null -ne $currentSection -and [int]$currentSection -ge 1 -and -not [bool]$State.DeathState.Active) {
         $seedCheckpoint = New-LWSectionCheckpoint -State $State
@@ -2623,6 +3081,144 @@ function Register-LWHealingRestore {
     [void](Sync-LWAchievements -Context 'healing')
 }
 
+function Get-LWModeAchievementPools {
+    param([object]$State = $script:GameState)
+
+    $difficulty = Get-LWCurrentDifficulty -State $State
+    switch ($difficulty) {
+        'Story' { return @('Universal', 'Story') }
+        'Easy' { return @('Universal') }
+        'Hard' { return @('Universal', 'Combat', 'Exploration', 'Challenge') }
+        'Veteran' { return @('Universal', 'Combat', 'Exploration', 'Challenge') }
+        default { return @('Universal', 'Combat', 'Exploration') }
+    }
+}
+
+function Get-LWModeAchievementPoolLabel {
+    param([object]$State = $script:GameState)
+
+    return ((Get-LWModeAchievementPools -State $State) -join ' + ')
+}
+
+function Resolve-LWGameplayEnduranceLoss {
+    param(
+        [int]$Loss,
+        [string]$Source = 'damage',
+        [object]$State = $script:GameState
+    )
+
+    $requestedLoss = [Math]::Max(0, [int]$Loss)
+    if ($requestedLoss -le 0) {
+        return [pscustomobject]@{
+            RequestedLoss = 0
+            AppliedLoss   = 0
+            PreventedLoss = 0
+            Note          = $null
+        }
+    }
+
+    $difficulty = Get-LWCurrentDifficulty -State $State
+    switch ($difficulty) {
+        'Story' {
+            return [pscustomobject]@{
+                RequestedLoss = $requestedLoss
+                AppliedLoss   = 0
+                PreventedLoss = $requestedLoss
+                Note          = 'Story mode prevents END loss from normal gameplay damage.'
+            }
+        }
+        'Easy' {
+            $appliedLoss = [int][Math]::Ceiling($requestedLoss / 2.0)
+            $prevented = $requestedLoss - $appliedLoss
+            return [pscustomobject]@{
+                RequestedLoss = $requestedLoss
+                AppliedLoss   = $appliedLoss
+                PreventedLoss = $prevented
+                Note          = $(if ($prevented -gt 0) { "Easy mode halves END loss: $appliedLoss instead of $requestedLoss." } else { $null })
+            }
+        }
+        default {
+            return [pscustomobject]@{
+                RequestedLoss = $requestedLoss
+                AppliedLoss   = $requestedLoss
+                PreventedLoss = 0
+                Note          = $null
+            }
+        }
+    }
+}
+
+function Get-LWHealingRestorationCap {
+    param([object]$State = $script:GameState)
+
+    if (@('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty -State $State)) {
+        return 10
+    }
+
+    return $null
+}
+
+function Get-LWRemainingHealingRestoration {
+    param([object]$State = $script:GameState)
+
+    $cap = Get-LWHealingRestorationCap -State $State
+    if ($null -eq $cap) {
+        return $null
+    }
+
+    $stats = Ensure-LWCurrentBookStats
+    $used = if ($null -ne $stats -and (Test-LWPropertyExists -Object $stats -Name 'HealingEnduranceRestored')) { [int]$stats.HealingEnduranceRestored } else { 0 }
+    return [Math]::Max(0, ([int]$cap - $used))
+}
+
+function Resolve-LWHealingRestoreAmount {
+    param(
+        [int]$RequestedAmount,
+        [object]$State = $script:GameState
+    )
+
+    $requested = [Math]::Max(0, [int]$RequestedAmount)
+    $remaining = Get-LWRemainingHealingRestoration -State $State
+    if ($null -eq $remaining) {
+        return [pscustomobject]@{
+            RequestedAmount = $requested
+            AppliedAmount   = $requested
+            Note            = $null
+        }
+    }
+
+    $applied = [Math]::Min($requested, [int]$remaining)
+    $note = $null
+    if ($applied -lt $requested) {
+        if ($remaining -le 0) {
+            $note = 'Healing is capped at 10 END restored per book in this mode.'
+        }
+        else {
+            $note = "Healing is capped in this mode: $applied END can be restored now ($remaining remaining this book)."
+        }
+    }
+
+    return [pscustomobject]@{
+        RequestedAmount = $requested
+        AppliedAmount   = $applied
+        Note            = $note
+    }
+}
+
+function Get-LWModeAdjustedSommerswerdBonus {
+    param(
+        [int]$BaseBonus,
+        [object]$State = $script:GameState
+    )
+
+    $normalized = [Math]::Max(0, [int]$BaseBonus)
+    if (@('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty -State $State)) {
+        return [int][Math]::Floor($normalized / 2)
+    }
+
+    return $normalized
+}
+
 function Register-LWCombatStarted {
     $stats = Ensure-LWCurrentBookStats
     if ($null -eq $stats) {
@@ -2724,6 +3320,9 @@ function New-LWBookHistoryEntry {
     return [pscustomobject]@{
         BookNumber                    = $bookNumber
         BookTitle                     = [string](Get-LWBookTitle -BookNumber $bookNumber)
+        Difficulty                    = Get-LWCurrentDifficulty
+        Permadeath                    = [bool](Test-LWPermadeathEnabled)
+        RunIntegrityState             = [string]$script:GameState.Run.IntegrityState
         StartSection                  = $Stats.StartSection
         LastSection                   = $Stats.LastSection
         SuccessfulPathSections        = (Get-LWBookPathSectionCount -BookNumber $bookNumber)
@@ -3703,13 +4302,19 @@ function Get-LWCampaignSummary {
         CharacterName                     = [string]$script:GameState.Character.Name
         CurrentBookLabel                  = Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber) -IncludePrefix
         KaiRankLabel                      = Format-LWKaiRankLabel -DisciplineCount @($script:GameState.Character.Disciplines).Count
+        Difficulty                        = Get-LWCurrentDifficulty
+        PermadeathEnabled                 = [bool](Test-LWPermadeathEnabled)
+        RunIntegrityState                 = [string]$script:GameState.Run.IntegrityState
+        AchievementPoolLabel              = Get-LWModeAchievementPoolLabel
         CurrentSection                    = [int]$script:GameState.CurrentSection
         RunStatus                         = Get-LWCampaignRunStatus
         BooksCompletedCount               = @($script:GameState.Character.CompletedBooks).Count
         CompletedBooksLabel               = $(if ($completedBooks.Count -gt 0) { $completedBooks -join '; ' } else { '(none)' })
         BooksTrackedCount                 = $bookEntries.Count
-        AchievementsUnlocked              = Get-LWAchievementUnlockedCount
+        AchievementsUnlocked              = Get-LWAchievementEligibleUnlockedCount
         AchievementsAvailable             = Get-LWAchievementAvailableCount
+        ProfileAchievementsUnlocked       = Get-LWAchievementUnlockedCount
+        ProfileAchievementsAvailable      = @((Get-LWAchievementDefinitions)).Count
         ActiveCombat                      = [bool]$script:GameState.Combat.Active
         DeathActive                       = [bool](Test-LWDeathActive)
         AutoSaveEnabled                   = [bool]$script:GameState.Settings.AutoSave
@@ -3793,11 +4398,16 @@ function Show-LWCampaignOverview {
     Write-LWKeyValue -Label 'Run Status' -Value $Summary.RunStatus -ValueColor $(if ([string]$Summary.RunStatus -eq 'Fallen') { 'Red' } elseif ([string]$Summary.RunStatus -eq 'In Combat') { 'Yellow' } else { 'Green' })
     Write-LWKeyValue -Label 'Run Style' -Value $Summary.RunStyle -ValueColor 'Cyan'
     Write-LWKeyValue -Label 'Current Book' -Value $Summary.CurrentBookLabel -ValueColor 'White'
+    Write-LWKeyValue -Label 'Difficulty' -Value $Summary.Difficulty -ValueColor (Get-LWDifficultyColor -Difficulty ([string]$Summary.Difficulty))
+    Write-LWKeyValue -Label 'Permadeath' -Value $(if ($Summary.PermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if ($Summary.PermadeathEnabled) { 'Red' } else { 'Gray' })
+    Write-LWKeyValue -Label 'Run Integrity' -Value $Summary.RunIntegrityState -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$Summary.RunIntegrityState))
+    Write-LWKeyValue -Label 'Achievement Pool' -Value $Summary.AchievementPoolLabel -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Kai Rank' -Value $Summary.KaiRankLabel -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Current Section' -Value ([string]$Summary.CurrentSection) -ValueColor 'White'
     Write-LWKeyValue -Label 'Completed Books' -Value $Summary.CompletedBooksLabel -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Books Complete' -Value ([string]$Summary.BooksCompletedCount) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -ValueColor 'Magenta'
+    Write-LWKeyValue -Label 'Profile Total' -Value ("{0}/{1}" -f $Summary.ProfileAchievementsUnlocked, $Summary.ProfileAchievementsAvailable) -ValueColor 'DarkMagenta'
     Write-LWKeyValue -Label 'Winning Path' -Value ([string]$Summary.TotalSuccessfulPathSections) -ValueColor 'White'
     Write-LWKeyValue -Label 'Sections Visited' -Value ([string]$Summary.TotalSectionsVisited) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Fights' -Value ([string]$Summary.TotalCombatCount) -ValueColor 'Gray'
@@ -3905,6 +4515,7 @@ function Show-LWCampaignMilestones {
     Write-LWPanelHeader -Title 'Campaign Milestones' -AccentColor 'Magenta'
     Write-LWKeyValue -Label 'Books Completed' -Value ([string]$Summary.BooksCompletedCount) -ValueColor 'Green'
     Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -ValueColor 'Magenta'
+    Write-LWKeyValue -Label 'Profile Total' -Value ("{0}/{1}" -f $Summary.ProfileAchievementsUnlocked, $Summary.ProfileAchievementsAvailable) -ValueColor 'DarkMagenta'
     Write-LWKeyValue -Label 'Run Style' -Value $Summary.RunStyle -ValueColor 'Cyan'
     Write-LWKeyValue -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
     Write-LWKeyValue -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
@@ -3964,6 +4575,100 @@ function Get-LWAchievementDefinitionById {
     }
 
     return $null
+}
+
+function Test-LWAchievementAvailableInCurrentMode {
+    param(
+        [Parameter(Mandatory = $true)][object]$Definition,
+        [object]$State = $script:GameState
+    )
+
+    if ($null -eq $State) {
+        return $true
+    }
+
+    $allowedPools = @(Get-LWModeAchievementPools -State $State)
+    if ($allowedPools -notcontains [string]$Definition.ModePool) {
+        return $false
+    }
+
+    $requiredDifficulty = @()
+    if ((Test-LWPropertyExists -Object $Definition -Name 'RequiredDifficulty') -and $null -ne $Definition.RequiredDifficulty) {
+        $requiredDifficulty = @($Definition.RequiredDifficulty | ForEach-Object { Get-LWNormalizedDifficultyName -Difficulty ([string]$_) })
+    }
+    if ($requiredDifficulty.Count -gt 0 -and ($requiredDifficulty -notcontains (Get-LWCurrentDifficulty -State $State))) {
+        return $false
+    }
+
+    if ((Test-LWPropertyExists -Object $Definition -Name 'RequiresPermadeath') -and [bool]$Definition.RequiresPermadeath -and -not (Test-LWPermadeathEnabled -State $State)) {
+        return $false
+    }
+
+    if ([string]$Definition.ModePool -eq 'Challenge' -and (Test-LWRunTampered -State $State)) {
+        return $false
+    }
+
+    return $true
+}
+
+function Get-LWAchievementAvailabilityReason {
+    param(
+        [Parameter(Mandatory = $true)][object]$Definition,
+        [object]$State = $script:GameState
+    )
+
+    if ($null -eq $State) {
+        return ''
+    }
+
+    $allowedPools = @(Get-LWModeAchievementPools -State $State)
+    if ($allowedPools -notcontains [string]$Definition.ModePool) {
+        return ("disabled by {0} mode" -f (Get-LWCurrentDifficulty -State $State))
+    }
+
+    $requiredDifficulty = @()
+    if ((Test-LWPropertyExists -Object $Definition -Name 'RequiredDifficulty') -and $null -ne $Definition.RequiredDifficulty) {
+        $requiredDifficulty = @($Definition.RequiredDifficulty | ForEach-Object { Get-LWNormalizedDifficultyName -Difficulty ([string]$_) })
+    }
+    if ($requiredDifficulty.Count -gt 0 -and ($requiredDifficulty -notcontains (Get-LWCurrentDifficulty -State $State))) {
+        return ("requires {0}" -f ($requiredDifficulty -join ' or '))
+    }
+
+    if ((Test-LWPropertyExists -Object $Definition -Name 'RequiresPermadeath') -and [bool]$Definition.RequiresPermadeath -and -not (Test-LWPermadeathEnabled -State $State)) {
+        return 'requires Permadeath'
+    }
+
+    if ([string]$Definition.ModePool -eq 'Challenge' -and (Test-LWRunTampered -State $State)) {
+        return 'disabled by tampered run'
+    }
+
+    return ''
+}
+
+function Get-LWAchievementEligibleCount {
+    if (-not (Test-LWHasState)) {
+        return 0
+    }
+
+    return @((Get-LWAchievementDefinitions) | Where-Object { Test-LWAchievementAvailableInCurrentMode -Definition $_ }).Count
+}
+
+function Get-LWAchievementEligibleUnlockedCount {
+    if (-not (Test-LWHasState)) {
+        return 0
+    }
+
+    $count = 0
+    foreach ($definition in @(Get-LWAchievementDefinitions)) {
+        if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
+            continue
+        }
+        if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
+            $count++
+        }
+    }
+
+    return $count
 }
 
 function Get-LWRunCombatEntries {
@@ -4195,6 +4900,15 @@ function Test-LWAchievementSatisfied {
         'unbroken' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 }).Count -ge 1) }
         'wolf_of_sommerlund' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Defeats') -and [int]$_.Defeats -eq 0 }).Count -ge 1) }
         'iron_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 -and (Test-LWPropertyExists -Object $_ -Name 'RewindsUsed') -and [int]$_.RewindsUsed -eq 0 -and (Test-LWPropertyExists -Object $_ -Name 'ManualRecoveryShortcuts') -and [int]$_.ManualRecoveryShortcuts -eq 0 }).Count -ge 1) }
+        'gentle_path' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Story' }).Count -ge 1) }
+        'all_too_easy' { return ((Get-LWCurrentDifficulty) -eq 'Story' -and $runVictories.Count -ge 1) }
+        'bedtime_tale' { return (@($completedBookSummaries | Where-Object { [int]$_.BookNumber -eq 1 -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Story' }).Count -ge 1) }
+        'hard_road' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' }).Count -ge 1) }
+        'lean_healing' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' -and (Test-LWPropertyExists -Object $_ -Name 'HealingEnduranceRestored') -and [int]$_.HealingEnduranceRestored -ge 10 }).Count -ge 1) }
+        'veteran_of_sommerlund' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
+        'by_the_text' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
+        'only_one_life' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath }).Count -ge 1) }
+        'mortal_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and @('Hard', 'Veteran') -contains [string]$_.Difficulty }).Count -ge 1) }
         default { return $false }
     }
 }
@@ -4230,6 +4944,15 @@ function Get-LWAchievementProgressText {
         'grave_bane' { return ("{0}/1 undead Sommerswerd wins" -f (Get-LWSommerswerdUndeadVictoryCount)) }
         'true_path' { return ("current book rewinds: {0}" -f $(if ($null -ne $currentSummary) { [int]$currentSummary.RewindsUsed } else { 0 })) }
         'iron_wolf' { return ("current book deaths {0}, rewinds {1}, shortcuts {2}" -f $(if ($null -ne $currentSummary -and (Test-LWPropertyExists -Object $currentSummary -Name 'DeathCount')) { [int]$currentSummary.DeathCount } else { 0 }), $(if ($null -ne $currentSummary) { [int]$currentSummary.RewindsUsed } else { 0 }), $(if ($null -ne $currentSummary) { [int]$currentSummary.ManualRecoveryShortcuts } else { 0 })) }
+        'gentle_path' { return 'complete any book in Story mode' }
+        'all_too_easy' { return ("Story mode victories: {0}" -f $(if ((Get-LWCurrentDifficulty) -eq 'Story') { $runVictories.Count } else { 0 })) }
+        'bedtime_tale' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 1) { 'Book 1 complete' } else { 'complete Book 1 in Story mode' }) }
+        'hard_road' { return 'complete any book on Hard' }
+        'lean_healing' { return ("current book Healing restored: {0}/10" -f $(if ($null -ne $currentSummary) { [int]$currentSummary.HealingEnduranceRestored } else { 0 })) }
+        'veteran_of_sommerlund' { return 'complete any book on Veteran' }
+        'by_the_text' { return 'complete any book on Veteran' }
+        'only_one_life' { return $(if (Test-LWPermadeathEnabled) { 'Permadeath active for this run' } else { 'start a Permadeath run' }) }
+        'mortal_wolf' { return $(if ((Test-LWPermadeathEnabled) -and @('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty)) { 'eligible run active' } else { 'requires Hard/Veteran + Permadeath' }) }
         default { return '' }
     }
 }
@@ -4258,6 +4981,9 @@ function Sync-LWAchievements {
         if ([string]$Context -eq 'load' -and -not [bool]$definition.Backfill) {
             continue
         }
+        if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
+            continue
+        }
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
             continue
         }
@@ -4282,7 +5008,11 @@ function Get-LWAchievementUnlockedCount {
 }
 
 function Get-LWAchievementAvailableCount {
-    return @(Get-LWAchievementDefinitions).Count
+    if (-not (Test-LWHasState)) {
+        return @(Get-LWAchievementDefinitions).Count
+    }
+
+    return Get-LWAchievementEligibleCount
 }
 
 function Get-LWAchievementRecentUnlocks {
@@ -4303,20 +5033,50 @@ function Get-LWAchievementRecentUnlocks {
 
 function Show-LWAchievementOverview {
     $definitions = @(Get-LWAchievementDefinitions)
-    $unlockedCount = Get-LWAchievementUnlockedCount
-    $availableCount = Get-LWAchievementAvailableCount
+    $profileUnlockedCount = Get-LWAchievementUnlockedCount
+    $profileTotalCount = @($definitions).Count
+    $eligibleUnlockedCount = Get-LWAchievementEligibleUnlockedCount
+    $eligibleCount = Get-LWAchievementEligibleCount
     $plannedCount = @(Get-LWPhaseTwoAchievementPlans).Count
     $recent = @(Get-LWAchievementRecentUnlocks -Count 5)
+    $poolOrder = @('Universal', 'Story', 'Combat', 'Exploration', 'Challenge')
 
     Write-LWPanelHeader -Title 'Achievements' -AccentColor 'Magenta'
-    Write-LWKeyValue -Label 'Unlocked' -Value ("{0}/{1}" -f $unlockedCount, $availableCount) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Eligible This Run' -Value ("{0}/{1}" -f $eligibleUnlockedCount, $eligibleCount) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Profile Total' -Value ("{0}/{1}" -f $profileUnlockedCount, $profileTotalCount) -ValueColor 'Magenta'
+    Write-LWKeyValue -Label 'Active Pool' -Value (Get-LWModeAchievementPoolLabel) -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Phase Two Plans' -Value $plannedCount -ValueColor 'DarkMagenta'
 
-    $categories = @('Combat', 'Survival', 'Journey', 'Legend')
-    foreach ($category in $categories) {
-        $categoryTotal = @($definitions | Where-Object { [string]$_.Category -eq $category }).Count
-        $categoryUnlocked = @($script:GameState.Achievements.Unlocked | Where-Object { [string]$_.Category -eq $category }).Count
-        Write-LWKeyValue -Label $category -Value ("{0}/{1}" -f $categoryUnlocked, $categoryTotal) -ValueColor 'Gray'
+    foreach ($pool in $poolOrder) {
+        $poolTotal = @($definitions | Where-Object { [string]$_.ModePool -eq $pool }).Count
+        if ($poolTotal -le 0) {
+            continue
+        }
+
+        $poolEligible = @($definitions | Where-Object {
+                [string]$_.ModePool -eq $pool -and (Test-LWAchievementAvailableInCurrentMode -Definition $_)
+            }).Count
+        $poolUnlocked = 0
+        foreach ($definition in @($definitions | Where-Object {
+                    [string]$_.ModePool -eq $pool -and (Test-LWAchievementAvailableInCurrentMode -Definition $_)
+                })) {
+            if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
+                $poolUnlocked++
+            }
+        }
+
+        $label = if ($poolEligible -gt 0) {
+            "{0} ({1}/{2})" -f $pool, $poolUnlocked, $poolEligible
+        }
+        else {
+            "{0} (disabled)" -f $pool
+        }
+        Write-LWKeyValue -Label $pool -Value $label -ValueColor 'Gray'
+    }
+
+    if (Test-LWRunTampered) {
+        Write-Host ''
+        Write-LWWarn 'Challenge achievements are disabled for this run because the run integrity check was broken.'
     }
 
     Write-LWPanelHeader -Title 'Recent Unlocks' -AccentColor 'DarkYellow'
@@ -4349,22 +5109,42 @@ function Show-LWAchievementUnlockedList {
 function Show-LWAchievementLockedList {
     Write-LWPanelHeader -Title 'Locked Achievements' -AccentColor 'DarkYellow'
     $locked = @()
+    $disabled = @()
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
         if (-not (Test-LWAchievementUnlocked -Id ([string]$definition.Id))) {
-            $locked += $definition
+            if (Test-LWAchievementAvailableInCurrentMode -Definition $definition) {
+                $locked += $definition
+            }
+            else {
+                $disabled += $definition
+            }
         }
     }
 
     if ($locked.Count -eq 0) {
-        Write-LWSubtle '  (all unlocked)'
-        return
+        Write-LWSubtle '  No eligible locked achievements remain for this run.'
+    }
+    else {
+        foreach ($definition in $locked) {
+            $progress = Get-LWAchievementProgressText -Definition $definition
+            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$definition.Name, [string]$definition.Description) -TextColor 'Gray' -BulletColor 'DarkYellow'
+            if (-not [string]::IsNullOrWhiteSpace($progress)) {
+                Write-LWSubtle ("      progress: {0}" -f $progress)
+            }
+        }
     }
 
-    foreach ($definition in $locked) {
-        $progress = Get-LWAchievementProgressText -Definition $definition
-        Write-LWBulletItem -Text ("{0} - {1}" -f [string]$definition.Name, [string]$definition.Description) -TextColor 'Gray' -BulletColor 'DarkYellow'
-        if (-not [string]::IsNullOrWhiteSpace($progress)) {
-            Write-LWSubtle ("      progress: {0}" -f $progress)
+    Write-LWPanelHeader -Title 'Disabled For This Run' -AccentColor 'DarkGray'
+    if ($disabled.Count -eq 0) {
+        Write-LWSubtle '  (none)'
+    }
+    else {
+        foreach ($definition in $disabled) {
+            $reason = Get-LWAchievementAvailabilityReason -Definition $definition
+            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$definition.Name, [string]$definition.Description) -TextColor 'Gray' -BulletColor 'DarkGray'
+            if (-not [string]::IsNullOrWhiteSpace($reason)) {
+                Write-LWSubtle ("      {0}" -f $reason)
+            }
         }
     }
 }
@@ -4372,8 +5152,13 @@ function Show-LWAchievementLockedList {
 function Show-LWAchievementProgressList {
     Write-LWPanelHeader -Title 'Achievement Progress' -AccentColor 'Cyan'
     $anyShown = $false
+    $disabledCount = 0
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
+            continue
+        }
+        if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
+            $disabledCount++
             continue
         }
 
@@ -4387,7 +5172,12 @@ function Show-LWAchievementProgressList {
     }
 
     if (-not $anyShown) {
-        Write-LWSubtle '  No tracked progress milestones are pending yet.'
+        Write-LWSubtle '  No tracked progress milestones are pending for the current run.'
+    }
+
+    if ($disabledCount -gt 0) {
+        Write-Host ''
+        Write-LWSubtle ("  {0} achievements are currently disabled by this run's mode settings." -f $disabledCount)
     }
 }
 
@@ -4598,6 +5388,9 @@ function Show-LWSheet {
     Write-LWKeyValue -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
     Write-LWKeyValue -Label 'Rule Set' -Value $script:GameState.RuleSet -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Book' -Value (Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber)) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
+    Write-LWKeyValue -Label 'Permadeath' -Value $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
+    Write-LWKeyValue -Label 'Run Integrity' -Value ([string]$script:GameState.Run.IntegrityState) -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState))
     Write-LWKeyValue -Label 'Kai Rank' -Value (Format-LWKaiRankLabel -DisciplineCount @($script:GameState.Character.Disciplines).Count) -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Combat Skill' -Value $combatSkillText -ValueColor 'Cyan'
     Write-LWKeyValue -Label 'Endurance' -Value $enduranceText -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
@@ -4608,7 +5401,7 @@ function Show-LWSheet {
     Write-LWKeyValue -Label 'Combat Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
     Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Current Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
-    Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f (Get-LWAchievementUnlockedCount), (Get-LWAchievementAvailableCount)) -ValueColor 'Magenta'
+    Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f (Get-LWAchievementEligibleUnlockedCount), (Get-LWAchievementAvailableCount)) -ValueColor 'Magenta'
     Show-LWDisciplines
     Show-LWInventorySummary
     Write-LWPanelHeader -Title 'Quick Notes' -AccentColor 'DarkCyan'
@@ -4627,14 +5420,20 @@ function Resolve-LWSectionExit {
     if ((Test-LWDiscipline -Name 'Healing') -and -not $script:GameState.SectionHadCombat) {
         if ($script:GameState.Character.EnduranceCurrent -lt $script:GameState.Character.EnduranceMax) {
             $before = [int]$script:GameState.Character.EnduranceCurrent
-            $script:GameState.Character.EnduranceCurrent += 1
+            $healingResolution = Resolve-LWHealingRestoreAmount -RequestedAmount 1
+            $script:GameState.Character.EnduranceCurrent += [int]$healingResolution.AppliedAmount
             if ($script:GameState.Character.EnduranceCurrent -gt $script:GameState.Character.EnduranceMax) {
                 $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
             }
             $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
             Add-LWBookEnduranceDelta -Delta $restored
-            Register-LWHealingRestore -Amount $restored
-            Write-LWInfo 'Healing restores 1 Endurance for a non-combat section.'
+            if ($restored -gt 0) {
+                Register-LWHealingRestore -Amount $restored
+                Write-LWInfo 'Healing restores 1 Endurance for a non-combat section.'
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace([string]$healingResolution.Note)) {
+                Write-LWWarn ([string]$healingResolution.Note)
+            }
         }
     }
 
@@ -5121,12 +5920,16 @@ function Use-LWMeal {
 
         Write-LWWarn 'No Meal available. Lose 3 Endurance.'
         Register-LWStarvationPenalty
+        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 3 -Source 'starvation'
         $before = [int]$script:GameState.Character.EnduranceCurrent
-        $script:GameState.Character.EnduranceCurrent -= 3
+        $script:GameState.Character.EnduranceCurrent -= [int]$lossResolution.AppliedLoss
         if ($script:GameState.Character.EnduranceCurrent -lt 0) {
             $script:GameState.Character.EnduranceCurrent = 0
         }
         Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+        if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+            Write-LWInfo ([string]$lossResolution.Note)
+        }
         Write-LWInfo "Endurance now $($script:GameState.Character.EnduranceCurrent)."
         if (Invoke-LWFatalEnduranceCheck -Cause 'Starved to death after failing to find a meal.') {
             return
@@ -5771,6 +6574,7 @@ function Resolve-LWCombatRound {
         }
     }
 
+    $playerLossResolution = Resolve-LWGameplayEnduranceLoss -Loss ([int]$PlayerLoss) -Source 'combat'
     $baseEnemyLoss = [int]$EnemyLoss
     $enemyLossApplied = $baseEnemyLoss
     $specialNote = $null
@@ -5782,9 +6586,12 @@ function Resolve-LWCombatRound {
             $messages += "Sommerswerd doubles damage against undead: enemy loses $enemyLossApplied instead of $baseEnemyLoss."
         }
     }
+    if (-not [string]::IsNullOrWhiteSpace([string]$playerLossResolution.Note)) {
+        $messages += [string]$playerLossResolution.Note
+    }
 
     $newEnemyEnd = [Math]::Max(0, ([int]$State.Combat.EnemyEnduranceCurrent - $enemyLossApplied))
-    $newPlayerEnd = [Math]::Max(0, ([int]$State.Character.EnduranceCurrent - [int]$PlayerLoss))
+    $newPlayerEnd = [Math]::Max(0, ([int]$State.Character.EnduranceCurrent - [int]$playerLossResolution.AppliedLoss))
     $outcome = 'Continue'
     if ($newPlayerEnd -le 0) {
         $outcome = 'Defeat'
@@ -5800,7 +6607,8 @@ function Resolve-LWCombatRound {
         Roll                = $Roll
         EnemyLoss           = $enemyLossApplied
         EnemyLossBase       = $baseEnemyLoss
-        PlayerLoss          = [int]$PlayerLoss
+        PlayerLoss          = [int]$playerLossResolution.AppliedLoss
+        PlayerLossBase      = [int]$PlayerLoss
         NewEnemyEnd         = $newEnemyEnd
         NewPlayerEnd        = $newPlayerEnd
         UsedCRT             = $usedCRT
@@ -5814,7 +6622,8 @@ function Resolve-LWCombatRound {
             CRTColumn  = $crtColumn
             EnemyLoss  = $enemyLossApplied
             EnemyLossBase = $baseEnemyLoss
-            PlayerLoss = [int]$PlayerLoss
+            PlayerLoss = [int]$playerLossResolution.AppliedLoss
+            PlayerLossBase = [int]$PlayerLoss
             EnemyEnd   = $newEnemyEnd
             PlayerEnd  = $newPlayerEnd
             SpecialNote = $specialNote
@@ -5889,8 +6698,18 @@ function Start-LWCombat {
 
     $equippedWeapon = Select-LWCombatWeapon -DefaultWeapon (Get-LWPreferredCombatWeapon -State $script:GameState)
     $sommerswerdSuppressed = $false
-    if (-not $useQuickDefaults -and (Test-LWWeaponIsSommerswerd -Weapon $equippedWeapon)) {
-        $sommerswerdSuppressed = Read-LWYesNo -Prompt 'Is the Sommerswerd suppressed or unable to function in this combat?' -Default $false
+    if (Test-LWWeaponIsSommerswerd -Weapon $equippedWeapon) {
+        if ((Get-LWCurrentDifficulty) -eq 'Veteran') {
+            $textAllowsSommerswerd = Read-LWYesNo -Prompt 'Does the text explicitly allow the Sommerswerd''s power in this combat?' -Default $false
+            if (-not $textAllowsSommerswerd) {
+                $sommerswerdSuppressed = $true
+                Write-LWWarn 'Veteran mode suppresses the Sommerswerd unless the text explicitly allows it.'
+            }
+        }
+
+        if (-not $sommerswerdSuppressed -and -not $useQuickDefaults) {
+            $sommerswerdSuppressed = Read-LWYesNo -Prompt 'Is the Sommerswerd suppressed or unable to function in this combat?' -Default $false
+        }
     }
 
     $useMindblast = $false
@@ -6161,6 +6980,90 @@ function Set-LWCombatMode {
     Invoke-LWMaybeAutosave
 }
 
+function Show-LWRunDifficulty {
+    if (-not (Test-LWHasState)) {
+        Set-LWScreen -Name 'modes'
+        Write-LWWarn 'Difficulty is chosen when a new run begins.'
+        return
+    }
+
+    Set-LWScreen -Name 'modes'
+    Write-LWInfo ("Current difficulty: {0}. Difficulty is locked for this run." -f (Get-LWCurrentDifficulty))
+}
+
+function Set-LWRunDifficulty {
+    param([string]$Difficulty = '')
+
+    if (-not (Test-LWHasState)) {
+        Set-LWScreen -Name 'modes'
+        Write-LWWarn 'Difficulty is chosen when a new run begins.'
+        return
+    }
+
+    $currentDifficulty = Get-LWCurrentDifficulty
+    if ([string]::IsNullOrWhiteSpace($Difficulty)) {
+        Show-LWRunDifficulty
+        return
+    }
+
+    $normalized = Get-LWNormalizedDifficultyName -Difficulty $Difficulty
+    Set-LWScreen -Name 'modes'
+    if ($normalized -eq $currentDifficulty) {
+        Write-LWInfo ("Difficulty remains {0} for this run." -f $currentDifficulty)
+        return
+    }
+
+    Write-LWWarn ("Difficulty is locked to {0} for this run. Start a newrun to choose {1}." -f $currentDifficulty, $normalized)
+}
+
+function Show-LWRunPermadeath {
+    if (-not (Test-LWHasState)) {
+        Set-LWScreen -Name 'modes'
+        Write-LWWarn 'Permadeath is chosen when a new run begins.'
+        return
+    }
+
+    Set-LWScreen -Name 'modes'
+    Write-LWInfo ("Permadeath is {0} for this run and cannot be changed now." -f $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }))
+}
+
+function Set-LWRunPermadeath {
+    param([string]$Value = '')
+
+    if (-not (Test-LWHasState)) {
+        Set-LWScreen -Name 'modes'
+        Write-LWWarn 'Permadeath is chosen when a new run begins.'
+        return
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        Show-LWRunPermadeath
+        return
+    }
+
+    $target = $Value.Trim().ToLowerInvariant()
+    $targetEnabled = @('on', 'true', 'yes', 'y', '1') -contains $target
+    $targetDisabled = @('off', 'false', 'no', 'n', '0') -contains $target
+    Set-LWScreen -Name 'modes'
+
+    if (-not $targetEnabled -and -not $targetDisabled) {
+        Write-LWWarn 'Permadeath must be on or off.'
+        return
+    }
+
+    if ((Test-LWPermadeathEnabled) -and $targetDisabled) {
+        Write-LWWarn 'Permadeath is locked on for this run and cannot be turned off.'
+        return
+    }
+
+    if (-not (Test-LWPermadeathEnabled) -and $targetEnabled) {
+        Write-LWWarn 'Permadeath can only be enabled when starting a new run.'
+        return
+    }
+
+    Write-LWInfo ("Permadeath remains {0} for this run." -f $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }))
+}
+
 function Set-LWCombatSkillBase {
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
@@ -6212,7 +7115,15 @@ function Update-LWEndurance {
 
     $current = [int]$script:GameState.Character.EnduranceCurrent
     $max = [int]$script:GameState.Character.EnduranceMax
-    $newCurrent = [Math]::Max(0, [Math]::Min(($current + [int]$Delta), $max))
+    $requestedDelta = [int]$Delta
+    $lossResolution = $null
+    $effectiveDelta = $requestedDelta
+    if ($requestedDelta -lt 0) {
+        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss ([Math]::Abs($requestedDelta)) -Source 'manualdamage'
+        $effectiveDelta = -[int]$lossResolution.AppliedLoss
+    }
+
+    $newCurrent = [Math]::Max(0, [Math]::Min(($current + $effectiveDelta), $max))
     $actualDelta = $newCurrent - $current
     $script:GameState.Character.EnduranceCurrent = $newCurrent
     Add-LWBookEnduranceDelta -Delta $actualDelta
@@ -6221,7 +7132,10 @@ function Update-LWEndurance {
     }
 
     $message = "Current Endurance changed by $(Format-LWSigned -Value $actualDelta). Now $newCurrent / $max."
-    if ($actualDelta -ne [int]$Delta) {
+    if ($null -ne $lossResolution -and -not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+        $message += " $($lossResolution.Note)"
+    }
+    if ($actualDelta -ne $requestedDelta) {
         $message += ' Adjustment was capped by 0 or max END.'
     }
 
@@ -6316,11 +7230,107 @@ function Complete-LWBook {
     Invoke-LWMaybeAutosave
 }
 
-function New-LWGame {
+function Select-LWRunConfiguration {
+    param(
+        [string]$DefaultDifficulty = 'Normal',
+        [bool]$DefaultPermadeath = $false
+    )
+
+    $definitions = @(Get-LWDifficultyDefinitions)
+    $selectedDifficulty = Get-LWNormalizedDifficultyName -Difficulty $DefaultDifficulty
+    $selectedPermadeath = [bool]$DefaultPermadeath
+
+    while ($true) {
+        $defaultIndex = 1
+        for ($i = 0; $i -lt $definitions.Count; $i++) {
+            if ([string]$definitions[$i].Name -eq $selectedDifficulty) {
+                $defaultIndex = $i + 1
+                break
+            }
+        }
+
+        Set-LWScreen -Name 'modes' -Data ([pscustomobject]@{
+                View       = 'setup'
+                Difficulty = $selectedDifficulty
+                Permadeath = $selectedPermadeath
+            })
+
+        $selection = Read-LWInt -Prompt 'Difficulty number' -Default $defaultIndex -Min 1 -Max $definitions.Count
+        $selectedDifficulty = [string]$definitions[$selection - 1].Name
+
+        if ($selectedDifficulty -eq 'Story') {
+            $selectedPermadeath = $false
+        }
+        else {
+            Set-LWScreen -Name 'modes' -Data ([pscustomobject]@{
+                    View       = 'setup'
+                    Difficulty = $selectedDifficulty
+                    Permadeath = $selectedPermadeath
+                })
+            $selectedPermadeath = Read-LWYesNo -Prompt 'Enable Permadeath for this run?' -Default $selectedPermadeath
+        }
+
+        Set-LWScreen -Name 'modes' -Data ([pscustomobject]@{
+                View       = 'confirm'
+                Difficulty = $selectedDifficulty
+                Permadeath = $selectedPermadeath
+            })
+        if (Read-LWYesNo -Prompt 'Start this run with these mode settings?' -Default $true) {
+            return [pscustomobject]@{
+                Difficulty = $selectedDifficulty
+                Permadeath = $selectedPermadeath
+            }
+        }
+    }
+}
+
+function Start-LWNewGameCore {
+    param(
+        [switch]$PreserveProfile
+    )
+
+    $preservedAchievements = $null
+    $preservedRunHistory = @()
+    $preservedSettings = $null
+    $defaultName = 'Lone Wolf'
+
+    if ($PreserveProfile -and (Test-LWHasState)) {
+        $defaultName = if ([string]::IsNullOrWhiteSpace([string]$script:GameState.Character.Name)) { 'Lone Wolf' } else { [string]$script:GameState.Character.Name }
+        $preservedAchievements = $script:GameState.Achievements
+        $preservedRunHistory = @($script:GameState.RunHistory)
+        $preservedRunHistory += @(New-LWRunArchiveEntry -State $script:GameState -Status 'Retired')
+        $preservedSettings = [pscustomobject]@{
+            CombatMode = [string]$script:GameState.Settings.CombatMode
+            SavePath   = [string]$script:GameState.Settings.SavePath
+            AutoSave   = [bool]$script:GameState.Settings.AutoSave
+            DataDir    = [string]$script:GameState.Settings.DataDir
+        }
+    }
+
+    $runConfig = Select-LWRunConfiguration -DefaultDifficulty 'Normal' -DefaultPermadeath $false
+    if ($null -eq $runConfig) {
+        return
+    }
+
     $script:GameState = (New-LWDefaultState)
+    if ($PreserveProfile -and $null -ne $preservedAchievements) {
+        $script:GameState.Achievements = $preservedAchievements
+        $script:GameState.RunHistory = @($preservedRunHistory)
+        if ($null -ne $preservedSettings) {
+            $script:GameState.Settings.CombatMode = [string]$preservedSettings.CombatMode
+            $script:GameState.Settings.SavePath = [string]$preservedSettings.SavePath
+            $script:GameState.Settings.AutoSave = [bool]$preservedSettings.AutoSave
+            $script:GameState.Settings.DataDir = [string]$preservedSettings.DataDir
+        }
+    }
+    else {
+        $script:GameState.Settings.CombatMode = (Get-LWDefaultCombatMode)
+    }
+
+    $script:GameState.Run = (New-LWRunState -Difficulty ([string]$runConfig.Difficulty) -Permadeath ([bool]$runConfig.Permadeath))
     Set-LWScreen -Name 'sheet'
 
-    $name = Read-LWText -Prompt 'Character name' -Default 'Lone Wolf'
+    $name = Read-LWText -Prompt 'Character name' -Default $defaultName
     $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1
     $startSection = Read-LWInt -Prompt 'Starting section' -Default 1 -Min 1
 
@@ -6353,20 +7363,40 @@ function New-LWGame {
     Clear-LWDeathState
     Reset-LWCurrentBookStats -BookNumber $bookNumber -StartSection $startSection
     Reset-LWSectionCheckpoints -SeedCurrentSection
+    Sync-LWRunIntegrityState -State $script:GameState
 
-    $script:GameState.Settings.CombatMode = (Get-LWDefaultCombatMode)
+    Write-LWInfo ("New {0} run created." -f [string]$script:GameState.Run.Difficulty)
+    if (Test-LWPermadeathEnabled) {
+        Write-LWWarn 'Permadeath is locked on for this run.'
+    }
 
-    Write-LWInfo 'New Kai character created.'
-
-    if (Read-LWYesNo -Prompt 'Set a default save path now?' -Default $true) {
-        Save-LWGame -PromptForPath
-        if (Read-LWYesNo -Prompt 'Enable autosave after state changes?' -Default $true) {
-            $script:GameState.Settings.AutoSave = $true
-            Write-LWInfo 'Autosave enabled.'
+    if ($PreserveProfile -and $null -ne $preservedSettings -and -not [string]::IsNullOrWhiteSpace([string]$preservedSettings.SavePath)) {
+        Save-LWGame
+    }
+    else {
+        if (Read-LWYesNo -Prompt 'Set a default save path now?' -Default $true) {
+            Save-LWGame -PromptForPath
+            if (Read-LWYesNo -Prompt 'Enable autosave after state changes?' -Default $true) {
+                $script:GameState.Settings.AutoSave = $true
+                Write-LWInfo 'Autosave enabled.'
+            }
         }
     }
 
     Set-LWScreen -Name 'sheet'
+}
+
+function New-LWGame {
+    Start-LWNewGameCore
+}
+
+function New-LWRun {
+    if ((Test-LWHasState) -and -not (Read-LWYesNo -Prompt 'Archive the current run and start a fresh one on this same profile?' -Default $true)) {
+        Write-LWWarn 'newrun cancelled.'
+        return
+    }
+
+    Start-LWNewGameCore -PreserveProfile
 }
 
 function Save-LWGame {
@@ -6376,8 +7406,13 @@ function Save-LWGame {
         Write-LWWarn 'No active character. Use new or load first.'
         return
     }
+    if ((Test-LWPermadeathEnabled) -and (Test-LWDeathActive)) {
+        Write-LWWarn 'Permadeath runs cannot be saved after death.'
+        return
+    }
 
     Sync-LWCurrentSectionCheckpoint
+    Sync-LWRunIntegrityState -State $script:GameState
 
     $path = $script:GameState.Settings.SavePath
     if ($PromptForPath -or [string]::IsNullOrWhiteSpace($path)) {
@@ -6392,7 +7427,7 @@ function Save-LWGame {
     }
 
     $script:GameState.Settings.SavePath = $path
-    $json = $script:GameState | ConvertTo-Json -Depth 10
+    $json = $script:GameState | ConvertTo-Json -Depth 20
     Set-Content -LiteralPath $path -Value $json -Encoding UTF8
     Set-LWLastUsedSavePath -Path $path
     Write-LWInfo "Saved game to $path"
@@ -6418,6 +7453,10 @@ function Load-LWGame {
     Ensure-LWCurrentSectionCheckpoint
     Set-LWLastUsedSavePath -Path $Path
     Set-LWScreen -Name (Get-LWDefaultScreen)
+    if (Test-LWRunTampered) {
+        $integrityNote = if (-not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityNote)) { [string]$script:GameState.Run.IntegrityNote } else { 'Locked run settings were changed outside the assistant.' }
+        Write-LWWarn ("Run integrity warning: {0}" -f $integrityNote)
+    }
     $backfilled = @(Sync-LWAchievements -Context 'load' -Silent)
     if ($backfilled.Count -gt 0) {
         Write-LWInfo ("Backfilled {0} achievement{1} from save history." -f $backfilled.Count, $(if ($backfilled.Count -eq 1) { '' } else { 's' }))
@@ -6623,7 +7662,11 @@ function Invoke-LWMaybeAutosave {
 function Show-LWHelp {
     Write-LWPanelHeader -Title 'Commands' -AccentColor 'Cyan'
     Write-LWKeyValue -Label 'new' -Value 'Create a new Kai character' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'newrun' -Value 'Start a fresh run on the same profile and keep achievements' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'sheet' -Value 'Show character sheet' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'modes' -Value 'Show run mode rules and locked settings' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'difficulty [name]' -Value 'Show the locked run difficulty' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'permadeath [on|off]' -Value 'Show the locked permadeath setting' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'inv' -Value 'Show inventory slots' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'disciplines' -Value 'Show disciplines' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed Kai discipline reward' -ValueColor 'Gray'
@@ -6686,6 +7729,8 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use campaign to review the whole run, or campaign books/combat/survival/milestones for focused views.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use achievements, achievements progress, or achievements planned to browse the new achievement system.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use modes to review Story, Easy, Normal, Hard, Veteran, and Permadeath before starting a run.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Difficulty is locked for the whole run, and Permadeath can only be chosen at run start.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'ManualCRT gives you the ratio and roll, then asks for losses from your own CRT.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'DataFile reads those losses from data/crt.json when the file is populated.' -TextColor 'Gray'
 }
@@ -6832,17 +7877,37 @@ function Invoke-LWCommand {
     }
 
     if (Test-LWDeathActive) {
-        $allowedWhileDead = @('rewind', 'load', 'new', 'help', 'save', 'quit', 'exit', 'stats', 'campaign', 'achievements', 'achievement')
+        $allowedWhileDead = @('rewind', 'load', 'new', 'newrun', 'help', 'save', 'quit', 'exit', 'stats', 'campaign', 'achievements', 'achievement', 'modes', 'difficulty', 'permadeath')
         if ($allowedWhileDead -notcontains $command) {
             Set-LWScreen -Name 'death'
-            Write-LWWarn 'You have fallen. Use rewind, load, new, campaign, help, or quit.'
+            Write-LWWarn 'You have fallen. Use rewind, load, newrun, modes, campaign, help, or quit.'
             return $null
         }
     }
 
     switch ($command) {
         'new'         { New-LWGame; return $null }
+        'newrun'      { New-LWRun; return $null }
         'sheet'       { Set-LWScreen -Name 'sheet'; return $null }
+        'modes'       { Set-LWScreen -Name 'modes'; return $null }
+        'difficulty'  {
+            if ($parts.Count -gt 1) {
+                Set-LWRunDifficulty -Difficulty $parts[1]
+            }
+            else {
+                Show-LWRunDifficulty
+            }
+            return $null
+        }
+        'permadeath'  {
+            if ($parts.Count -gt 1) {
+                Set-LWRunPermadeath -Value $parts[1]
+            }
+            else {
+                Show-LWRunPermadeath
+            }
+            return $null
+        }
         'inv'         { Set-LWScreen -Name 'inventory'; return $null }
         'inventory'   { Set-LWScreen -Name 'inventory'; return $null }
         'disciplines' { Set-LWScreen -Name 'disciplines'; return $null }

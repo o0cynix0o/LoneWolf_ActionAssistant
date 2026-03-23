@@ -32,6 +32,8 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Whole-run campaign review screens
 - Achievement system with current unlocks, progress, and planned phase-two ideas
 - Death tracking with death-only rewind checkpoints
+- Locked run difficulties with Story, Easy, Normal, Hard, and Veteran rules
+- Optional Permadeath runs with tamper-evident challenge tracking
 
 ## Scope
 
@@ -84,7 +86,11 @@ If you run `load` inside the app, it scans the save folder, lists saves by numbe
 
 ```text
 new
+newrun
 sheet
+modes
+difficulty [name]
+permadeath [on|off]
 disciplines
 discipline add [name]
 section [n]
@@ -170,6 +176,54 @@ fight Giak 12 10
 
 While combat is active, pressing `Enter` advances one round.
 
+## Run Modes
+
+Every run now has a locked difficulty profile. You choose it when the run begins, and it stays locked until you retire that run and start a fresh one with `newrun`.
+
+Use these commands any time:
+
+```text
+modes
+difficulty
+permadeath
+newrun
+```
+
+### Difficulties
+
+- `Story`
+  Prevents normal END loss from gameplay damage.
+  Uses universal and Story-only achievements.
+  Cannot be combined with Permadeath.
+- `Easy`
+  Halves incoming END loss.
+  Uses universal achievements only.
+- `Normal`
+  Standard rules.
+  Uses the standard universal, combat, and exploration pool.
+- `Hard`
+  Halves the Sommerswerd combat bonus.
+  Caps Healing at `10 END` restored per book.
+  Enables challenge achievements.
+- `Veteran`
+  Uses Hard rules.
+  Also requires the text to explicitly allow Sommerswerd power in each combat.
+  Enables challenge achievements.
+
+### Permadeath
+
+- Can only be enabled when starting a run
+- Cannot be turned off once chosen
+- Deletes the save file when the character dies
+- Disables rewind for that run
+- Unlocks Permadeath challenge achievements when the run stays clean
+
+### Run Integrity
+
+Locked run settings are signed inside the save. If a save is edited outside the app in a way that breaks that signature, the run is marked as tampered and challenge achievements are disabled for that run.
+
+This is meant to keep challenge clears honest. It is tamper-evident, not copy protection.
+
 ## Combat Modes
 
 ### `DataFile`
@@ -234,6 +288,19 @@ achievements progress
 achievements planned
 ```
 
+Achievement availability depends on the active run mode:
+
+- `Story`
+  Universal + Story achievements
+- `Easy`
+  Universal achievements
+- `Normal`
+  Universal + Combat + Exploration achievements
+- `Hard` / `Veteran`
+  Universal + Combat + Exploration + Challenge achievements
+- `Permadeath`
+  Adds Permadeath challenge achievements when active on a clean run
+
 ## Campaign Review
 
 Use the campaign screens when you want the whole-run picture instead of only the current book:
@@ -247,6 +314,16 @@ campaign milestones
 ```
 
 This rolls up completed-book history together with the current in-progress book so you can review the entire run so far in one place.
+
+## Replay Flow
+
+If you want to replay the series on a new difficulty while keeping your profile achievements, use:
+
+```text
+newrun
+```
+
+This archives the current run, keeps your achievement profile, and starts a fresh run with a new locked difficulty and Permadeath choice.
 
 ## Death and Rewind Flow
 
@@ -295,11 +372,13 @@ The app creates and updates runtime files during normal use:
 ## Recommended Play Flow
 
 1. Run `new` or `load`.
-2. Read the book normally.
-3. Use `section`, `note`, `add`, `drop`, `gold`, `meal`, and `potion` as needed.
-4. Use `combat start` or `fight` when combat begins.
-5. Use `save` or autosave for checkpoints.
-6. Use `complete` when you finish a book.
+2. If starting fresh, review `modes` and choose your run settings carefully.
+3. Read the book normally.
+4. Use `section`, `note`, `add`, `drop`, `gold`, `meal`, and `potion` as needed.
+5. Use `combat start` or `fight` when combat begins.
+6. Use `save` or autosave for checkpoints.
+7. Use `complete` when you finish a book.
+8. Use `newrun` when you want to start over on a new difficulty without losing your profile achievements.
 
 ## Notes
 
