@@ -176,6 +176,12 @@ fight Giak 12 10
 
 While combat is active, pressing `Enter` advances one round.
 
+During combat setup, the app can also track enemy-specific effects like:
+
+- `Mindforce`
+  Applies its extra END loss automatically each round
+  Checks `Mindshield` automatically and blocks the effect when owned
+
 ## Run Modes
 
 Every run now has a locked difficulty profile. You choose it when the run begins, and it stays locked until you retire that run and start a fresh one with `newrun`.
@@ -244,6 +250,9 @@ Some items are now handled automatically instead of needing manual stat edits.
 
 - `Shield`
   Adds `+2 Combat Skill`
+- `Bone Sword`
+  Counts as a normal weapon
+  Gives `+1 Combat Skill` in Book 3 / Kalte only
 - `Chainmail Waistcoat` / `Chainmail Wastecoat`
   Adds `+4 Endurance`
 - `Sommerswerd`

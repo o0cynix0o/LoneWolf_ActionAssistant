@@ -2309,6 +2309,10 @@ function Get-LWSommerswerdWeaponskillNames {
     return @('Short Sword', 'Sword', 'Broadsword')
 }
 
+function Get-LWBoneSwordWeaponNames {
+    return @('Bone Sword', 'Bone Sword +1(K)', 'Bone Sowrd', 'Bone Sowrd +1(K)')
+}
+
 function Get-LWHealingPotionItemNames {
     return @('Healing Potion', 'Laumspur Potion', 'Potion of Laumspur', 'Laumspur')
 }
@@ -2394,6 +2398,28 @@ function Get-LWStateShieldCombatSkillBonus {
     return 0
 }
 
+function Test-LWWeaponIsBoneSword {
+    param([string]$Weapon)
+
+    if ([string]::IsNullOrWhiteSpace($Weapon)) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBoneSwordWeaponNames) -Target $Weapon)))
+}
+
+function Test-LWStateHasBoneSword {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWBoneSwordWeaponNames) -Type 'weapon')
+}
+
+function Test-LWStateIsInKalte {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return ([int]$State.Character.BookNumber -eq 3)
+}
+
 function Test-LWWeaponIsSommerswerd {
     param([string]$Weapon)
 
@@ -2430,6 +2456,24 @@ function Get-LWStateCombatWeapons {
     }
 
     return @($choices)
+}
+
+function Get-LWStateBoneSwordCombatSkillBonus {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if (-not (Test-LWWeaponIsBoneSword -Weapon $activeWeapon)) {
+        return 0
+    }
+
+    if (Test-LWStateIsInKalte -State $State) {
+        return 1
+    }
+
+    return 0
 }
 
 function Get-LWStateSommerswerdCombatSkillBonus {
@@ -2476,6 +2520,18 @@ function Test-LWCombatSommerswerdUndeadDoubleDamageActive {
     param([Parameter(Mandatory = $true)][object]$State)
 
     return ((Test-LWCombatSommerswerdPowerActive -State $State) -and [bool]$State.Combat.EnemyIsUndead)
+}
+
+function Test-LWCombatUsesMindforce {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return [bool]$State.Combat.EnemyUsesMindforce
+}
+
+function Test-LWCombatMindforceBlockedByMindshield {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return ((Test-LWCombatUsesMindforce -State $State) -and (Test-LWStateHasDiscipline -State $State -Name 'Mindshield'))
 }
 
 function Ensure-LWEquipmentBonusState {
@@ -2619,6 +2675,7 @@ function New-LWCombatState {
         EnemyEnduranceCurrent     = 0
         EnemyEnduranceMax         = 0
         EnemyIsUndead             = $false
+        EnemyUsesMindforce        = $false
         EnemyImmuneToMindblast    = $false
         UseMindblast              = $false
         CanEvade                  = $false
@@ -2813,6 +2870,9 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyIsUndead') -or $null -eq $State.Combat.EnemyIsUndead) {
         $State.Combat | Add-Member -Force -NotePropertyName EnemyIsUndead -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyUsesMindforce') -or $null -eq $State.Combat.EnemyUsesMindforce) {
+        $State.Combat | Add-Member -Force -NotePropertyName EnemyUsesMindforce -NotePropertyValue $false
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SommerswerdSuppressed') -or $null -eq $State.Combat.SommerswerdSuppressed) {
         $State.Combat | Add-Member -Force -NotePropertyName SommerswerdSuppressed -NotePropertyValue $false
@@ -5361,6 +5421,10 @@ function Show-LWInventory {
         Write-LWSubtle '  Hostile magic absorption remains story-driven and should be resolved from the book text.'
         Write-Host ''
     }
+    if (Test-LWStateHasBoneSword -State $script:GameState) {
+        Write-LWSubtle ('  Bone Sword: +1 Combat Skill in Book 3 / Kalte, no bonus elsewhere.')
+        Write-Host ''
+    }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
     Write-LWSubtle '  Use drop <type> <slot> to remove by slot number.'
 }
@@ -5397,6 +5461,9 @@ function Show-LWSheet {
     if (Test-LWStateHasSommerswerd -State $script:GameState) {
         $sommerswerdBonus = Get-LWStateSommerswerdCombatSkillBonus -State $script:GameState
         Write-LWKeyValue -Label 'Sommerswerd' -Value ("+{0} in combat; undead x2" -f $sommerswerdBonus) -ValueColor 'DarkYellow'
+    }
+    if (Test-LWStateHasBoneSword -State $script:GameState) {
+        Write-LWKeyValue -Label 'Bone Sword' -Value $(if (Test-LWStateIsInKalte -State $script:GameState) { '+1 in Book 3 / Kalte combat' } else { 'No bonus outside Book 3 / Kalte' }) -ValueColor 'DarkYellow'
     }
     Write-LWKeyValue -Label 'Combat Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
     Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
@@ -6026,9 +6093,28 @@ function Get-LWCombatBreakdownFromState {
             }
         }
     }
+    elseif (Test-LWWeaponIsBoneSword -Weapon ([string]$State.Combat.EquippedWeapon)) {
+        $boneSwordBonus = Get-LWStateBoneSwordCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
+        if ($boneSwordBonus -gt 0) {
+            $playerCombatSkill += $boneSwordBonus
+            $notes += "Bone Sword +$boneSwordBonus (Kalte)"
+        }
+        else {
+            $notes += 'Bone Sword inactive outside Kalte'
+        }
+    }
     elseif ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and $State.Combat.EquippedWeapon -ieq $State.Character.WeaponskillWeapon) {
         $playerCombatSkill += 2
         $notes += "Weaponskill +2 ($($State.Combat.EquippedWeapon))"
+    }
+
+    if ([bool]$State.Combat.EnemyUsesMindforce) {
+        if (Test-LWCombatMindforceBlockedByMindshield -State $State) {
+            $notes += 'Mindforce blocked by Mindshield'
+        }
+        else {
+            $notes += 'Mindforce -2 END each round'
+        }
     }
 
     if ([int]$State.Combat.PlayerCombatSkillModifier -ne 0) {
@@ -6192,6 +6278,9 @@ function Get-LWCombatDisplayWeapon {
     if ([string]::IsNullOrWhiteSpace($Weapon)) {
         return 'Unarmed'
     }
+    if (Test-LWWeaponIsBoneSword -Weapon $Weapon) {
+        return 'Bone Sword'
+    }
 
     return $Weapon
 }
@@ -6317,6 +6406,7 @@ function Show-LWCombatTacticalPanel {
         [Parameter(Mandatory = $true)][string]$Weapon,
         [Parameter(Mandatory = $true)][bool]$UseMindblast,
         [Parameter(Mandatory = $true)][bool]$EnemyIsUndead,
+        [Parameter(Mandatory = $true)][string]$MindforceStatus,
         [Parameter(Mandatory = $true)][bool]$CanEvade,
         [Parameter(Mandatory = $true)][string]$Mode,
         [object[]]$Notes = @(),
@@ -6328,6 +6418,14 @@ function Show-LWCombatTacticalPanel {
     Write-LWKeyValue -Label 'Weapon' -Value $Weapon -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Mindblast' -Value $(if ($UseMindblast) { 'On' } else { 'Off' }) -ValueColor $(if ($UseMindblast) { 'Cyan' } else { 'Gray' })
     Write-LWKeyValue -Label 'Undead Enemy' -Value $(if ($EnemyIsUndead) { 'Yes' } else { 'No' }) -ValueColor $(if ($EnemyIsUndead) { 'DarkYellow' } else { 'Gray' })
+    $mindforceColor = 'Gray'
+    if ($MindforceStatus -like 'Active*') {
+        $mindforceColor = 'Red'
+    }
+    elseif ($MindforceStatus -like 'Blocked*') {
+        $mindforceColor = 'Cyan'
+    }
+    Write-LWKeyValue -Label 'Mindforce' -Value $MindforceStatus -ValueColor $mindforceColor
     if ($UsesSommerswerd) {
         $sommerswerdStatus = if ($SommerswerdSuppressed) { 'Suppressed' } elseif ($EnemyIsUndead) { 'Active (undead x2)' } else { 'Active' }
         Write-LWKeyValue -Label 'Sommerswerd' -Value $sommerswerdStatus -ValueColor $(if ($SommerswerdSuppressed) { 'Yellow' } else { 'DarkYellow' })
@@ -6361,6 +6459,8 @@ function Get-LWCurrentCombatLogEntry {
         RoundCount = @($script:GameState.Combat.Log).Count
         PlayerEnd  = $script:GameState.Character.EnduranceCurrent
         EnemyEnd   = $script:GameState.Combat.EnemyEnduranceCurrent
+        EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
+        MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
         Log        = @($script:GameState.Combat.Log)
     }
 }
@@ -6483,6 +6583,8 @@ function Show-LWCombatSummary {
     $ratio = if (Test-LWPropertyExists -Object $Summary -Name 'CombatRatio') { [int]$Summary.CombatRatio } else { 0 }
     $usingSommerswerd = (Test-LWPropertyExists -Object $Summary -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$Summary.Weapon))
     $enemyUndead = (Test-LWPropertyExists -Object $Summary -Name 'EnemyIsUndead') -and [bool]$Summary.EnemyIsUndead
+    $enemyUsesMindforce = (Test-LWPropertyExists -Object $Summary -Name 'EnemyUsesMindforce') -and [bool]$Summary.EnemyUsesMindforce
+    $mindforceBlocked = (Test-LWPropertyExists -Object $Summary -Name 'MindforceBlockedByMindshield') -and [bool]$Summary.MindforceBlockedByMindshield
     $useMindblast = (Test-LWPropertyExists -Object $Summary -Name 'Mindblast') -and [bool]$Summary.Mindblast
     $playerCombatSkill = if ((Test-LWPropertyExists -Object $Summary -Name 'PlayerCombatSkill') -and $null -ne $Summary.PlayerCombatSkill) { [int]$Summary.PlayerCombatSkill } else { 0 }
     $enemyCombatSkill = if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyCombatSkill') -and $null -ne $Summary.EnemyCombatSkill) { [int]$Summary.EnemyCombatSkill } else { 0 }
@@ -6490,12 +6592,13 @@ function Show-LWCombatSummary {
     $enemyEndMax = if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyEnduranceMax') -and $null -ne $Summary.EnemyEnduranceMax) { [int]$Summary.EnemyEnduranceMax } else { [Math]::Max([int]$Summary.EnemyEnd, 1) }
     $mode = if ((Test-LWPropertyExists -Object $Summary -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.Mode)) { [string]$Summary.Mode } else { $script:GameState.Settings.CombatMode }
     $canEvade = (Test-LWPropertyExists -Object $Summary -Name 'CanEvade') -and [bool]$Summary.CanEvade
+    $mindforceStatus = if (-not $enemyUsesMindforce) { 'Off' } elseif ($mindforceBlocked) { 'Blocked by Mindshield' } else { 'Active (-2 END/round)' }
 
     Write-LWPanelHeader -Title 'Combat Summary' -AccentColor 'DarkRed'
     Write-LWKeyValue -Label 'Enemy' -Value $Summary.EnemyName -ValueColor 'White'
     Write-LWKeyValue -Label 'Outcome' -Value $Summary.Outcome -ValueColor (Get-LWOutcomeColor -Outcome $Summary.Outcome)
     Show-LWCombatDuelPanel -Title 'Aftermath' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
-    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -CanEvade:$canEvade -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
+    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -CanEvade:$canEvade -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
     Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round Recap'
     Write-LWSubtle '  Use combat log for the full round-by-round archive.'
 }
@@ -6507,10 +6610,11 @@ function Show-LWCombatStatus {
     }
 
     $breakdown = Get-LWCombatBreakdown
+    $mindforceStatus = if (-not [bool]$script:GameState.Combat.EnemyUsesMindforce) { 'Off' } elseif (Test-LWCombatMindforceBlockedByMindshield -State $script:GameState) { 'Blocked by Mindshield' } else { 'Active (-2 END/round)' }
     Write-LWPanelHeader -Title 'Combat Status' -AccentColor 'Red'
     Write-LWKeyValue -Label 'Enemy' -Value $script:GameState.Combat.EnemyName -ValueColor 'White'
     Show-LWCombatDuelPanel -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$script:GameState.Character.EnduranceCurrent) -PlayerMax ([int]$script:GameState.Character.EnduranceMax) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
-    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -CanEvade:([bool]$script:GameState.Combat.CanEvade) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
+    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -CanEvade:([bool]$script:GameState.Combat.CanEvade) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
     Show-LWCombatRecentRounds -Rounds @($script:GameState.Combat.Log) -Count 3
     Show-LWCombatPromptHint
 }
@@ -6574,15 +6678,19 @@ function Resolve-LWCombatRound {
         }
     }
 
-    $playerLossResolution = Resolve-LWGameplayEnduranceLoss -Loss ([int]$PlayerLoss) -Source 'combat'
+    $playerLossResolution = Resolve-LWGameplayEnduranceLoss -Loss ([int]$PlayerLoss) -Source 'combat' -State $State
     $baseEnemyLoss = [int]$EnemyLoss
     $enemyLossApplied = $baseEnemyLoss
-    $specialNote = $null
+    $combatPlayerLossApplied = [int]$playerLossResolution.AppliedLoss
+    $currentPlayerEnd = [int]$State.Character.EnduranceCurrent
+    $mindforceBaseLoss = 0
+    $mindforceAppliedLoss = 0
+    $specialNotes = @()
 
     if (Test-LWCombatSommerswerdUndeadDoubleDamageActive -State $State) {
         $enemyLossApplied = [Math]::Min([int]$State.Combat.EnemyEnduranceCurrent, ($baseEnemyLoss * 2))
         if ($enemyLossApplied -gt $baseEnemyLoss) {
-            $specialNote = 'Undead x2'
+            $specialNotes += 'Undead x2'
             $messages += "Sommerswerd doubles damage against undead: enemy loses $enemyLossApplied instead of $baseEnemyLoss."
         }
     }
@@ -6590,8 +6698,33 @@ function Resolve-LWCombatRound {
         $messages += [string]$playerLossResolution.Note
     }
 
+    if (Test-LWCombatUsesMindforce -State $State) {
+        $mindforceBaseLoss = 2
+        if (Test-LWCombatMindforceBlockedByMindshield -State $State) {
+            $specialNotes += 'Mindshield'
+            $messages += 'Mindshield blocks the enemy''s Mindforce.'
+        }
+        else {
+            $mindforceResolution = Resolve-LWGameplayEnduranceLoss -Loss $mindforceBaseLoss -Source 'mindforce' -State $State
+            $remainingAfterCombat = [Math]::Max(0, ($currentPlayerEnd - $combatPlayerLossApplied))
+            $mindforceAppliedLoss = [Math]::Min($remainingAfterCombat, [int]$mindforceResolution.AppliedLoss)
+            if ($mindforceAppliedLoss -gt 0) {
+                $specialNotes += 'Mindforce'
+                $messages += "Enemy Mindforce inflicts $mindforceAppliedLoss END."
+            }
+            else {
+                $messages += 'Enemy Mindforce surges, but no END is lost.'
+            }
+            if (-not [string]::IsNullOrWhiteSpace([string]$mindforceResolution.Note)) {
+                $messages += [string]$mindforceResolution.Note
+            }
+        }
+    }
+
+    $totalPlayerLossApplied = $combatPlayerLossApplied + $mindforceAppliedLoss
+    $totalPlayerLossBase = [int]$PlayerLoss + $mindforceBaseLoss
     $newEnemyEnd = [Math]::Max(0, ([int]$State.Combat.EnemyEnduranceCurrent - $enemyLossApplied))
-    $newPlayerEnd = [Math]::Max(0, ([int]$State.Character.EnduranceCurrent - [int]$playerLossResolution.AppliedLoss))
+    $newPlayerEnd = [Math]::Max(0, ($currentPlayerEnd - $totalPlayerLossApplied))
     $outcome = 'Continue'
     if ($newPlayerEnd -le 0) {
         $outcome = 'Defeat'
@@ -6607,8 +6740,10 @@ function Resolve-LWCombatRound {
         Roll                = $Roll
         EnemyLoss           = $enemyLossApplied
         EnemyLossBase       = $baseEnemyLoss
-        PlayerLoss          = [int]$playerLossResolution.AppliedLoss
-        PlayerLossBase      = [int]$PlayerLoss
+        PlayerLoss          = $totalPlayerLossApplied
+        PlayerLossBase      = $totalPlayerLossBase
+        MindforceLoss       = $mindforceAppliedLoss
+        MindforceLossBase   = $mindforceBaseLoss
         NewEnemyEnd         = $newEnemyEnd
         NewPlayerEnd        = $newPlayerEnd
         UsedCRT             = $usedCRT
@@ -6622,11 +6757,13 @@ function Resolve-LWCombatRound {
             CRTColumn  = $crtColumn
             EnemyLoss  = $enemyLossApplied
             EnemyLossBase = $baseEnemyLoss
-            PlayerLoss = [int]$playerLossResolution.AppliedLoss
-            PlayerLossBase = [int]$PlayerLoss
+            PlayerLoss = $totalPlayerLossApplied
+            PlayerLossBase = $totalPlayerLossBase
+            MindforceLoss = $mindforceAppliedLoss
+            MindforceLossBase = $mindforceBaseLoss
             EnemyEnd   = $newEnemyEnd
             PlayerEnd  = $newPlayerEnd
-            SpecialNote = $specialNote
+            SpecialNote = $(if ($specialNotes.Count -gt 0) { $specialNotes -join ', ' } else { $null })
         }
     }
 }
@@ -6689,10 +6826,12 @@ function Start-LWCombat {
 
     $enemyImmune = $false
     $enemyUndead = $false
+    $enemyUsesMindforce = $false
     $canEvade = $false
     if (-not $useQuickDefaults) {
         $enemyImmune = Read-LWYesNo -Prompt 'Is the enemy immune to Mindblast?' -Default $false
         $enemyUndead = Read-LWYesNo -Prompt 'Is the enemy undead?' -Default $false
+        $enemyUsesMindforce = Read-LWYesNo -Prompt 'Is the enemy attacking with Mindforce each combat round?' -Default $false
         $canEvade = Read-LWYesNo -Prompt 'Can Lone Wolf evade this combat if desired?' -Default $false
     }
 
@@ -6739,6 +6878,7 @@ function Start-LWCombat {
         EnemyEnduranceCurrent     = $enemyEndurance
         EnemyEnduranceMax         = $enemyEndurance
         EnemyIsUndead             = $enemyUndead
+        EnemyUsesMindforce        = $enemyUsesMindforce
         EnemyImmuneToMindblast    = $enemyImmune
         UseMindblast              = $useMindblast
         CanEvade                  = $canEvade
@@ -6786,6 +6926,8 @@ function Stop-LWCombat {
         EnemyEnd          = $script:GameState.Combat.EnemyEnduranceCurrent
         EnemyEnduranceMax = $script:GameState.Combat.EnemyEnduranceMax
         EnemyIsUndead     = [bool]$script:GameState.Combat.EnemyIsUndead
+        EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
+        MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
         Weapon            = $script:GameState.Combat.EquippedWeapon
         SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
         Mindblast         = [bool]$script:GameState.Combat.UseMindblast
@@ -6861,6 +7003,9 @@ function Invoke-LWCombatRound {
         }
         if (Test-LWCombatSommerswerdUndeadDoubleDamageActive -State $script:GameState) {
             Write-LWInfo 'Enter the normal enemy END loss from the CRT. The Sommerswerd undead bonus will double it automatically.'
+        }
+        if ((Test-LWCombatUsesMindforce -State $script:GameState) -and -not (Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)) {
+            Write-LWInfo 'Enter the normal Lone Wolf END loss from the CRT. Mindforce will add 2 END automatically.'
         }
 
         $enemyLoss = Read-LWInt -Prompt 'Enemy END loss this round' -Default 0 -Min 0
@@ -7720,8 +7865,10 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield adds +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion works with both Healing Potion and Laumspur Potion item names.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion now prefers Concentrated Laumspur first and restores 8 END when one is available.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use die for instant-death sections. After death, use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
