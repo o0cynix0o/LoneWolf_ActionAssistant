@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.6.6'
+$script:LWAppVersion = '0.6.7'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -224,6 +224,22 @@ function Write-LWStatsBanner {
     Write-Host ''
     foreach ($line in $lines) {
         Write-Host $line -ForegroundColor Cyan
+    }
+    Write-LWBannerFooter
+}
+
+function Write-LWCampaignBanner {
+    $lines = @(
+        '          ________________________________',
+        '         /_____/_____/_____/_____/_____/ /|',
+        '        |      C A M P A I G N         | |',
+        '        |         R E C O R D          | |',
+        '        |______________________________|/'
+    )
+
+    Write-Host ''
+    foreach ($line in $lines) {
+        Write-Host $line -ForegroundColor DarkCyan
     }
     Write-LWBannerFooter
 }
@@ -495,6 +511,15 @@ function Refresh-LWScreen {
                 Write-LWStatsBanner
                 if (Test-LWHasState) {
                     Show-LWStatsScreen
+                }
+                else {
+                    Show-LWWelcomeScreen -NoBanner
+                }
+            }
+            'campaign' {
+                Write-LWCampaignBanner
+                if (Test-LWHasState) {
+                    Show-LWCampaignScreen
                 }
                 else {
                     Show-LWWelcomeScreen -NoBanner
@@ -3355,6 +3380,495 @@ function Show-LWStatsScreen {
     }
 }
 
+function Merge-LWNamedCountEntries {
+    param([object[]]$Entries)
+
+    $totals = @{}
+    foreach ($entry in @(Normalize-LWNamedCountEntries -Entries $Entries)) {
+        $name = [string]$entry.Name
+        if ([string]::IsNullOrWhiteSpace($name)) {
+            continue
+        }
+
+        if (-not $totals.ContainsKey($name)) {
+            $totals[$name] = 0
+        }
+
+        $totals[$name] = [int]$totals[$name] + [int]$entry.Count
+    }
+
+    $merged = @()
+    foreach ($name in @($totals.Keys | Sort-Object)) {
+        $merged += [pscustomobject]@{
+            Name  = [string]$name
+            Count = [int]$totals[$name]
+        }
+    }
+
+    return @(Normalize-LWNamedCountEntries -Entries $merged)
+}
+
+function Get-LWCampaignBookEntries {
+    if (-not (Test-LWHasState)) {
+        return @()
+    }
+
+    $entries = @()
+    foreach ($summary in @($script:GameState.BookHistory)) {
+        $entries += [pscustomobject]@{
+            Status  = 'Completed'
+            Summary = $summary
+        }
+    }
+
+    $currentSummary = Get-LWLiveBookStatsSummary
+    if ($null -ne $currentSummary) {
+        $entries += [pscustomobject]@{
+            Status  = 'Current'
+            Summary = $currentSummary
+        }
+    }
+
+    return @($entries)
+}
+
+function Get-LWCampaignTopNamedCountEntry {
+    param([object[]]$Entries)
+
+    $values = @(Merge-LWNamedCountEntries -Entries $Entries | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
+    if ($values.Count -eq 0) {
+        return $null
+    }
+
+    return $values[0]
+}
+
+function Get-LWCampaignRunStatus {
+    if (-not (Test-LWHasState)) {
+        return 'No active run'
+    }
+
+    if (Test-LWDeathActive) {
+        return 'Fallen'
+    }
+    if ($script:GameState.Combat.Active) {
+        return 'In Combat'
+    }
+
+    return 'Adventure Ongoing'
+}
+
+function Get-LWCampaignRunStyle {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+
+    if ([int]$Summary.TotalDeaths -eq 0 -and [int]$Summary.TotalRewindsUsed -eq 0 -and [int]$Summary.TotalVictories -ge 10) {
+        return 'Iron-Willed'
+    }
+    if ([int]$Summary.TotalDeaths -ge 3) {
+        return 'Death-Touched'
+    }
+    if ([int]$Summary.TotalCombatCount -ge 10) {
+        return 'Battle-Hardened'
+    }
+    if ([int]$Summary.TotalEnduranceGained -ge [int]$Summary.TotalEnduranceLost -and [int]$Summary.TotalDeaths -eq 0) {
+        return 'Steady Survivor'
+    }
+    if ([int]$Summary.TotalSectionsVisited -le 5) {
+        return 'Trail Beginner'
+    }
+
+    return 'Kai in Progress'
+}
+
+function Get-LWCampaignSummary {
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    $bookEntries = @(Get-LWCampaignBookEntries)
+    if ($bookEntries.Count -eq 0) {
+        return $null
+    }
+
+    $totalSuccessfulPathSections = 0
+    $totalSectionsVisited = 0
+    $totalUniqueSectionsVisited = 0
+    $totalEnduranceLost = 0
+    $totalEnduranceGained = 0
+    $totalMealsEaten = 0
+    $totalHuntingMeals = 0
+    $totalStarvationPenalties = 0
+    $totalPotionsUsed = 0
+    $totalStrongPotions = 0
+    $totalPotionEnduranceRestored = 0
+    $totalRewindsUsed = 0
+    $totalManualRecoveryShortcuts = 0
+    $totalGoldGained = 0
+    $totalGoldSpent = 0
+    $totalHealingTriggers = 0
+    $totalHealingEnduranceRestored = 0
+    $totalCombatCount = 0
+    $totalVictories = 0
+    $totalDefeats = 0
+    $totalEvades = 0
+    $totalRoundsFought = 0
+    $totalMindblastCombats = 0
+    $totalMindblastVictories = 0
+    $totalInstantDeaths = 0
+    $totalCombatDeaths = 0
+    $totalDeaths = 0
+    $highestEnemyCombatSkillFaced = 0
+    $highestEnemyEnduranceFaced = 0
+    $highestEnemyCombatSkillDefeated = 0
+    $highestEnemyEnduranceDefeated = 0
+    $fastestVictoryEnemyName = $null
+    $fastestVictoryRounds = 0
+    $fastestVictoryBookLabel = $null
+    $easiestVictoryEnemyName = $null
+    $easiestVictoryRatio = $null
+    $easiestVictoryBookLabel = $null
+    $longestFightEnemyName = $null
+    $longestFightRounds = 0
+    $longestFightBookLabel = $null
+    $partialTracking = $false
+    $weaponUsageEntries = @()
+    $weaponVictoryEntries = @()
+
+    foreach ($entry in $bookEntries) {
+        $summary = $entry.Summary
+        if ($null -eq $summary) {
+            continue
+        }
+
+        $bookLabel = Format-LWBookLabel -BookNumber ([int]$summary.BookNumber) -IncludePrefix
+
+        $totalSuccessfulPathSections += [int]$summary.SuccessfulPathSections
+        $totalSectionsVisited += [int]$summary.SectionsVisited
+        $totalUniqueSectionsVisited += [int]$summary.UniqueSectionsVisited
+        $totalEnduranceLost += [int]$summary.EnduranceLost
+        $totalEnduranceGained += [int]$summary.EnduranceGained
+        $totalMealsEaten += [int]$summary.MealsEaten
+        $totalHuntingMeals += [int]$summary.MealsCoveredByHunting
+        $totalStarvationPenalties += [int]$summary.StarvationPenalties
+        $totalPotionsUsed += [int]$summary.PotionsUsed
+        $totalStrongPotions += [int]$summary.ConcentratedPotionsUsed
+        $totalPotionEnduranceRestored += [int]$summary.PotionEnduranceRestored
+        $totalRewindsUsed += [int]$summary.RewindsUsed
+        $totalManualRecoveryShortcuts += [int]$summary.ManualRecoveryShortcuts
+        $totalGoldGained += [int]$summary.GoldGained
+        $totalGoldSpent += [int]$summary.GoldSpent
+        $totalHealingTriggers += [int]$summary.HealingTriggers
+        $totalHealingEnduranceRestored += [int]$summary.HealingEnduranceRestored
+        $totalCombatCount += [int]$summary.CombatCount
+        $totalVictories += [int]$summary.Victories
+        $totalDefeats += [int]$summary.Defeats
+        $totalEvades += [int]$summary.Evades
+        $totalRoundsFought += [int]$summary.RoundsFought
+        $totalMindblastCombats += [int]$summary.MindblastCombats
+        $totalMindblastVictories += [int]$summary.MindblastVictories
+        $totalInstantDeaths += [int]$summary.InstantDeaths
+        $totalCombatDeaths += [int]$summary.CombatDeaths
+        $totalDeaths += [int]$summary.DeathCount
+
+        if ([int]$summary.HighestEnemyCombatSkillFaced -gt $highestEnemyCombatSkillFaced) {
+            $highestEnemyCombatSkillFaced = [int]$summary.HighestEnemyCombatSkillFaced
+        }
+        if ([int]$summary.HighestEnemyEnduranceFaced -gt $highestEnemyEnduranceFaced) {
+            $highestEnemyEnduranceFaced = [int]$summary.HighestEnemyEnduranceFaced
+        }
+        if ([int]$summary.HighestEnemyCombatSkillDefeated -gt $highestEnemyCombatSkillDefeated) {
+            $highestEnemyCombatSkillDefeated = [int]$summary.HighestEnemyCombatSkillDefeated
+        }
+        if ([int]$summary.HighestEnemyEnduranceDefeated -gt $highestEnemyEnduranceDefeated) {
+            $highestEnemyEnduranceDefeated = [int]$summary.HighestEnemyEnduranceDefeated
+        }
+
+        if ([int]$summary.FastestVictoryRounds -gt 0 -and ($fastestVictoryRounds -eq 0 -or [int]$summary.FastestVictoryRounds -lt $fastestVictoryRounds)) {
+            $fastestVictoryEnemyName = [string]$summary.FastestVictoryEnemyName
+            $fastestVictoryRounds = [int]$summary.FastestVictoryRounds
+            $fastestVictoryBookLabel = $bookLabel
+        }
+
+        if ($null -ne $summary.EasiestVictoryRatio -and ($null -eq $easiestVictoryRatio -or [int]$summary.EasiestVictoryRatio -gt [int]$easiestVictoryRatio)) {
+            $easiestVictoryEnemyName = [string]$summary.EasiestVictoryEnemyName
+            $easiestVictoryRatio = [int]$summary.EasiestVictoryRatio
+            $easiestVictoryBookLabel = $bookLabel
+        }
+
+        if ([int]$summary.LongestFightRounds -gt $longestFightRounds) {
+            $longestFightEnemyName = [string]$summary.LongestFightEnemyName
+            $longestFightRounds = [int]$summary.LongestFightRounds
+            $longestFightBookLabel = $bookLabel
+        }
+
+        if ($summary.PartialTracking) {
+            $partialTracking = $true
+        }
+
+        $weaponUsageEntries += @($summary.WeaponUsage)
+        $weaponVictoryEntries += @($summary.WeaponVictories)
+    }
+
+    $mergedWeaponUsage = @(Merge-LWNamedCountEntries -Entries $weaponUsageEntries)
+    $mergedWeaponVictories = @(Merge-LWNamedCountEntries -Entries $weaponVictoryEntries)
+    $favoriteWeapon = Get-LWCampaignTopNamedCountEntry -Entries $mergedWeaponUsage
+    $deadliestWeapon = Get-LWCampaignTopNamedCountEntry -Entries $mergedWeaponVictories
+    $completedBooks = @($script:GameState.Character.CompletedBooks | Sort-Object | ForEach-Object { Format-LWBookLabel -BookNumber ([int]$_) -IncludePrefix })
+    $recentAchievements = @(Get-LWAchievementRecentUnlocks -Count 5)
+
+    $summary = [pscustomobject]@{
+        CharacterName                     = [string]$script:GameState.Character.Name
+        CurrentBookLabel                  = Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber) -IncludePrefix
+        CurrentSection                    = [int]$script:GameState.CurrentSection
+        RunStatus                         = Get-LWCampaignRunStatus
+        BooksCompletedCount               = @($script:GameState.Character.CompletedBooks).Count
+        CompletedBooksLabel               = $(if ($completedBooks.Count -gt 0) { $completedBooks -join '; ' } else { '(none)' })
+        BooksTrackedCount                 = $bookEntries.Count
+        AchievementsUnlocked              = Get-LWAchievementUnlockedCount
+        AchievementsAvailable             = Get-LWAchievementAvailableCount
+        ActiveCombat                      = [bool]$script:GameState.Combat.Active
+        DeathActive                       = [bool](Test-LWDeathActive)
+        AutoSaveEnabled                   = [bool]$script:GameState.Settings.AutoSave
+        TotalSuccessfulPathSections       = $totalSuccessfulPathSections
+        TotalSectionsVisited              = $totalSectionsVisited
+        TotalUniqueSectionsVisited        = $totalUniqueSectionsVisited
+        TotalEnduranceLost                = $totalEnduranceLost
+        TotalEnduranceGained              = $totalEnduranceGained
+        TotalMealsEaten                   = $totalMealsEaten
+        TotalHuntingMeals                 = $totalHuntingMeals
+        TotalStarvationPenalties          = $totalStarvationPenalties
+        TotalPotionsUsed                  = $totalPotionsUsed
+        TotalStrongPotions                = $totalStrongPotions
+        TotalPotionEnduranceRestored      = $totalPotionEnduranceRestored
+        TotalRewindsUsed                  = $totalRewindsUsed
+        TotalManualRecoveryShortcuts      = $totalManualRecoveryShortcuts
+        TotalGoldGained                   = $totalGoldGained
+        TotalGoldSpent                    = $totalGoldSpent
+        TotalHealingTriggers              = $totalHealingTriggers
+        TotalHealingEnduranceRestored     = $totalHealingEnduranceRestored
+        TotalCombatCount                  = $totalCombatCount
+        TotalVictories                    = $totalVictories
+        TotalDefeats                      = $totalDefeats
+        TotalEvades                       = $totalEvades
+        TotalRoundsFought                 = $totalRoundsFought
+        TotalMindblastCombats             = $totalMindblastCombats
+        TotalMindblastVictories           = $totalMindblastVictories
+        TotalInstantDeaths                = $totalInstantDeaths
+        TotalCombatDeaths                 = $totalCombatDeaths
+        TotalDeaths                       = $totalDeaths
+        HighestEnemyCombatSkillFaced      = $highestEnemyCombatSkillFaced
+        HighestEnemyEnduranceFaced        = $highestEnemyEnduranceFaced
+        HighestEnemyCombatSkillDefeated   = $highestEnemyCombatSkillDefeated
+        HighestEnemyEnduranceDefeated     = $highestEnemyEnduranceDefeated
+        FastestVictoryEnemyName           = $fastestVictoryEnemyName
+        FastestVictoryRounds              = $fastestVictoryRounds
+        FastestVictoryBookLabel           = $fastestVictoryBookLabel
+        EasiestVictoryEnemyName           = $easiestVictoryEnemyName
+        EasiestVictoryRatio               = $easiestVictoryRatio
+        EasiestVictoryBookLabel           = $easiestVictoryBookLabel
+        LongestFightEnemyName             = $longestFightEnemyName
+        LongestFightRounds                = $longestFightRounds
+        LongestFightBookLabel             = $longestFightBookLabel
+        FavoriteWeapon                    = $favoriteWeapon
+        DeadliestWeapon                   = $deadliestWeapon
+        WeaponUsage                       = @($mergedWeaponUsage)
+        WeaponVictories                   = @($mergedWeaponVictories)
+        BookEntries                       = @($bookEntries)
+        RecentAchievements                = @($recentAchievements)
+        PartialTracking                   = [bool]$partialTracking
+    }
+
+    $summary | Add-Member -NotePropertyName RunStyle -NotePropertyValue (Get-LWCampaignRunStyle -Summary $summary)
+    return $summary
+}
+
+function Format-LWCampaignFightHighlight {
+    param(
+        [string]$EnemyName,
+        [object]$Value,
+        [string]$Suffix = '',
+        [string]$BookLabel = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($EnemyName) -or $null -eq $Value -or ([string]$Value) -eq '' -or ([int]$Value) -le 0) {
+        return '(none)'
+    }
+
+    $bookText = if ([string]::IsNullOrWhiteSpace($BookLabel)) { '' } else { " | $BookLabel" }
+    return ("{0} ({1}{2}){3}" -f $EnemyName, $Value, $Suffix, $bookText)
+}
+
+function Show-LWCampaignOverview {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+
+    $favoriteWeapon = if ($null -ne $Summary.FavoriteWeapon) { "{0} x{1}" -f $Summary.FavoriteWeapon.Name, [int]$Summary.FavoriteWeapon.Count } else { '(none)' }
+    $deadliestWeapon = if ($null -ne $Summary.DeadliestWeapon) { "{0} x{1}" -f $Summary.DeadliestWeapon.Name, [int]$Summary.DeadliestWeapon.Count } else { '(none)' }
+
+    Write-LWPanelHeader -Title 'Campaign Overview' -AccentColor 'DarkCyan'
+    Write-LWKeyValue -Label 'Name' -Value $Summary.CharacterName -ValueColor 'White'
+    Write-LWKeyValue -Label 'Run Status' -Value $Summary.RunStatus -ValueColor $(if ([string]$Summary.RunStatus -eq 'Fallen') { 'Red' } elseif ([string]$Summary.RunStatus -eq 'In Combat') { 'Yellow' } else { 'Green' })
+    Write-LWKeyValue -Label 'Run Style' -Value $Summary.RunStyle -ValueColor 'Cyan'
+    Write-LWKeyValue -Label 'Current Book' -Value $Summary.CurrentBookLabel -ValueColor 'White'
+    Write-LWKeyValue -Label 'Current Section' -Value ([string]$Summary.CurrentSection) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Completed Books' -Value $Summary.CompletedBooksLabel -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Books Complete' -Value ([string]$Summary.BooksCompletedCount) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -ValueColor 'Magenta'
+    Write-LWKeyValue -Label 'Winning Path' -Value ([string]$Summary.TotalSuccessfulPathSections) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Sections Visited' -Value ([string]$Summary.TotalSectionsVisited) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Fights' -Value ([string]$Summary.TotalCombatCount) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Victories' -Value ([string]$Summary.TotalVictories) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Deaths' -Value ([string]$Summary.TotalDeaths) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Rewinds Used' -Value ([string]$Summary.TotalRewindsUsed) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Favorite Weapon' -Value $favoriteWeapon -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Deadliest Weapon' -Value $deadliestWeapon -ValueColor 'Gray'
+
+    Write-Host ''
+    Write-LWSubtle '  Use campaign books, campaign combat, campaign survival, or campaign milestones for deeper views.'
+}
+
+function Show-LWCampaignBooks {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+
+    Write-LWPanelHeader -Title 'Campaign Books' -AccentColor 'DarkCyan'
+    $shownBookNumbers = @()
+    foreach ($entry in @($Summary.BookEntries)) {
+        $bookSummary = $entry.Summary
+        $bookLabel = Format-LWBookLabel -BookNumber ([int]$bookSummary.BookNumber) -IncludePrefix
+        $statusText = if ([string]$entry.Status -eq 'Current') { 'Current' } else { 'Completed' }
+        $statusColor = if ([string]$entry.Status -eq 'Current') { 'Yellow' } else { 'Green' }
+        $shownBookNumbers += [int]$bookSummary.BookNumber
+
+        Write-Host ("  {0}" -f $bookLabel) -ForegroundColor White
+        Write-Host '    ' -NoNewline
+        Write-Host $statusText -NoNewline -ForegroundColor $statusColor
+        Write-Host (" | sections {0} | victories {1} | deaths {2} | rewinds {3}" -f [int]$bookSummary.SectionsVisited, [int]$bookSummary.Victories, [int]$bookSummary.DeathCount, [int]$bookSummary.RewindsUsed) -ForegroundColor Gray
+        if ([bool]$bookSummary.PartialTracking) {
+            Write-LWSubtle '      partial tracking from older save data'
+        }
+    }
+
+    $missingCompletedBooks = @($script:GameState.Character.CompletedBooks | Where-Object { $shownBookNumbers -notcontains [int]$_ } | Sort-Object)
+    foreach ($bookNumber in $missingCompletedBooks) {
+        $bookLabel = Format-LWBookLabel -BookNumber ([int]$bookNumber) -IncludePrefix
+        Write-Host ("  {0}" -f $bookLabel) -ForegroundColor White
+        Write-Host '    ' -NoNewline
+        Write-Host 'Completed' -NoNewline -ForegroundColor Green
+        Write-Host ' | summary unavailable from older save history' -ForegroundColor DarkGray
+    }
+}
+
+function Show-LWCampaignCombat {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+
+    $favoriteWeapon = if ($null -ne $Summary.FavoriteWeapon) { "{0} x{1}" -f $Summary.FavoriteWeapon.Name, [int]$Summary.FavoriteWeapon.Count } else { '(none)' }
+    $deadliestWeapon = if ($null -ne $Summary.DeadliestWeapon) { "{0} x{1}" -f $Summary.DeadliestWeapon.Name, [int]$Summary.DeadliestWeapon.Count } else { '(none)' }
+    $fastestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.FastestVictoryEnemyName -Value $Summary.FastestVictoryRounds -Suffix $(if ([int]$Summary.FastestVictoryRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.FastestVictoryBookLabel
+    $easiestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.EasiestVictoryEnemyName -Value $Summary.EasiestVictoryRatio -Suffix ' ratio' -BookLabel $Summary.EasiestVictoryBookLabel
+    $longestFight = Format-LWCampaignFightHighlight -EnemyName $Summary.LongestFightEnemyName -Value $Summary.LongestFightRounds -Suffix $(if ([int]$Summary.LongestFightRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.LongestFightBookLabel
+
+    Write-LWPanelHeader -Title 'Campaign Combat' -AccentColor 'DarkRed'
+    Write-LWKeyValue -Label 'Fights' -Value ([string]$Summary.TotalCombatCount) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Victories' -Value ([string]$Summary.TotalVictories) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Defeats' -Value ([string]$Summary.TotalDefeats) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Evades' -Value ([string]$Summary.TotalEvades) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Rounds Fought' -Value ([string]$Summary.TotalRoundsFought) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Mindblast Fights' -Value ([string]$Summary.TotalMindblastCombats) -ValueColor 'Cyan'
+    Write-LWKeyValue -Label 'Mindblast Wins' -Value ([string]$Summary.TotalMindblastVictories) -ValueColor 'Cyan'
+    Write-LWKeyValue -Label 'Highest CS Faced' -Value ([string]$Summary.HighestEnemyCombatSkillFaced) -ValueColor 'Cyan'
+    Write-LWKeyValue -Label 'Highest END Faced' -Value ([string]$Summary.HighestEnemyEnduranceFaced) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Highest CS Defeated' -Value ([string]$Summary.HighestEnemyCombatSkillDefeated) -ValueColor 'Cyan'
+    Write-LWKeyValue -Label 'Highest END Defeated' -Value ([string]$Summary.HighestEnemyEnduranceDefeated) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Favorite Weapon' -Value $favoriteWeapon -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Deadliest Weapon' -Value $deadliestWeapon -ValueColor 'Gray'
+}
+
+function Show-LWCampaignSurvival {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+
+    Write-LWPanelHeader -Title 'Campaign Survival' -AccentColor 'DarkYellow'
+    Write-LWKeyValue -Label 'END Lost' -Value ([string]$Summary.TotalEnduranceLost) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'END Gained' -Value ([string]$Summary.TotalEnduranceGained) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Healing Uses' -Value ([string]$Summary.TotalHealingTriggers) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Healing END' -Value ([string]$Summary.TotalHealingEnduranceRestored) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Gold Gained' -Value ([string]$Summary.TotalGoldGained) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Gold Spent' -Value ([string]$Summary.TotalGoldSpent) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Meals Eaten' -Value ([string]$Summary.TotalMealsEaten) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Hunting Meals' -Value ([string]$Summary.TotalHuntingMeals) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Starvation Hits' -Value ([string]$Summary.TotalStarvationPenalties) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Potions Used' -Value ([string]$Summary.TotalPotionsUsed) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Strong Potions' -Value ([string]$Summary.TotalStrongPotions) -ValueColor 'DarkGreen'
+    Write-LWKeyValue -Label 'Potion END' -Value ([string]$Summary.TotalPotionEnduranceRestored) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Deaths' -Value ([string]$Summary.TotalDeaths) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Instant Deaths' -Value ([string]$Summary.TotalInstantDeaths) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Combat Deaths' -Value ([string]$Summary.TotalCombatDeaths) -ValueColor 'Red'
+    Write-LWKeyValue -Label 'Rewinds Used' -Value ([string]$Summary.TotalRewindsUsed) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Recovery Shortcuts' -Value ([string]$Summary.TotalManualRecoveryShortcuts) -ValueColor 'Yellow'
+    Write-LWKeyValue -Label 'Autosave' -Value $(if ($Summary.AutoSaveEnabled) { 'On' } else { 'Off' }) -ValueColor $(if ($Summary.AutoSaveEnabled) { 'Green' } else { 'DarkGray' })
+}
+
+function Show-LWCampaignMilestones {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+
+    $recentAchievements = @($Summary.RecentAchievements)
+    $fastestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.FastestVictoryEnemyName -Value $Summary.FastestVictoryRounds -Suffix $(if ([int]$Summary.FastestVictoryRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.FastestVictoryBookLabel
+    $easiestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.EasiestVictoryEnemyName -Value $Summary.EasiestVictoryRatio -Suffix ' ratio' -BookLabel $Summary.EasiestVictoryBookLabel
+    $longestFight = Format-LWCampaignFightHighlight -EnemyName $Summary.LongestFightEnemyName -Value $Summary.LongestFightRounds -Suffix $(if ([int]$Summary.LongestFightRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.LongestFightBookLabel
+
+    Write-LWPanelHeader -Title 'Campaign Milestones' -AccentColor 'Magenta'
+    Write-LWKeyValue -Label 'Books Completed' -Value ([string]$Summary.BooksCompletedCount) -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -ValueColor 'Magenta'
+    Write-LWKeyValue -Label 'Run Style' -Value $Summary.RunStyle -ValueColor 'Cyan'
+    Write-LWKeyValue -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
+    Write-LWKeyValue -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
+
+    Write-LWPanelHeader -Title 'Recent Achievements' -AccentColor 'DarkYellow'
+    if ($recentAchievements.Count -eq 0) {
+        Write-LWSubtle '  (none yet)'
+    }
+    else {
+        foreach ($entry in $recentAchievements) {
+            $bookLabel = Format-LWBookLabel -BookNumber ([int]$entry.BookNumber) -IncludePrefix
+            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$entry.Name, [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Magenta'
+            Write-LWSubtle ("      unlocked at section {0} in {1}" -f [int]$entry.Section, $bookLabel)
+        }
+    }
+}
+
+function Show-LWCampaignScreen {
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $summary = Get-LWCampaignSummary
+    if ($null -eq $summary) {
+        Write-LWWarn 'No campaign data is available yet.'
+        return
+    }
+
+    $view = 'overview'
+    if ($null -ne $script:LWUi.ScreenData -and (Test-LWPropertyExists -Object $script:LWUi.ScreenData -Name 'View') -and -not [string]::IsNullOrWhiteSpace([string]$script:LWUi.ScreenData.View)) {
+        $view = [string]$script:LWUi.ScreenData.View
+    }
+
+    switch ($view.ToLowerInvariant()) {
+        'books' { Show-LWCampaignBooks -Summary $summary }
+        'combat' { Show-LWCampaignCombat -Summary $summary }
+        'survival' { Show-LWCampaignSurvival -Summary $summary }
+        'milestones' { Show-LWCampaignMilestones -Summary $summary }
+        default { Show-LWCampaignOverview -Summary $summary }
+    }
+
+    if ($summary.PartialTracking) {
+        Write-Host ''
+        Write-LWMessageLine -Level 'Warn' -Message 'Some run totals include older save data and may be partial for the earliest books.'
+    }
+}
+
 function Get-LWAchievementDefinitionById {
     param([Parameter(Mandatory = $true)][string]$Id)
 
@@ -5923,6 +6437,7 @@ function Show-LWHelp {
     Write-LWKeyValue -Label 'note remove [n]' -Value 'Remove a note by number' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'history' -Value 'Show combat history grouped by book' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'stats [combat|survival]' -Value 'Show live current-book stats' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'campaign [view]' -Value 'Show whole-run overview, books, combat, survival, or milestones' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'achievements [view]' -Value 'Show unlocked, locked, recent, progress, or planned achievements' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'roll' -Value 'Roll the random number table (0-9)' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'section [n]' -Value 'Move to a new section' -ValueColor 'Gray'
@@ -5973,6 +6488,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use die for instant-death sections. After death, use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'history and combat log all now group archived fights by book for easier browsing.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use campaign to review the whole run, or campaign books/combat/survival/milestones for focused views.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use achievements, achievements progress, or achievements planned to browse the new achievement system.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'ManualCRT gives you the ratio and roll, then asks for losses from your own CRT.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'DataFile reads those losses from data/crt.json when the file is populated.' -TextColor 'Gray'
@@ -6120,10 +6636,10 @@ function Invoke-LWCommand {
     }
 
     if (Test-LWDeathActive) {
-        $allowedWhileDead = @('rewind', 'load', 'new', 'help', 'save', 'quit', 'exit', 'stats', 'achievements', 'achievement')
+        $allowedWhileDead = @('rewind', 'load', 'new', 'help', 'save', 'quit', 'exit', 'stats', 'campaign', 'achievements', 'achievement')
         if ($allowedWhileDead -notcontains $command) {
             Set-LWScreen -Name 'death'
-            Write-LWWarn 'You have fallen. Use rewind, load, new, help, or quit.'
+            Write-LWWarn 'You have fallen. Use rewind, load, new, campaign, help, or quit.'
             return $null
         }
     }
@@ -6160,6 +6676,27 @@ function Invoke-LWCommand {
             }
 
             Set-LWScreen -Name 'stats' -Data ([pscustomobject]@{
+                    View = $view
+                })
+            return $null
+        }
+        'campaign'    {
+            $view = 'overview'
+            if ($parts.Count -gt 1) {
+                switch ($parts[1].ToLowerInvariant()) {
+                    'overview' { $view = 'overview' }
+                    'books' { $view = 'books' }
+                    'combat' { $view = 'combat' }
+                    'survival' { $view = 'survival' }
+                    'milestones' { $view = 'milestones' }
+                    default {
+                        Write-LWWarn 'Use campaign, campaign books, campaign combat, campaign survival, or campaign milestones.'
+                        return $null
+                    }
+                }
+            }
+
+            Set-LWScreen -Name 'campaign' -Data ([pscustomobject]@{
                     View = $view
                 })
             return $null

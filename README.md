@@ -28,6 +28,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
+- Whole-run campaign review screens
 - Achievement system with current unlocks, progress, and planned phase-two ideas
 - Death tracking with death-only rewind checkpoints
 
@@ -88,6 +89,7 @@ section [n]
 complete
 history
 stats [combat|survival]
+campaign [books|combat|survival|milestones]
 achievements [view]
 help
 quit
@@ -222,6 +224,20 @@ achievements progress
 achievements planned
 ```
 
+## Campaign Review
+
+Use the campaign screens when you want the whole-run picture instead of only the current book:
+
+```text
+campaign
+campaign books
+campaign combat
+campaign survival
+campaign milestones
+```
+
+This rolls up completed-book history together with the current in-progress book so you can review the entire run so far in one place.
+
 ## Death and Rewind Flow
 
 Instant-death sections are handled with:
@@ -280,4 +296,3 @@ The app creates and updates runtime files during normal use:
 - The project is focused on being useful and fast in play, not academically complete.
 - Book-specific exceptions still happen. Manual controls like `setcs`, `setend`, `setmaxend`, notes, and inventory edits are intentionally kept available.
 - Item intelligence is still expanding as new items are encountered during playthroughs.
-
