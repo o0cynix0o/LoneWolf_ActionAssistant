@@ -198,11 +198,10 @@ function Write-LWInventoryBanner {
 
 function Write-LWCombatBanner {
     $lines = @(
-        '        /\                                /\',
-        '       {  }          COMBAT SCREEN       {  }',
-        '       /==\                              /==\',
-        '      /====\                            /====\',
-        '      `----`                            `----`'
+        '      <====||=================  C O M B A T  =================||====>',
+        '           ||                                                 ||',
+        '           ||               D U E L   B O A R D               ||',
+        '           ||_________________________________________________||'
     )
 
     Write-Host ''
@@ -5312,17 +5311,151 @@ function Show-LWCombatPromptHint {
         return
     }
 
+    Write-LWPanelHeader -Title 'Next Action' -AccentColor 'DarkYellow'
+    Write-LWBulletItem -Text 'Press Enter to resolve the next round.' -TextColor 'Gray' -BulletColor 'Yellow'
+    Write-LWBulletItem -Text 'Use combat auto to finish the fight quickly.' -TextColor 'Gray' -BulletColor 'Cyan'
+    Write-LWBulletItem -Text 'Use combat log for the full round history.' -TextColor 'Gray' -BulletColor 'DarkRed'
+    if ($script:GameState.Combat.CanEvade) {
+        Write-LWBulletItem -Text 'Use combat evade if you choose to break away.' -TextColor 'Gray' -BulletColor 'DarkYellow'
+    }
+}
+
+function Get-LWCombatMeterText {
+    param(
+        [int]$Current,
+        [int]$Max,
+        [int]$Width = 18
+    )
+
+    $safeMax = [Math]::Max(1, $Max)
+    $clampedCurrent = [Math]::Max(0, [Math]::Min($Current, $safeMax))
+    $filled = [Math]::Round(($clampedCurrent / [double]$safeMax) * $Width)
+    if ($filled -lt 0) {
+        $filled = 0
+    }
+    if ($filled -gt $Width) {
+        $filled = $Width
+    }
+
+    return ('[' + ('#' * $filled) + ('.' * ($Width - $filled)) + ']')
+}
+
+function Write-LWCombatMeterLine {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][int]$Current,
+        [Parameter(Mandatory = $true)][int]$Max,
+        [Parameter(Mandatory = $true)][int]$CombatSkill,
+        [string]$LabelColor = 'White'
+    )
+
+    $displayLabel = if ($Label.Length -gt 14) { ($Label.Substring(0, 12) + '..') } else { $Label }
+    $meterColor = Get-LWEnduranceColor -Current $Current -Max $Max
+    $meterText = Get-LWCombatMeterText -Current $Current -Max $Max
+
+    Write-Host ("  {0,-14}" -f $displayLabel) -NoNewline -ForegroundColor $LabelColor
+    Write-Host (" CS {0,-3}" -f $CombatSkill) -NoNewline -ForegroundColor Cyan
+    Write-Host (" END {0,2}/{1,-2} " -f $Current, $Max) -NoNewline -ForegroundColor $meterColor
+    Write-Host $meterText -ForegroundColor $meterColor
+}
+
+function Write-LWCombatRoundLine {
+    param([Parameter(Mandatory = $true)][object]$Round)
+
+    $crtSuffix = ''
+    if ((Test-LWPropertyExists -Object $Round -Name 'CRTColumn') -and $null -ne $Round.CRTColumn -and [int]$Round.CRTColumn -ne [int]$Round.Ratio) {
+        $crtSuffix = " -> CRT $($Round.CRTColumn)"
+    }
+
+    Write-Host ("  R{0,-2}" -f $Round.Round) -NoNewline -ForegroundColor DarkYellow
+    Write-Host (" ratio {0,3}" -f (Format-LWSigned -Value ([int]$Round.Ratio))) -NoNewline -ForegroundColor (Get-LWCombatRatioColor -Ratio ([int]$Round.Ratio))
+    Write-Host ("  roll {0}{1}" -f $Round.Roll, $crtSuffix) -NoNewline -ForegroundColor Gray
+    Write-Host ("  enemy -{0}" -f $Round.EnemyLoss) -NoNewline -ForegroundColor Red
+    if ((Test-LWPropertyExists -Object $Round -Name 'SpecialNote') -and -not [string]::IsNullOrWhiteSpace([string]$Round.SpecialNote)) {
+        Write-Host (" [{0}]" -f [string]$Round.SpecialNote) -NoNewline -ForegroundColor DarkYellow
+    }
+    Write-Host ("  Lone Wolf -{0}" -f $Round.PlayerLoss) -NoNewline -ForegroundColor Red
+    Write-Host ("  END {0}/{1}" -f $Round.PlayerEnd, $Round.EnemyEnd) -ForegroundColor DarkGray
+}
+
+function Show-LWCombatRecentRounds {
+    param(
+        [object[]]$Rounds = @(),
+        [int]$Count = 3,
+        [string]$Title = 'Recent Rounds'
+    )
+
+    Write-LWPanelHeader -Title $Title -AccentColor 'DarkRed'
+    $rounds = @($Rounds)
+    if ($rounds.Count -eq 0) {
+        Write-LWSubtle '  No rounds resolved yet.'
+        return
+    }
+
+    $start = [Math]::Max(0, $rounds.Count - $Count)
+    foreach ($round in @($rounds[$start..($rounds.Count - 1)])) {
+        Write-LWCombatRoundLine -Round $round
+    }
+}
+
+function Show-LWCombatDuelPanel {
+    param(
+        [Parameter(Mandatory = $true)][string]$EnemyName,
+        [Parameter(Mandatory = $true)][int]$PlayerCurrent,
+        [Parameter(Mandatory = $true)][int]$PlayerMax,
+        [Parameter(Mandatory = $true)][int]$EnemyCurrent,
+        [Parameter(Mandatory = $true)][int]$EnemyMax,
+        [Parameter(Mandatory = $true)][int]$PlayerCombatSkill,
+        [Parameter(Mandatory = $true)][int]$EnemyCombatSkill,
+        [Parameter(Mandatory = $true)][int]$CombatRatio,
+        [Nullable[int]]$RoundCount = $null,
+        [string]$Title = 'The Duel'
+    )
+
+    Write-LWPanelHeader -Title $Title -AccentColor 'Red'
+    Write-LWCombatMeterLine -Label 'Lone Wolf' -Current $PlayerCurrent -Max $PlayerMax -CombatSkill $PlayerCombatSkill -LabelColor 'White'
+    Write-LWCombatMeterLine -Label $EnemyName -Current $EnemyCurrent -Max $EnemyMax -CombatSkill $EnemyCombatSkill -LabelColor 'Gray'
     Write-Host ''
-    Write-Host 'Press ' -NoNewline -ForegroundColor DarkGray
-    Write-Host 'Enter' -NoNewline -ForegroundColor Yellow
-    Write-Host ' for the next round, or use ' -NoNewline -ForegroundColor DarkGray
-    Write-Host 'combat auto' -NoNewline -ForegroundColor Cyan
-    Write-Host ' / ' -NoNewline -ForegroundColor DarkGray
-    Write-Host 'combat evade' -NoNewline -ForegroundColor Cyan
-    Write-Host ' / ' -NoNewline -ForegroundColor DarkGray
-    Write-Host 'combat status' -NoNewline -ForegroundColor Cyan
-    Write-Host ' / ' -NoNewline -ForegroundColor DarkGray
-    Write-Host 'combat log' -ForegroundColor Cyan
+    if ($null -ne $RoundCount) {
+        Write-LWKeyValue -Label 'Rounds' -Value ([string]$RoundCount) -ValueColor 'Gray'
+    }
+    Write-LWKeyValue -Label 'Combat Ratio' -Value (Format-LWSigned -Value $CombatRatio) -ValueColor (Get-LWCombatRatioColor -Ratio $CombatRatio)
+}
+
+function Show-LWCombatTacticalPanel {
+    param(
+        [Parameter(Mandatory = $true)][string]$Weapon,
+        [Parameter(Mandatory = $true)][bool]$UseMindblast,
+        [Parameter(Mandatory = $true)][bool]$EnemyIsUndead,
+        [Parameter(Mandatory = $true)][bool]$CanEvade,
+        [Parameter(Mandatory = $true)][string]$Mode,
+        [object[]]$Notes = @(),
+        [switch]$UsesSommerswerd,
+        [switch]$SommerswerdSuppressed
+    )
+
+    Write-LWPanelHeader -Title 'Tactical Readout' -AccentColor 'DarkYellow'
+    Write-LWKeyValue -Label 'Weapon' -Value $Weapon -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Mindblast' -Value $(if ($UseMindblast) { 'On' } else { 'Off' }) -ValueColor $(if ($UseMindblast) { 'Cyan' } else { 'Gray' })
+    Write-LWKeyValue -Label 'Undead Enemy' -Value $(if ($EnemyIsUndead) { 'Yes' } else { 'No' }) -ValueColor $(if ($EnemyIsUndead) { 'DarkYellow' } else { 'Gray' })
+    if ($UsesSommerswerd) {
+        $sommerswerdStatus = if ($SommerswerdSuppressed) { 'Suppressed' } elseif ($EnemyIsUndead) { 'Active (undead x2)' } else { 'Active' }
+        Write-LWKeyValue -Label 'Sommerswerd' -Value $sommerswerdStatus -ValueColor $(if ($SommerswerdSuppressed) { 'Yellow' } else { 'DarkYellow' })
+    }
+    Write-LWKeyValue -Label 'Evade Allowed' -Value $(if ($CanEvade) { 'Yes' } else { 'No' }) -ValueColor $(if ($CanEvade) { 'Yellow' } else { 'Gray' })
+    Write-LWKeyValue -Label 'Mode' -Value $Mode -ValueColor (Get-LWModeColor -Mode $Mode)
+
+    $notes = @($Notes)
+    Write-Host ''
+    if ($notes.Count -eq 0) {
+        Write-LWSubtle '  No active modifiers.'
+    }
+    else {
+        Write-LWSubtle '  Active modifiers:'
+        foreach ($note in $notes) {
+            Write-LWBulletItem -Text ([string]$note) -TextColor 'Gray' -BulletColor 'DarkYellow'
+        }
+    }
 }
 
 function Get-LWCurrentCombatLogEntry {
@@ -5363,20 +5496,7 @@ function Write-LWCombatLogEntry {
     }
 
     foreach ($round in @($Entry.Log)) {
-        $crtSuffix = ''
-        if ((Test-LWPropertyExists -Object $round -Name 'CRTColumn') -and $null -ne $round.CRTColumn -and [int]$round.CRTColumn -ne [int]$round.Ratio) {
-            $crtSuffix = " -> CRT $($round.CRTColumn)"
-        }
-
-        Write-Host ("  R{0,-2}" -f $round.Round) -NoNewline -ForegroundColor DarkYellow
-        Write-Host (" ratio {0,3}" -f $round.Ratio) -NoNewline -ForegroundColor (Get-LWCombatRatioColor -Ratio ([int]$round.Ratio))
-        Write-Host ("  roll {0}{1}" -f $round.Roll, $crtSuffix) -NoNewline -ForegroundColor Gray
-        Write-Host ("  enemy -{0}" -f $round.EnemyLoss) -NoNewline -ForegroundColor Red
-        if ((Test-LWPropertyExists -Object $round -Name 'SpecialNote') -and -not [string]::IsNullOrWhiteSpace([string]$round.SpecialNote)) {
-            Write-Host (" [{0}]" -f [string]$round.SpecialNote) -NoNewline -ForegroundColor DarkYellow
-        }
-        Write-Host ("  Lone Wolf -{0}" -f $round.PlayerLoss) -NoNewline -ForegroundColor Red
-        Write-Host ("  END {0}/{1}" -f $round.PlayerEnd, $round.EnemyEnd) -ForegroundColor DarkGray
+        Write-LWCombatRoundLine -Round $round
     }
 }
 
@@ -5468,30 +5588,26 @@ function Show-LWCombatLog {
 function Show-LWCombatSummary {
     param([Parameter(Mandatory = $true)][object]$Summary)
 
-    $notes = if ((Test-LWPropertyExists -Object $Summary -Name 'Notes') -and @($Summary.Notes).Count -gt 0) { @($Summary.Notes) -join '; ' } else { '(none)' }
+    $notes = if ((Test-LWPropertyExists -Object $Summary -Name 'Notes') -and @($Summary.Notes).Count -gt 0) { @($Summary.Notes) } else { @() }
     $weapon = if (Test-LWPropertyExists -Object $Summary -Name 'Weapon') { Get-LWCombatDisplayWeapon -Weapon ([string]$Summary.Weapon) } else { 'Unknown' }
-    $mindblast = if ((Test-LWPropertyExists -Object $Summary -Name 'Mindblast') -and $Summary.Mindblast) { 'On' } else { 'Off' }
-    $ratio = if (Test-LWPropertyExists -Object $Summary -Name 'CombatRatio') { $Summary.CombatRatio } else { 'n/a' }
-    $ratioColor = if ($ratio -is [int]) { Get-LWCombatRatioColor -Ratio $ratio } else { 'Gray' }
+    $ratio = if (Test-LWPropertyExists -Object $Summary -Name 'CombatRatio') { [int]$Summary.CombatRatio } else { 0 }
     $usingSommerswerd = (Test-LWPropertyExists -Object $Summary -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$Summary.Weapon))
     $enemyUndead = (Test-LWPropertyExists -Object $Summary -Name 'EnemyIsUndead') -and [bool]$Summary.EnemyIsUndead
+    $useMindblast = (Test-LWPropertyExists -Object $Summary -Name 'Mindblast') -and [bool]$Summary.Mindblast
+    $playerCombatSkill = if ((Test-LWPropertyExists -Object $Summary -Name 'PlayerCombatSkill') -and $null -ne $Summary.PlayerCombatSkill) { [int]$Summary.PlayerCombatSkill } else { 0 }
+    $enemyCombatSkill = if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyCombatSkill') -and $null -ne $Summary.EnemyCombatSkill) { [int]$Summary.EnemyCombatSkill } else { 0 }
+    $playerEndMax = if ((Test-LWPropertyExists -Object $Summary -Name 'PlayerEnduranceMax') -and $null -ne $Summary.PlayerEnduranceMax) { [int]$Summary.PlayerEnduranceMax } else { [Math]::Max([int]$Summary.PlayerEnd, 1) }
+    $enemyEndMax = if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyEnduranceMax') -and $null -ne $Summary.EnemyEnduranceMax) { [int]$Summary.EnemyEnduranceMax } else { [Math]::Max([int]$Summary.EnemyEnd, 1) }
+    $mode = if ((Test-LWPropertyExists -Object $Summary -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.Mode)) { [string]$Summary.Mode } else { $script:GameState.Settings.CombatMode }
+    $canEvade = (Test-LWPropertyExists -Object $Summary -Name 'CanEvade') -and [bool]$Summary.CanEvade
 
     Write-LWPanelHeader -Title 'Combat Summary' -AccentColor 'DarkRed'
     Write-LWKeyValue -Label 'Enemy' -Value $Summary.EnemyName -ValueColor 'White'
     Write-LWKeyValue -Label 'Outcome' -Value $Summary.Outcome -ValueColor (Get-LWOutcomeColor -Outcome $Summary.Outcome)
-    Write-LWKeyValue -Label 'Rounds' -Value ([string]$Summary.RoundCount) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Lone Wolf END' -Value ([string]$Summary.PlayerEnd) -ValueColor (Get-LWEnduranceColor -Current ([int]$Summary.PlayerEnd) -Max ([Math]::Max([int]$Summary.PlayerEnd, 1)))
-    Write-LWKeyValue -Label 'Enemy END' -Value ([string]$Summary.EnemyEnd) -ValueColor 'Red'
-    Write-LWKeyValue -Label 'Weapon' -Value $weapon -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Mindblast' -Value $mindblast -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Undead Enemy' -Value $(if ($enemyUndead) { 'Yes' } else { 'No' }) -ValueColor $(if ($enemyUndead) { 'DarkYellow' } else { 'Gray' })
-    if ($usingSommerswerd) {
-        $sommerswerdStatus = if ((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed) { 'Suppressed' } elseif ($enemyUndead) { 'Active (undead x2)' } else { 'Active' }
-        Write-LWKeyValue -Label 'Sommerswerd' -Value $sommerswerdStatus -ValueColor $(if ($sommerswerdStatus -eq 'Suppressed') { 'Yellow' } else { 'DarkYellow' })
-    }
-    Write-LWKeyValue -Label 'Combat Ratio' -Value ([string]$ratio) -ValueColor $ratioColor
-    Write-LWKeyValue -Label 'Notes' -Value $notes -ValueColor 'DarkGray'
-    Show-LWCombatLog -Entry $Summary
+    Show-LWCombatDuelPanel -Title 'Aftermath' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
+    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -CanEvade:$canEvade -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
+    Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round Recap'
+    Write-LWSubtle '  Use combat log for the full round-by-round archive.'
 }
 
 function Show-LWCombatStatus {
@@ -5503,21 +5619,9 @@ function Show-LWCombatStatus {
     $breakdown = Get-LWCombatBreakdown
     Write-LWPanelHeader -Title 'Combat Status' -AccentColor 'Red'
     Write-LWKeyValue -Label 'Enemy' -Value $script:GameState.Combat.EnemyName -ValueColor 'White'
-    Write-LWKeyValue -Label 'Lone Wolf END' -Value ("{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax) -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
-    Write-LWKeyValue -Label 'Enemy END' -Value ("{0} / {1}" -f $script:GameState.Combat.EnemyEnduranceCurrent, $script:GameState.Combat.EnemyEnduranceMax) -ValueColor 'Red'
-    Write-LWKeyValue -Label 'Player CS' -Value ([string]$breakdown.PlayerCombatSkill) -ValueColor 'Cyan'
-    Write-LWKeyValue -Label 'Enemy CS' -Value ([string]$breakdown.EnemyCombatSkill) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Combat Ratio' -Value ([string]$breakdown.CombatRatio) -ValueColor (Get-LWCombatRatioColor -Ratio $breakdown.CombatRatio)
-    Write-LWKeyValue -Label 'Weapon' -Value (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Undead Enemy' -Value $(if ($script:GameState.Combat.EnemyIsUndead) { 'Yes' } else { 'No' }) -ValueColor $(if ($script:GameState.Combat.EnemyIsUndead) { 'DarkYellow' } else { 'Gray' })
-    if (Test-LWCombatUsesSommerswerd -State $script:GameState) {
-        $sommerswerdStatus = if ($script:GameState.Combat.SommerswerdSuppressed) { 'Suppressed' } elseif ($script:GameState.Combat.EnemyIsUndead) { 'Active (undead x2)' } else { 'Active' }
-        Write-LWKeyValue -Label 'Sommerswerd' -Value $sommerswerdStatus -ValueColor $(if ($script:GameState.Combat.SommerswerdSuppressed) { 'Yellow' } else { 'DarkYellow' })
-    }
-    Write-LWKeyValue -Label 'Mindblast' -Value $(if ($script:GameState.Combat.UseMindblast) { 'On' } else { 'Off' }) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Evade Allowed' -Value $(if ($script:GameState.Combat.CanEvade) { 'Yes' } else { 'No' }) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
-    Write-LWKeyValue -Label 'Notes' -Value $(if (@($breakdown.Notes).Count -gt 0) { @($breakdown.Notes) -join '; ' } else { '(none)' }) -ValueColor 'DarkGray'
+    Show-LWCombatDuelPanel -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$script:GameState.Character.EnduranceCurrent) -PlayerMax ([int]$script:GameState.Character.EnduranceMax) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
+    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -CanEvade:([bool]$script:GameState.Combat.CanEvade) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
+    Show-LWCombatRecentRounds -Rounds @($script:GameState.Combat.Log) -Count 3
     Show-LWCombatPromptHint
 }
 
@@ -5772,12 +5876,15 @@ function Stop-LWCombat {
         Outcome           = $Outcome
         RoundCount        = @($script:GameState.Combat.Log).Count
         PlayerEnd         = $script:GameState.Character.EnduranceCurrent
+        PlayerEnduranceMax = $script:GameState.Character.EnduranceMax
         EnemyEnd          = $script:GameState.Combat.EnemyEnduranceCurrent
         EnemyEnduranceMax = $script:GameState.Combat.EnemyEnduranceMax
         EnemyIsUndead     = [bool]$script:GameState.Combat.EnemyIsUndead
         Weapon            = $script:GameState.Combat.EquippedWeapon
         SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
         Mindblast         = [bool]$script:GameState.Combat.UseMindblast
+        CanEvade          = [bool]$script:GameState.Combat.CanEvade
+        Mode              = [string]$script:GameState.Settings.CombatMode
         PlayerCombatSkill = if ($null -ne $breakdown) { $breakdown.PlayerCombatSkill } else { $null }
         EnemyCombatSkill  = if ($null -ne $breakdown) { $breakdown.EnemyCombatSkill } else { $null }
         CombatRatio       = if ($null -ne $breakdown) { $breakdown.CombatRatio } else { $null }
