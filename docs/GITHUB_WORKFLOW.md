@@ -55,3 +55,15 @@ Before the first commit/push, this machine needs:
 - Prefer one focused commit per feature or fix.
 - Update `README.md` when command surface or major features change.
 
+## README Sanitization Before Push
+
+Before pushing changes that touch `README.md`, do a quick public-facing cleanup pass:
+
+- Remove local machine paths, personal environment details, and temporary test references.
+- Do not mention live save names, current character progress, or private playthrough state.
+- Keep the README focused on shipped features, setup, commands, and public workflow.
+- Avoid internal-only notes, handoff references, agent notes, and debugging details.
+- Do not include copyrighted book text or copied reference tables.
+- Prefer generic examples over anything pulled from a personal save.
+
+Treat the README as public project documentation, not a development log.
