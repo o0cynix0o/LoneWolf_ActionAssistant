@@ -2302,6 +2302,10 @@ function Get-LWShieldItemNames {
     return @('Shield')
 }
 
+function Get-LWSilverHelmItemNames {
+    return @('Silver Helm')
+}
+
 function Get-LWSommerswerdItemNames {
     return @('Sommerswerd')
 }
@@ -2397,6 +2401,16 @@ function Get-LWStateShieldCombatSkillBonus {
     param([Parameter(Mandatory = $true)][object]$State)
 
     if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWShieldItemNames)) {
+        return 2
+    }
+
+    return 0
+}
+
+function Get-LWStateSilverHelmCombatSkillBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWSilverHelmItemNames) -Type 'special') {
         return 2
     }
 
@@ -5498,6 +5512,10 @@ function Show-LWInventory {
         Write-LWSubtle ('  Bone Sword: +1 Combat Skill in Book 3 / Kalte, no bonus elsewhere.')
         Write-Host ''
     }
+    if ((Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
+        Write-LWSubtle '  Silver Helm: +2 Combat Skill while carried as a Special Item.'
+        Write-Host ''
+    }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
     Write-LWSubtle '  Use drop <type> <slot> to remove by slot number.'
 }
@@ -5509,10 +5527,18 @@ function Show-LWSheet {
     }
 
     $shieldBonus = Get-LWStateShieldCombatSkillBonus -State $script:GameState
-    $displayCombatSkill = [int]$script:GameState.Character.CombatSkillBase + $shieldBonus
+    $silverHelmBonus = Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState
+    $displayCombatSkill = [int]$script:GameState.Character.CombatSkillBase + $shieldBonus + $silverHelmBonus
     $combatSkillText = [string]$displayCombatSkill
+    $combatSkillNotes = @()
     if ($shieldBonus -gt 0) {
-        $combatSkillText = "{0} (Shield +{1})" -f $displayCombatSkill, $shieldBonus
+        $combatSkillNotes += "Shield +$shieldBonus"
+    }
+    if ($silverHelmBonus -gt 0) {
+        $combatSkillNotes += "Silver Helm +$silverHelmBonus"
+    }
+    if ($combatSkillNotes.Count -gt 0) {
+        $combatSkillText = "{0} ({1})" -f $displayCombatSkill, ($combatSkillNotes -join ', ')
     }
 
     $chainmailBonus = Get-LWStateChainmailEnduranceBonus -State $script:GameState
@@ -5537,6 +5563,9 @@ function Show-LWSheet {
     }
     if (Test-LWStateHasBoneSword -State $script:GameState) {
         Write-LWKeyValue -Label 'Bone Sword' -Value $(if (Test-LWStateIsInKalte -State $script:GameState) { '+1 in Book 3 / Kalte combat' } else { 'No bonus outside Book 3 / Kalte' }) -ValueColor 'DarkYellow'
+    }
+    if ($silverHelmBonus -gt 0) {
+        Write-LWKeyValue -Label 'Silver Helm' -Value ("+{0} Combat Skill" -f $silverHelmBonus) -ValueColor 'DarkYellow'
     }
     Write-LWKeyValue -Label 'Combat Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
     Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
@@ -6129,6 +6158,12 @@ function Get-LWCombatBreakdownFromState {
     if ($shieldBonus -gt 0) {
         $playerCombatSkill += $shieldBonus
         $notes += "Shield +$shieldBonus"
+    }
+
+    $silverHelmBonus = Get-LWStateSilverHelmCombatSkillBonus -State $State
+    if ($silverHelmBonus -gt 0) {
+        $playerCombatSkill += $silverHelmBonus
+        $notes += "Silver Helm +$silverHelmBonus"
     }
 
     if ($State.Combat.UseMindblast) {
@@ -7987,7 +8022,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Shield adds +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'

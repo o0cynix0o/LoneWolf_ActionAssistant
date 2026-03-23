@@ -255,6 +255,9 @@ Some items are now handled automatically instead of needing manual stat edits.
 
 - `Shield`
   Adds `+2 Combat Skill`
+- `Silver Helm`
+  Counts as a Special Item that is treated as worn automatically
+  Adds `+2 Combat Skill`
 - `Bone Sword`
   Counts as a normal weapon
   Gives `+1 Combat Skill` in Book 3 / Kalte only
