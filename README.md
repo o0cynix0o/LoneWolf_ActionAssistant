@@ -9,6 +9,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Screen-based terminal UI with ASCII banners and color-coded panels
 - New Kai character creation with random starting Combat Skill and Endurance
 - Kai discipline selection, including Weaponskill weapon assignment
+- Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
 - Inventory slot tracking for weapons, backpack items, special items, and gold
 - Section tracking with Healing support for non-combat sections
 - Meal handling with Hunting support

@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.6.8'
+$script:LWAppVersion = '0.6.9'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -849,6 +849,39 @@ function Format-LWBookLabel {
     }
 
     return "$BookNumber - $title"
+}
+
+function Get-LWKaiRankTitle {
+    param([int]$DisciplineCount)
+
+    if ($DisciplineCount -le 0) {
+        return $null
+    }
+
+    switch ($DisciplineCount) {
+        1 { return 'Novice' }
+        2 { return 'Intuite' }
+        3 { return 'Doan' }
+        4 { return 'Acolyte' }
+        5 { return 'Initiate' }
+        6 { return 'Aspirant' }
+        7 { return 'Guardian' }
+        8 { return 'Warmarn / Journeyman' }
+        9 { return 'Savant' }
+        default { return 'Master' }
+    }
+}
+
+function Format-LWKaiRankLabel {
+    param([int]$DisciplineCount)
+
+    $rankTitle = Get-LWKaiRankTitle -DisciplineCount $DisciplineCount
+    if ([string]::IsNullOrWhiteSpace($rankTitle)) {
+        return '(unranked)'
+    }
+
+    $displayCount = if ($DisciplineCount -gt 10) { '10+' } else { [string]$DisciplineCount }
+    return "{0} - {1}" -f $displayCount, $rankTitle
 }
 
 function New-LWAchievementProgressFlags {
@@ -3669,6 +3702,7 @@ function Get-LWCampaignSummary {
     $summary = [pscustomobject]@{
         CharacterName                     = [string]$script:GameState.Character.Name
         CurrentBookLabel                  = Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber) -IncludePrefix
+        KaiRankLabel                      = Format-LWKaiRankLabel -DisciplineCount @($script:GameState.Character.Disciplines).Count
         CurrentSection                    = [int]$script:GameState.CurrentSection
         RunStatus                         = Get-LWCampaignRunStatus
         BooksCompletedCount               = @($script:GameState.Character.CompletedBooks).Count
@@ -3759,6 +3793,7 @@ function Show-LWCampaignOverview {
     Write-LWKeyValue -Label 'Run Status' -Value $Summary.RunStatus -ValueColor $(if ([string]$Summary.RunStatus -eq 'Fallen') { 'Red' } elseif ([string]$Summary.RunStatus -eq 'In Combat') { 'Yellow' } else { 'Green' })
     Write-LWKeyValue -Label 'Run Style' -Value $Summary.RunStyle -ValueColor 'Cyan'
     Write-LWKeyValue -Label 'Current Book' -Value $Summary.CurrentBookLabel -ValueColor 'White'
+    Write-LWKeyValue -Label 'Kai Rank' -Value $Summary.KaiRankLabel -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Current Section' -Value ([string]$Summary.CurrentSection) -ValueColor 'White'
     Write-LWKeyValue -Label 'Completed Books' -Value $Summary.CompletedBooksLabel -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Books Complete' -Value ([string]$Summary.BooksCompletedCount) -ValueColor 'Gray'
@@ -4563,6 +4598,7 @@ function Show-LWSheet {
     Write-LWKeyValue -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
     Write-LWKeyValue -Label 'Rule Set' -Value $script:GameState.RuleSet -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Book' -Value (Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber)) -ValueColor 'White'
+    Write-LWKeyValue -Label 'Kai Rank' -Value (Format-LWKaiRankLabel -DisciplineCount @($script:GameState.Character.Disciplines).Count) -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Combat Skill' -Value $combatSkillText -ValueColor 'Cyan'
     Write-LWKeyValue -Label 'Endurance' -Value $enduranceText -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
     if (Test-LWStateHasSommerswerd -State $script:GameState) {
