@@ -85,6 +85,7 @@ If you run `load` inside the app, it scans the save folder, lists saves by numbe
 new
 sheet
 disciplines
+discipline add [name]
 section [n]
 complete
 history
@@ -132,6 +133,14 @@ rewind [n]
 ```
 
 Use `end -1` for section damage and `end +1` for simple recovery without changing max END.
+
+If you miss a book-completion discipline reward, you can recover it in-app with:
+
+```text
+discipline add
+discipline add Mindblast
+discipline add Mind Over Matter
+```
 
 ### Combat
 

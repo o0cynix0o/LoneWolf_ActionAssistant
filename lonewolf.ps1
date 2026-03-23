@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.6.7'
+$script:LWAppVersion = '0.6.8'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -3098,6 +3098,57 @@ function Select-LWKaiDisciplines {
             Set-LWScreen -Name $previousScreen -Data $previousData
         }
     }
+}
+
+function Add-LWKaiDiscipline {
+    param([string]$Name = '')
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $owned = @($script:GameState.Character.Disciplines)
+    $availableNames = @($script:GameData.KaiDisciplines | ForEach-Object { [string]$_.Name })
+    $remainingNames = @($availableNames | Where-Object { $owned -notcontains $_ })
+
+    if ($remainingNames.Count -eq 0) {
+        Write-LWWarn 'All Kai Disciplines are already owned.'
+        return
+    }
+
+    $disciplineName = $null
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        $selection = Select-LWKaiDisciplines -Count 1 -Exclude $owned
+        if (@($selection).Count -gt 0) {
+            $disciplineName = [string]$selection[0]
+        }
+    }
+    else {
+        $disciplineName = Get-LWMatchingValue -Values $remainingNames -Target $Name.Trim()
+        if ([string]::IsNullOrWhiteSpace($disciplineName)) {
+            Write-LWWarn ("Unknown or already owned discipline: {0}" -f $Name.Trim())
+            return
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($disciplineName)) {
+        Write-LWWarn 'No discipline was selected.'
+        return
+    }
+
+    $script:GameState.Character.Disciplines = @($owned + $disciplineName)
+    Set-LWScreen -Name 'disciplines'
+    Write-LWInfo "Added discipline: $disciplineName."
+
+    if ($disciplineName -eq 'Weaponskill' -and [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
+        $weaponRoll = Get-LWRandomDigit
+        $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
+        $script:GameState.Character.WeaponskillWeapon = $weaponName
+        Write-LWInfo "Weaponskill roll: $weaponRoll -> $weaponName"
+    }
+
+    Invoke-LWMaybeAutosave
 }
 
 function Get-LWSafeFileName {
@@ -6539,6 +6590,7 @@ function Show-LWHelp {
     Write-LWKeyValue -Label 'sheet' -Value 'Show character sheet' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'inv' -Value 'Show inventory slots' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'disciplines' -Value 'Show disciplines' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed Kai discipline reward' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'notes' -Value 'Show notes' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'note [text]' -Value 'Add a note' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'note remove [n]' -Value 'Remove a note by number' -ValueColor 'Gray'
@@ -6586,6 +6638,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Quick start syntax: combat start Giak 12 10' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use inv to see exact weapon and backpack slots, including empty spaces.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield adds +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
@@ -6757,6 +6810,23 @@ function Invoke-LWCommand {
         'inv'         { Set-LWScreen -Name 'inventory'; return $null }
         'inventory'   { Set-LWScreen -Name 'inventory'; return $null }
         'disciplines' { Set-LWScreen -Name 'disciplines'; return $null }
+        'discipline'  {
+            if ($parts.Count -eq 1) {
+                Set-LWScreen -Name 'disciplines'
+                return $null
+            }
+
+            switch ($parts[1].ToLowerInvariant()) {
+                'add' {
+                    $disciplineName = if ($parts.Count -gt 2) { ($parts[2..($parts.Count - 1)] -join ' ') } else { '' }
+                    Add-LWKaiDiscipline -Name $disciplineName
+                }
+                default {
+                    Write-LWWarn 'Use discipline add [name] to grant a missed Kai discipline.'
+                }
+            }
+            return $null
+        }
         'notes'       { Set-LWScreen -Name 'notes'; return $null }
         'note'        {
             if ($parts.Count -gt 1 -and @('remove', 'delete', 'drop') -contains $parts[1].ToLowerInvariant()) {
