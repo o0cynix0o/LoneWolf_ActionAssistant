@@ -264,6 +264,7 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Chainmail Waistcoat` / `Chainmail Wastecoat`
   Adds `+4 Endurance`
 - `Sommerswerd`
+  Available from Book 2 onward
   Counts as a weapon-like Special Item
   Gives `+8 Combat Skill` in combat
   Gives `+10 total` if Weaponskill is `Short Sword`, `Sword`, or `Broadsword`

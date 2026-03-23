@@ -2478,7 +2478,7 @@ function Test-LWWeaponIsSommerswerd {
 function Test-LWStateHasSommerswerd {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWSommerswerdItemNames) -Type 'special')
+    return ((Test-LWCombatSommerswerdAvailable -State $State) -and (Test-LWStateHasInventoryItem -State $State -Names (Get-LWSommerswerdItemNames) -Type 'special'))
 }
 
 function Test-LWStateHasSommerswerdWeaponskill {
@@ -2495,7 +2495,10 @@ function Get-LWStateCombatWeapons {
     param([Parameter(Mandatory = $true)][object]$State)
 
     $choices = @($State.Inventory.Weapons)
-    $sommerswerd = Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWSommerswerdItemNames) -Type 'special'
+    $sommerswerd = $null
+    if (Test-LWCombatSommerswerdAvailable -State $State) {
+        $sommerswerd = Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWSommerswerdItemNames) -Type 'special'
+    }
     if (-not [string]::IsNullOrWhiteSpace($sommerswerd) -and [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values $choices -Target $sommerswerd))) {
         $choices = @($choices) + @([string]$sommerswerd)
     }
@@ -2542,6 +2545,12 @@ function Get-LWCombatKnockoutCombatSkillPenalty {
     return 2
 }
 
+function Test-LWCombatSommerswerdAvailable {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return ([int]$State.Character.BookNumber -ge 2)
+}
+
 function Get-LWStateSommerswerdCombatSkillBonus {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -2563,6 +2572,10 @@ function Get-LWStateSommerswerdCombatSkillBonus {
 function Get-LWStateSommerswerdFallbackWeaponskillBonus {
     param([Parameter(Mandatory = $true)][object]$State)
 
+    if (-not (Test-LWCombatSommerswerdAvailable -State $State)) {
+        return 0
+    }
+
     if (Test-LWStateHasSommerswerdWeaponskill -State $State) {
         return 2
     }
@@ -2573,7 +2586,7 @@ function Get-LWStateSommerswerdFallbackWeaponskillBonus {
 function Test-LWCombatUsesSommerswerd {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    return (Test-LWWeaponIsSommerswerd -Weapon ([string]$State.Combat.EquippedWeapon))
+    return ((Test-LWCombatSommerswerdAvailable -State $State) -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$State.Combat.EquippedWeapon)))
 }
 
 function Test-LWCombatSommerswerdPowerActive {
@@ -5004,7 +5017,7 @@ function Get-LWMaxWeaponVictoryCount {
 function Get-LWSommerswerdUndeadVictoryCount {
     $count = 0
     foreach ($entry in @(Get-LWRunVictoryEntries)) {
-        if ((Test-LWPropertyExists -Object $entry -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$entry.Weapon)) -and (Test-LWPropertyExists -Object $entry -Name 'EnemyIsUndead') -and [bool]$entry.EnemyIsUndead) {
+        if ((Test-LWPropertyExists -Object $entry -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$entry.Weapon)) -and (Get-LWCombatEntryBookNumber -Entry $entry) -ge 2 -and (Test-LWPropertyExists -Object $entry -Name 'EnemyIsUndead') -and [bool]$entry.EnemyIsUndead) {
             $count++
         }
     }
@@ -5051,7 +5064,7 @@ function Test-LWAchievementSatisfied {
         'pathfinder' { return (@($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'SectionsVisited') -and [int]$_.SectionsVisited -ge 25 }).Count -ge 1) }
         'long_road' { return (@($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'SectionsVisited') -and [int]$_.SectionsVisited -ge 50 }).Count -ge 1) }
         'no_quarter' { return (@($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Victories') -and [int]$_.Victories -ge 5 }).Count -ge 1) }
-        'sun_sword' { return ((Test-LWStateHasSommerswerd -State $script:GameState) -or @($runEntries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$_.Weapon)) }).Count -ge 1) }
+        'sun_sword' { return ((Test-LWStateHasSommerswerd -State $script:GameState) -or @($runEntries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$_.Weapon)) -and (Get-LWCombatEntryBookNumber -Entry $_) -ge 2 }).Count -ge 1) }
         'fully_armed' { return (@($script:GameState.Inventory.Weapons).Count -ge 2 -and (Get-LWStateShieldCombatSkillBonus -State $script:GameState) -ge 2) }
         'relic_hunter' { return (@($script:GameState.Inventory.SpecialItems).Count -ge 5) }
         'book_one_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 1) }
@@ -6223,7 +6236,10 @@ function Get-LWCombatBreakdownFromState {
         $notes += 'Unarmed -4'
     }
     elseif (Test-LWWeaponIsSommerswerd -Weapon ([string]$State.Combat.EquippedWeapon)) {
-        if ([bool]$State.Combat.SommerswerdSuppressed) {
+        if (-not (Test-LWCombatSommerswerdAvailable -State $State)) {
+            $notes += 'Sommerswerd unavailable before Book 2'
+        }
+        elseif ([bool]$State.Combat.SommerswerdSuppressed) {
             $notes += 'Sommerswerd suppressed'
 
             $fallbackBonus = Get-LWStateSommerswerdFallbackWeaponskillBonus -State $State
@@ -6741,7 +6757,7 @@ function Show-LWCombatSummary {
     $notes = if ((Test-LWPropertyExists -Object $Summary -Name 'Notes') -and @($Summary.Notes).Count -gt 0) { @($Summary.Notes) } else { @() }
     $weapon = if (Test-LWPropertyExists -Object $Summary -Name 'Weapon') { Get-LWCombatDisplayWeapon -Weapon ([string]$Summary.Weapon) } else { 'Unknown' }
     $ratio = if (Test-LWPropertyExists -Object $Summary -Name 'CombatRatio') { [int]$Summary.CombatRatio } else { 0 }
-    $usingSommerswerd = (Test-LWPropertyExists -Object $Summary -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$Summary.Weapon))
+    $usingSommerswerd = (Test-LWPropertyExists -Object $Summary -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$Summary.Weapon)) -and (Test-LWPropertyExists -Object $Summary -Name 'BookNumber') -and [int]$Summary.BookNumber -ge 2
     $enemyUndead = (Test-LWPropertyExists -Object $Summary -Name 'EnemyIsUndead') -and [bool]$Summary.EnemyIsUndead
     $enemyUsesMindforce = (Test-LWPropertyExists -Object $Summary -Name 'EnemyUsesMindforce') -and [bool]$Summary.EnemyUsesMindforce
     $mindforceBlocked = (Test-LWPropertyExists -Object $Summary -Name 'MindforceBlockedByMindshield') -and [bool]$Summary.MindforceBlockedByMindshield
@@ -8075,7 +8091,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'In Book 3 and later, combat can attempt a knockout: edged weapons take -2 CS, while unarmed, Warhammer, Quarterstaff, and Mace do not.' -TextColor 'Gray'
