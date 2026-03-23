@@ -5582,7 +5582,7 @@ function Get-LWInventoryItems {
 function Set-LWInventoryItems {
     param(
         [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
-        [Parameter(Mandatory = $true)][object[]]$Items
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
     )
 
     switch ($Type) {
