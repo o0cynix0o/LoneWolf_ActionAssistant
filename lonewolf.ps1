@@ -455,7 +455,8 @@ function Show-LWDeathScreen {
     $deathType = if ([string]::IsNullOrWhiteSpace([string]$deathState.Type)) { 'Death' } else { [string]$deathState.Type }
     $causeText = if ([string]::IsNullOrWhiteSpace([string]$deathState.Cause)) { 'A fatal choice ended this path.' } else { [string]$deathState.Cause }
 
-    Write-LWPanelHeader -Title 'You Have Fallen' -AccentColor 'Red'
+    $deathTitle = if (Test-LWPermadeathEnabled) { 'Tragically, your life and this save end here!' } else { 'You Have Fallen' }
+    Write-LWPanelHeader -Title $deathTitle -AccentColor 'Red'
     Write-LWKeyValue -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
     Write-LWKeyValue -Label 'Book' -Value $bookLabel -ValueColor 'White'
     Write-LWKeyValue -Label 'Section' -Value ([string]$deathState.Section) -ValueColor 'White'
