@@ -2330,6 +2330,10 @@ function Get-LWConcentratedHealingPotionItemNames {
     return @('Concentrated Laumspur', 'Concentrated Laumspur Potion', 'Potion of Concentrated Laumspur')
 }
 
+function Get-LWAletherPotionItemNames {
+    return @('Alether', 'Alether Potion', 'Potion of Alether')
+}
+
 function Test-LWConcentratedHealingPotionName {
     param([string]$Name)
 
@@ -2734,6 +2738,7 @@ function New-LWCombatState {
         EnemyUsesMindforce        = $false
         EnemyImmuneToMindblast    = $false
         UseMindblast              = $false
+        AletherCombatSkillBonus   = 0
         AttemptKnockout           = $false
         CanEvade                  = $false
         EquippedWeapon            = $null
@@ -2930,6 +2935,9 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyUsesMindforce') -or $null -eq $State.Combat.EnemyUsesMindforce) {
         $State.Combat | Add-Member -Force -NotePropertyName EnemyUsesMindforce -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'AletherCombatSkillBonus') -or $null -eq $State.Combat.AletherCombatSkillBonus) {
+        $State.Combat | Add-Member -Force -NotePropertyName AletherCombatSkillBonus -NotePropertyValue 0
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'AttemptKnockout') -or $null -eq $State.Combat.AttemptKnockout) {
         $State.Combat | Add-Member -Force -NotePropertyName AttemptKnockout -NotePropertyValue $false
@@ -6143,6 +6151,12 @@ function Use-LWHealingPotion {
     Invoke-LWMaybeAutosave
 }
 
+function Get-LWStateAletherPotionName {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWAletherPotionItemNames) -Type 'backpack')
+}
+
 function Get-LWCombatBreakdownFromState {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -6169,6 +6183,11 @@ function Get-LWCombatBreakdownFromState {
     if ($State.Combat.UseMindblast) {
         $playerCombatSkill += 2
         $notes += 'Mindblast +2'
+    }
+
+    if ([int]$State.Combat.AletherCombatSkillBonus -gt 0) {
+        $playerCombatSkill += [int]$State.Combat.AletherCombatSkillBonus
+        $notes += "Alether +$([int]$State.Combat.AletherCombatSkillBonus)"
     }
 
     $knockoutPenalty = Get-LWCombatKnockoutCombatSkillPenalty -State $State
@@ -6583,6 +6602,7 @@ function Get-LWCurrentCombatLogEntry {
         EnemyEnd   = $script:GameState.Combat.EnemyEnduranceCurrent
         EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
         MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
+        AletherCombatSkillBonus = [int]$script:GameState.Combat.AletherCombatSkillBonus
         AttemptKnockout = [bool]$script:GameState.Combat.AttemptKnockout
         Log        = @($script:GameState.Combat.Log)
     }
@@ -6969,7 +6989,17 @@ function Start-LWCombat {
 
     $equippedWeapon = Select-LWCombatWeapon -DefaultWeapon (Get-LWPreferredCombatWeapon -State $script:GameState)
     $sommerswerdSuppressed = $false
+    $aletherCombatSkillBonus = 0
     $attemptKnockout = $false
+    $aletherPotionName = Get-LWStateAletherPotionName -State $script:GameState
+    if (-not [string]::IsNullOrWhiteSpace($aletherPotionName)) {
+        $useAlether = Read-LWYesNo -Prompt 'Use Alether before this fight for +4 Combat Skill?' -Default $false
+        if ($useAlether) {
+            Remove-LWInventoryItem -Type 'backpack' -Name $aletherPotionName -Quantity 1
+            $aletherCombatSkillBonus = 4
+            Write-LWInfo "$aletherPotionName is used before combat and grants +4 Combat Skill for this fight."
+        }
+    }
     if (Test-LWWeaponIsSommerswerd -Weapon $equippedWeapon) {
         if ((Get-LWCurrentDifficulty) -eq 'Veteran') {
             $textAllowsSommerswerd = Read-LWYesNo -Prompt 'Does the text explicitly allow the Sommerswerd''s power in this combat?' -Default $false
@@ -7033,6 +7063,7 @@ function Start-LWCombat {
         EnemyUsesMindforce        = $enemyUsesMindforce
         EnemyImmuneToMindblast    = $enemyImmune
         UseMindblast              = $useMindblast
+        AletherCombatSkillBonus   = $aletherCombatSkillBonus
         AttemptKnockout           = $attemptKnockout
         CanEvade                  = $canEvade
         EquippedWeapon            = $equippedWeapon
@@ -7081,6 +7112,7 @@ function Stop-LWCombat {
         EnemyIsUndead     = [bool]$script:GameState.Combat.EnemyIsUndead
         EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
         MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
+        AletherCombatSkillBonus = [int]$script:GameState.Combat.AletherCombatSkillBonus
         AttemptKnockout   = [bool]$script:GameState.Combat.AttemptKnockout
         Weapon            = $script:GameState.Combat.EquippedWeapon
         SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
@@ -8030,6 +8062,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'In Book 3 and later, combat can attempt a knockout: edged weapons take -2 CS, while unarmed, Warhammer, Quarterstaff, and Mace do not.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion works with both Healing Potion and Laumspur Potion item names.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion now prefers Concentrated Laumspur first and restores 8 END when one is available.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'If Alether is in your backpack, combat start can consume it before the fight to grant +4 Combat Skill for that combat only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use die for instant-death sections. After death, use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'history and combat log all now group archived fights by book for easier browsing.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'

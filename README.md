@@ -273,6 +273,9 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Concentrated Laumspur`
   Restores `8 END`
   The `potion` command prefers it first when available
+- `Alether`
+  Must be used before combat starts
+  `combat start` can consume it from the backpack and grant `+4 Combat Skill` for that fight only
 
 ## Stats and Achievements
 
