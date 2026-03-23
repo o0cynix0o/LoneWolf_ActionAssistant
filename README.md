@@ -108,7 +108,7 @@ quit
 ```text
 inv
 add [type name [qty]]
-drop [type slot]
+drop [type slot|all]
 gold [delta]
 notes
 note [text]
@@ -121,6 +121,7 @@ Examples:
 add backpack Potion of Laumspur
 add special Sommerswerd
 drop backpack 2
+drop backpack all
 note White Pass
 note remove 1
 ```

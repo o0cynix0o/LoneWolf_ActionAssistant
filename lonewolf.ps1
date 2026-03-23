@@ -5667,7 +5667,7 @@ function Show-LWInventory {
         Write-Host ''
     }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
-    Write-LWSubtle '  Use drop <type> <slot> to remove by slot number.'
+    Write-LWSubtle '  Use drop <type> <slot> to remove by slot number, or drop <type> all to clear a section.'
 }
 
 function Show-LWSheet {
@@ -6081,6 +6081,25 @@ function Remove-LWInventoryItemBySlot {
     Invoke-LWMaybeAutosave
 }
 
+function Remove-LWInventorySection {
+    param(
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type
+    )
+
+    $items = @(Get-LWInventoryItems -Type $Type)
+    $label = Get-LWInventoryTypeLabel -Type $Type
+
+    if ($items.Count -eq 0) {
+        Write-LWWarn "$label is empty."
+        return
+    }
+
+    Set-LWInventoryItems -Type $Type -Items @()
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+    Write-LWInfo ("Removed all {0} item{1} from {2}." -f $items.Count, $(if ($items.Count -eq 1) { '' } else { 's' }), $label)
+    Invoke-LWMaybeAutosave
+}
+
 function Remove-LWInventoryInteractive {
     param([string[]]$InputParts = @())
 
@@ -6116,17 +6135,44 @@ function Remove-LWInventoryInteractive {
 
     $removeLabel = Get-LWInventoryTypeLabel -Type $type
 
+    $removeAll = $false
     $slot = $null
     if ($InputParts.Count -gt 2) {
-        $slotValue = 0
-        if (-not [int]::TryParse($InputParts[2], [ref]$slotValue)) {
-            Write-LWWarn 'Slot number must be a whole number.'
-            return
+        if ([string]$InputParts[2] -ieq 'all') {
+            $removeAll = $true
         }
-        $slot = $slotValue
+        else {
+            $slotValue = 0
+            if (-not [int]::TryParse($InputParts[2], [ref]$slotValue)) {
+                Write-LWWarn 'Slot number must be a whole number, or use all.'
+                return
+            }
+            $slot = $slotValue
+        }
     }
     else {
-        $slot = Read-LWInt -Prompt ("{0} slot to remove" -f $removeLabel) -Min 1
+        $selection = Read-LWText -Prompt ("{0} slot to remove (or all)" -f $removeLabel)
+        if ([string]$selection -ieq 'all') {
+            $removeAll = $true
+        }
+        else {
+            $slotValue = 0
+            if (-not [int]::TryParse([string]$selection, [ref]$slotValue)) {
+                Write-LWWarn 'Slot number must be a whole number, or use all.'
+                return
+            }
+            $slot = $slotValue
+        }
+    }
+
+    if ($removeAll) {
+        Remove-LWInventorySection -Type $type
+        return
+    }
+
+    if ($null -eq $slot) {
+        Write-LWWarn 'Slot number must be a whole number.'
+        return
     }
 
     Remove-LWInventoryItemBySlot -Type $type -Slot $slot
@@ -8210,7 +8256,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'While combat is active, pressing Enter advances one round.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Quick start syntax: combat start Giak 12 10' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use inv to see exact weapon and backpack slots, including empty spaces.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
