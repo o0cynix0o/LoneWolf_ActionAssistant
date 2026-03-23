@@ -291,6 +291,8 @@ The app tracks live book stats and run history, including:
 - potions used and potion END restored
 - fights, wins, defeats, evades, and rounds fought
 - highest enemy CS and END faced / defeated
+
+It also supports hidden story achievements. The first batch now includes Book 3 section/discovery achievements, including the Diamond from section `218`.
 - fastest, easiest, and longest fights
 - weapon usage and weapon victories
 - Mindblast usage and wins

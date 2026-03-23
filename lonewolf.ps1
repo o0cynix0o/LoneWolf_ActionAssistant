@@ -1281,11 +1281,21 @@ function New-LWAchievementProgressFlags {
     }
 }
 
+function New-LWStoryAchievementFlags {
+    return [pscustomobject]@{
+        Book3SnakePitVisited = $false
+        Book3CliffhangerSeen = $false
+        Book3DiamondClaimed  = $false
+        Book3SnowblindSeen   = $false
+    }
+}
+
 function New-LWAchievementState {
     return [pscustomobject]@{
         Unlocked          = @()
         SeenNotifications = @()
         ProgressFlags     = (New-LWAchievementProgressFlags)
+        StoryFlags        = (New-LWStoryAchievementFlags)
     }
 }
 
@@ -1298,7 +1308,8 @@ function New-LWAchievementDefinition {
         [bool]$Backfill = $false,
         [string]$ModePool = 'Universal',
         [string[]]$RequiredDifficulty = @(),
-        [bool]$RequiresPermadeath = $false
+        [bool]$RequiresPermadeath = $false,
+        [bool]$Hidden = $false
     )
 
     return [pscustomobject]@{
@@ -1310,6 +1321,7 @@ function New-LWAchievementDefinition {
         ModePool           = $ModePool
         RequiredDifficulty = @($RequiredDifficulty)
         RequiresPermadeath = [bool]$RequiresPermadeath
+        Hidden             = [bool]$Hidden
     }
 }
 
@@ -1357,7 +1369,11 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'veteran_of_sommerlund' -Name 'Veteran of Sommerlund' -Category 'Legend' -Description 'Complete a book on Veteran.' -ModePool 'Challenge' -RequiredDifficulty @('Veteran')),
         (New-LWAchievementDefinition -Id 'by_the_text' -Name 'By the Text' -Category 'Legend' -Description 'Complete a Veteran book without ever using unauthorized Sommerswerd power.' -ModePool 'Challenge' -RequiredDifficulty @('Veteran')),
         (New-LWAchievementDefinition -Id 'only_one_life' -Name 'Only One Life' -Category 'Legend' -Description 'Complete a book with Permadeath enabled.' -ModePool 'Challenge' -RequiresPermadeath:$true),
-        (New-LWAchievementDefinition -Id 'mortal_wolf' -Name 'Mortal Wolf' -Category 'Legend' -Description 'Complete a Hard or Veteran book with Permadeath enabled.' -ModePool 'Challenge' -RequiredDifficulty @('Hard', 'Veteran') -RequiresPermadeath:$true)
+        (New-LWAchievementDefinition -Id 'mortal_wolf' -Name 'Mortal Wolf' -Category 'Legend' -Description 'Complete a Hard or Veteran book with Permadeath enabled.' -ModePool 'Challenge' -RequiredDifficulty @('Hard', 'Veteran') -RequiresPermadeath:$true),
+        (New-LWAchievementDefinition -Id 'snakes_why' -Name 'Snakes, Why Did It Have to Be Snakes?' -Category 'Journey' -Description 'Reach the Javek ledge in Book 3.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'cliffhanger' -Name 'Cliffhanger' -Category 'Journey' -Description 'Witness Dyce''s fatal fall in Book 3.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'whats_in_the_box' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Diamond from the bone box in Book 3.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'snowblind' -Name 'Snowblind' -Category 'Journey' -Description 'Suffer snow-blindness in Book 3.' -ModePool 'Exploration' -Hidden:$true)
     )
 }
 
@@ -1398,6 +1414,79 @@ function Ensure-LWAchievementState {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.ProgressFlags -Name $propertyName) -or $null -eq $State.Achievements.ProgressFlags.$propertyName) {
             $State.Achievements.ProgressFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue 0
         }
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Achievements -Name 'StoryFlags') -or $null -eq $State.Achievements.StoryFlags) {
+        $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
+    }
+
+    foreach ($propertyName in @('Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen')) {
+        if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
+            $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
+        }
+    }
+}
+
+function Test-LWStoryAchievementFlag {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if (-not (Test-LWHasState)) {
+        return $false
+    }
+
+    Ensure-LWAchievementState -State $script:GameState
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Achievements.StoryFlags -Name $Name)) {
+        return $false
+    }
+
+    return [bool]$script:GameState.Achievements.StoryFlags.$Name
+}
+
+function Set-LWStoryAchievementFlag {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [bool]$Value = $true
+    )
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    Ensure-LWAchievementState -State $script:GameState
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Achievements.StoryFlags -Name $Name)) {
+        $script:GameState.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $Name -NotePropertyValue ([bool]$Value)
+        return
+    }
+
+    $script:GameState.Achievements.StoryFlags.$Name = [bool]$Value
+}
+
+function Register-LWStorySectionAchievementTriggers {
+    param([Parameter(Mandatory = $true)][int]$Section)
+
+    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 3) {
+        return
+    }
+
+    switch ($Section) {
+        19 { Set-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen' }
+        88 { Set-LWStoryAchievementFlag -Name 'Book3SnakePitVisited' }
+        251 { Set-LWStoryAchievementFlag -Name 'Book3SnowblindSeen' }
+    }
+}
+
+function Register-LWStoryInventoryAchievementTriggers {
+    param(
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    if (-not (Test-LWHasState) -or $Type -ne 'special' -or [int]$script:GameState.Character.BookNumber -ne 3) {
+        return
+    }
+
+    if ([int]$script:GameState.CurrentSection -eq 218 -and [string]$Name -match 'diamond') {
+        Set-LWStoryAchievementFlag -Name 'Book3DiamondClaimed'
     }
 }
 
@@ -3060,6 +3149,7 @@ function Add-LWBookSectionVisit {
         $stats.VisitedSections = @($visited + $Section)
     }
 
+    Register-LWStorySectionAchievementTriggers -Section $Section
     [void](Sync-LWAchievements -Context 'section')
 }
 
@@ -4819,6 +4909,26 @@ function Get-LWAchievementAvailabilityReason {
     return ''
 }
 
+function Get-LWAchievementLockedDisplayName {
+    param([Parameter(Mandatory = $true)][object]$Definition)
+
+    if ((Test-LWPropertyExists -Object $Definition -Name 'Hidden') -and [bool]$Definition.Hidden -and -not (Test-LWAchievementUnlocked -Id ([string]$Definition.Id))) {
+        return '???'
+    }
+
+    return [string]$Definition.Name
+}
+
+function Get-LWAchievementLockedDisplayDescription {
+    param([Parameter(Mandatory = $true)][object]$Definition)
+
+    if ((Test-LWPropertyExists -Object $Definition -Name 'Hidden') -and [bool]$Definition.Hidden -and -not (Test-LWAchievementUnlocked -Id ([string]$Definition.Id))) {
+        return 'Hidden story achievement.'
+    }
+
+    return [string]$Definition.Description
+}
+
 function Get-LWAchievementEligibleCount {
     if (-not (Test-LWHasState)) {
         return 0
@@ -5083,6 +5193,10 @@ function Test-LWAchievementSatisfied {
         'by_the_text' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
         'only_one_life' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath }).Count -ge 1) }
         'mortal_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and @('Hard', 'Veteran') -contains [string]$_.Difficulty }).Count -ge 1) }
+        'snakes_why' { return (Test-LWStoryAchievementFlag -Name 'Book3SnakePitVisited') }
+        'cliffhanger' { return (Test-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen') }
+        'whats_in_the_box' { return (Test-LWStoryAchievementFlag -Name 'Book3DiamondClaimed') }
+        'snowblind' { return (Test-LWStoryAchievementFlag -Name 'Book3SnowblindSeen') }
         default { return $false }
     }
 }
@@ -5127,6 +5241,10 @@ function Get-LWAchievementProgressText {
         'by_the_text' { return 'complete any book on Veteran' }
         'only_one_life' { return $(if (Test-LWPermadeathEnabled) { 'Permadeath active for this run' } else { 'start a Permadeath run' }) }
         'mortal_wolf' { return $(if ((Test-LWPermadeathEnabled) -and @('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty)) { 'eligible run active' } else { 'requires Hard/Veteran + Permadeath' }) }
+        'snakes_why' { return '' }
+        'cliffhanger' { return '' }
+        'whats_in_the_box' { return '' }
+        'snowblind' { return '' }
         default { return '' }
     }
 }
@@ -5301,8 +5419,10 @@ function Show-LWAchievementLockedList {
     else {
         foreach ($definition in $locked) {
             $progress = Get-LWAchievementProgressText -Definition $definition
-            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$definition.Name, [string]$definition.Description) -TextColor 'Gray' -BulletColor 'DarkYellow'
-            if (-not [string]::IsNullOrWhiteSpace($progress)) {
+            $displayName = Get-LWAchievementLockedDisplayName -Definition $definition
+            $displayDescription = Get-LWAchievementLockedDisplayDescription -Definition $definition
+            Write-LWBulletItem -Text ("{0} - {1}" -f $displayName, $displayDescription) -TextColor 'Gray' -BulletColor 'DarkYellow'
+            if (-not [string]::IsNullOrWhiteSpace($progress) -and $displayName -ne '???') {
                 Write-LWSubtle ("      progress: {0}" -f $progress)
             }
         }
@@ -5315,7 +5435,9 @@ function Show-LWAchievementLockedList {
     else {
         foreach ($definition in $disabled) {
             $reason = Get-LWAchievementAvailabilityReason -Definition $definition
-            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$definition.Name, [string]$definition.Description) -TextColor 'Gray' -BulletColor 'DarkGray'
+            $displayName = Get-LWAchievementLockedDisplayName -Definition $definition
+            $displayDescription = Get-LWAchievementLockedDisplayDescription -Definition $definition
+            Write-LWBulletItem -Text ("{0} - {1}" -f $displayName, $displayDescription) -TextColor 'Gray' -BulletColor 'DarkGray'
             if (-not [string]::IsNullOrWhiteSpace($reason)) {
                 Write-LWSubtle ("      {0}" -f $reason)
             }
@@ -5803,6 +5925,7 @@ function Add-LWInventoryItem {
         }
     }
 
+    Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $Name
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
     [void](Sync-LWAchievements -Context 'inventory')
     Write-LWInfo "Added $Quantity x $Name to $Type inventory."
@@ -8103,6 +8226,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use campaign to review the whole run, or campaign books/combat/survival/milestones for focused views.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use achievements, achievements progress, or achievements planned to browse the new achievement system.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Book 3 now has hidden story achievements tied to specific sections and discoveries, including the Diamond from section 218.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use modes to review Story, Easy, Normal, Hard, Veteran, and Permadeath before starting a run.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Difficulty is locked for the whole run, and Permadeath can only be chosen at run start.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'ManualCRT gives you the ratio and roll, then asks for losses from your own CRT.' -TextColor 'Gray'
