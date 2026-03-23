@@ -2858,6 +2858,23 @@ function New-LWCombatState {
     }
 }
 
+function New-LWInventoryRecoveryEntry {
+    return [pscustomobject]@{
+        Items      = @()
+        BookNumber = $null
+        Section    = $null
+        SavedOn    = $null
+    }
+}
+
+function New-LWInventoryRecoveryState {
+    return [pscustomobject]@{
+        Weapon   = (New-LWInventoryRecoveryEntry)
+        Backpack = (New-LWInventoryRecoveryEntry)
+        Special  = (New-LWInventoryRecoveryEntry)
+    }
+}
+
 function New-LWDefaultState {
     return [pscustomobject]@{
         Version           = $script:LWStateVersion
@@ -2887,6 +2904,7 @@ function New-LWDefaultState {
         History           = @()
         BookHistory       = @()
         RunHistory        = @()
+        RecoveryStash     = (New-LWInventoryRecoveryState)
         SectionCheckpoints = @()
         DeathState        = (New-LWDeathState)
         DeathHistory      = @()
@@ -2969,6 +2987,28 @@ function Normalize-LWState {
     Ensure-LWAchievementState -State $State
     Ensure-LWRunState -State $State
     Ensure-LWRunHistory -State $State
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'RecoveryStash') -or $null -eq $State.RecoveryStash) {
+        $State | Add-Member -Force -NotePropertyName RecoveryStash -NotePropertyValue (New-LWInventoryRecoveryState)
+    }
+
+    foreach ($entryName in @('Weapon', 'Backpack', 'Special')) {
+        if (-not (Test-LWPropertyExists -Object $State.RecoveryStash -Name $entryName) -or $null -eq $State.RecoveryStash.$entryName) {
+            $State.RecoveryStash | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue (New-LWInventoryRecoveryEntry)
+        }
+        elseif (-not (Test-LWPropertyExists -Object $State.RecoveryStash.$entryName -Name 'Items') -or $null -eq $State.RecoveryStash.$entryName.Items) {
+            $State.RecoveryStash.$entryName | Add-Member -Force -NotePropertyName Items -NotePropertyValue @()
+        }
+        else {
+            $State.RecoveryStash.$entryName.Items = @($State.RecoveryStash.$entryName.Items)
+        }
+
+        foreach ($propertyName in @('BookNumber', 'Section', 'SavedOn')) {
+            if (-not (Test-LWPropertyExists -Object $State.RecoveryStash.$entryName -Name $propertyName)) {
+                $State.RecoveryStash.$entryName | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $null
+            }
+        }
+    }
 
     if (-not (Test-LWPropertyExists -Object $State -Name 'SectionHealingResolved')) {
         $State | Add-Member -NotePropertyName SectionHealingResolved -NotePropertyValue $false
@@ -5594,6 +5634,52 @@ function Set-LWInventoryItems {
     [void](Sync-LWAchievements -Context 'inventory')
 }
 
+function Get-LWRecoveryStashPropertyName {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+
+    switch ($Type) {
+        'weapon' { return 'Weapon' }
+        'backpack' { return 'Backpack' }
+        'special' { return 'Special' }
+    }
+}
+
+function Get-LWRecoveryStashEntry {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+
+    $propertyName = Get-LWRecoveryStashPropertyName -Type $Type
+    return $script:GameState.RecoveryStash.$propertyName
+}
+
+function Save-LWInventoryRecoveryEntry {
+    param(
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][object[]]$Items
+    )
+
+    $entry = Get-LWRecoveryStashEntry -Type $Type
+    $entry.Items = @($Items)
+    $entry.BookNumber = [int]$script:GameState.Character.BookNumber
+    $entry.Section = [int]$script:GameState.CurrentSection
+    $entry.SavedOn = (Get-Date).ToString('o')
+}
+
+function Clear-LWInventoryRecoveryEntry {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+
+    $entry = Get-LWRecoveryStashEntry -Type $Type
+    $entry.Items = @()
+    $entry.BookNumber = $null
+    $entry.Section = $null
+    $entry.SavedOn = $null
+}
+
+function Get-LWInventoryRecoveryItems {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+
+    return @((Get-LWRecoveryStashEntry -Type $Type).Items)
+}
+
 function Show-LWInventorySlotsSection {
     param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
 
@@ -5668,6 +5754,17 @@ function Show-LWInventory {
     }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
     Write-LWSubtle '  Use drop <type> <slot> to remove by slot number, or drop <type> all to clear a section.'
+    Write-LWSubtle '  Use recover <type> or recover all to restore stashed gear from a bulk drop.'
+    $recoveryNotes = @()
+    foreach ($type in @('weapon', 'backpack', 'special')) {
+        $recoveryItems = @(Get-LWInventoryRecoveryItems -Type $type)
+        if ($recoveryItems.Count -gt 0) {
+            $recoveryNotes += ("{0} {1}" -f (Get-LWInventoryTypeLabel -Type $type), $recoveryItems.Count)
+        }
+    }
+    if ($recoveryNotes.Count -gt 0) {
+        Write-LWSubtle ("  Recovery stash: {0}" -f ($recoveryNotes -join ' | '))
+    }
 }
 
 function Show-LWSheet {
@@ -6094,9 +6191,82 @@ function Remove-LWInventorySection {
         return
     }
 
+    Save-LWInventoryRecoveryEntry -Type $Type -Items @($items)
     Set-LWInventoryItems -Type $Type -Items @()
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
-    Write-LWInfo ("Removed all {0} item{1} from {2}." -f $items.Count, $(if ($items.Count -eq 1) { '' } else { 's' }), $label)
+    Write-LWInfo ("Removed all {0} item{1} from {2}. Use recover {3} to restore them later." -f $items.Count, $(if ($items.Count -eq 1) { '' } else { 's' }), $label, $Type)
+    Invoke-LWMaybeAutosave
+}
+
+function Test-LWInventoryRecoveryFits {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+
+    $recoveryItems = @(Get-LWInventoryRecoveryItems -Type $Type)
+    if ($recoveryItems.Count -eq 0) {
+        return $true
+    }
+
+    $capacity = Get-LWInventoryTypeCapacity -Type $Type
+    if ($null -eq $capacity) {
+        return $true
+    }
+
+    $currentItems = @(Get-LWInventoryItems -Type $Type)
+    return (($currentItems.Count + $recoveryItems.Count) -le $capacity)
+}
+
+function Restore-LWInventorySection {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+
+    $recoveryItems = @(Get-LWInventoryRecoveryItems -Type $Type)
+    $label = Get-LWInventoryTypeLabel -Type $Type
+    if ($recoveryItems.Count -eq 0) {
+        Write-LWWarn "No saved $label stash is available."
+        return
+    }
+
+    if (-not (Test-LWInventoryRecoveryFits -Type $Type)) {
+        $capacity = Get-LWInventoryTypeCapacity -Type $Type
+        Write-LWWarn "$label does not have enough room to recover the saved items. Make space first."
+        if ($null -ne $capacity) {
+            $currentItems = @(Get-LWInventoryItems -Type $Type)
+            Write-LWSubtle ("  carrying {0}/{1}, recovery stash has {2} item{3}" -f $currentItems.Count, $capacity, $recoveryItems.Count, $(if ($recoveryItems.Count -eq 1) { '' } else { 's' }))
+        }
+        return
+    }
+
+    $currentItems = @(Get-LWInventoryItems -Type $Type)
+    Set-LWInventoryItems -Type $Type -Items @($currentItems + $recoveryItems)
+    Clear-LWInventoryRecoveryEntry -Type $Type
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+    Write-LWInfo ("Recovered {0} saved {1} item{2}." -f $recoveryItems.Count, $label.ToLowerInvariant(), $(if ($recoveryItems.Count -eq 1) { '' } else { 's' }))
+    Invoke-LWMaybeAutosave
+}
+
+function Restore-LWAllInventorySections {
+    $recoverableTypes = @('weapon', 'backpack', 'special') | Where-Object { @(Get-LWInventoryRecoveryItems -Type $_).Count -gt 0 }
+    if (@($recoverableTypes).Count -eq 0) {
+        Write-LWWarn 'No saved inventory stash is available.'
+        return
+    }
+
+    foreach ($type in @($recoverableTypes)) {
+        if (-not (Test-LWInventoryRecoveryFits -Type $type)) {
+            $label = Get-LWInventoryTypeLabel -Type $type
+            Write-LWWarn "Cannot recover all stashed gear because $label does not have enough room."
+            return
+        }
+    }
+
+    foreach ($type in @($recoverableTypes)) {
+        $recoveryItems = @(Get-LWInventoryRecoveryItems -Type $type)
+        $currentItems = @(Get-LWInventoryItems -Type $type)
+        Set-LWInventoryItems -Type $type -Items @($currentItems + $recoveryItems)
+        Clear-LWInventoryRecoveryEntry -Type $type
+    }
+
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+    Write-LWInfo 'Recovered all saved inventory sections.'
     Invoke-LWMaybeAutosave
 }
 
@@ -6176,6 +6346,49 @@ function Remove-LWInventoryInteractive {
     }
 
     Remove-LWInventoryItemBySlot -Type $type -Slot $slot
+}
+
+function Restore-LWInventoryInteractive {
+    param([string[]]$InputParts = @())
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    if ($null -eq $InputParts) {
+        $InputParts = @()
+    }
+    else {
+        $InputParts = @($InputParts)
+    }
+
+    Set-LWScreen -Name 'inventory'
+    $selection = $null
+    if ($InputParts.Count -gt 1) {
+        $selection = [string]$InputParts[1]
+    }
+    else {
+        $selection = Read-LWText -Prompt 'Recover which section? (weapon/backpack/special/all)'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($selection)) {
+        Write-LWWarn 'Type must be weapon, backpack, special, or all.'
+        return
+    }
+
+    if ($selection.Trim().ToLowerInvariant() -eq 'all') {
+        Restore-LWAllInventorySections
+        return
+    }
+
+    $type = Resolve-LWInventoryType -Value $selection
+    if ($null -eq $type) {
+        Write-LWWarn 'Type must be weapon, backpack, special, or all.'
+        return
+    }
+
+    Restore-LWInventorySection -Type $type
 }
 
 function Set-LWGold {
@@ -8221,7 +8434,8 @@ function Show-LWHelp {
     Write-LWKeyValue -Label 'section [n]' -Value 'Move to a new section' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'healcheck' -Value 'Apply Healing for a non-combat section' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'add [type name [qty]]' -Value 'Add inventory item' -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'drop [type slot]' -Value 'Remove inventory item by slot' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'drop [type slot|all]' -Value 'Remove inventory item by slot or clear a section' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'recover [type|all]' -Value 'Restore stashed gear from a bulk drop' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'gold [delta]' -Value 'Gain or spend Gold Crowns' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'meal' -Value 'Resolve an eat instruction' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'potion' -Value 'Use a Healing or Laumspur Potion outside combat' -ValueColor 'Gray'
@@ -8257,6 +8471,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Quick start syntax: combat start Giak 12 10' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use inv to see exact weapon and backpack slots, including empty spaces.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically, and Chainmail Waistcoat adds +4 END automatically.' -TextColor 'Gray'
@@ -8565,6 +8780,7 @@ function Invoke-LWCommand {
         'healcheck'   { Invoke-LWHealingCheck; return $null }
         'add'         { Add-LWInventoryInteractive -InputParts $parts; return $null }
         'drop'        { Remove-LWInventoryInteractive -InputParts $parts; return $null }
+        'recover'     { Restore-LWInventoryInteractive -InputParts $parts; return $null }
         'gold'        { Update-LWGoldInteractive -InputParts $parts; return $null }
         'meal'        { Use-LWMeal; return $null }
         'potion'      { Use-LWHealingPotion; return $null }

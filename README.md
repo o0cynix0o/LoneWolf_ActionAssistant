@@ -109,6 +109,7 @@ quit
 inv
 add [type name [qty]]
 drop [type slot|all]
+recover [type|all]
 gold [delta]
 notes
 note [text]
@@ -122,6 +123,7 @@ add backpack Potion of Laumspur
 add special Sommerswerd
 drop backpack 2
 drop backpack all
+recover backpack
 note White Pass
 note remove 1
 ```
