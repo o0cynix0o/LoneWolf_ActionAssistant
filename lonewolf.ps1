@@ -2449,6 +2449,12 @@ function Test-LWCombatKnockoutAvailable {
     return ([int]$State.Character.BookNumber -ge 3)
 }
 
+function Test-LWCombatAletherAvailable {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return ([int]$State.Character.BookNumber -ge 3)
+}
+
 function Test-LWWeaponIsNonEdgeForKnockout {
     param([string]$Weapon)
 
@@ -6157,6 +6163,16 @@ function Get-LWStateAletherPotionName {
     return (Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWAletherPotionItemNames) -Type 'backpack')
 }
 
+function Get-LWStateAletherCombatSkillBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (-not (Test-LWCombatAletherAvailable -State $State)) {
+        return 0
+    }
+
+    return [int]$State.Combat.AletherCombatSkillBonus
+}
+
 function Get-LWCombatBreakdownFromState {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -6185,9 +6201,10 @@ function Get-LWCombatBreakdownFromState {
         $notes += 'Mindblast +2'
     }
 
-    if ([int]$State.Combat.AletherCombatSkillBonus -gt 0) {
-        $playerCombatSkill += [int]$State.Combat.AletherCombatSkillBonus
-        $notes += "Alether +$([int]$State.Combat.AletherCombatSkillBonus)"
+    $aletherBonus = Get-LWStateAletherCombatSkillBonus -State $State
+    if ($aletherBonus -gt 0) {
+        $playerCombatSkill += $aletherBonus
+        $notes += "Alether +$aletherBonus"
     }
 
     $knockoutPenalty = Get-LWCombatKnockoutCombatSkillPenalty -State $State
@@ -6991,13 +7008,15 @@ function Start-LWCombat {
     $sommerswerdSuppressed = $false
     $aletherCombatSkillBonus = 0
     $attemptKnockout = $false
-    $aletherPotionName = Get-LWStateAletherPotionName -State $script:GameState
-    if (-not [string]::IsNullOrWhiteSpace($aletherPotionName)) {
-        $useAlether = Read-LWYesNo -Prompt 'Use Alether before this fight for +4 Combat Skill?' -Default $false
-        if ($useAlether) {
-            Remove-LWInventoryItem -Type 'backpack' -Name $aletherPotionName -Quantity 1
-            $aletherCombatSkillBonus = 4
-            Write-LWInfo "$aletherPotionName is used before combat and grants +4 Combat Skill for this fight."
+    if (Test-LWCombatAletherAvailable -State $script:GameState) {
+        $aletherPotionName = Get-LWStateAletherPotionName -State $script:GameState
+        if (-not [string]::IsNullOrWhiteSpace($aletherPotionName)) {
+            $useAlether = Read-LWYesNo -Prompt 'Use Alether before this fight for +4 Combat Skill?' -Default $false
+            if ($useAlether) {
+                Remove-LWInventoryItem -Type 'backpack' -Name $aletherPotionName -Quantity 1
+                $aletherCombatSkillBonus = 4
+                Write-LWInfo "$aletherPotionName is used before combat and grants +4 Combat Skill for this fight."
+            }
         }
     }
     if (Test-LWWeaponIsSommerswerd -Weapon $equippedWeapon) {
@@ -8062,7 +8081,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'In Book 3 and later, combat can attempt a knockout: edged weapons take -2 CS, while unarmed, Warhammer, Quarterstaff, and Mace do not.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion works with both Healing Potion and Laumspur Potion item names.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'potion now prefers Concentrated Laumspur first and restores 8 END when one is available.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'If Alether is in your backpack, combat start can consume it before the fight to grant +4 Combat Skill for that combat only.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'From Book 3 onward, if Alether is in your backpack, combat start can consume it before the fight to grant +4 Combat Skill for that combat only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use die for instant-death sections. After death, use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'history and combat log all now group archived fights by book for easier browsing.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'
