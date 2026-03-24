@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.6'
+$script:LWAppVersion = '0.7.7'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -1105,6 +1105,39 @@ function Ensure-LWRunHistory {
     $State.RunHistory = @($State.RunHistory)
 }
 
+function Get-LWCanonicalDateText {
+    param([object]$Value)
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    if ($Value -is [DateTimeOffset]) {
+        return $Value.ToString('o')
+    }
+
+    if ($Value -is [DateTime]) {
+        return $Value.ToString('o')
+    }
+
+    $text = [string]$Value
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return ''
+    }
+
+    $dateTimeOffsetValue = [DateTimeOffset]::MinValue
+    if ([DateTimeOffset]::TryParse($text, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind, [ref]$dateTimeOffsetValue)) {
+        return $dateTimeOffsetValue.ToString('o')
+    }
+
+    $dateTimeValue = [DateTime]::MinValue
+    if ([DateTime]::TryParse($text, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind, [ref]$dateTimeValue)) {
+        return $dateTimeValue.ToString('o')
+    }
+
+    return $text
+}
+
 function Get-LWRunSignaturePayload {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -1120,7 +1153,7 @@ function Get-LWRunSignaturePayload {
         [string]$State.Run.Difficulty,
         [string]([bool]$State.Run.Permadeath),
         [string]$State.Run.Status,
-        [string]$State.Run.StartedOn,
+        (Get-LWCanonicalDateText -Value $State.Run.StartedOn),
         [string]([int]$State.Character.BookNumber),
         [string]([int]$State.CurrentSection),
         ($completedBooks -join ',')
