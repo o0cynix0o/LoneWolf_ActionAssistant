@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.4'
+$script:LWAppVersion = '0.7.5'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -1284,6 +1284,10 @@ function New-LWAchievementProgressFlags {
 
 function New-LWStoryAchievementFlags {
     return [pscustomobject]@{
+        Book1AimForTheBushesVisited = $false
+        Book1ClubhouseFound         = $false
+        Book1SilverKeyClaimed       = $false
+        Book1UseTheForcePath        = $false
         Book3SnakePitVisited = $false
         Book3CliffhangerSeen = $false
         Book3DiamondClaimed  = $false
@@ -1371,6 +1375,11 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'by_the_text' -Name 'By the Text' -Category 'Legend' -Description 'Complete a Veteran book without ever using unauthorized Sommerswerd power.' -ModePool 'Challenge' -RequiredDifficulty @('Veteran')),
         (New-LWAchievementDefinition -Id 'only_one_life' -Name 'Only One Life' -Category 'Legend' -Description 'Complete a book with Permadeath enabled.' -ModePool 'Challenge' -RequiresPermadeath:$true),
         (New-LWAchievementDefinition -Id 'mortal_wolf' -Name 'Mortal Wolf' -Category 'Legend' -Description 'Complete a Hard or Veteran book with Permadeath enabled.' -ModePool 'Challenge' -RequiredDifficulty @('Hard', 'Veteran') -RequiresPermadeath:$true),
+        (New-LWAchievementDefinition -Id 'aim_for_the_bushes' -Name 'Aim for the Bushes' -Category 'Journey' -Description 'Reach section 7 in Book 1.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'found_the_clubhouse' -Name 'Found the Clubhouse' -Category 'Journey' -Description 'Reach section 13 in Book 1.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'kill_the_mad_butcher' -Name 'Kill the Mad Butcher' -Category 'Journey' -Description 'Defeat the Mad Butcher in Book 1.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'whats_in_the_box_book1' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Silver Key from the box in Book 1.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'use_the_force' -Name 'Use the Force' -Category 'Journey' -Description 'Take the hidden path from section 131 to 302 in Book 1.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'snakes_why' -Name 'Snakes, Why Did It Have to Be Snakes?' -Category 'Journey' -Description 'Reach the Javek ledge in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cliffhanger' -Name 'Cliffhanger' -Category 'Journey' -Description 'Witness Dyce''s fatal fall in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'whats_in_the_box' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Diamond from the bone box in Book 3.' -ModePool 'Exploration' -Hidden:$true),
@@ -1421,7 +1430,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1465,14 +1474,39 @@ function Set-LWStoryAchievementFlag {
 function Register-LWStorySectionAchievementTriggers {
     param([Parameter(Mandatory = $true)][int]$Section)
 
-    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 3) {
+    if (-not (Test-LWHasState)) {
         return
     }
 
-    switch ($Section) {
-        19 { Set-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen' }
-        88 { Set-LWStoryAchievementFlag -Name 'Book3SnakePitVisited' }
-        251 { Set-LWStoryAchievementFlag -Name 'Book3SnowblindSeen' }
+    switch ([int]$script:GameState.Character.BookNumber) {
+        1 {
+            switch ($Section) {
+                7 { Set-LWStoryAchievementFlag -Name 'Book1AimForTheBushesVisited' }
+                13 { Set-LWStoryAchievementFlag -Name 'Book1ClubhouseFound' }
+            }
+        }
+        3 {
+            switch ($Section) {
+                19 { Set-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen' }
+                88 { Set-LWStoryAchievementFlag -Name 'Book3SnakePitVisited' }
+                251 { Set-LWStoryAchievementFlag -Name 'Book3SnowblindSeen' }
+            }
+        }
+    }
+}
+
+function Register-LWStorySectionTransitionAchievementTriggers {
+    param(
+        [Parameter(Mandatory = $true)][int]$FromSection,
+        [Parameter(Mandatory = $true)][int]$ToSection
+    )
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    if ([int]$script:GameState.Character.BookNumber -eq 1 -and $FromSection -eq 131 -and $ToSection -eq 302) {
+        Set-LWStoryAchievementFlag -Name 'Book1UseTheForcePath'
     }
 }
 
@@ -1482,12 +1516,21 @@ function Register-LWStoryInventoryAchievementTriggers {
         [Parameter(Mandatory = $true)][string]$Name
     )
 
-    if (-not (Test-LWHasState) -or $Type -ne 'special' -or [int]$script:GameState.Character.BookNumber -ne 3) {
+    if (-not (Test-LWHasState) -or $Type -ne 'special') {
         return
     }
 
-    if ([int]$script:GameState.CurrentSection -eq 218 -and [string]$Name -match 'diamond') {
-        Set-LWStoryAchievementFlag -Name 'Book3DiamondClaimed'
+    switch ([int]$script:GameState.Character.BookNumber) {
+        1 {
+            if ([int]$script:GameState.CurrentSection -eq 124 -and [string]$Name -match 'silver key') {
+                Set-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed'
+            }
+        }
+        3 {
+            if ([int]$script:GameState.CurrentSection -eq 218 -and [string]$Name -match 'diamond') {
+                Set-LWStoryAchievementFlag -Name 'Book3DiamondClaimed'
+            }
+        }
     }
 }
 
@@ -2392,12 +2435,20 @@ function Get-LWPaddedLeatherItemNames {
     return @('Padded Leather Waistcoat', 'Padded Leather Wastecoat', 'Padded Leather Waste Coat', 'Padded Leather')
 }
 
+function Get-LWHelmetItemNames {
+    return @('Helmet')
+}
+
 function Get-LWShieldItemNames {
     return @('Shield')
 }
 
 function Get-LWSilverHelmItemNames {
     return @('Silver Helm')
+}
+
+function Get-LWDrodarinWarHammerWeaponNames {
+    return @('Drodarin War Hammer', 'Drodarin War Hammer +1', 'Drodarin Warhammer', 'Drodarin Warhammer +1')
 }
 
 function Get-LWSommerswerdItemNames {
@@ -2413,7 +2464,7 @@ function Get-LWBoneSwordWeaponNames {
 }
 
 function Get-LWNonEdgeKnockoutWeaponNames {
-    return @('Warhammer', 'Quarterstaff', 'Mace')
+    return @('Warhammer', 'Quarterstaff', 'Mace', 'Drodarin War Hammer', 'Drodarin War Hammer +1', 'Drodarin Warhammer', 'Drodarin Warhammer +1')
 }
 
 function Get-LWHealingPotionItemNames {
@@ -2505,6 +2556,20 @@ function Get-LWStatePaddedLeatherEnduranceBonus {
     return 0
 }
 
+function Get-LWStateHelmetEnduranceBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if ((Get-LWStateSilverHelmCombatSkillBonus -State $State) -gt 0) {
+        return 0
+    }
+
+    if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWHelmetItemNames) -Type 'special') {
+        return 2
+    }
+
+    return 0
+}
+
 function Get-LWStateShieldCombatSkillBonus {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -2535,10 +2600,26 @@ function Test-LWWeaponIsBoneSword {
     return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBoneSwordWeaponNames) -Target $Weapon)))
 }
 
+function Test-LWWeaponIsDrodarinWarHammer {
+    param([string]$Weapon)
+
+    if ([string]::IsNullOrWhiteSpace($Weapon)) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWDrodarinWarHammerWeaponNames) -Target $Weapon)))
+}
+
 function Test-LWStateHasBoneSword {
     param([Parameter(Mandatory = $true)][object]$State)
 
     return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWBoneSwordWeaponNames) -Type 'weapon')
+}
+
+function Test-LWStateHasDrodarinWarHammer {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWDrodarinWarHammerWeaponNames) -Type 'weapon')
 }
 
 function Test-LWStateIsInKalte {
@@ -2632,6 +2713,20 @@ function Get-LWStateBoneSwordCombatSkillBonus {
     }
 
     if (Test-LWStateIsInKalte -State $State) {
+        return 1
+    }
+
+    return 0
+}
+
+function Get-LWStateDrodarinWarHammerCombatSkillBonus {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if (Test-LWWeaponIsDrodarinWarHammer -Weapon $activeWeapon) {
         return 1
     }
 
@@ -2734,6 +2829,7 @@ function Ensure-LWEquipmentBonusState {
         $State | Add-Member -Force -NotePropertyName EquipmentBonuses -NotePropertyValue ([pscustomobject]@{
                 ChainmailEndurance = 0
                 PaddedLeatherEndurance = 0
+                HelmetEndurance = 0
             })
     }
 
@@ -2743,6 +2839,10 @@ function Ensure-LWEquipmentBonusState {
 
     if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'PaddedLeatherEndurance') -or $null -eq $State.EquipmentBonuses.PaddedLeatherEndurance) {
         $State.EquipmentBonuses | Add-Member -Force -NotePropertyName PaddedLeatherEndurance -NotePropertyValue 0
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'HelmetEndurance') -or $null -eq $State.EquipmentBonuses.HelmetEndurance) {
+        $State.EquipmentBonuses | Add-Member -Force -NotePropertyName HelmetEndurance -NotePropertyValue 0
     }
 }
 
@@ -2762,7 +2862,11 @@ function Sync-LWStateEquipmentBonuses {
     $appliedPaddedLeather = [int]$State.EquipmentBonuses.PaddedLeatherEndurance
     $paddedLeatherDelta = $desiredPaddedLeather - $appliedPaddedLeather
 
-    $delta = $chainmailDelta + $paddedLeatherDelta
+    $desiredHelmet = Get-LWStateHelmetEnduranceBonus -State $State
+    $appliedHelmet = [int]$State.EquipmentBonuses.HelmetEndurance
+    $helmetDelta = $desiredHelmet - $appliedHelmet
+
+    $delta = $chainmailDelta + $paddedLeatherDelta + $helmetDelta
 
     if ($delta -eq 0) {
         return
@@ -2781,6 +2885,7 @@ function Sync-LWStateEquipmentBonuses {
     $State.Character.EnduranceCurrent = $newCurrent
     $State.EquipmentBonuses.ChainmailEndurance = $desiredChainmail
     $State.EquipmentBonuses.PaddedLeatherEndurance = $desiredPaddedLeather
+    $State.EquipmentBonuses.HelmetEndurance = $desiredHelmet
 
     if ($WriteMessages) {
         if ($chainmailDelta -ne 0) {
@@ -2790,6 +2895,10 @@ function Sync-LWStateEquipmentBonuses {
         if ($paddedLeatherDelta -ne 0) {
             $direction = if ($paddedLeatherDelta -gt 0) { 'applied' } else { 'removed' }
             Write-LWInfo ("Padded Leather Waistcoat bonus {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $paddedLeatherDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
+        }
+        if ($helmetDelta -ne 0) {
+            $direction = if ($helmetDelta -gt 0) { 'applied' } else { 'removed' }
+            Write-LWInfo ("Helmet bonus {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $helmetDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
         }
     }
 }
@@ -2956,6 +3065,7 @@ function New-LWDefaultState {
         EquipmentBonuses  = [pscustomobject]@{
             ChainmailEndurance = 0
             PaddedLeatherEndurance = 0
+            HelmetEndurance = 0
         }
         Settings          = [pscustomobject]@{
             CombatMode = 'ManualCRT'
@@ -3820,6 +3930,27 @@ function Get-LWMatchingValue {
     return $null
 }
 
+function Test-LWWeaponMatchesWeaponskill {
+    param(
+        [string]$Weapon,
+        [string]$WeaponskillWeapon
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Weapon) -or [string]::IsNullOrWhiteSpace($WeaponskillWeapon)) {
+        return $false
+    }
+
+    if ($Weapon -ieq $WeaponskillWeapon) {
+        return $true
+    }
+
+    if ((Test-LWWeaponIsDrodarinWarHammer -Weapon $Weapon) -and [string]$WeaponskillWeapon -ieq 'Warhammer') {
+        return $true
+    }
+
+    return $false
+}
+
 function Get-LWPreferredCombatWeapon {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -3839,6 +3970,9 @@ function Get-LWPreferredCombatWeapon {
     }
 
     $weaponskillWeapon = Get-LWMatchingValue -Values $weapons -Target ([string]$State.Character.WeaponskillWeapon)
+    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Warhammer') {
+        $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$_) } | Select-Object -First 1)
+    }
     if (-not [string]::IsNullOrWhiteSpace($weaponskillWeapon)) {
         return $weaponskillWeapon
     }
@@ -4876,7 +5010,7 @@ function Show-LWCampaignMilestones {
     else {
         foreach ($entry in $recentAchievements) {
             $bookLabel = Format-LWBookLabel -BookNumber ([int]$entry.BookNumber) -IncludePrefix
-            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$entry.Name, [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Magenta'
+            Write-LWBulletItem -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Magenta'
             Write-LWSubtle ("      unlocked at section {0} in {1}" -f [int]$entry.Section, $bookLabel)
         }
     }
@@ -4993,6 +5127,23 @@ function Get-LWAchievementAvailabilityReason {
     return ''
 }
 
+function Get-LWAchievementDisplayNameById {
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        [Parameter(Mandatory = $true)][string]$DefaultName
+    )
+
+    switch ([string]$Id) {
+        'whats_in_the_box' {
+            if (Test-LWAchievementUnlocked -Id 'whats_in_the_box_book1') {
+                return 'What''s also in the Box?'
+            }
+        }
+    }
+
+    return $DefaultName
+}
+
 function Get-LWAchievementLockedDisplayName {
     param([Parameter(Mandatory = $true)][object]$Definition)
 
@@ -5000,7 +5151,13 @@ function Get-LWAchievementLockedDisplayName {
         return '???'
     }
 
-    return [string]$Definition.Name
+    return (Get-LWAchievementDisplayNameById -Id ([string]$Definition.Id) -DefaultName ([string]$Definition.Name))
+}
+
+function Get-LWAchievementUnlockedDisplayName {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+
+    return (Get-LWAchievementDisplayNameById -Id ([string]$Entry.Id) -DefaultName ([string]$Entry.Name))
 }
 
 function Get-LWAchievementLockedDisplayDescription {
@@ -5177,7 +5334,7 @@ function Unlock-LWAchievement {
 
     $entry = [pscustomobject]@{
         Id         = [string]$Definition.Id
-        Name       = [string]$Definition.Name
+        Name       = (Get-LWAchievementDisplayNameById -Id ([string]$Definition.Id) -DefaultName ([string]$Definition.Name))
         Category   = [string]$Definition.Category
         Description = [string]$Definition.Description
         BookNumber = [int]$script:GameState.Character.BookNumber
@@ -5191,7 +5348,7 @@ function Unlock-LWAchievement {
     }
 
     if (-not $Silent) {
-        Write-LWInfo ("Achievement unlocked: {0} - {1}" -f [string]$Definition.Name, [string]$Definition.Description)
+        Write-LWInfo ("Achievement unlocked: {0} - {1}" -f (Get-LWAchievementDisplayNameById -Id ([string]$Definition.Id) -DefaultName ([string]$Definition.Name)), [string]$Definition.Description)
     }
 
     return $entry
@@ -5277,6 +5434,11 @@ function Test-LWAchievementSatisfied {
         'by_the_text' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
         'only_one_life' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath }).Count -ge 1) }
         'mortal_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and @('Hard', 'Veteran') -contains [string]$_.Difficulty }).Count -ge 1) }
+        'aim_for_the_bushes' { return (Test-LWStoryAchievementFlag -Name 'Book1AimForTheBushesVisited') }
+        'found_the_clubhouse' { return (Test-LWStoryAchievementFlag -Name 'Book1ClubhouseFound') }
+        'kill_the_mad_butcher' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 1 -and [string]$_.EnemyName -ieq 'Mad Butcher' }).Count -ge 1) }
+        'whats_in_the_box_book1' { return (Test-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed') }
+        'use_the_force' { return (Test-LWStoryAchievementFlag -Name 'Book1UseTheForcePath') }
         'snakes_why' { return (Test-LWStoryAchievementFlag -Name 'Book3SnakePitVisited') }
         'cliffhanger' { return (Test-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen') }
         'whats_in_the_box' { return (Test-LWStoryAchievementFlag -Name 'Book3DiamondClaimed') }
@@ -5325,6 +5487,11 @@ function Get-LWAchievementProgressText {
         'by_the_text' { return 'complete any book on Veteran' }
         'only_one_life' { return $(if (Test-LWPermadeathEnabled) { 'Permadeath active for this run' } else { 'start a Permadeath run' }) }
         'mortal_wolf' { return $(if ((Test-LWPermadeathEnabled) -and @('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty)) { 'eligible run active' } else { 'requires Hard/Veteran + Permadeath' }) }
+        'aim_for_the_bushes' { return '' }
+        'found_the_clubhouse' { return '' }
+        'kill_the_mad_butcher' { return '' }
+        'whats_in_the_box_book1' { return '' }
+        'use_the_force' { return '' }
         'snakes_why' { return '' }
         'cliffhanger' { return '' }
         'whats_in_the_box' { return '' }
@@ -5461,7 +5628,7 @@ function Show-LWAchievementOverview {
     }
     else {
         foreach ($entry in $recent) {
-            Write-LWBulletItem -Text ("{0} - {1}" -f [string]$entry.Name, [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Magenta'
+            Write-LWBulletItem -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Magenta'
         }
     }
 
@@ -5478,7 +5645,7 @@ function Show-LWAchievementUnlockedList {
     }
 
     foreach ($entry in $entries) {
-        Write-LWBulletItem -Text ("{0} - {1}" -f [string]$entry.Name, [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Green'
+        Write-LWBulletItem -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray' -BulletColor 'Green'
     }
 }
 
@@ -5548,7 +5715,7 @@ function Show-LWAchievementProgressList {
         }
 
         $anyShown = $true
-        Write-LWBulletItem -Text ("{0} - {1}" -f [string]$definition.Name, $progress) -TextColor 'Gray' -BulletColor 'Cyan'
+        Write-LWBulletItem -Text ("{0} - {1}" -f (Get-LWAchievementLockedDisplayName -Definition $definition), $progress) -TextColor 'Gray' -BulletColor 'Cyan'
     }
 
     if (-not $anyShown) {
@@ -5591,7 +5758,7 @@ function Show-LWAchievementsScreen {
             }
             else {
                 foreach ($entry in $entries) {
-                    Write-LWBulletItem -Text ("{0} - {1}" -f [string]$entry.Name, [string]$entry.Description) -TextColor 'Gray' -BulletColor 'DarkYellow'
+                    Write-LWBulletItem -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray' -BulletColor 'DarkYellow'
                 }
             }
         }
@@ -5792,8 +5959,20 @@ function Show-LWInventory {
         Write-LWSubtle ('  Bone Sword: +1 Combat Skill in Book 3 / Kalte, no bonus elsewhere.')
         Write-Host ''
     }
+    if (Test-LWStateHasDrodarinWarHammer -State $script:GameState) {
+        Write-LWSubtle '  Drodarin War Hammer: +1 Combat Skill in combat and counts as a Warhammer.'
+        Write-Host ''
+    }
     if ((Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
         Write-LWSubtle '  Silver Helm: +2 Combat Skill while carried as a Special Item.'
+        Write-Host ''
+    }
+    if ((Get-LWStateHelmetEnduranceBonus -State $script:GameState) -gt 0) {
+        Write-LWSubtle '  Helmet: +2 Endurance while carried as a Special Item.'
+        Write-Host ''
+    }
+    elseif ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWHelmetItemNames) -Type 'special') -and (Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
+        Write-LWSubtle '  Helmet: no Endurance bonus while Silver Helm is carried.'
         Write-Host ''
     }
     if ((Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState) -gt 0) {
@@ -5838,6 +6017,7 @@ function Show-LWSheet {
 
     $chainmailBonus = Get-LWStateChainmailEnduranceBonus -State $script:GameState
     $paddedLeatherBonus = Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState
+    $helmetBonus = Get-LWStateHelmetEnduranceBonus -State $script:GameState
     $enduranceText = "{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax
     $enduranceNotes = @()
     if ($chainmailBonus -gt 0) {
@@ -5845,6 +6025,9 @@ function Show-LWSheet {
     }
     if ($paddedLeatherBonus -gt 0) {
         $enduranceNotes += "Padded Leather +$paddedLeatherBonus"
+    }
+    if ($helmetBonus -gt 0) {
+        $enduranceNotes += "Helmet +$helmetBonus"
     }
     if ($enduranceNotes.Count -gt 0) {
         $enduranceText += " ({0})" -f ($enduranceNotes -join ', ')
@@ -5926,8 +6109,10 @@ function Set-LWSection {
         return
     }
 
+    $previousSection = [int]$script:GameState.CurrentSection
     Save-LWCurrentSectionCheckpoint
     Resolve-LWSectionExit
+    Register-LWStorySectionTransitionAchievementTriggers -FromSection $previousSection -ToSection $newSection
     $script:GameState.CurrentSection = $newSection
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
@@ -6699,9 +6884,18 @@ function Get-LWCombatBreakdownFromState {
             $notes += 'Bone Sword inactive outside Kalte'
         }
     }
-    elseif ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and $State.Combat.EquippedWeapon -ieq $State.Character.WeaponskillWeapon) {
-        $playerCombatSkill += 2
-        $notes += "Weaponskill +2 ($($State.Combat.EquippedWeapon))"
+    else {
+        $drodarinWarHammerBonus = Get-LWStateDrodarinWarHammerCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
+        if ($drodarinWarHammerBonus -gt 0) {
+            $playerCombatSkill += $drodarinWarHammerBonus
+            $notes += "Drodarin War Hammer +$drodarinWarHammerBonus"
+        }
+
+        if ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
+            $playerCombatSkill += 2
+            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } else { [string]$State.Combat.EquippedWeapon }
+            $notes += "Weaponskill +2 ($weaponskillLabel)"
+        }
     }
 
     if ([bool]$State.Combat.EnemyUsesMindforce) {
@@ -6873,6 +7067,9 @@ function Get-LWCombatDisplayWeapon {
 
     if ([string]::IsNullOrWhiteSpace($Weapon)) {
         return 'Unarmed'
+    }
+    if (Test-LWWeaponIsDrodarinWarHammer -Weapon $Weapon) {
+        return 'Drodarin War Hammer'
     }
     if (Test-LWWeaponIsBoneSword -Weapon $Weapon) {
         return 'Bone Sword'
@@ -8516,8 +8713,8 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, and Padded Leather Waistcoat adds +2 END.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'

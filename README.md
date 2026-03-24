@@ -25,6 +25,8 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Special item intelligence for:
   - Shield
   - Silver Helm
+  - Helmet
+  - Drodarin War Hammer
   - Chainmail Waistcoat / Wastecoat
   - Padded Leather Waistcoat / Wastecoat
   - Sommerswerd
@@ -263,9 +265,17 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Silver Helm`
   Counts as a Special Item that is treated as worn automatically
   Adds `+2 Combat Skill`
+- `Helmet`
+  Counts as a Special Item that is treated as worn automatically
+  Adds `+2 Endurance`
+  Does not stack with `Silver Helm`
 - `Bone Sword`
   Counts as a normal weapon
   Gives `+1 Combat Skill` in Book 3 / Kalte only
+- `Drodarin War Hammer`
+  Counts as a normal weapon
+  Adds `+1 Combat Skill` in combat
+  Counts as a `Warhammer` for Weaponskill and knockout rules
 - `Chainmail Waistcoat` / `Chainmail Wastecoat`
   Adds `+4 Endurance`
 - `Padded Leather Waistcoat` / `Padded Leather Wastecoat`
