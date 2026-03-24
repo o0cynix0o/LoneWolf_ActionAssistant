@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.5'
+$script:LWAppVersion = '0.7.6'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -1288,6 +1288,7 @@ function New-LWStoryAchievementFlags {
         Book1ClubhouseFound         = $false
         Book1SilverKeyClaimed       = $false
         Book1UseTheForcePath        = $false
+        Book2SommerswerdClaimed     = $false
         Book3SnakePitVisited = $false
         Book3CliffhangerSeen = $false
         Book3DiamondClaimed  = $false
@@ -1380,6 +1381,9 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'kill_the_mad_butcher' -Name 'Kill the Mad Butcher' -Category 'Journey' -Description 'Defeat the Mad Butcher in Book 1.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'whats_in_the_box_book1' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Silver Key from the box in Book 1.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'use_the_force' -Name 'Use the Force' -Category 'Journey' -Description 'Take the hidden path from section 131 to 302 in Book 1.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'found_the_sommerswerd' -Name 'Found the Sommerswerd' -Category 'Journey' -Description 'Claim the Sommerswerd in Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'you_have_chosen_wisely' -Name 'You Have Chosen Wisely' -Category 'Journey' -Description 'Defeat the Priest in section 158 of Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'neo_link' -Name 'Neo Link' -Category 'Journey' -Description 'Defeat Ganon + Dorier in section 270 of Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'snakes_why' -Name 'Snakes, Why Did It Have to Be Snakes?' -Category 'Journey' -Description 'Reach the Javek ledge in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cliffhanger' -Name 'Cliffhanger' -Category 'Journey' -Description 'Witness Dyce''s fatal fall in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'whats_in_the_box' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Diamond from the bone box in Book 3.' -ModePool 'Exploration' -Hidden:$true),
@@ -1430,7 +1434,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1524,6 +1528,11 @@ function Register-LWStoryInventoryAchievementTriggers {
         1 {
             if ([int]$script:GameState.CurrentSection -eq 124 -and [string]$Name -match 'silver key') {
                 Set-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed'
+            }
+        }
+        2 {
+            if ([int]$script:GameState.CurrentSection -eq 79 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSommerswerdItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed'
             }
         }
         3 {
@@ -2451,6 +2460,10 @@ function Get-LWDrodarinWarHammerWeaponNames {
     return @('Drodarin War Hammer', 'Drodarin War Hammer +1', 'Drodarin Warhammer', 'Drodarin Warhammer +1')
 }
 
+function Get-LWBroadswordPlusOneWeaponNames {
+    return @('Broadsword +1')
+}
+
 function Get-LWSommerswerdItemNames {
     return @('Sommerswerd')
 }
@@ -2610,6 +2623,16 @@ function Test-LWWeaponIsDrodarinWarHammer {
     return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWDrodarinWarHammerWeaponNames) -Target $Weapon)))
 }
 
+function Test-LWWeaponIsBroadswordPlusOne {
+    param([string]$Weapon)
+
+    if ([string]::IsNullOrWhiteSpace($Weapon)) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBroadswordPlusOneWeaponNames) -Target $Weapon)))
+}
+
 function Test-LWStateHasBoneSword {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -2620,6 +2643,12 @@ function Test-LWStateHasDrodarinWarHammer {
     param([Parameter(Mandatory = $true)][object]$State)
 
     return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWDrodarinWarHammerWeaponNames) -Type 'weapon')
+}
+
+function Test-LWStateHasBroadswordPlusOne {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWBroadswordPlusOneWeaponNames) -Type 'weapon')
 }
 
 function Test-LWStateIsInKalte {
@@ -2727,6 +2756,20 @@ function Get-LWStateDrodarinWarHammerCombatSkillBonus {
 
     $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
     if (Test-LWWeaponIsDrodarinWarHammer -Weapon $activeWeapon) {
+        return 1
+    }
+
+    return 0
+}
+
+function Get-LWStateBroadswordPlusOneCombatSkillBonus {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if (Test-LWWeaponIsBroadswordPlusOne -Weapon $activeWeapon) {
         return 1
     }
 
@@ -3948,6 +3991,10 @@ function Test-LWWeaponMatchesWeaponskill {
         return $true
     }
 
+    if ((Test-LWWeaponIsBroadswordPlusOne -Weapon $Weapon) -and [string]$WeaponskillWeapon -ieq 'Broadsword') {
+        return $true
+    }
+
     return $false
 }
 
@@ -3972,6 +4019,9 @@ function Get-LWPreferredCombatWeapon {
     $weaponskillWeapon = Get-LWMatchingValue -Values $weapons -Target ([string]$State.Character.WeaponskillWeapon)
     if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Warhammer') {
         $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$_) } | Select-Object -First 1)
+    }
+    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Broadsword') {
+        $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$_) } | Select-Object -First 1)
     }
     if (-not [string]::IsNullOrWhiteSpace($weaponskillWeapon)) {
         return $weaponskillWeapon
@@ -5439,6 +5489,9 @@ function Test-LWAchievementSatisfied {
         'kill_the_mad_butcher' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 1 -and [string]$_.EnemyName -ieq 'Mad Butcher' }).Count -ge 1) }
         'whats_in_the_box_book1' { return (Test-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed') }
         'use_the_force' { return (Test-LWStoryAchievementFlag -Name 'Book1UseTheForcePath') }
+        'found_the_sommerswerd' { return ((Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') -or (Test-LWStateHasSommerswerd -State $script:GameState) -or @($runEntries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$_.Weapon)) -and (Get-LWCombatEntryBookNumber -Entry $_) -ge 2 }).Count -ge 1) }
+        'you_have_chosen_wisely' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 158 -and [string]$_.EnemyName -ieq 'Priest' }).Count -ge 1) }
+        'neo_link' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains [string]$_.EnemyName }).Count -ge 1) }
         'snakes_why' { return (Test-LWStoryAchievementFlag -Name 'Book3SnakePitVisited') }
         'cliffhanger' { return (Test-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen') }
         'whats_in_the_box' { return (Test-LWStoryAchievementFlag -Name 'Book3DiamondClaimed') }
@@ -5492,6 +5545,9 @@ function Get-LWAchievementProgressText {
         'kill_the_mad_butcher' { return '' }
         'whats_in_the_box_book1' { return '' }
         'use_the_force' { return '' }
+        'found_the_sommerswerd' { return '' }
+        'you_have_chosen_wisely' { return '' }
+        'neo_link' { return '' }
         'snakes_why' { return '' }
         'cliffhanger' { return '' }
         'whats_in_the_box' { return '' }
@@ -5957,6 +6013,10 @@ function Show-LWInventory {
     }
     if (Test-LWStateHasBoneSword -State $script:GameState) {
         Write-LWSubtle ('  Bone Sword: +1 Combat Skill in Book 3 / Kalte, no bonus elsewhere.')
+        Write-Host ''
+    }
+    if (Test-LWStateHasBroadswordPlusOne -State $script:GameState) {
+        Write-LWSubtle '  Broadsword +1: +1 Combat Skill in combat and still counts as a Broadsword.'
         Write-Host ''
     }
     if (Test-LWStateHasDrodarinWarHammer -State $script:GameState) {
@@ -6885,6 +6945,12 @@ function Get-LWCombatBreakdownFromState {
         }
     }
     else {
+        $broadswordPlusOneBonus = Get-LWStateBroadswordPlusOneCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
+        if ($broadswordPlusOneBonus -gt 0) {
+            $playerCombatSkill += $broadswordPlusOneBonus
+            $notes += "Broadsword +$broadswordPlusOneBonus"
+        }
+
         $drodarinWarHammerBonus = Get-LWStateDrodarinWarHammerCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
         if ($drodarinWarHammerBonus -gt 0) {
             $playerCombatSkill += $drodarinWarHammerBonus
@@ -6893,7 +6959,7 @@ function Get-LWCombatBreakdownFromState {
 
         if ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
             $playerCombatSkill += 2
-            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } else { [string]$State.Combat.EquippedWeapon }
+            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } else { [string]$State.Combat.EquippedWeapon }
             $notes += "Weaponskill +2 ($weaponskillLabel)"
         }
     }
@@ -7070,6 +7136,9 @@ function Get-LWCombatDisplayWeapon {
     }
     if (Test-LWWeaponIsDrodarinWarHammer -Weapon $Weapon) {
         return 'Drodarin War Hammer'
+    }
+    if (Test-LWWeaponIsBroadswordPlusOne -Weapon $Weapon) {
+        return 'Broadsword +1'
     }
     if (Test-LWWeaponIsBoneSword -Weapon $Weapon) {
         return 'Bone Sword'
@@ -8714,7 +8783,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'

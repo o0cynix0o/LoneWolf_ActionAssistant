@@ -22,10 +22,11 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - manual or data-driven CRT resolution
   - auto-resolve support
   - round logs and combat summaries
-- Special item intelligence for:
+- Item intelligence for:
   - Shield
   - Silver Helm
   - Helmet
+  - Broadsword +1
   - Drodarin War Hammer
   - Chainmail Waistcoat / Wastecoat
   - Padded Leather Waistcoat / Wastecoat
@@ -272,6 +273,10 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Bone Sword`
   Counts as a normal weapon
   Gives `+1 Combat Skill` in Book 3 / Kalte only
+- `Broadsword +1`
+  Counts as a normal weapon
+  Adds `+1 Combat Skill` in combat
+  Still counts as a `Broadsword` for Weaponskill
 - `Drodarin War Hammer`
   Counts as a normal weapon
   Adds `+1 Combat Skill` in combat
