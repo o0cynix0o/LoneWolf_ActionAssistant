@@ -16,6 +16,8 @@ agent.md
 
 # Editor and OS noise
 .vscode/
+!.vscode/
+!.vscode/settings.json
 .idea/
 Thumbs.db
 Desktop.ini
