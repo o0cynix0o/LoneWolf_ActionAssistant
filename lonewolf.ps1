@@ -6435,7 +6435,10 @@ function Add-LWInventoryItem {
     $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $Name) } else { $Quantity }
     if ($null -ne $capacity -and (($currentUsedCapacity + $requiredCapacity) -gt $capacity)) {
         if ($Type -eq 'backpack') {
-            Write-LWWarn ("You only have room for {0} backpack slots." -f $capacity)
+            $freeSlots = [Math]::Max(0, ([int]$capacity - [int]$currentUsedCapacity))
+            $neededLabel = if ($requiredCapacity -eq 1) { 'slot' } else { 'slots' }
+            $freeLabel = if ($freeSlots -eq 1) { 'is' } else { 'are' }
+            Write-LWWarn ("{0} needs {1} backpack {2}, but only {3} {4} free. Drop or use an item first." -f $Name, $requiredCapacity, $neededLabel, $freeSlots, $freeLabel)
         }
         else {
             Write-LWWarn ("You can only carry {0} {1}." -f $capacity, $label.ToLowerInvariant())
