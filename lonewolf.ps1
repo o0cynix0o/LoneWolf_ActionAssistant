@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.7'
+$script:LWAppVersion = '0.7.8'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -1193,7 +1193,10 @@ function Mark-LWRunTampered {
 }
 
 function Sync-LWRunIntegrityState {
-    param([Parameter(Mandatory = $true)][object]$State)
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [switch]$Reseal
+    )
 
     Ensure-LWRunState -State $State
 
@@ -1205,17 +1208,21 @@ function Sync-LWRunIntegrityState {
     $computed = Get-LWRunSignature -State $State
     $stored = [string]$State.Run.Signature
 
+    if ($Reseal) {
+        if ([string]$State.Run.IntegrityState -ne 'Tampered') {
+            $State.Run.IntegrityState = 'Clean'
+            $State.Run.IntegrityNote = $null
+        }
+        $State.Run.Signature = $computed
+        return
+    }
+
     if ([string]::IsNullOrWhiteSpace($stored)) {
         $State.Run.Signature = $computed
         if ([string]$State.Run.IntegrityState -ne 'Tampered') {
             $State.Run.IntegrityState = 'Clean'
             $State.Run.IntegrityNote = $null
         }
-        return
-    }
-
-    if ([string]$State.Run.IntegrityState -eq 'Tampered') {
-        $State.Run.Signature = $computed
         return
     }
 
@@ -8457,7 +8464,7 @@ function Start-LWNewGameCore {
     Clear-LWDeathState
     Reset-LWCurrentBookStats -BookNumber $bookNumber -StartSection $startSection
     Reset-LWSectionCheckpoints -SeedCurrentSection
-    Sync-LWRunIntegrityState -State $script:GameState
+    Sync-LWRunIntegrityState -State $script:GameState -Reseal
 
     Write-LWInfo ("New {0} run created." -f [string]$script:GameState.Run.Difficulty)
     if (Test-LWPermadeathEnabled) {
@@ -8506,7 +8513,7 @@ function Save-LWGame {
     }
 
     Sync-LWCurrentSectionCheckpoint
-    Sync-LWRunIntegrityState -State $script:GameState
+    Sync-LWRunIntegrityState -State $script:GameState -Reseal
 
     $path = $script:GameState.Settings.SavePath
     if ($PromptForPath -or [string]::IsNullOrWhiteSpace($path)) {
