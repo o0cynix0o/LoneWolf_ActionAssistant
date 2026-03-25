@@ -26,9 +26,10 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.12'
+$script:LWAppVersion = '0.7.13'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
+$script:LWErrorLogFile = Join-Path $DataDir 'error.log'
 $script:GameState = $null
 $script:GameData = $null
 $script:LWUi = [pscustomobject]@{
@@ -116,6 +117,57 @@ function Add-LWNotification {
     }
 
     $script:LWUi.Notifications = @($existing)
+}
+
+function Write-LWCrashLog {
+    param(
+        [Parameter(Mandatory = $true)][System.Management.Automation.ErrorRecord]$ErrorRecord,
+        [string]$InputLine = '',
+        [string]$Stage = 'command'
+    )
+
+    $logPath = $script:LWErrorLogFile
+    $logDir = Split-Path -Parent $logPath
+    if (-not [string]::IsNullOrWhiteSpace($logDir) -and -not (Test-Path $logDir)) {
+        [void](New-Item -ItemType Directory -Path $logDir -Force)
+    }
+
+    $bookNumber = ''
+    $sectionNumber = ''
+    $characterName = ''
+    if ($null -ne $script:GameState) {
+        if ($null -ne $script:GameState.Character) {
+            $characterName = [string]$script:GameState.Character.Name
+            $bookNumber = [string]$script:GameState.Character.BookNumber
+        }
+        $sectionNumber = [string]$script:GameState.CurrentSection
+    }
+
+    $entry = @(
+        ('=' * 72)
+        ('Timestamp : {0}' -f (Get-Date).ToString('o'))
+        ('App       : {0} v{1}' -f $script:LWAppName, $script:LWAppVersion)
+        ('Stage     : {0}' -f $Stage)
+        ('Command   : {0}' -f $InputLine)
+        ('Character : {0}' -f $characterName)
+        ('Book      : {0}' -f $bookNumber)
+        ('Section   : {0}' -f $sectionNumber)
+        ('Message   : {0}' -f $ErrorRecord.Exception.Message)
+        ('ErrorId   : {0}' -f $ErrorRecord.FullyQualifiedErrorId)
+    )
+
+    if ($ErrorRecord.InvocationInfo -and -not [string]::IsNullOrWhiteSpace($ErrorRecord.InvocationInfo.PositionMessage)) {
+        $entry += 'Position  :'
+        $entry += $ErrorRecord.InvocationInfo.PositionMessage.TrimEnd()
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ErrorRecord.ScriptStackTrace)) {
+        $entry += 'Stack     :'
+        $entry += $ErrorRecord.ScriptStackTrace.TrimEnd()
+    }
+    $entry += ''
+
+    Add-Content -Path $logPath -Value $entry -Encoding UTF8
+    return $logPath
 }
 
 function Clear-LWNotifications {
@@ -5970,7 +6022,7 @@ function Get-LWInventoryUsedCapacity {
         return (Get-LWBackpackOccupiedSlotCount -Items $resolvedItems)
     }
 
-    return $resolvedItems.Count
+    return @($resolvedItems).Count
 }
 
 function Get-LWBackpackSlotMap {
@@ -9402,11 +9454,18 @@ function Start-LWTerminal {
     }
 
     while ($true) {
-        Refresh-LWScreen
-        $line = Read-Host 'lw'
-        $result = Invoke-LWCommand -InputLine $line
-        if ($result -eq 'quit') {
-            break
+        $line = ''
+        try {
+            Refresh-LWScreen
+            $line = Read-Host 'lw'
+            $result = Invoke-LWCommand -InputLine $line
+            if ($result -eq 'quit') {
+                break
+            }
+        }
+        catch {
+            $logPath = Write-LWCrashLog -ErrorRecord $_ -InputLine $line -Stage 'main-loop'
+            Write-LWError ("The assistant hit an unexpected error and wrote details to {0}. You can keep playing after this screen refresh." -f $logPath)
         }
     }
 
