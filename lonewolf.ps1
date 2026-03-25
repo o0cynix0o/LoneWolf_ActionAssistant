@@ -1329,10 +1329,11 @@ function New-LWStoryAchievementFlags {
         Book1SilverKeyClaimed       = $false
         Book1UseTheForcePath        = $false
         Book2SommerswerdClaimed     = $false
-        Book3SnakePitVisited = $false
-        Book3CliffhangerSeen = $false
-        Book3DiamondClaimed  = $false
-        Book3SnowblindSeen   = $false
+        Book3SnakePitVisited        = $false
+        Book3CliffhangerSeen        = $false
+        Book3DiamondClaimed         = $false
+        Book3SnowblindSeen          = $false
+        Book3GrossKeyClaimed        = $false
     }
 }
 
@@ -1427,7 +1428,8 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'snakes_why' -Name 'Snakes, Why Did It Have to Be Snakes?' -Category 'Journey' -Description 'Reach the Javek ledge in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cliffhanger' -Name 'Cliffhanger' -Category 'Journey' -Description 'Witness Dyce''s fatal fall in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'whats_in_the_box' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Diamond from the bone box in Book 3.' -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'snowblind' -Name 'Snowblind' -Category 'Journey' -Description 'Suffer snow-blindness in Book 3.' -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'snowblind' -Name 'Snowblind' -Category 'Journey' -Description 'Suffer snow-blindness in Book 3.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'you_touched_it_with_your_hands' -Name 'You Touched It With Your Hands?!' -Category 'Journey' -Description 'Claim the Ornate Silver Key from the Frostwyrm''s stomach in Book 3.' -ModePool 'Exploration' -Hidden:$true)
     )
 }
 
@@ -1474,7 +1476,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1578,6 +1580,9 @@ function Register-LWStoryInventoryAchievementTriggers {
         3 {
             if ([int]$script:GameState.CurrentSection -eq 218 -and [string]$Name -match 'diamond') {
                 Set-LWStoryAchievementFlag -Name 'Book3DiamondClaimed'
+            }
+            if ([int]$script:GameState.CurrentSection -eq 3 -and [string]$Name -match 'ornate silver key') {
+                Set-LWStoryAchievementFlag -Name 'Book3GrossKeyClaimed'
             }
         }
     }
@@ -5536,6 +5541,7 @@ function Test-LWAchievementSatisfied {
         'cliffhanger' { return (Test-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen') }
         'whats_in_the_box' { return (Test-LWStoryAchievementFlag -Name 'Book3DiamondClaimed') }
         'snowblind' { return (Test-LWStoryAchievementFlag -Name 'Book3SnowblindSeen') }
+        'you_touched_it_with_your_hands' { return (Test-LWStoryAchievementFlag -Name 'Book3GrossKeyClaimed') }
         default { return $false }
     }
 }
