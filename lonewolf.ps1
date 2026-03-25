@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.10'
+$script:LWAppVersion = '0.7.11'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -5921,6 +5921,80 @@ function Get-LWInventoryTypeCapacity {
     }
 }
 
+function Get-LWLongRopeItemNames {
+    return @('Long Rope')
+}
+
+function Get-LWBackpackItemSlotSize {
+    param([string]$Name = '')
+
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWLongRopeItemNames) -Target $Name))) {
+        return 2
+    }
+
+    return 1
+}
+
+function Get-LWBackpackOccupiedSlotCount {
+    param([object[]]$Items = $null)
+
+    $resolvedItems = if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }
+    $slotCount = 0
+    foreach ($item in $resolvedItems) {
+        $slotCount += (Get-LWBackpackItemSlotSize -Name ([string]$item))
+    }
+
+    return $slotCount
+}
+
+function Get-LWInventoryUsedCapacity {
+    param(
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [object[]]$Items = $null
+    )
+
+    $resolvedItems = if ($null -eq $Items) { @(Get-LWInventoryItems -Type $Type) } else { @($Items) }
+    if ($Type -eq 'backpack') {
+        return (Get-LWBackpackOccupiedSlotCount -Items $resolvedItems)
+    }
+
+    return $resolvedItems.Count
+}
+
+function Get-LWBackpackSlotMap {
+    param([object[]]$Items = $null)
+
+    $resolvedItems = if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }
+    $slotMap = @()
+    $slotNumber = 1
+
+    for ($itemIndex = 0; $itemIndex -lt $resolvedItems.Count; $itemIndex++) {
+        $itemName = [string]$resolvedItems[$itemIndex]
+        $slotSize = Get-LWBackpackItemSlotSize -Name $itemName
+        $slotMap += [pscustomobject]@{
+            Slot        = $slotNumber
+            ItemIndex   = $itemIndex
+            ItemName    = $itemName
+            DisplayText = $(if ($slotSize -gt 1) { "$itemName [2 slots]" } else { $itemName })
+            IsPrimary   = $true
+        }
+
+        for ($extraSlot = 2; $extraSlot -le $slotSize; $extraSlot++) {
+            $slotMap += [pscustomobject]@{
+                Slot        = ($slotNumber + $extraSlot - 1)
+                ItemIndex   = $itemIndex
+                ItemName    = $itemName
+                DisplayText = "(occupied by $itemName)"
+                IsPrimary   = $false
+            }
+        }
+
+        $slotNumber += $slotSize
+    }
+
+    return @($slotMap)
+}
+
 function Get-LWInventoryItems {
     param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
 
@@ -6001,12 +6075,23 @@ function Show-LWInventorySlotsSection {
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
 
     if ($null -ne $capacity) {
-        Write-Host ("  {0} ({1}/{2})" -f $label, $items.Count, $capacity) -ForegroundColor $labelColor
-        $slotCount = [Math]::Max([int]$capacity, [int]$items.Count)
-        for ($i = 0; $i -lt $slotCount; $i++) {
-            $slotText = if ($i -lt $items.Count) { [string]$items[$i] } else { '(empty)' }
-            $slotColor = if ($i -lt $items.Count) { 'Gray' } else { 'DarkGray' }
-            Write-Host ("    {0,2}. " -f ($i + 1)) -NoNewline -ForegroundColor DarkGray
+        $usedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $items
+        Write-Host ("  {0} ({1}/{2})" -f $label, $usedCapacity, $capacity) -ForegroundColor $labelColor
+        $slotCount = [Math]::Max([int]$capacity, [int]$usedCapacity)
+        $slotMap = if ($Type -eq 'backpack') { @(Get-LWBackpackSlotMap -Items $items) } else { @() }
+        for ($i = 1; $i -le $slotCount; $i++) {
+            if ($Type -eq 'backpack') {
+                $slotEntry = @($slotMap | Where-Object { [int]$_.Slot -eq $i } | Select-Object -First 1)
+                $hasItem = ($slotEntry.Count -gt 0)
+                $slotText = if ($hasItem) { [string]$slotEntry[0].DisplayText } else { '(empty)' }
+                $slotColor = if (-not $hasItem) { 'DarkGray' } elseif ([bool]$slotEntry[0].IsPrimary) { 'Gray' } else { 'DarkGray' }
+            }
+            else {
+                $hasItem = ($i -le $items.Count)
+                $slotText = if ($hasItem) { [string]$items[$i - 1] } else { '(empty)' }
+                $slotColor = if ($hasItem) { 'Gray' } else { 'DarkGray' }
+            }
+            Write-Host ("    {0,2}. " -f $i) -NoNewline -ForegroundColor DarkGray
             Write-Host $slotText -ForegroundColor $slotColor
         }
         return
@@ -6028,10 +6113,11 @@ function Show-LWInventorySummary {
     $weapons = @($script:GameState.Inventory.Weapons)
     $backpack = @($script:GameState.Inventory.BackpackItems)
     $special = @($script:GameState.Inventory.SpecialItems)
+    $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
 
     Write-LWPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
     Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWList -Items $weapons)) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpack.Count, (Format-LWList -Items $backpack)) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpackUsedCapacity, (Format-LWList -Items $backpack)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWList -Items $special)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
 }
@@ -6083,6 +6169,10 @@ function Show-LWInventory {
     }
     if ((Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState) -gt 0) {
         Write-LWSubtle '  Padded Leather Waistcoat: +2 Endurance while carried as a Special Item.'
+        Write-Host ''
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLongRopeItemNames) -Type 'backpack'))) {
+        Write-LWSubtle '  Long Rope: occupies 2 backpack slots.'
         Write-Host ''
     }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
@@ -6341,8 +6431,15 @@ function Add-LWInventoryItem {
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $label = Get-LWInventoryTypeLabel -Type $Type
     $current = @(Get-LWInventoryItems -Type $Type)
-    if ($null -ne $capacity -and (($current.Count + $Quantity) -gt $capacity)) {
-        Write-LWWarn ("You can only carry {0} {1}." -f $capacity, $label.ToLowerInvariant())
+    $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $current
+    $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $Name) } else { $Quantity }
+    if ($null -ne $capacity -and (($currentUsedCapacity + $requiredCapacity) -gt $capacity)) {
+        if ($Type -eq 'backpack') {
+            Write-LWWarn ("You only have room for {0} backpack slots." -f $capacity)
+        }
+        else {
+            Write-LWWarn ("You can only carry {0} {1}." -f $capacity, $label.ToLowerInvariant())
+        }
         return
     }
 
@@ -6478,7 +6575,8 @@ function Remove-LWInventoryItemBySlot {
     $items = @(Get-LWInventoryItems -Type $Type)
     $label = Get-LWInventoryTypeLabel -Type $Type
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
-    $maxSlot = if ($null -ne $capacity) { [Math]::Max([int]$capacity, [int]$items.Count) } else { [int]$items.Count }
+    $usedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $items
+    $maxSlot = if ($null -ne $capacity) { [Math]::Max([int]$capacity, [int]$usedCapacity) } else { [int]$items.Count }
 
     if ($items.Count -eq 0) {
         Write-LWWarn "$label is empty."
@@ -6489,15 +6587,26 @@ function Remove-LWInventoryItemBySlot {
         Write-LWWarn "$label slot must be between 1 and $maxSlot."
         return
     }
-    if ($Slot -gt $items.Count) {
-        Write-LWWarn "$label slot $Slot is empty."
-        return
+    if ($Type -eq 'backpack') {
+        $slotEntry = @(Get-LWBackpackSlotMap -Items $items | Where-Object { [int]$_.Slot -eq $Slot } | Select-Object -First 1)
+        if ($slotEntry.Count -eq 0) {
+            Write-LWWarn "$label slot $Slot is empty."
+            return
+        }
+        $removeIndex = [int]$slotEntry[0].ItemIndex
+    }
+    else {
+        if ($Slot -gt $items.Count) {
+            Write-LWWarn "$label slot $Slot is empty."
+            return
+        }
+        $removeIndex = ($Slot - 1)
     }
 
-    $removedItem = [string]$items[$Slot - 1]
+    $removedItem = [string]$items[$removeIndex]
     $remaining = @()
     for ($i = 0; $i -lt $items.Count; $i++) {
-        if ($i -ne ($Slot - 1)) {
+        if ($i -ne $removeIndex) {
             $remaining += $items[$i]
         }
     }
@@ -6542,7 +6651,9 @@ function Test-LWInventoryRecoveryFits {
     }
 
     $currentItems = @(Get-LWInventoryItems -Type $Type)
-    return (($currentItems.Count + $recoveryItems.Count) -le $capacity)
+    $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $currentItems
+    $recoveryUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $recoveryItems
+    return (($currentUsedCapacity + $recoveryUsedCapacity) -le $capacity)
 }
 
 function Restore-LWInventorySection {
@@ -6560,7 +6671,10 @@ function Restore-LWInventorySection {
         Write-LWWarn "$label does not have enough room to recover the saved items. Make space first."
         if ($null -ne $capacity) {
             $currentItems = @(Get-LWInventoryItems -Type $Type)
-            Write-LWSubtle ("  carrying {0}/{1}, recovery stash has {2} item{3}" -f $currentItems.Count, $capacity, $recoveryItems.Count, $(if ($recoveryItems.Count -eq 1) { '' } else { 's' }))
+            $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $currentItems
+            $recoveryUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $recoveryItems
+            $recoveryUnitLabel = if ($Type -eq 'backpack') { 'slot' } else { 'item' }
+            Write-LWSubtle ("  carrying {0}/{1}, recovery stash uses {2} {3}{4}" -f $currentUsedCapacity, $capacity, $recoveryUsedCapacity, $recoveryUnitLabel, $(if ($recoveryUsedCapacity -eq 1) { '' } else { 's' }))
         }
         return
     }

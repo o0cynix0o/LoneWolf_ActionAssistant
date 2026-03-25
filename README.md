@@ -30,6 +30,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - Drodarin War Hammer
   - Chainmail Waistcoat / Wastecoat
   - Padded Leather Waistcoat / Wastecoat
+  - Long Rope
   - Sommerswerd
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
@@ -286,6 +287,9 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Padded Leather Waistcoat` / `Padded Leather Wastecoat`
   Counts as a Special Item that is treated as worn automatically
   Adds `+2 Endurance`
+- `Long Rope`
+  Counts as a backpack item
+  Uses `2` backpack slots instead of `1`
 - `Sommerswerd`
   Available from Book 2 onward
   Counts as a weapon-like Special Item
