@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.13'
+$script:LWAppVersion = '0.7.14'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -1388,6 +1388,8 @@ function New-LWStoryAchievementFlags {
         Book3GrossKeyClaimed        = $false
         Book3LuckyButtonTheorySeen  = $false
         Book3WellItWorkedOnceSeen   = $false
+        Book3FirstCellAbandoned     = $false
+        Book3CellfishPathTaken      = $false
     }
 }
 
@@ -1485,7 +1487,8 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'snowblind' -Name 'Snowblind' -Category 'Journey' -Description 'Suffer snow-blindness in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'you_touched_it_with_your_hands' -Name 'You Touched It With Your Hands?!' -Category 'Journey' -Description 'Claim the Ornate Silver Key as a Special Item in section 280 of Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'lucky_button_theory' -Name 'Lucky Button Theory' -Category 'Journey' -Description 'Press the right button sequence and reach section 102 in Book 3.' -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'well_it_worked_once' -Name 'Well, It Worked Once' -Category 'Journey' -Description 'Reach section 65 after already reaching section 102 in Book 3.' -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'well_it_worked_once' -Name 'Well, It Worked Once' -Category 'Journey' -Description 'Reach section 65 after already reaching section 102 in Book 3.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'cellfish' -Name 'Cellfish' -Category 'Journey' -Description 'Leave both prisoners to their fate in Book 3 by taking the cold path from section 13 to 254 and then walking away again at section 276.' -ModePool 'Exploration' -Hidden:$true)
     )
 }
 
@@ -1532,7 +1535,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1596,6 +1599,11 @@ function Register-LWStorySectionAchievementTriggers {
                     }
                 }
                 102 { Set-LWStoryAchievementFlag -Name 'Book3LuckyButtonTheorySeen' }
+                276 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book3FirstCellAbandoned') {
+                        Set-LWStoryAchievementFlag -Name 'Book3CellfishPathTaken'
+                    }
+                }
                 88 { Set-LWStoryAchievementFlag -Name 'Book3SnakePitVisited' }
                 251 { Set-LWStoryAchievementFlag -Name 'Book3SnowblindSeen' }
             }
@@ -1615,6 +1623,9 @@ function Register-LWStorySectionTransitionAchievementTriggers {
 
     if ([int]$script:GameState.Character.BookNumber -eq 1 -and $FromSection -eq 131 -and $ToSection -eq 302) {
         Set-LWStoryAchievementFlag -Name 'Book1UseTheForcePath'
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 3 -and $FromSection -eq 13 -and $ToSection -eq 254) {
+        Set-LWStoryAchievementFlag -Name 'Book3FirstCellAbandoned'
     }
 }
 
@@ -5606,6 +5617,7 @@ function Test-LWAchievementSatisfied {
         'you_touched_it_with_your_hands' { return (Test-LWStoryAchievementFlag -Name 'Book3GrossKeyClaimed') }
         'lucky_button_theory' { return (Test-LWStoryAchievementFlag -Name 'Book3LuckyButtonTheorySeen') }
         'well_it_worked_once' { return (Test-LWStoryAchievementFlag -Name 'Book3WellItWorkedOnceSeen') }
+        'cellfish' { return (Test-LWStoryAchievementFlag -Name 'Book3CellfishPathTaken') }
         default { return $false }
     }
 }
