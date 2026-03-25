@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.14'
+$script:LWAppVersion = '0.7.15'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -1656,6 +1656,44 @@ function Register-LWStoryInventoryAchievementTriggers {
             }
             if ($Type -eq 'special' -and [int]$script:GameState.CurrentSection -eq 280 -and [string]$Name -match 'ornate silver key') {
                 Set-LWStoryAchievementFlag -Name 'Book3GrossKeyClaimed'
+            }
+        }
+    }
+}
+
+function Invoke-LWSectionEntryRules {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $section = [int]$script:GameState.CurrentSection
+
+    switch ($bookNumber) {
+        3 {
+            switch ($section) {
+                280 {
+                    $before = [int]$script:GameState.Character.EnduranceCurrent
+                    $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 1 -Source 'sectiondamage'
+                    $appliedLoss = [int]$lossResolution.AppliedLoss
+
+                    if ($appliedLoss -gt 0) {
+                        $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
+                        Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+                    }
+
+                    $message = 'Section 280: the Ornate Silver Key''s corrosive acid burns your hand.'
+                    if ($appliedLoss -gt 0) {
+                        $message += " Lose $appliedLoss ENDURANCE point$(if ($appliedLoss -eq 1) { '' } else { 's' })."
+                    }
+                    if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+                        $message += " $($lossResolution.Note)"
+                    }
+                    $message += " Current Endurance: $($script:GameState.Character.EnduranceCurrent) / $($script:GameState.Character.EnduranceMax)."
+                    Write-LWInfo $message
+
+                    [void](Invoke-LWFatalEnduranceCheck -Cause 'The corrosive acid on the Ornate Silver Key reduced your Endurance to zero.')
+                }
             }
         }
     }
@@ -6389,6 +6427,7 @@ function Set-LWSection {
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
     Add-LWBookSectionVisit -Section $newSection
+    Invoke-LWSectionEntryRules
     Write-LWInfo "Moved to section $newSection."
     Invoke-LWMaybeAutosave
 }
