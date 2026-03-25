@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.8'
+$script:LWAppVersion = '0.7.9'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:GameState = $null
@@ -1562,26 +1562,26 @@ function Register-LWStoryInventoryAchievementTriggers {
         [Parameter(Mandatory = $true)][string]$Name
     )
 
-    if (-not (Test-LWHasState) -or $Type -ne 'special') {
+    if (-not (Test-LWHasState)) {
         return
     }
 
     switch ([int]$script:GameState.Character.BookNumber) {
         1 {
-            if ([int]$script:GameState.CurrentSection -eq 124 -and [string]$Name -match 'silver key') {
+            if (@('backpack', 'special') -contains $Type -and [int]$script:GameState.CurrentSection -eq 124 -and [string]$Name -match 'silver key') {
                 Set-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed'
             }
         }
         2 {
-            if ([int]$script:GameState.CurrentSection -eq 79 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSommerswerdItemNames) -Target $Name))) {
+            if ($Type -eq 'special' -and [int]$script:GameState.CurrentSection -eq 79 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSommerswerdItemNames) -Target $Name))) {
                 Set-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed'
             }
         }
         3 {
-            if ([int]$script:GameState.CurrentSection -eq 218 -and [string]$Name -match 'diamond') {
+            if (@('backpack', 'special') -contains $Type -and [int]$script:GameState.CurrentSection -eq 218 -and [string]$Name -match 'diamond') {
                 Set-LWStoryAchievementFlag -Name 'Book3DiamondClaimed'
             }
-            if ([int]$script:GameState.CurrentSection -eq 3 -and [string]$Name -match 'ornate silver key') {
+            if (@('backpack', 'special') -contains $Type -and [int]$script:GameState.CurrentSection -eq 3 -and [string]$Name -match 'ornate silver key') {
                 Set-LWStoryAchievementFlag -Name 'Book3GrossKeyClaimed'
             }
         }
