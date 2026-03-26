@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.32'
+$script:LWAppVersion = '0.7.33'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -2593,28 +2593,6 @@ function Invoke-LWSectionEntryRules {
                         Restore-LWBackpackState -WriteMessages
                         Set-LWStoryAchievementFlag -Name 'Book4BackpackRecovered'
                         Write-LWInfo 'Section 12: Captain D''Val outfits you with a fresh empty Backpack.'
-                    }
-
-                    if (-not (Test-LWStoryAchievementFlag -Name 'Book4Section12ResupplyHandled')) {
-                        Set-LWStoryAchievementFlag -Name 'Book4Section12ResupplyHandled'
-
-                        if (Read-LWYesNo -Prompt 'Take 3 Meals from Captain D''Val''s stores?' -Default $true) {
-                            if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal' -Quantity 3) {
-                                Write-LWInfo 'Section 12: added 3 Meals.'
-                            }
-                        }
-                        if (Read-LWYesNo -Prompt 'Take a Rope from Captain D''Val''s stores?' -Default $true) {
-                            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Rope')
-                        }
-                        if (Read-LWYesNo -Prompt 'Take a Potion of Laumspur from Captain D''Val''s stores?' -Default $true) {
-                            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Potion of Laumspur')
-                        }
-                        if (Read-LWYesNo -Prompt 'Take a Sword from Captain D''Val''s stores?' -Default $false) {
-                            [void](Add-LWWeaponWithOptionalReplace -Name 'Sword' -PromptLabel 'Sword')
-                        }
-                        if (Read-LWYesNo -Prompt 'Take a Spear from Captain D''Val''s stores?' -Default $false) {
-                            [void](Add-LWWeaponWithOptionalReplace -Name 'Spear' -PromptLabel 'Spear')
-                        }
                     }
                 }
                 78 {
