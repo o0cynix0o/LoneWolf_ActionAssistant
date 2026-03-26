@@ -8,16 +8,18 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 - Screen-based terminal UI with ASCII banners and color-coded panels
 - New Kai character creation with random starting Combat Skill and Endurance
-- Book 1 start-package automation for Axe, Meal, Map of Sommerlund, random Gold, and the random monastery find
+- Book 1 and Book 2 start-package automation, including Book 2 carry-in armory exchange support
 - Kai discipline selection, including Weaponskill weapon assignment
 - Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
 - Inventory slot tracking for weapons (`2`), backpack items (`8`), special items (`12`), and gold
 - Section tracking with Healing support for non-combat sections
-- Meal handling with Hunting support, including Book 3 / Kalte restrictions
+- Meal handling with Hunting support, including Book 2 Wildlands and Book 3 / Kalte restrictions
 - Potion handling for:
   - Healing Potion / Laumspur Potion
+  - Potent Laumspur Potion
   - Concentrated Laumspur
   - Book 1 Laumspur Herb
+  - Book 2 Meal of Laumspur
 - Combat assistant with:
   - combat ratio calculation
   - random number rolls
@@ -33,11 +35,20 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - Chainmail Waistcoat / Wastecoat
   - Padded Leather Waistcoat / Wastecoat
   - Long Rope
+  - Magic Spear
   - Sommerswerd
 - Book 1 section-rule support for:
   - Vordak Gem handling
   - Burrowcrawler torch/darkness combat setup
   - Crystal Star Pendant carry-forward tracking
+- Book 2 section-rule support for:
+  - Seal of Hammerdal startup and audience-route handling
+  - Coach Ticket, White Pass, and Red Pass tracking
+  - forged access papers state
+  - Potent Laumspur Potion and Meal of Laumspur pickups
+  - section `106` Magic Spear / Helghast setup
+  - section `313` spear loss and damage
+  - section `337` storm gear-loss handling
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
@@ -296,6 +307,10 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Long Rope`
   Counts as a backpack item
   Uses `2` backpack slots instead of `1`
+- `Magic Spear`
+  Counts as a weapon-like Special Item
+  Counts as a `Spear` for Weaponskill
+  Used automatically in the Book 2 Helghast fight at section `106`
 - `Sommerswerd`
   Available from Book 2 onward
   Counts as a weapon-like Special Item
@@ -304,9 +319,14 @@ Some items are now handled automatically instead of needing manual stat edits.
   Doubles enemy END loss against undead when active
 - `Potion of Laumspur` / `Healing Potion`
   Restores `4 END`
+- `Potent Laumspur Potion`
+  Restores `5 END`
 - `Concentrated Laumspur`
   Restores `8 END`
   The `potion` command prefers it first when available
+- `Meal of Laumspur`
+  Satisfies a Meal and restores `3 END`
+  Can also be used with `potion` to restore `3 END`
 - `Alether`
   Available from Book 3 onward
   Must be used before combat starts
@@ -325,7 +345,7 @@ The app tracks live book stats and run history, including:
 - fights, wins, defeats, evades, and rounds fought
 - highest enemy CS and END faced / defeated
 
-It also supports hidden story achievements. The current batch includes Book 1 route/discovery achievements and Book 3 section/discovery achievements, including the Diamond from section `218`.
+It also supports hidden story achievements. The current batch now includes Book 1 routes, Book 2 route/story milestones, and Book 3 section/discovery achievements, including the Diamond from section `218`.
 - fastest, easiest, and longest fights
 - weapon usage and weapon victories
 - Mindblast usage and wins

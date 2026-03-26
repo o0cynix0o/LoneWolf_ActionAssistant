@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.19'
+$script:LWAppVersion = '0.7.20'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -1391,7 +1391,22 @@ function New-LWStoryAchievementFlags {
         Book1VordakGem76Claimed     = $false
         Book1VordakGem304Claimed    = $false
         Book1VordakGemCurseTriggered = $false
+        Book2CoachTicketClaimed     = $false
+        Book2WhitePassClaimed       = $false
+        Book2RedPassClaimed         = $false
+        Book2PotentPotionClaimed    = $false
+        Book2MealOfLaumspurClaimed  = $false
+        Book2ForgedPapersBought     = $false
+        Book2Section106DamageApplied = $false
+        Book2Section313Resolved     = $false
+        Book2Section337StormLossApplied = $false
         Book2SommerswerdClaimed     = $false
+        Book2ByAThreadRoute         = $false
+        Book2SkyfallRoute           = $false
+        Book2FightThroughTheSmokeRoute = $false
+        Book2StormTossedSeen        = $false
+        Book2SealOfApprovalRoute    = $false
+        Book2PapersPleasePath       = $false
         Book3SnakePitVisited        = $false
         Book3CliffhangerSeen        = $false
         Book3DiamondClaimed         = $false
@@ -1505,6 +1520,12 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'found_the_sommerswerd' -Name 'Found the Sommerswerd' -Category 'Journey' -Description 'Claim the Sommerswerd in Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'you_have_chosen_wisely' -Name 'You Have Chosen Wisely' -Category 'Journey' -Description 'Defeat the Priest in section 158 of Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'neo_link' -Name 'Neo Link' -Category 'Journey' -Description 'Defeat Ganon + Dorier in section 270 of Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'by_a_thread' -Name 'By a Thread' -Category 'Journey' -Description 'Finish Book 2 through the rope-swing route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'skyfall' -Name 'Skyfall' -Category 'Journey' -Description 'Finish Book 2 through the Sommerswerd-and-Kraan skyfall route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'fight_through_the_smoke' -Name 'Fight Through the Smoke' -Category 'Journey' -Description 'Finish Book 2 by fighting back through the flagship deck.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'storm_tossed' -Name 'Storm-Tossed' -Category 'Journey' -Description 'Reach section 337 and still complete Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'seal_of_approval' -Name 'Seal of Approval' -Category 'Journey' -Description 'Reach the king''s audience route and claim the Sommerswerd in Book 2.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'papers_please' -Name 'Papers, Please' -Category 'Journey' -Description 'Trust forged access papers in Book 2 and pay the price.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'snakes_why' -Name 'Snakes, Why Did It Have to Be Snakes?' -Category 'Journey' -Description 'Reach the Javek ledge in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cliffhanger' -Name 'Cliffhanger' -Category 'Journey' -Description 'Witness Dyce''s fatal fall in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'whats_in_the_box' -Name 'What''s in the Box?' -Category 'Journey' -Description 'Claim the Diamond from the bone box in Book 3.' -ModePool 'Exploration' -Hidden:$true),
@@ -1564,7 +1585,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1585,6 +1606,10 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         $visitedSections += [int]$script:GameState.CurrentSection
     }
     $visitedSections = @($visitedSections | Sort-Object -Unique)
+
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSommerswerdItemNames) -Type 'special'))) {
+        Set-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed'
+    }
 
     if ([int]$script:GameState.Character.BookNumber -eq 1) {
         if ($visitedSections -contains 66) {
@@ -1618,6 +1643,46 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         }
         if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCrystalStarPendantItemNames) -Type 'special'))) {
             Set-LWStoryAchievementFlag -Name 'Book1StarOfToranClaimed'
+        }
+    }
+
+    if ([int]$script:GameState.Character.BookNumber -eq 2) {
+        if ($visitedSections -contains 10) {
+            Set-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed'
+        }
+        if ($visitedSections -contains 40) {
+            Set-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed'
+        }
+        if ($visitedSections -contains 103) {
+            Set-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed'
+        }
+        if ($visitedSections -contains 105) {
+            Set-LWStoryAchievementFlag -Name 'Book2ByAThreadRoute'
+        }
+        if ($visitedSections -contains 109) {
+            Set-LWStoryAchievementFlag -Name 'Book2SkyfallRoute'
+        }
+        if ($visitedSections -contains 126 -and (Test-LWStoryAchievementFlag -Name 'Book2ForgedPapersBought')) {
+            Set-LWStoryAchievementFlag -Name 'Book2PapersPleasePath'
+        }
+        if ($visitedSections -contains 142) {
+            Set-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed'
+        }
+        if ($visitedSections -contains 185) {
+            Set-LWStoryAchievementFlag -Name 'Book2FightThroughTheSmokeRoute'
+        }
+        if ($visitedSections -contains 196) {
+            Set-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute'
+        }
+        if ($visitedSections -contains 263) {
+            Set-LWStoryAchievementFlag -Name 'Book2RedPassClaimed'
+        }
+        if ($visitedSections -contains 337) {
+            Set-LWStoryAchievementFlag -Name 'Book2StormTossedSeen'
+            Set-LWStoryAchievementFlag -Name 'Book2Section337StormLossApplied'
+        }
+        if ($visitedSections -contains 313) {
+            Set-LWStoryAchievementFlag -Name 'Book2Section313Resolved'
         }
     }
 
@@ -1691,6 +1756,25 @@ function Register-LWStorySectionAchievementTriggers {
                 332 { Set-LWStoryAchievementFlag -Name 'Book1BackWayIn' }
             }
         }
+        2 {
+            switch ($Section) {
+                10 { Set-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed' }
+                40 { Set-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed' }
+                103 { Set-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed' }
+                105 { Set-LWStoryAchievementFlag -Name 'Book2ByAThreadRoute' }
+                109 { Set-LWStoryAchievementFlag -Name 'Book2SkyfallRoute' }
+                126 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book2ForgedPapersBought') {
+                        Set-LWStoryAchievementFlag -Name 'Book2PapersPleasePath'
+                    }
+                }
+                142 { Set-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed' }
+                185 { Set-LWStoryAchievementFlag -Name 'Book2FightThroughTheSmokeRoute' }
+                196 { Set-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute' }
+                263 { Set-LWStoryAchievementFlag -Name 'Book2RedPassClaimed' }
+                337 { Set-LWStoryAchievementFlag -Name 'Book2StormTossedSeen' }
+            }
+        }
         3 {
             switch ($Section) {
                 19 { Set-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen' }
@@ -1736,6 +1820,23 @@ function Register-LWStorySectionTransitionAchievementTriggers {
     if ([int]$script:GameState.Character.BookNumber -eq 1 -and $FromSection -eq 88 -and $ToSection -eq 216) {
         Set-LWStoryAchievementFlag -Name 'Book1FieldMedicPath'
     }
+    if ([int]$script:GameState.Character.BookNumber -eq 2 -and $FromSection -eq 62 -and $ToSection -eq 126 -and (Test-LWStoryAchievementFlag -Name 'Book2ForgedPapersBought')) {
+        Set-LWStoryAchievementFlag -Name 'Book2PapersPleasePath'
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 2 -and $FromSection -eq 299 -and $ToSection -eq 118) {
+        $magicSpearName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMagicSpearItemNames) -Type 'special'
+        if (-not [string]::IsNullOrWhiteSpace($magicSpearName)) {
+            [void](Remove-LWInventoryItemSilently -Type 'special' -Name $magicSpearName -Quantity 1)
+            Write-LWInfo 'Section 299: Rhygar keeps the Magic Spear.'
+        }
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 2 -and $FromSection -eq 338 -and $ToSection -eq 349) {
+        $magicSpearName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMagicSpearItemNames) -Type 'special'
+        if (-not [string]::IsNullOrWhiteSpace($magicSpearName)) {
+            [void](Remove-LWInventoryItemSilently -Type 'special' -Name $magicSpearName -Quantity 1)
+            Write-LWInfo 'Section 338: you leave the Magic Spear behind.'
+        }
+    }
     if ([int]$script:GameState.Character.BookNumber -eq 3 -and $FromSection -eq 13 -and $ToSection -eq 254) {
         Set-LWStoryAchievementFlag -Name 'Book3FirstCellAbandoned'
     }
@@ -1771,6 +1872,21 @@ function Register-LWStoryInventoryAchievementTriggers {
         2 {
             if ($Type -eq 'special' -and [int]$script:GameState.CurrentSection -eq 79 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSommerswerdItemNames) -Target $Name))) {
                 Set-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed'
+            }
+            if ($Type -eq 'special' -and [int]$script:GameState.CurrentSection -eq 10 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWCoachTicketItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed'
+            }
+            if ($Type -eq 'special' -and [int]$script:GameState.CurrentSection -eq 142 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWWhitePassItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed'
+            }
+            if ($Type -eq 'special' -and [int]$script:GameState.CurrentSection -eq 263 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWRedPassItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book2RedPassClaimed'
+            }
+            if ($Type -eq 'backpack' -and [int]$script:GameState.CurrentSection -eq 40 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWPotentHealingPotionItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed'
+            }
+            if ($Type -eq 'backpack' -and [int]$script:GameState.CurrentSection -eq 103 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWMealOfLaumspurItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed'
             }
         }
         3 {
@@ -1881,6 +1997,171 @@ function Invoke-LWSectionEntryRules {
                         else {
                             Write-LWWarn 'No room to add the Vordak Gem automatically. Make room and add it manually if you are keeping it.'
                         }
+                    }
+                }
+            }
+        }
+        2 {
+            switch ($section) {
+                10 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Coach Ticket') {
+                            Set-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed'
+                            Write-LWInfo 'Section 10: Coach Ticket added to Special Items.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the Coach Ticket automatically. Make room and add it manually if needed.'
+                        }
+                    }
+                }
+                40 {
+                    $before = [int]$script:GameState.Character.EnduranceCurrent
+                    $script:GameState.Character.EnduranceCurrent = [int]$script:GameState.Character.EnduranceMax
+                    $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
+                    if ($restored -gt 0) {
+                        Add-LWBookEnduranceDelta -Delta $restored
+                        Write-LWInfo ('Section 40: Madin Rendalim restores all ENDURANCE lost so far.')
+                    }
+
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Potent Laumspur Potion') {
+                            Set-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed'
+                            Write-LWInfo 'Section 40: added Potent Laumspur Potion (+5 ENDURANCE after combat).'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the Potent Laumspur Potion automatically. Make room and add it manually if you are keeping it.'
+                        }
+                    }
+                }
+                103 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal of Laumspur') {
+                            Set-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed'
+                            Write-LWInfo 'Section 103: added Meal of Laumspur. It can satisfy a Meal and restore 3 ENDURANCE, or be used any time for 3 ENDURANCE.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the Meal of Laumspur automatically. Make room and add it manually if you are keeping it.'
+                        }
+                    }
+                }
+                106 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section106DamageApplied')) {
+                        Set-LWStoryAchievementFlag -Name 'Book2Section106DamageApplied'
+                        $before = [int]$script:GameState.Character.EnduranceCurrent
+                        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 2 -Source 'sectiondamage'
+                        $appliedLoss = [int]$lossResolution.AppliedLoss
+                        if ($appliedLoss -gt 0) {
+                            $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
+                            Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+                        }
+
+                        $message = 'Section 106: the Magic Spear burns your mind as you pull it free.'
+                        if ($appliedLoss -gt 0) {
+                            $message += " Lose $appliedLoss ENDURANCE point$(if ($appliedLoss -eq 1) { '' } else { 's' })."
+                        }
+                        if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+                            $message += " $($lossResolution.Note)"
+                        }
+                        $message += ' The Helghast fight here is immune to Mindblast, uses Mindforce every round, and can only be harmed by the Magic Spear.'
+                        Write-LWInfo $message
+
+                        [void](Invoke-LWFatalEnduranceCheck -Cause 'The shock of the Magic Spear reduced your Endurance to zero.')
+                    }
+                }
+                142 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'White Pass') {
+                            Set-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed'
+                            Write-LWInfo 'Section 142: White Pass added to Special Items.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the White Pass automatically. Make room and add it manually if needed.'
+                        }
+                    }
+                }
+                196 {
+                    Set-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute'
+                    $sealName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSealOfHammerdalItemNames) -Type 'special'
+                    if (-not [string]::IsNullOrWhiteSpace($sealName)) {
+                        [void](Remove-LWInventoryItemSilently -Type 'special' -Name $sealName -Quantity 1)
+                        Write-LWInfo 'Section 196: the Seal of Hammerdal is removed from your Special Items.'
+                    }
+                }
+                263 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2RedPassClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Red Pass') {
+                            Set-LWStoryAchievementFlag -Name 'Book2RedPassClaimed'
+                            Write-LWInfo 'Section 263: Red Pass added to Special Items.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the Red Pass automatically. Make room and add it manually if needed.'
+                        }
+                    }
+                }
+                289 {
+                    if ([string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSealOfHammerdalItemNames) -Type 'special'))) {
+                        Write-LWWarn 'Section 289 continuity note: if you no longer possess the Seal of Hammerdal, you should leave immediately for section 186.'
+                    }
+                }
+                313 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section313Resolved')) {
+                        Set-LWStoryAchievementFlag -Name 'Book2Section313Resolved'
+                        $before = [int]$script:GameState.Character.EnduranceCurrent
+                        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 4 -Source 'sectiondamage'
+                        $appliedLoss = [int]$lossResolution.AppliedLoss
+                        if ($appliedLoss -gt 0) {
+                            $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
+                            Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+                        }
+                        $magicSpearName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMagicSpearItemNames) -Type 'special'
+                        if (-not [string]::IsNullOrWhiteSpace($magicSpearName)) {
+                            [void](Remove-LWInventoryItemSilently -Type 'special' -Name $magicSpearName -Quantity 1)
+                        }
+
+                        $message = 'Section 313: the Helghast''s burnt claws tear into your neck.'
+                        if ($appliedLoss -gt 0) {
+                            $message += " Lose $appliedLoss ENDURANCE point$(if ($appliedLoss -eq 1) { '' } else { 's' })."
+                        }
+                        $message += ' The Magic Spear is erased.'
+                        if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+                            $message += " $($lossResolution.Note)"
+                        }
+                        Write-LWInfo $message
+
+                        [void](Invoke-LWFatalEnduranceCheck -Cause 'The Helghast''s burnt claws reduced your Endurance to zero.')
+                    }
+                }
+                327 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2ForgedPapersBought')) {
+                        $buyPapers = Read-LWYesNo -Prompt 'Buy the forged access papers here?' -Default $false
+                        if ($buyPapers) {
+                            $currentGold = [int]$script:GameState.Inventory.GoldCrowns
+                            $pricePaid = [Math]::Min(6, $currentGold)
+                            if ($pricePaid -gt 0) {
+                                $script:GameState.Inventory.GoldCrowns = [int]($currentGold - $pricePaid)
+                                Add-LWBookGoldDelta -Delta (-$pricePaid)
+                            }
+                            Set-LWStoryAchievementFlag -Name 'Book2ForgedPapersBought'
+                            Write-LWInfo ("Section 327: forged access papers acquired for the Red Pass route. Gold paid: {0}." -f $pricePaid)
+                        }
+                    }
+                }
+                337 {
+                    Set-LWStoryAchievementFlag -Name 'Book2StormTossedSeen'
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section337StormLossApplied')) {
+                        Set-LWStoryAchievementFlag -Name 'Book2Section337StormLossApplied'
+                        $lostWeapons = @(Get-LWInventoryItems -Type 'weapon')
+                        $lostBackpack = @(Get-LWInventoryItems -Type 'backpack')
+                        if ($lostWeapons.Count -gt 0) {
+                            Save-LWInventoryRecoveryEntry -Type 'weapon' -Items @($lostWeapons)
+                            Set-LWInventoryItems -Type 'weapon' -Items @()
+                        }
+                        if ($lostBackpack.Count -gt 0) {
+                            Save-LWInventoryRecoveryEntry -Type 'backpack' -Items @($lostBackpack)
+                            Set-LWInventoryItems -Type 'backpack' -Items @()
+                        }
+                        Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+                        Write-LWInfo 'Section 337: the storm strips away all Weapons and Backpack Items. Gold, your Backpack, and surviving Special Items are kept.'
                     }
                 }
             }
@@ -2870,6 +3151,100 @@ function Apply-LWBookOneStartingEquipment {
     Write-LWInfo ("Book 1 monastery find roll: {0} -> {1}." -f $extraItemRoll, [string]$extraItem.Description)
 }
 
+function Get-LWBookTwoArmoryChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'short_sword'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' },
+        [pscustomobject]@{ Id = 'two_meals'; DisplayName = 'Two Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 2; Description = 'Two Meals' },
+        [pscustomobject]@{ Id = 'chainmail'; DisplayName = 'Chainmail Waistcoat'; Type = 'special'; Name = 'Chainmail Waistcoat'; Quantity = 1; Description = 'Chainmail Waistcoat' },
+        [pscustomobject]@{ Id = 'mace'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'healing_potion'; DisplayName = 'Healing Potion'; Type = 'backpack'; Name = 'Healing Potion'; Quantity = 1; Description = 'Healing Potion' },
+        [pscustomobject]@{ Id = 'quarterstaff'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'spear'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' },
+        [pscustomobject]@{ Id = 'shield'; DisplayName = 'Shield'; Type = 'special'; Name = 'Shield'; Quantity = 1; Description = 'Shield' },
+        [pscustomobject]@{ Id = 'broadsword'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' }
+    )
+}
+
+function Grant-LWBookTwoArmoryChoice {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    if ($null -eq $Choice) {
+        return
+    }
+
+    if ([string]$Choice.Type -eq 'weapon' -and @($script:GameState.Inventory.Weapons).Count -ge 2) {
+        Write-LWInfo 'Book 2 allows you to exchange one of your carried weapons for an armory choice.'
+        Show-LWInventorySlotsSection -Type 'weapon'
+        $slot = Read-LWInt -Prompt ("Replace which weapon with {0}?" -f [string]$Choice.DisplayName) -Min 1 -Max 2
+        $weapons = @(Get-LWInventoryItems -Type 'weapon')
+        $replacedWeapon = [string]$weapons[$slot - 1]
+        $weapons[$slot - 1] = [string]$Choice.Name
+        Set-LWInventoryItems -Type 'weapon' -Items @($weapons)
+        Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+        Write-LWInfo ("Exchanged {0} for {1}." -f $replacedWeapon, [string]$Choice.DisplayName)
+        return
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)) {
+        Write-LWInfo ("Book 2 armory choice added: {0}." -f [string]$Choice.Description)
+        return
+    }
+
+    Write-LWWarn ("Could not add the Book 2 armory choice '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
+}
+
+function Apply-LWBookTwoStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 2) {
+        return
+    }
+
+    $startingGoldRoll = Get-LWRandomDigit
+    $goldGain = 10 + [int]$startingGoldRoll
+    $oldGold = [int]$script:GameState.Inventory.GoldCrowns
+    $newGold = [Math]::Min(50, ($oldGold + $goldGain))
+    $script:GameState.Inventory.GoldCrowns = $newGold
+
+    Write-LWInfo ("Book 2 starting gold roll: {0} -> +{1} Gold Crowns." -f $startingGoldRoll, $goldGain)
+    if ($newGold -ne ($oldGold + $goldGain)) {
+        Write-LWWarn 'Gold Crowns are capped at 50. Excess Book 2 starting gold is lost.'
+    }
+
+    foreach ($specialItem in @('Map of Sommerlund', 'Seal of Hammerdal')) {
+        $names = if ($specialItem -eq 'Map of Sommerlund') { Get-LWMapOfSommerlundItemNames } else { Get-LWSealOfHammerdalItemNames }
+        if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names $names -Type 'special')) {
+            if (TryAdd-LWInventoryItemSilently -Type 'special' -Name $specialItem) {
+                Write-LWInfo ("Book 2 starting Special Item added: {0}." -f $specialItem)
+            }
+            else {
+                Write-LWWarn ("No room to add {0} automatically. Make room and add it manually if needed." -f $specialItem)
+            }
+        }
+    }
+
+    Write-LWInfo $(if ($CarryExistingGear) { 'Choose two Book 2 armory items now. You may exchange one or both carried weapons.' } else { 'Choose two Book 2 armory items now.' })
+
+    $selectedIds = @()
+    while ($selectedIds.Count -lt 2) {
+        $availableChoices = @(Get-LWBookTwoArmoryChoiceDefinitions | Where-Object { $selectedIds -notcontains [string]$_.Id })
+        if ($availableChoices.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title 'Book 2 Armory' -AccentColor 'DarkYellow'
+        for ($i = 0; $i -lt $availableChoices.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$availableChoices[$i].DisplayName) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+
+        $choiceIndex = Read-LWInt -Prompt ("Armory choice #{0}" -f ($selectedIds.Count + 1)) -Min 1 -Max $availableChoices.Count
+        $choice = $availableChoices[$choiceIndex - 1]
+        $selectedIds += [string]$choice.Id
+        Grant-LWBookTwoArmoryChoice -Choice $choice
+    }
+}
+
 function Get-LWChainmailItemNames {
     return @('Chainmail Waistcoat', 'Chainmail Wastecoat', 'Chainmail')
 }
@@ -2896,6 +3271,22 @@ function Get-LWMapOfSommerlundItemNames {
 
 function Get-LWGoldenKeyItemNames {
     return @('Golden Key')
+}
+
+function Get-LWSealOfHammerdalItemNames {
+    return @('Seal of Hammerdal')
+}
+
+function Get-LWCoachTicketItemNames {
+    return @('Coach Ticket', 'Ticket')
+}
+
+function Get-LWWhitePassItemNames {
+    return @('White Pass')
+}
+
+function Get-LWRedPassItemNames {
+    return @('Red Pass')
 }
 
 function Get-LWVordakGemItemNames {
@@ -2946,12 +3337,30 @@ function Get-LWHealingPotionItemNames {
     return @('Healing Potion', 'Laumspur Potion', 'Potion of Laumspur', 'Laumspur')
 }
 
+function Get-LWPotentHealingPotionItemNames {
+    return @('Potent Laumspur Potion')
+}
+
 function Get-LWConcentratedHealingPotionItemNames {
     return @('Concentrated Laumspur', 'Concentrated Laumspur Potion', 'Potion of Concentrated Laumspur')
 }
 
 function Get-LWAletherPotionItemNames {
     return @('Alether', 'Alether Potion', 'Potion of Alether')
+}
+
+function Get-LWMealOfLaumspurItemNames {
+    return @('Meal of Laumspur')
+}
+
+function Get-LWMagicSpearItemNames {
+    return @('Magic Spear')
+}
+
+function Test-LWPotentHealingPotionName {
+    param([string]$Name)
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWPotentHealingPotionItemNames) -Target $Name)))
 }
 
 function Test-LWConcentratedHealingPotionName {
@@ -3095,6 +3504,16 @@ function Test-LWWeaponIsBroadswordPlusOne {
     return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBroadswordPlusOneWeaponNames) -Target $Weapon)))
 }
 
+function Test-LWWeaponIsMagicSpear {
+    param([string]$Weapon)
+
+    if ([string]::IsNullOrWhiteSpace($Weapon)) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWMagicSpearItemNames) -Target $Weapon)))
+}
+
 function Test-LWStateHasBoneSword {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -3113,6 +3532,12 @@ function Test-LWStateHasBroadswordPlusOne {
     return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWBroadswordPlusOneWeaponNames) -Type 'weapon')
 }
 
+function Test-LWStateHasMagicSpear {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWMagicSpearItemNames) -Type 'special')
+}
+
 function Test-LWStateIsInKalte {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -3124,6 +3549,10 @@ function Get-LWStateHuntingMealRestrictionReason {
 
     if (Test-LWStateIsInKalte -State $State) {
         return 'Hunting cannot be used for meals anywhere in Kalte (Book 3).'
+    }
+
+    if ([int]$State.Character.BookNumber -eq 2 -and [int]$State.CurrentSection -eq 346) {
+        return 'Hunting cannot be used when instructed to eat a Meal on your journey through the Wildlands.'
     }
 
     return $null
@@ -3161,6 +3590,16 @@ function Test-LWWeaponIsSommerswerd {
     return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSommerswerdItemNames) -Target $Weapon)))
 }
 
+function Test-LWCombatMagicSpearAvailable {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWStateHasMagicSpear -State $State) {
+        return $true
+    }
+
+    return ([int]$State.Character.BookNumber -eq 2 -and [int]$State.CurrentSection -eq 106)
+}
+
 function Test-LWStateHasSommerswerd {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -3181,6 +3620,13 @@ function Get-LWStateCombatWeapons {
     param([Parameter(Mandatory = $true)][object]$State)
 
     $choices = @($State.Inventory.Weapons)
+    $magicSpear = $null
+    if (Test-LWCombatMagicSpearAvailable -State $State) {
+        $magicSpear = if ([int]$State.Character.BookNumber -eq 2 -and [int]$State.CurrentSection -eq 106) { 'Magic Spear' } else { Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWMagicSpearItemNames) -Type 'special' }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($magicSpear) -and [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values $choices -Target $magicSpear))) {
+        $choices = @($choices) + @([string]$magicSpear)
+    }
     $sommerswerd = $null
     if (Test-LWCombatSommerswerdAvailable -State $State) {
         $sommerswerd = Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWSommerswerdItemNames) -Type 'special'
@@ -3501,6 +3947,7 @@ function New-LWCombatState {
         EnemyEnduranceMax         = 0
         EnemyIsUndead             = $false
         EnemyUsesMindforce        = $false
+        EnemyRequiresMagicSpear   = $false
         EnemyImmuneToMindblast    = $false
         UseMindblast              = $false
         AletherCombatSkillBonus   = 0
@@ -3742,6 +4189,9 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyUsesMindforce') -or $null -eq $State.Combat.EnemyUsesMindforce) {
         $State.Combat | Add-Member -Force -NotePropertyName EnemyUsesMindforce -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyRequiresMagicSpear') -or $null -eq $State.Combat.EnemyRequiresMagicSpear) {
+        $State.Combat | Add-Member -Force -NotePropertyName EnemyRequiresMagicSpear -NotePropertyValue $false
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'AletherCombatSkillBonus') -or $null -eq $State.Combat.AletherCombatSkillBonus) {
         $State.Combat | Add-Member -Force -NotePropertyName AletherCombatSkillBonus -NotePropertyValue 0
@@ -4457,6 +4907,10 @@ function Test-LWWeaponMatchesWeaponskill {
         return $true
     }
 
+    if ((Test-LWWeaponIsMagicSpear -Weapon $Weapon) -and [string]$WeaponskillWeapon -ieq 'Spear') {
+        return $true
+    }
+
     return $false
 }
 
@@ -4484,6 +4938,9 @@ function Get-LWPreferredCombatWeapon {
     }
     if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Broadsword') {
         $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$_) } | Select-Object -First 1)
+    }
+    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Spear') {
+        $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsMagicSpear -Weapon ([string]$_) } | Select-Object -First 1)
     }
     if (-not [string]::IsNullOrWhiteSpace($weaponskillWeapon)) {
         return $weaponskillWeapon
@@ -5962,6 +6419,12 @@ function Test-LWAchievementSatisfied {
         'found_the_sommerswerd' { return (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') }
         'you_have_chosen_wisely' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 158 -and [string]$_.EnemyName -ieq 'Priest' }).Count -ge 1) }
         'neo_link' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains [string]$_.EnemyName }).Count -ge 1) }
+        'by_a_thread' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2ByAThreadRoute')) }
+        'skyfall' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2SkyfallRoute')) }
+        'fight_through_the_smoke' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2FightThroughTheSmokeRoute')) }
+        'storm_tossed' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2StormTossedSeen')) }
+        'seal_of_approval' { return ((Test-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute') -and (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed')) }
+        'papers_please' { return (Test-LWStoryAchievementFlag -Name 'Book2PapersPleasePath') }
         'snakes_why' { return (Test-LWStoryAchievementFlag -Name 'Book3SnakePitVisited') }
         'cliffhanger' { return (Test-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen') }
         'whats_in_the_box' { return (Test-LWStoryAchievementFlag -Name 'Book3DiamondClaimed') }
@@ -6044,6 +6507,12 @@ function Get-LWAchievementProgressText {
         'found_the_sommerswerd' { return '' }
         'you_have_chosen_wisely' { return '' }
         'neo_link' { return '' }
+        'by_a_thread' { return $(if (Test-LWStoryAchievementFlag -Name 'Book2ByAThreadRoute') { 'rope-swing route found; finish Book 2' } else { 'finish Book 2 through 218 -> 105 -> 120 -> 225 -> 350' }) }
+        'skyfall' { return $(if (Test-LWStoryAchievementFlag -Name 'Book2SkyfallRoute') { 'skyfall route found; finish Book 2' } else { 'finish Book 2 through 336 -> 109 -> 120 -> 225 -> 350' }) }
+        'fight_through_the_smoke' { return $(if (Test-LWStoryAchievementFlag -Name 'Book2FightThroughTheSmokeRoute') { 'smoke route found; finish Book 2' } else { 'finish Book 2 through 336 -> 185 -> 120 -> 225 -> 350' }) }
+        'storm_tossed' { return $(if (Test-LWStoryAchievementFlag -Name 'Book2StormTossedSeen') { 'storm route found; finish Book 2' } else { 'reach section 337 and still complete Book 2' }) }
+        'seal_of_approval' { return $(if (Test-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute') { 'king''s audience route found; claim the Sommerswerd' } else { 'reach section 196 and claim the Sommerswerd' }) }
+        'papers_please' { return $(if (Test-LWStoryAchievementFlag -Name 'Book2ForgedPapersBought') { 'forged papers bought; present them at the Red Pass counter' } else { 'buy the forged access papers at section 327' }) }
         'book_three_complete' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 3) { 'Book 3 complete' } else { 'complete Book 3' }) }
         'snakes_why' { return '' }
         'cliffhanger' { return '' }
@@ -6612,6 +7081,10 @@ function Show-LWInventory {
         Write-LWSubtle '  Broadsword +1: +1 Combat Skill in combat and still counts as a Broadsword.'
         Write-Host ''
     }
+    if (Test-LWStateHasMagicSpear -State $script:GameState) {
+        Write-LWSubtle '  Magic Spear: weapon-like Special Item that counts as a Spear and matters in specific Book 2 Helghast fights.'
+        Write-Host ''
+    }
     if (Test-LWStateHasDrodarinWarHammer -State $script:GameState) {
         Write-LWSubtle '  Drodarin War Hammer: +1 Combat Skill in combat and counts as a Warhammer.'
         Write-Host ''
@@ -6638,6 +7111,14 @@ function Show-LWInventory {
     }
     if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCrystalStarPendantItemNames) -Type 'special'))) {
         Write-LWSubtle '  Crystal Star Pendant: carry-forward Special Item that later books may reference.'
+        Write-Host ''
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'))) {
+        Write-LWSubtle '  Meal of Laumspur: satisfies a Meal and restores 3 Endurance, or restores 3 Endurance when consumed normally.'
+        Write-Host ''
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPotentHealingPotionItemNames) -Type 'backpack'))) {
+        Write-LWSubtle '  Potent Laumspur Potion: restores 5 Endurance.'
         Write-Host ''
     }
     if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLongRopeItemNames) -Type 'backpack'))) {
@@ -6714,6 +7195,9 @@ function Show-LWSheet {
     }
     if (Test-LWStateHasBoneSword -State $script:GameState) {
         Write-LWKeyValue -Label 'Bone Sword' -Value $(if (Test-LWStateIsInKalte -State $script:GameState) { '+1 in Book 3 / Kalte combat' } else { 'No bonus outside Book 3 / Kalte' }) -ValueColor 'DarkYellow'
+    }
+    if (Test-LWStateHasMagicSpear -State $script:GameState) {
+        Write-LWKeyValue -Label 'Magic Spear' -Value 'Weapon-like Special Item; counts as a Spear in combat.' -ValueColor 'DarkYellow'
     }
     if ($silverHelmBonus -gt 0) {
         Write-LWKeyValue -Label 'Silver Helm' -Value ("+{0} Combat Skill" -f $silverHelmBonus) -ValueColor 'DarkYellow'
@@ -7523,6 +8007,24 @@ function Use-LWMeal {
         return
     }
 
+    $mealOfLaumspurName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'
+    if (-not [string]::IsNullOrWhiteSpace($mealOfLaumspurName)) {
+        [void](Remove-LWInventoryItemSilently -Type 'backpack' -Name $mealOfLaumspurName -Quantity 1)
+        Register-LWMealConsumed
+        $before = [int]$script:GameState.Character.EnduranceCurrent
+        $script:GameState.Character.EnduranceCurrent = [Math]::Min([int]$script:GameState.Character.EnduranceMax, ([int]$script:GameState.Character.EnduranceCurrent + 3))
+        $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
+        if ($restored -gt 0) {
+            Add-LWBookEnduranceDelta -Delta $restored
+            Write-LWInfo ("Meal of Laumspur satisfies the meal and restores {0} ENDURANCE." -f $restored)
+        }
+        else {
+            Write-LWInfo 'Meal of Laumspur satisfies the meal.'
+        }
+        Invoke-LWMaybeAutosave
+        return
+    }
+
     Write-LWWarn 'No Meal available. Lose 3 Endurance.'
     Register-LWStarvationPenalty
     $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 3 -Source 'starvation'
@@ -7556,11 +8058,19 @@ function Use-LWHealingPotion {
     $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWConcentratedHealingPotionItemNames) -Type 'backpack'
     $restoreAmount = 8
     if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPotentHealingPotionItemNames) -Type 'backpack'
+        $restoreAmount = 5
+    }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
         $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWHealingPotionItemNames) -Type 'backpack'
         $restoreAmount = 4
     }
     if ([string]::IsNullOrWhiteSpace($potionName)) {
         $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLaumspurHerbItemNames) -Type 'backpack'
+        $restoreAmount = 3
+    }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'
         $restoreAmount = 3
     }
 
@@ -7712,6 +8222,14 @@ function Get-LWCombatBreakdownFromState {
         }
         else {
             $notes += 'Mindforce -2 END each round'
+        }
+    }
+    if ([bool]$State.Combat.EnemyRequiresMagicSpear) {
+        if (Test-LWWeaponIsMagicSpear -Weapon ([string]$State.Combat.EquippedWeapon)) {
+            $notes += 'Only Magic Spear can wound this foe'
+        }
+        else {
+            $notes += 'Enemy can only be harmed by Magic Spear'
         }
     }
 
@@ -7884,6 +8402,9 @@ function Get-LWCombatDisplayWeapon {
     }
     if (Test-LWWeaponIsBoneSword -Weapon $Weapon) {
         return 'Bone Sword'
+    }
+    if (Test-LWWeaponIsMagicSpear -Weapon $Weapon) {
+        return 'Magic Spear'
     }
 
     return $Weapon
@@ -8298,7 +8819,15 @@ function Resolve-LWCombatRound {
     $mindforceAppliedLoss = 0
     $specialNotes = @()
 
-    if (Test-LWCombatSommerswerdUndeadDoubleDamageActive -State $State) {
+    if ([bool]$State.Combat.EnemyRequiresMagicSpear -and -not (Test-LWWeaponIsMagicSpear -Weapon ([string]$State.Combat.EquippedWeapon))) {
+        if ($baseEnemyLoss -gt 0) {
+            $messages += 'Only the Magic Spear can wound this foe. Your attack deals no damage.'
+        }
+        $enemyLossApplied = 0
+        $specialNotes += 'Needs Magic Spear'
+    }
+
+    if ($enemyLossApplied -gt 0 -and (Test-LWCombatSommerswerdUndeadDoubleDamageActive -State $State)) {
         $enemyLossApplied = [Math]::Min([int]$State.Combat.EnemyEnduranceCurrent, ($baseEnemyLoss * 2))
         if ($enemyLossApplied -gt $baseEnemyLoss) {
             $specialNotes += 'Undead x2'
@@ -8420,6 +8949,8 @@ function Start-LWCombat {
             View = 'setup'
         })
 
+    $bookTwoSection106Helghast = ([int]$script:GameState.Character.BookNumber -eq 2 -and [int]$script:GameState.CurrentSection -eq 106)
+    $bookTwoSection332Helghast = ([int]$script:GameState.Character.BookNumber -eq 2 -and [int]$script:GameState.CurrentSection -eq 332)
     $quickStart = Get-LWCombatStartArguments -Arguments $Arguments
     $useQuickDefaults = $false
     if ($null -ne $quickStart) {
@@ -8428,6 +8959,18 @@ function Start-LWCombat {
         $enemyEndurance = $quickStart.EnemyEndurance
         Write-LWInfo "Quick combat setup: $enemyName (CS $enemyCombatSkill, END $enemyEndurance)."
         $useQuickDefaults = Read-LWYesNo -Prompt 'Use default combat assumptions for the rest of setup?' -Default $true
+    }
+    elseif ($bookTwoSection106Helghast) {
+        $enemyName = 'Helghast'
+        $enemyCombatSkill = 22
+        $enemyEndurance = 30
+        Write-LWInfo 'Book 2 section 106 combat detected: Helghast (CS 22, END 30).'
+    }
+    elseif ($bookTwoSection332Helghast) {
+        $enemyName = 'Helghast'
+        $enemyCombatSkill = 21
+        $enemyEndurance = 30
+        Write-LWInfo 'Book 2 section 332 combat detected: Helghast (CS 21, END 30).'
     }
     else {
         $enemyName = Read-LWText -Prompt 'Enemy name'
@@ -8445,12 +8988,27 @@ function Start-LWCombat {
     $enemyImmune = $false
     $enemyUndead = $false
     $enemyUsesMindforce = $false
+    $enemyRequiresMagicSpear = $false
     $canEvade = $false
     if (-not $useQuickDefaults) {
         $enemyImmune = Read-LWYesNo -Prompt 'Is the enemy immune to Mindblast?' -Default $false
         $enemyUndead = Read-LWYesNo -Prompt 'Is the enemy undead?' -Default $false
         $enemyUsesMindforce = Read-LWYesNo -Prompt 'Is the enemy attacking with Mindforce each combat round?' -Default $false
         $canEvade = Read-LWYesNo -Prompt 'Can Lone Wolf evade this combat if desired?' -Default $false
+    }
+
+    if ($bookTwoSection106Helghast) {
+        $enemyImmune = $true
+        $enemyUsesMindforce = $true
+        $enemyRequiresMagicSpear = $true
+        $canEvade = $false
+        Write-LWInfo 'Book 2 section 106: this Helghast is immune to Mindblast, attacks with Mindforce each round, and can only be harmed by the Magic Spear.'
+    }
+    elseif ($bookTwoSection332Helghast) {
+        $enemyImmune = $true
+        $enemyUsesMindforce = $true
+        $canEvade = $true
+        Write-LWInfo 'Book 2 section 332: this Helghast is immune to Mindblast and attacks with a Mindforce-style assault each round.'
     }
 
     $equippedWeapon = Select-LWCombatWeapon -DefaultWeapon (Get-LWPreferredCombatWeapon -State $script:GameState)
@@ -8554,6 +9112,7 @@ function Start-LWCombat {
         EnemyEnduranceMax         = $enemyEndurance
         EnemyIsUndead             = $enemyUndead
         EnemyUsesMindforce        = $enemyUsesMindforce
+        EnemyRequiresMagicSpear   = $enemyRequiresMagicSpear
         EnemyImmuneToMindblast    = $enemyImmune
         UseMindblast              = $useMindblast
         AletherCombatSkillBonus   = $aletherCombatSkillBonus
@@ -8604,6 +9163,7 @@ function Stop-LWCombat {
         EnemyEnduranceMax = $script:GameState.Combat.EnemyEnduranceMax
         EnemyIsUndead     = [bool]$script:GameState.Combat.EnemyIsUndead
         EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
+        EnemyRequiresMagicSpear = [bool]$script:GameState.Combat.EnemyRequiresMagicSpear
         MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
         AletherCombatSkillBonus = [int]$script:GameState.Combat.AletherCombatSkillBonus
         AttemptKnockout   = [bool]$script:GameState.Combat.AttemptKnockout
@@ -8618,6 +9178,18 @@ function Stop-LWCombat {
         Notes             = if ($null -ne $breakdown) { @($breakdown.Notes) } else { @() }
         Log               = @($script:GameState.Combat.Log)
     }
+
+    if (@('Victory', 'Knockout') -contains [string]$Outcome -and [int]$script:GameState.Character.BookNumber -eq 2 -and [int]$script:GameState.CurrentSection -eq 106) {
+        if (-not (Test-LWStateHasMagicSpear -State $script:GameState)) {
+            if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Magic Spear') {
+                Write-LWInfo 'The Magic Spear is kept as a Special Item.'
+            }
+            else {
+                Write-LWWarn 'No room to keep the Magic Spear automatically. Make room and add it manually if you are keeping it.'
+            }
+        }
+    }
+
     $script:GameState.History = @($script:GameState.History) + $summary
     $script:GameState.Combat = (New-LWCombatState)
     Register-LWCombatResolved -Summary $summary
@@ -9035,6 +9607,10 @@ function Complete-LWBook {
     Reset-LWSectionCheckpoints -SeedCurrentSection
     Write-LWInfo "Advanced to $nextBookLabel. Current section reset to $nextBookStartSection."
 
+    if ($nextBook -eq 2) {
+        Apply-LWBookTwoStartingEquipment -CarryExistingGear
+    }
+
     $owned = @($script:GameState.Character.Disciplines)
     $availableNames = @($script:GameData.KaiDisciplines | ForEach-Object { $_.Name })
     if ($owned.Count -lt $availableNames.Count) {
@@ -9192,6 +9768,9 @@ function Start-LWNewGameCore {
     $script:GameState.CurrentSection = $startSection
     if ($bookNumber -eq 1) {
         Apply-LWBookOneStartingEquipment
+    }
+    elseif ($bookNumber -eq 2) {
+        Apply-LWBookTwoStartingEquipment
     }
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
