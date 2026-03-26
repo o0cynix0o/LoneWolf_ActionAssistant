@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.27'
+$script:LWAppVersion = '0.7.28'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -2698,17 +2698,32 @@ function Invoke-LWSectionEntryRules {
                         for ($i = 0; $i -lt $availableChoices.Count; $i++) {
                             Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
                         }
-                        $manageIndex = $availableChoices.Count + 1
-                        Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
+                        Write-LWBulletItem -Text 'D. Drop an item by number' -TextColor 'Gray' -BulletColor 'Yellow'
                         Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
 
-                        $choiceIndex = Read-LWInt -Prompt 'Section 213 choice' -Default 0 -Min 0 -Max $manageIndex -NoRefresh
-                        if ($choiceIndex -eq 0) {
+                        $choiceText = [string](Read-LWText -Prompt 'Section 213 choice' -Default '0' -NoRefresh)
+                        if ([string]::IsNullOrWhiteSpace($choiceText)) {
+                            $choiceText = '0'
+                        }
+                        $choiceText = $choiceText.Trim()
+
+                        if ($choiceText -eq '0') {
                             break
                         }
-                        if ($choiceIndex -eq $manageIndex) {
-                            Invoke-LWBookFourStartingInventoryManagement
+
+                        if ($choiceText -match '^[dD]$') {
+                            Remove-LWInventoryInteractive -InputParts @('drop')
                             $availableChoices = @(Get-LWBookFourSection213ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+                            continue
+                        }
+
+                        $choiceIndex = 0
+                        if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
+                            Write-LWWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+                            continue
+                        }
+                        if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
+                            Write-LWWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
                             continue
                         }
 
@@ -4983,10 +4998,13 @@ function Read-LWText {
     param(
         [Parameter(Mandatory = $true)]
         [string]$Prompt,
-        [string]$Default = ''
+        [string]$Default = '',
+        [switch]$NoRefresh
     )
 
-    Refresh-LWScreen
+    if (-not $NoRefresh) {
+        Refresh-LWScreen
+    }
     $label = if ([string]::IsNullOrWhiteSpace($Default)) { $Prompt } else { "$Prompt [$Default]" }
     $raw = Read-Host $label
     if ([string]::IsNullOrWhiteSpace($raw)) {
