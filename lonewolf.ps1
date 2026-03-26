@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.16'
+$script:LWAppVersion = '0.7.17'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -1390,6 +1390,11 @@ function New-LWStoryAchievementFlags {
         Book3WellItWorkedOnceSeen   = $false
         Book3FirstCellAbandoned     = $false
         Book3CellfishPathTaken      = $false
+        Book3LoiKymarRescued        = $false
+        Book3EffigyEndgameReached   = $false
+        Book3SommerswerdEndgameUsed = $false
+        Book3LuckyEndgameUsed       = $false
+        Book3TooSlowFailureSeen     = $false
     }
 }
 
@@ -1459,6 +1464,7 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'relic_hunter' -Name 'Relic Hunter' -Category 'Journey' -Description 'Carry five Special Items at the same time.' -Backfill:$true -ModePool 'Universal'),
         (New-LWAchievementDefinition -Id 'book_one_complete' -Name 'Book One Complete' -Category 'Journey' -Description 'Complete Book 1.' -Backfill:$true -ModePool 'Universal'),
         (New-LWAchievementDefinition -Id 'book_two_complete' -Name 'Book Two Complete' -Category 'Journey' -Description 'Complete Book 2.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'book_three_complete' -Name 'Book Three Complete' -Category 'Journey' -Description 'Complete Book 3.' -Backfill:$true -ModePool 'Universal'),
         (New-LWAchievementDefinition -Id 'grave_bane' -Name 'Grave-Bane' -Category 'Combat' -Description 'Defeat an undead enemy with the Sommerswerd.' -Backfill:$true -ModePool 'Combat'),
         (New-LWAchievementDefinition -Id 'true_path' -Name 'True Path' -Category 'Legend' -Description 'Complete a book without using rewind.' -Backfill:$true -ModePool 'Exploration'),
         (New-LWAchievementDefinition -Id 'unbroken' -Name 'Unbroken' -Category 'Legend' -Description 'Complete a book without dying.' -Backfill:$true -ModePool 'Combat'),
@@ -1488,7 +1494,12 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'you_touched_it_with_your_hands' -Name 'You Touched It With Your Hands?!' -Category 'Journey' -Description 'Claim the Ornate Silver Key as a Special Item in section 280 of Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'lucky_button_theory' -Name 'Lucky Button Theory' -Category 'Journey' -Description 'Press the right button sequence and reach section 102 in Book 3.' -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'well_it_worked_once' -Name 'Well, It Worked Once' -Category 'Journey' -Description 'Reach section 65 after already reaching section 102 in Book 3.' -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'cellfish' -Name 'Cellfish' -Category 'Journey' -Description 'Leave both prisoners to their fate in Book 3 by taking the cold path from section 13 to 254 and then walking away again at section 276.' -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'cellfish' -Name 'Cellfish' -Category 'Journey' -Description 'Leave both prisoners to their fate in Book 3 by taking the cold path from section 13 to 254 and then walking away again at section 276.' -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'loi_kymar_lives' -Name 'Loi-Kymar Lives' -Category 'Journey' -Description 'Rescue Loi-Kymar and still complete Book 3.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'puppet_master' -Name 'Puppet Master' -Category 'Journey' -Description 'Finish Book 3 by turning the Effigy path against Vonotar.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'sun_on_the_ice' -Name 'Sun on the Ice' -Category 'Journey' -Description 'Finish Book 3 through the Sommerswerd endgame route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'lucky_break' -Name 'Lucky Break' -Category 'Journey' -Description 'Finish Book 3 through the no-Effigy, no-Sommerswerd lucky route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'too_slow' -Name 'Too Slow' -Category 'Journey' -Description 'Watch the Book 3 endgame collapse after taking too long to stop Vonotar.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
 }
 
@@ -1535,9 +1546,43 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book2SommerswerdClaimed', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
+        }
+    }
+}
+
+function Rebuild-LWStoryAchievementFlagsFromState {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    Ensure-LWAchievementState -State $script:GameState
+    $visitedSections = @()
+    if ($null -ne $script:GameState.CurrentBookStats -and (Test-LWPropertyExists -Object $script:GameState.CurrentBookStats -Name 'VisitedSections') -and $null -ne $script:GameState.CurrentBookStats.VisitedSections) {
+        $visitedSections = @($script:GameState.CurrentBookStats.VisitedSections | ForEach-Object { [int]$_ })
+    }
+    if ($null -ne $script:GameState.CurrentSection) {
+        $visitedSections += [int]$script:GameState.CurrentSection
+    }
+    $visitedSections = @($visitedSections | Sort-Object -Unique)
+
+    if ([int]$script:GameState.Character.BookNumber -eq 3) {
+        if ($visitedSections -contains 56) {
+            Set-LWStoryAchievementFlag -Name 'Book3LoiKymarRescued'
+        }
+        if ($visitedSections -contains 34) {
+            Set-LWStoryAchievementFlag -Name 'Book3EffigyEndgameReached'
+        }
+        if ($visitedSections -contains 213) {
+            Set-LWStoryAchievementFlag -Name 'Book3SommerswerdEndgameUsed'
+        }
+        if ($visitedSections -contains 58) {
+            Set-LWStoryAchievementFlag -Name 'Book3LuckyEndgameUsed'
+        }
+        if ($visitedSections -contains 324) {
+            Set-LWStoryAchievementFlag -Name 'Book3TooSlowFailureSeen'
         }
     }
 }
@@ -1593,17 +1638,22 @@ function Register-LWStorySectionAchievementTriggers {
         3 {
             switch ($Section) {
                 19 { Set-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen' }
+                34 { Set-LWStoryAchievementFlag -Name 'Book3EffigyEndgameReached' }
+                56 { Set-LWStoryAchievementFlag -Name 'Book3LoiKymarRescued' }
+                58 { Set-LWStoryAchievementFlag -Name 'Book3LuckyEndgameUsed' }
                 65 {
                     if (Test-LWStoryAchievementFlag -Name 'Book3LuckyButtonTheorySeen') {
                         Set-LWStoryAchievementFlag -Name 'Book3WellItWorkedOnceSeen'
                     }
                 }
                 102 { Set-LWStoryAchievementFlag -Name 'Book3LuckyButtonTheorySeen' }
+                213 { Set-LWStoryAchievementFlag -Name 'Book3SommerswerdEndgameUsed' }
                 276 {
                     if (Test-LWStoryAchievementFlag -Name 'Book3FirstCellAbandoned') {
                         Set-LWStoryAchievementFlag -Name 'Book3CellfishPathTaken'
                     }
                 }
+                324 { Set-LWStoryAchievementFlag -Name 'Book3TooSlowFailureSeen' }
                 88 { Set-LWStoryAchievementFlag -Name 'Book3SnakePitVisited' }
                 251 { Set-LWStoryAchievementFlag -Name 'Book3SnowblindSeen' }
             }
@@ -5626,6 +5676,7 @@ function Test-LWAchievementSatisfied {
         'relic_hunter' { return (@($script:GameState.Inventory.SpecialItems).Count -ge 5) }
         'book_one_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 1) }
         'book_two_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 2) }
+        'book_three_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 3) }
         'grave_bane' { return ((Get-LWSommerswerdUndeadVictoryCount) -ge 1) }
         'true_path' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'RewindsUsed') -and [int]$_.RewindsUsed -eq 0 }).Count -ge 1) }
         'unbroken' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 }).Count -ge 1) }
@@ -5656,6 +5707,11 @@ function Test-LWAchievementSatisfied {
         'lucky_button_theory' { return (Test-LWStoryAchievementFlag -Name 'Book3LuckyButtonTheorySeen') }
         'well_it_worked_once' { return (Test-LWStoryAchievementFlag -Name 'Book3WellItWorkedOnceSeen') }
         'cellfish' { return (Test-LWStoryAchievementFlag -Name 'Book3CellfishPathTaken') }
+        'loi_kymar_lives' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3LoiKymarRescued')) }
+        'puppet_master' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3EffigyEndgameReached')) }
+        'sun_on_the_ice' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3SommerswerdEndgameUsed')) }
+        'lucky_break' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3LuckyEndgameUsed')) }
+        'too_slow' { return (Test-LWStoryAchievementFlag -Name 'Book3TooSlowFailureSeen') }
         default { return $false }
     }
 }
@@ -5718,10 +5774,20 @@ function Get-LWAchievementProgressText {
         'found_the_sommerswerd' { return '' }
         'you_have_chosen_wisely' { return '' }
         'neo_link' { return '' }
+        'book_three_complete' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 3) { 'Book 3 complete' } else { 'complete Book 3' }) }
         'snakes_why' { return '' }
         'cliffhanger' { return '' }
         'whats_in_the_box' { return '' }
         'snowblind' { return '' }
+        'you_touched_it_with_your_hands' { return '' }
+        'lucky_button_theory' { return '' }
+        'well_it_worked_once' { return '' }
+        'cellfish' { return '' }
+        'loi_kymar_lives' { return $(if (Test-LWStoryAchievementFlag -Name 'Book3LoiKymarRescued') { 'Loi-Kymar rescued; finish Book 3' } else { 'rescue Loi-Kymar and finish Book 3' }) }
+        'puppet_master' { return $(if (Test-LWStoryAchievementFlag -Name 'Book3EffigyEndgameReached') { 'Effigy route found; finish Book 3' } else { 'finish Book 3 through the Effigy route' }) }
+        'sun_on_the_ice' { return $(if (Test-LWStoryAchievementFlag -Name 'Book3SommerswerdEndgameUsed') { 'Sommerswerd route found; finish Book 3' } else { 'finish Book 3 through the Sommerswerd route' }) }
+        'lucky_break' { return $(if (Test-LWStoryAchievementFlag -Name 'Book3LuckyEndgameUsed') { 'Lucky endgame route found; finish Book 3' } else { 'finish Book 3 through the lucky endgame route' }) }
+        'too_slow' { return '' }
         default { return '' }
     }
 }
@@ -5740,6 +5806,7 @@ function Sync-LWAchievements {
     Ensure-LWAchievementState -State $script:GameState
     if ([string]$Context -eq 'load') {
         Rebuild-LWAchievementProgressFlags
+        Rebuild-LWStoryAchievementFlagsFromState
     }
     elseif ([string]$Context -eq 'combat' -and $null -ne $Data) {
         Update-LWAchievementProgressFlagsFromSummary -Summary $Data
