@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.31'
+$script:LWAppVersion = '0.7.32'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -782,6 +782,7 @@ function Get-LWOutcomeColor {
         'Defeat' { return 'Red' }
         'Evaded' { return 'Yellow' }
         'In Progress' { return 'Cyan' }
+        'Special' { return 'DarkYellow' }
         'Stopped' { return 'DarkYellow' }
         default { return 'Gray' }
     }
@@ -5174,6 +5175,9 @@ function New-LWCombatState {
         EquippedWeapon            = $null
         SommerswerdSuppressed     = $false
         IgnoreFirstRoundEnduranceLoss = $false
+        OneRoundOnly              = $false
+        SpecialResolutionSection  = $null
+        SpecialResolutionNote     = $null
         PlayerCombatSkillModifier = 0
         EnemyCombatSkillModifier  = 0
         Log                       = @()
@@ -5424,6 +5428,15 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SommerswerdSuppressed') -or $null -eq $State.Combat.SommerswerdSuppressed) {
         $State.Combat | Add-Member -Force -NotePropertyName SommerswerdSuppressed -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'OneRoundOnly') -or $null -eq $State.Combat.OneRoundOnly) {
+        $State.Combat | Add-Member -Force -NotePropertyName OneRoundOnly -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SpecialResolutionSection')) {
+        $State.Combat | Add-Member -Force -NotePropertyName SpecialResolutionSection -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SpecialResolutionNote')) {
+        $State.Combat | Add-Member -Force -NotePropertyName SpecialResolutionNote -NotePropertyValue $null
     }
 
     $currentBookNumber = 1
@@ -10189,9 +10202,15 @@ function Show-LWCombatSummary {
     Write-LWPanelHeader -Title 'Combat Summary' -AccentColor 'DarkRed'
     Write-LWKeyValue -Label 'Enemy' -Value $Summary.EnemyName -ValueColor 'White'
     Write-LWKeyValue -Label 'Outcome' -Value $Summary.Outcome -ValueColor (Get-LWOutcomeColor -Outcome $Summary.Outcome)
+    if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionSection') -and $null -ne $Summary.SpecialResolutionSection) {
+        Write-LWKeyValue -Label 'Next Section' -Value ([string]$Summary.SpecialResolutionSection) -ValueColor 'Yellow'
+    }
     Show-LWCombatDuelPanel -Title 'Aftermath' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
     Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -CanEvade:$canEvade -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
     Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round Recap'
+    if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.SpecialResolutionNote)) {
+        Write-LWSubtle ("  {0}" -f [string]$Summary.SpecialResolutionNote)
+    }
     Write-LWSubtle '  Use combat log for the full round-by-round archive.'
 }
 
@@ -10458,6 +10477,7 @@ function Start-LWCombat {
     $enemyUsesMindforce = $false
     $enemyRequiresMagicSpear = $false
     $canEvade = $false
+    $oneRoundOnly = $false
     if (-not $useQuickDefaults) {
         $enemyImmune = Read-LWYesNo -Prompt 'Is the enemy immune to Mindblast?' -Default $false
         $enemyUndead = Read-LWYesNo -Prompt 'Is the enemy undead?' -Default $false
@@ -10574,6 +10594,10 @@ function Start-LWCombat {
         $ignoreFirstRoundEnduranceLoss = $true
         Write-LWInfo 'Book 4 section 147: surprise attack lets you ignore all Lone Wolf END loss in the first round.'
     }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 4 -and [int]$script:GameState.CurrentSection -eq 333 -and [string]$enemyName -ieq 'Vassagonian Horseman') {
+        $oneRoundOnly = $true
+        Write-LWInfo 'Book 4 section 333: this mounted pass lasts exactly one combat round before the horseman rushes past.'
+    }
 
     $useMindblast = $false
     if ((Test-LWDiscipline -Name 'Mindblast') -and -not $enemyImmune) {
@@ -10610,6 +10634,9 @@ function Start-LWCombat {
         EquippedWeapon            = $equippedWeapon
         SommerswerdSuppressed     = $sommerswerdSuppressed
         IgnoreFirstRoundEnduranceLoss = $ignoreFirstRoundEnduranceLoss
+        OneRoundOnly              = $oneRoundOnly
+        SpecialResolutionSection  = $null
+        SpecialResolutionNote     = $null
         PlayerCombatSkillModifier = $playerMod
         EnemyCombatSkillModifier  = $enemyMod
         Log                       = @()
@@ -10666,6 +10693,8 @@ function Stop-LWCombat {
         EnemyCombatSkill  = if ($null -ne $breakdown) { $breakdown.EnemyCombatSkill } else { $null }
         CombatRatio       = if ($null -ne $breakdown) { $breakdown.CombatRatio } else { $null }
         Notes             = if ($null -ne $breakdown) { @($breakdown.Notes) } else { @() }
+        SpecialResolutionSection = $script:GameState.Combat.SpecialResolutionSection
+        SpecialResolutionNote = $script:GameState.Combat.SpecialResolutionNote
         Log               = @($script:GameState.Combat.Log)
     }
 
@@ -10762,6 +10791,28 @@ function Invoke-LWCombatRound {
 
     if ($resolution.Outcome -eq 'Defeat') {
         [void](Stop-LWCombat -Outcome 'Defeat' -SkipAutosave:$SkipAutosave)
+        return $resolution
+    }
+    if ([bool]$script:GameState.Combat.OneRoundOnly -and [int]$resolution.RoundNumber -eq 1) {
+        $nextSection = 344
+        $branchMessage = ''
+        if ([int]$resolution.EnemyLoss -gt [int]$resolution.PlayerLoss) {
+            $nextSection = 220
+            $branchMessage = 'Section 333 result: the horseman loses more ENDURANCE than you. Turn to 220.'
+        }
+        elseif ([int]$resolution.PlayerLoss -gt [int]$resolution.EnemyLoss) {
+            $nextSection = 209
+            $branchMessage = 'Section 333 result: you lose more ENDURANCE than the horseman. Turn to 209.'
+        }
+        else {
+            $nextSection = 344
+            $branchMessage = 'Section 333 result: you both lose the same ENDURANCE. Turn to 344.'
+        }
+
+        $script:GameState.Combat.SpecialResolutionSection = $nextSection
+        $script:GameState.Combat.SpecialResolutionNote = $branchMessage
+        Write-LWInfo $branchMessage
+        [void](Stop-LWCombat -Outcome 'Special' -SkipAutosave:$SkipAutosave)
         return $resolution
     }
     if ($resolution.Outcome -eq 'Victory') {
