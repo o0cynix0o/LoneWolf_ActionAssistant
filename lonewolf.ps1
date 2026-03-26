@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.24'
+$script:LWAppVersion = '0.7.25'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -871,6 +871,47 @@ function Format-LWNamedCountSummary {
     }
 
     return (@($values | ForEach-Object { "{0} x{1}" -f $_.Name, ([int]$_.Count) }) -join ', ')
+}
+
+function Format-LWCompactInventorySummary {
+    param(
+        [object[]]$Items,
+        [int]$MaxGroups = 3
+    )
+
+    $values = @($Items | Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_) })
+    if ($values.Count -eq 0) {
+        return '(none)'
+    }
+
+    $order = New-Object System.Collections.Generic.List[string]
+    $counts = @{}
+    foreach ($item in $values) {
+        $name = [string]$item
+        if (-not $counts.ContainsKey($name)) {
+            $counts[$name] = 0
+            [void]$order.Add($name)
+        }
+        $counts[$name] = [int]$counts[$name] + 1
+    }
+
+    $labels = @()
+    foreach ($name in $order) {
+        $count = [int]$counts[$name]
+        if ($count -gt 1) {
+            $labels += ("{0} x{1}" -f $name, $count)
+        }
+        else {
+            $labels += $name
+        }
+    }
+
+    if ($labels.Count -le $MaxGroups) {
+        return ($labels -join ', ')
+    }
+
+    $visible = @($labels[0..($MaxGroups - 1)])
+    return ("{0} +{1} more" -f ($visible -join ', '), ($labels.Count - $MaxGroups))
 }
 
 function Get-LWJsonProperty {
@@ -3425,12 +3466,32 @@ function Normalize-LWCombatHistoryMetadata {
 function Format-LWCompletedBooks {
     param([object[]]$Books)
 
-    $books = @($Books)
+    $books = @($Books | Where-Object { $null -ne $_ } | ForEach-Object { [int]$_ } | Sort-Object -Unique)
     if ($books.Count -eq 0) {
         return '(none)'
     }
 
-    return (@($books | ForEach-Object { Format-LWBookLabel -BookNumber ([int]$_) }) -join ', ')
+    if ($books.Count -eq 1) {
+        return [string]$books[0]
+    }
+
+    $ranges = @()
+    $rangeStart = [int]$books[0]
+    $rangeEnd = [int]$books[0]
+    for ($i = 1; $i -lt $books.Count; $i++) {
+        $bookNumber = [int]$books[$i]
+        if ($bookNumber -eq ($rangeEnd + 1)) {
+            $rangeEnd = $bookNumber
+            continue
+        }
+
+        $ranges += $(if ($rangeStart -eq $rangeEnd) { [string]$rangeStart } else { "{0}-{1}" -f $rangeStart, $rangeEnd })
+        $rangeStart = $bookNumber
+        $rangeEnd = $bookNumber
+    }
+
+    $ranges += $(if ($rangeStart -eq $rangeEnd) { [string]$rangeStart } else { "{0}-{1}" -f $rangeStart, $rangeEnd })
+    return ($ranges -join ', ')
 }
 
 function Get-LWBookCompletionQuote {
@@ -4032,9 +4093,9 @@ function Apply-LWBookFourStartingEquipment {
         for ($i = 0; $i -lt $availableChoices.Count; $i++) {
             Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
         }
-        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
         $manageIndex = $availableChoices.Count + 1
         Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
 
         $choiceIndex = Read-LWInt -Prompt ("Book 4 choice #{0}" -f ($selectedIds.Count + 1)) -Default 0 -Min 0 -Max $manageIndex -NoRefresh
         if ($choiceIndex -eq 0) {
@@ -6185,12 +6246,35 @@ function Show-LWDisciplines {
     }
 
     Write-LWPanelHeader -Title 'Kai Disciplines' -AccentColor 'DarkYellow'
+    $displayDisciplines = @()
     foreach ($discipline in @($script:GameState.Character.Disciplines)) {
         if ($discipline -eq 'Weaponskill' -and -not [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
-            Write-LWBulletItem -Text "Weaponskill ($($script:GameState.Character.WeaponskillWeapon))" -TextColor 'Green'
+            $displayDisciplines += "Weaponskill ($($script:GameState.Character.WeaponskillWeapon))"
         }
         else {
-            Write-LWBulletItem -Text $discipline -TextColor 'Green'
+            $displayDisciplines += [string]$discipline
+        }
+    }
+
+    if ($displayDisciplines.Count -eq 0) {
+        Write-LWSubtle '  (none)'
+        return
+    }
+
+    $leftColumnWidth = [Math]::Max(22, [Math]::Min(34, ((($displayDisciplines | Measure-Object -Property Length -Maximum).Maximum) + 4)))
+    for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
+        $leftLabel = [string]$displayDisciplines[$i]
+        $rightLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
+
+        Write-Host '  - ' -NoNewline -ForegroundColor DarkGray
+        Write-Host $leftLabel.PadRight($leftColumnWidth) -NoNewline -ForegroundColor Green
+
+        if (-not [string]::IsNullOrWhiteSpace($rightLabel)) {
+            Write-Host '  - ' -NoNewline -ForegroundColor DarkGray
+            Write-Host $rightLabel -ForegroundColor Green
+        }
+        else {
+            Write-Host ''
         }
     }
 }
@@ -8107,14 +8191,14 @@ function Show-LWInventorySummary {
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
 
     Write-LWPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
-    Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWList -Items $weapons)) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2)) -ValueColor 'Gray'
     if ($hasBackpack) {
-        Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpackUsedCapacity, (Format-LWList -Items $backpack)) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpackUsedCapacity, (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3)) -ValueColor 'Gray'
     }
     else {
         Write-LWKeyValue -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
     }
-    Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWList -Items $special)) -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
 }
 
