@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.22'
+$script:LWAppVersion = '0.7.23'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -3941,6 +3941,41 @@ function Grant-LWBookFourStartingChoice {
     return $false
 }
 
+function Format-LWBookFourStartingChoiceLine {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    $typeLabel = switch ([string]$Choice.Type) {
+        'weapon' { 'Weapon' }
+        'special' { 'Special Item' }
+        'backpack' {
+            $slotCost = [int]$Choice.Quantity * (Get-LWBackpackItemSlotSize -Name ([string]$Choice.Name))
+            "Backpack, $slotCost slot$(if ($slotCost -eq 1) { '' } else { 's' })"
+        }
+        default { [string]$Choice.Type }
+    }
+
+    return ("{0} [{1}]" -f [string]$Choice.DisplayName, $typeLabel)
+}
+
+function Invoke-LWBookFourStartingInventoryManagement {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    while ($true) {
+        Set-LWScreen -Name 'inventory'
+        Show-LWInventory
+        if (-not (Read-LWYesNo -Prompt 'Drop an item to make room?' -Default $true)) {
+            break
+        }
+
+        Remove-LWInventoryInteractive -InputParts @('drop')
+        if (-not (Read-LWYesNo -Prompt 'Drop another item?' -Default $false)) {
+            break
+        }
+    }
+}
+
 function Apply-LWBookFourStartingEquipment {
     param([switch]$CarryExistingGear)
 
@@ -3989,19 +4024,35 @@ function Apply-LWBookFourStartingEquipment {
         }
 
         Write-LWPanelHeader -Title 'Book 4 Starting Gear' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Choices Made' -Value ("{0}/6" -f $selectedIds.Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+        Write-Host ''
         for ($i = 0; $i -lt $availableChoices.Count; $i++) {
-            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$availableChoices[$i].DisplayName) -TextColor 'Gray' -BulletColor 'Yellow'
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
         }
         Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+        $manageIndex = $availableChoices.Count + 1
+        Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
 
-        $choiceIndex = Read-LWInt -Prompt ("Book 4 choice #{0}" -f ($selectedIds.Count + 1)) -Default 0 -Min 0 -Max $availableChoices.Count
+        $choiceIndex = Read-LWInt -Prompt ("Book 4 choice #{0}" -f ($selectedIds.Count + 1)) -Default 0 -Min 0 -Max $manageIndex
         if ($choiceIndex -eq 0) {
             break
         }
+        if ($choiceIndex -eq $manageIndex) {
+            Invoke-LWBookFourStartingInventoryManagement
+            continue
+        }
 
         $choice = $availableChoices[$choiceIndex - 1]
-        $selectedIds += [string]$choice.Id
-        [void](Grant-LWBookFourStartingChoice -Choice $choice)
+        $granted = Grant-LWBookFourStartingChoice -Choice $choice
+        if ($granted) {
+            $selectedIds += [string]$choice.Id
+        }
+        elseif (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true) {
+            Invoke-LWBookFourStartingInventoryManagement
+        }
     }
 }
 
