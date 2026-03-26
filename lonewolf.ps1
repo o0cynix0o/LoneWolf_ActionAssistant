@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.29'
+$script:LWAppVersion = '0.7.30'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -5061,6 +5061,7 @@ function New-LWCombatState {
         CanEvade                  = $false
         EquippedWeapon            = $null
         SommerswerdSuppressed     = $false
+        IgnoreFirstRoundEnduranceLoss = $false
         PlayerCombatSkillModifier = 0
         EnemyCombatSkillModifier  = 0
         Log                       = @()
@@ -10211,6 +10212,13 @@ function Resolve-LWCombatRound {
 
     $totalPlayerLossApplied = $combatPlayerLossApplied + $mindforceAppliedLoss
     $totalPlayerLossBase = [int]$PlayerLoss + $mindforceBaseLoss
+    if ([bool]$State.Combat.IgnoreFirstRoundEnduranceLoss -and $roundNumber -eq 1 -and $totalPlayerLossApplied -gt 0) {
+        $messages += 'Surprise attack advantage: ignore all Lone Wolf END loss in the first round.'
+        $specialNotes += 'First-round loss ignored'
+        $combatPlayerLossApplied = 0
+        $mindforceAppliedLoss = 0
+        $totalPlayerLossApplied = 0
+    }
     $newEnemyEnd = [Math]::Max(0, ([int]$State.Combat.EnemyEnduranceCurrent - $enemyLossApplied))
     $newPlayerEnd = [Math]::Max(0, ($currentPlayerEnd - $totalPlayerLossApplied))
     $outcome = 'Continue'
@@ -10409,6 +10417,7 @@ function Start-LWCombat {
 
     $playerMod = 0
     $enemyMod = 0
+    $ignoreFirstRoundEnduranceLoss = $false
     if ([int]$script:GameState.Character.BookNumber -eq 1 -and [int]$script:GameState.CurrentSection -eq 170 -and [string]$enemyName -ieq 'Burrowcrawler') {
         $enemyImmune = $true
         Write-LWInfo 'Book 1 section 170: Burrowcrawler is immune to Mindblast.'
@@ -10449,6 +10458,10 @@ function Start-LWCombat {
             Write-LWInfo 'Book 4 section 325: Barraka is immune to Mindblast.'
         }
     }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 4 -and [int]$script:GameState.CurrentSection -eq 147 -and [string]$enemyName -ieq 'Bridge Guard') {
+        $ignoreFirstRoundEnduranceLoss = $true
+        Write-LWInfo 'Book 4 section 147: surprise attack lets you ignore all Lone Wolf END loss in the first round.'
+    }
 
     $useMindblast = $false
     if ((Test-LWDiscipline -Name 'Mindblast') -and -not $enemyImmune) {
@@ -10484,6 +10497,7 @@ function Start-LWCombat {
         CanEvade                  = $canEvade
         EquippedWeapon            = $equippedWeapon
         SommerswerdSuppressed     = $sommerswerdSuppressed
+        IgnoreFirstRoundEnduranceLoss = $ignoreFirstRoundEnduranceLoss
         PlayerCombatSkillModifier = $playerMod
         EnemyCombatSkillModifier  = $enemyMod
         Log                       = @()
