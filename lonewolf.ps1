@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.30'
+$script:LWAppVersion = '0.7.31'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -1508,6 +1508,9 @@ function New-LWStoryAchievementFlags {
         Book4BackpackLost           = $false
         Book4BackpackRecovered      = $false
         Book4WashedAway             = $false
+        Book4Section280GoldClaimed  = $false
+        Book4Section280MealClaimed  = $false
+        Book4Section280SwordClaimed = $false
         Book4CaptainSwordClaimed    = $false
         Book4PotionOfRedLiquidClaimed = $false
         Book4ShovelReadyClaimed     = $false
@@ -1709,7 +1712,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -2830,6 +2833,66 @@ function Invoke-LWSectionEntryRules {
                         }
                         Write-LWInfo $message
                         [void](Invoke-LWFatalEnduranceCheck -Cause 'The fall at section 272 reduced your Endurance to zero.')
+                    }
+                }
+                280 {
+                    $availableChoices = @(Get-LWBookFourSection280ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+                    if ($availableChoices.Count -gt 0) {
+                        Write-LWInfo 'Section 280: search the Bridge Guard and keep whatever you want before crossing the bridge.'
+                    }
+
+                    while ($availableChoices.Count -gt 0) {
+                        Write-LWPanelHeader -Title 'Section 280 Loot' -AccentColor 'DarkYellow'
+                        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+                        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+                        Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
+                        Write-Host ''
+
+                        for ($i = 0; $i -lt $availableChoices.Count; $i++) {
+                            $choice = $availableChoices[$i]
+                            $line = switch ([string]$choice.Type) {
+                                'gold' { [string]$choice.DisplayName }
+                                'weapon' { ("{0} [Weapon]" -f [string]$choice.DisplayName) }
+                                'backpack' { ("{0} [Backpack, 1 slot]" -f [string]$choice.DisplayName) }
+                                default { [string]$choice.DisplayName }
+                            }
+                            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), $line) -TextColor 'Gray' -BulletColor 'Yellow'
+                        }
+                        Write-LWBulletItem -Text 'D. Drop an item by number' -TextColor 'Gray' -BulletColor 'Yellow'
+                        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+                        $choiceText = [string](Read-LWText -Prompt 'Section 280 choice' -Default '0' -NoRefresh)
+                        if ([string]::IsNullOrWhiteSpace($choiceText)) {
+                            $choiceText = '0'
+                        }
+                        $choiceText = $choiceText.Trim()
+
+                        if ($choiceText -eq '0') {
+                            break
+                        }
+
+                        if ($choiceText -match '^[dD]$') {
+                            Remove-LWInventoryInteractive -InputParts @('drop')
+                            $availableChoices = @(Get-LWBookFourSection280ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+                            continue
+                        }
+
+                        $choiceIndex = 0
+                        if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
+                            Write-LWWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+                            continue
+                        }
+                        if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
+                            Write-LWWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
+                            continue
+                        }
+
+                        $choice = $availableChoices[$choiceIndex - 1]
+                        if (-not (Grant-LWBookFourSection280Choice -Choice $choice) -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+                            Invoke-LWBookFourStartingInventoryManagement
+                        }
+
+                        $availableChoices = @(Get-LWBookFourSection280ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
                     }
                 }
                 283 {
@@ -4092,6 +4155,14 @@ function Get-LWBookFourSection213ChoiceDefinitions {
     )
 }
 
+function Get-LWBookFourSection280ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book4Section280GoldClaimed'; DisplayName = '3 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 3; Description = '3 Gold Crowns' },
+        [pscustomobject]@{ Id = 'meal'; FlagName = 'Book4Section280MealClaimed'; DisplayName = 'Meal'; Type = 'backpack'; Name = 'Meal'; Quantity = 1; Description = 'Meal' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book4Section280SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' }
+    )
+}
+
 function Grant-LWBookFourSection213Choice {
     param([Parameter(Mandatory = $true)][object]$Choice)
 
@@ -4117,6 +4188,47 @@ function Grant-LWBookFourSection213Choice {
     }
 
     Write-LWInfo ("Section 213: added {0}." -f [string]$Choice.Description)
+    return $true
+}
+
+function Grant-LWBookFourSection280Choice {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    if ($null -eq $Choice) {
+        return $false
+    }
+
+    $granted = $false
+    switch ([string]$Choice.Type) {
+        'weapon' {
+            $granted = Add-LWWeaponWithOptionalReplace -Name ([string]$Choice.Name) -PromptLabel ([string]$Choice.DisplayName)
+        }
+        'gold' {
+            $oldGold = [int]$script:GameState.Inventory.GoldCrowns
+            $newGold = [Math]::Min(50, ($oldGold + [int]$Choice.Quantity))
+            $script:GameState.Inventory.GoldCrowns = $newGold
+            Add-LWBookGoldDelta -Delta ($newGold - $oldGold)
+            [void](Sync-LWAchievements -Context 'gold')
+            if ($newGold -lt ($oldGold + [int]$Choice.Quantity)) {
+                Write-LWWarn 'Gold Crowns are capped at 50. Excess gold from section 280 is lost.'
+            }
+            $granted = $true
+        }
+        default {
+            $granted = TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)
+        }
+    }
+
+    if (-not $granted) {
+        Write-LWWarn ("Could not add the section 280 item '{0}' automatically. Make room and try again if you are keeping it." -f [string]$Choice.DisplayName)
+        return $false
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Choice.FlagName)) {
+        Set-LWStoryAchievementFlag -Name ([string]$Choice.FlagName)
+    }
+
+    Write-LWInfo ("Section 280: added {0}." -f [string]$Choice.Description)
     return $true
 }
 
