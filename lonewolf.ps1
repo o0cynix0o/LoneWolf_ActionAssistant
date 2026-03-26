@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.23'
+$script:LWAppVersion = '0.7.24'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -4036,7 +4036,7 @@ function Apply-LWBookFourStartingEquipment {
         $manageIndex = $availableChoices.Count + 1
         Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
 
-        $choiceIndex = Read-LWInt -Prompt ("Book 4 choice #{0}" -f ($selectedIds.Count + 1)) -Default 0 -Min 0 -Max $manageIndex
+        $choiceIndex = Read-LWInt -Prompt ("Book 4 choice #{0}" -f ($selectedIds.Count + 1)) -Default 0 -Min 0 -Max $manageIndex -NoRefresh
         if ($choiceIndex -eq 0) {
             break
         }
@@ -4797,11 +4797,14 @@ function Read-LWInt {
         [string]$Prompt,
         [Nullable[int]]$Default = $null,
         [Nullable[int]]$Min = $null,
-        [Nullable[int]]$Max = $null
+        [Nullable[int]]$Max = $null,
+        [switch]$NoRefresh
     )
 
     while ($true) {
-        Refresh-LWScreen
+        if (-not $NoRefresh) {
+            Refresh-LWScreen
+        }
         $label = if ($null -ne $Default) { "$Prompt [$Default]" } else { $Prompt }
         $raw = Read-Host $label
 
