@@ -26,18 +26,20 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.28'
+$script:LWAppVersion = '0.7.29'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
 $script:GameState = $null
 $script:GameData = $null
+$script:LWAchievementDefinitionsCache = $null
 $script:LWUi = [pscustomobject]@{
     Enabled       = $false
     CurrentScreen = 'welcome'
     ScreenData    = $null
     Notifications = @()
     IsRendering   = $false
+    NeedsRender   = $true
 }
 
 function Write-LWInfo {
@@ -117,6 +119,7 @@ function Add-LWNotification {
     }
 
     $script:LWUi.Notifications = @($existing)
+    Request-LWRender
 }
 
 function Write-LWCrashLog {
@@ -172,6 +175,20 @@ function Write-LWCrashLog {
 
 function Clear-LWNotifications {
     $script:LWUi.Notifications = @()
+    Request-LWRender
+}
+
+function Request-LWRender {
+    if ($null -eq $script:LWUi) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:LWUi -Name 'NeedsRender')) {
+        $script:LWUi | Add-Member -Force -NotePropertyName NeedsRender -NotePropertyValue $true
+        return
+    }
+
+    $script:LWUi.NeedsRender = $true
 }
 
 function Get-LWDefaultScreen {
@@ -197,6 +214,7 @@ function Set-LWScreen {
     $screenName = if ([string]::IsNullOrWhiteSpace($Name)) { Get-LWDefaultScreen } else { $Name.Trim().ToLowerInvariant() }
     $script:LWUi.CurrentScreen = $screenName
     $script:LWUi.ScreenData = $Data
+    Request-LWRender
 }
 
 function Write-LWNotifications {
@@ -557,6 +575,10 @@ function Refresh-LWScreen {
         return
     }
 
+    if ((Test-LWPropertyExists -Object $script:LWUi -Name 'NeedsRender') -and -not [bool]$script:LWUi.NeedsRender) {
+        return
+    }
+
     try {
         Clear-Host
     }
@@ -675,6 +697,9 @@ function Refresh-LWScreen {
     }
     finally {
         $script:LWUi.IsRendering = $false
+        if (Test-LWPropertyExists -Object $script:LWUi -Name 'NeedsRender') {
+            $script:LWUi.NeedsRender = $false
+        }
     }
 
     Write-LWNotifications
@@ -1539,7 +1564,11 @@ function New-LWAchievementDefinition {
 }
 
 function Get-LWAchievementDefinitions {
-    return @(
+    if ($null -ne $script:LWAchievementDefinitionsCache) {
+        return @($script:LWAchievementDefinitionsCache)
+    }
+
+    $script:LWAchievementDefinitionsCache = @(
         (New-LWAchievementDefinition -Id 'first_blood' -Name 'First Blood' -Category 'Combat' -Description 'Win your first combat.' -Backfill:$true -ModePool 'Combat'),
         (New-LWAchievementDefinition -Id 'swift_blade' -Name 'Swift Blade' -Category 'Combat' -Description 'Win a fight in a single round.' -Backfill:$true -ModePool 'Combat'),
         (New-LWAchievementDefinition -Id 'untouchable' -Name 'Untouchable' -Category 'Combat' -Description 'Win a fight without losing any Endurance.' -Backfill:$true -ModePool 'Combat'),
@@ -1633,6 +1662,8 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'chasm_of_doom' -Name 'Chasm of Doom' -Category 'Journey' -Description 'Reach the signature failure ending at section 347 in Book 4.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'washed_away' -Name 'Washed Away' -Category 'Journey' -Description 'Survive the Book 4 waterfall route that costs you your Backpack.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
+
+    return @($script:LWAchievementDefinitionsCache)
 }
 
 function Get-LWPhaseTwoAchievementPlans {
