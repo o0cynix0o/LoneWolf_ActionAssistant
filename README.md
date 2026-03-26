@@ -162,6 +162,7 @@ setend [current]
 setmaxend [max]
 setcs
 die [cause]
+fail [cause]
 rewind [n]
 ```
 
@@ -410,14 +411,20 @@ Instant-death sections are handled with:
 die [cause]
 ```
 
-After death, the app can rewind to earlier safe section checkpoints:
+Dead-end story failures are handled with:
+
+```text
+fail [cause]
+```
+
+After death or failure, the app can rewind to earlier safe section checkpoints:
 
 ```text
 rewind
 rewind 2
 ```
 
-Rewind is only available while dead. This keeps normal play honest while still supporting the way Lone Wolf books often ask you to go back and choose another path after a fatal section.
+Rewind is only available while a death or failed mission state is active. This keeps normal play honest while still supporting the way Lone Wolf books often ask you to go back and choose another path after a fatal section or failed route.
 
 ## Book Progression
 

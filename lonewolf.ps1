@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.20'
+$script:LWAppVersion = '0.7.21'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -507,7 +507,15 @@ function Show-LWDeathScreen {
     $deathType = if ([string]::IsNullOrWhiteSpace([string]$deathState.Type)) { 'Death' } else { [string]$deathState.Type }
     $causeText = if ([string]::IsNullOrWhiteSpace([string]$deathState.Cause)) { 'A fatal choice ended this path.' } else { [string]$deathState.Cause }
 
-    $deathTitle = if (Test-LWPermadeathEnabled) { 'Tragically, your life and this save end here!' } else { 'You Have Fallen' }
+    $deathTitle = if ([string]$deathType -ieq 'Failure') {
+        'Mission Failed'
+    }
+    elseif (Test-LWPermadeathEnabled) {
+        'Tragically, your life and this save end here!'
+    }
+    else {
+        'You Have Fallen'
+    }
     Write-LWPanelHeader -Title $deathTitle -AccentColor 'Red'
     Write-LWKeyValue -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
     Write-LWKeyValue -Label 'Book' -Value $bookLabel -ValueColor 'White'
@@ -527,7 +535,7 @@ function Show-LWDeathScreen {
         Write-LWBulletItem -Text 'Use rewind <n> to step back more than one section.' -TextColor 'Gray'
     }
     else {
-        Write-LWBulletItem -Text 'No rewind checkpoints are available for this death.' -TextColor 'Gray'
+        Write-LWBulletItem -Text 'No rewind checkpoints are available for this death or failed mission.' -TextColor 'Gray'
     }
     Write-LWBulletItem -Text 'You can also use load, new, or quit from this screen.' -TextColor 'Gray'
 }
@@ -2523,6 +2531,40 @@ function Register-LWDeath {
     return $entry
 }
 
+function Register-LWFailureState {
+    param([string]$Cause = '')
+
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    Ensure-LWDeathState -State $script:GameState
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $entry = [pscustomobject]@{
+        Type       = 'Failure'
+        Cause      = if ([string]::IsNullOrWhiteSpace($Cause)) { 'The mission failed.' } else { $Cause.Trim() }
+        BookNumber = $bookNumber
+        BookTitle  = Get-LWBookTitle -BookNumber $bookNumber
+        Section    = [int]$script:GameState.CurrentSection
+        RecordedOn = (Get-Date).ToString('o')
+    }
+
+    $script:GameState.DeathState.Active = $true
+    $script:GameState.DeathState.Type = $entry.Type
+    $script:GameState.DeathState.Cause = $entry.Cause
+    $script:GameState.DeathState.BookNumber = $entry.BookNumber
+    $script:GameState.DeathState.BookTitle = $entry.BookTitle
+    $script:GameState.DeathState.Section = $entry.Section
+    $script:GameState.DeathState.RecordedOn = $entry.RecordedOn
+    if ((Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and $null -ne $script:GameState.Run) {
+        $script:GameState.Run.Status = 'Failed'
+        $script:GameState.Run.CompletedOn = $entry.RecordedOn
+    }
+
+    return $entry
+}
+
 function Get-LWAvailableRewindCount {
     if (Test-LWPermadeathEnabled) {
         return 0
@@ -2610,6 +2652,28 @@ function Invoke-LWInstantDeath {
     Invoke-LWMaybeAutosave
 }
 
+function Invoke-LWFailure {
+    param([string]$Cause = '')
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+    if ($script:GameState.Combat.Active) {
+        Write-LWWarn 'Finish the combat or stop it before recording a failed mission.'
+        return
+    }
+    if (Test-LWDeathActive) {
+        Write-LWWarn 'A death or failed mission is already active. Use rewind, load, new, or quit.'
+        return
+    }
+
+    [void](Register-LWFailureState -Cause $Cause)
+    Set-LWScreen -Name 'death'
+    Write-LWError 'Mission failed.'
+    Invoke-LWMaybeAutosave
+}
+
 function Invoke-LWFatalEnduranceCheck {
     param([string]$Cause = 'Endurance has fallen to zero.')
 
@@ -2635,7 +2699,7 @@ function Invoke-LWRewind {
         return
     }
     if (-not (Test-LWDeathActive)) {
-        Write-LWWarn 'rewind is only available after a death.'
+        Write-LWWarn 'rewind is only available after a death or failed mission.'
         return
     }
     if (Test-LWPermadeathEnabled) {
@@ -10101,8 +10165,9 @@ function Show-LWHelp {
     Write-LWKeyValue -Label 'meal' -Value 'Resolve an eat instruction' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'potion' -Value 'Use a Healing or Laumspur Potion outside combat' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'end [delta]' -Value 'Adjust current Endurance only' -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'die [cause]' -Value 'Record an instant death and open rewind options' -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'rewind [n]' -Value 'After death, return to an earlier safe section' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'die [cause]' -Value 'Record an instant death and open rewind options' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'fail [cause]' -Value 'Record a failed mission and open rewind options' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'rewind [n]' -Value 'After death or failure, return to an earlier safe section' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'combat start' -Value 'Start combat' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'combat round' -Value 'Resolve one combat round' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'combat next' -Value 'Alias for combat round' -ValueColor 'Gray'
@@ -10146,7 +10211,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'From Book 3 onward, if Alether is in your backpack, combat start can consume it before the fight to grant +4 Combat Skill for that combat only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'New Book 1 runs now seed the starting Axe, Meal, Map of Sommerlund, random Gold, and random monastery item automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Book 1 section 170 now handles the Burrowcrawler''s torch darkness rule and Mindblast immunity automatically.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Use die for instant-death sections. After death, use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use die for instant-death sections and fail for dead-end story failures. Then use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'history and combat log all now group archived fights by book for easier browsing.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use campaign to review the whole run, or campaign books/combat/survival/milestones for focused views.' -TextColor 'Gray'
@@ -10303,7 +10368,13 @@ function Invoke-LWCommand {
         $allowedWhileDead = @('rewind', 'load', 'new', 'newrun', 'help', 'save', 'quit', 'exit', 'stats', 'campaign', 'achievements', 'achievement', 'modes', 'difficulty', 'permadeath')
         if ($allowedWhileDead -notcontains $command) {
             Set-LWScreen -Name 'death'
-            Write-LWWarn 'You have fallen. Use rewind, load, newrun, modes, campaign, help, or quit.'
+            $terminalType = if ($null -ne (Get-LWActiveDeathState)) { [string](Get-LWActiveDeathState).Type } else { '' }
+            if ([string]$terminalType -ieq 'Failure') {
+                Write-LWWarn 'The mission has failed. Use rewind, load, newrun, modes, campaign, help, or quit.'
+            }
+            else {
+                Write-LWWarn 'You have fallen. Use rewind, load, newrun, modes, campaign, help, or quit.'
+            }
             return $null
         }
     }
@@ -10448,6 +10519,7 @@ function Invoke-LWCommand {
         'meal'        { Use-LWMeal; return $null }
         'potion'      { Use-LWHealingPotion; return $null }
         'die'         { Invoke-LWInstantDeath -Cause $argumentText; return $null }
+        'fail'        { Invoke-LWFailure -Cause $argumentText; return $null }
         'rewind'      {
             if ($parts.Count -gt 1) {
                 $rewindSteps = 0
