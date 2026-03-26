@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.26'
+$script:LWAppVersion = '0.7.27'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -2683,8 +2683,41 @@ function Invoke-LWSectionEntryRules {
                     }
                 }
                 213 {
-                    if (Read-LWYesNo -Prompt 'Take the Pickaxe here? (2 Backpack slots)' -Default $false) {
-                        [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Pickaxe')
+                    $availableChoices = @(Get-LWBookFourSection213ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+                    if ($availableChoices.Count -gt 0) {
+                        Write-LWInfo 'Section 213: choose any loot you want to keep from the supply table.'
+                    }
+
+                    while ($availableChoices.Count -gt 0) {
+                        Write-LWPanelHeader -Title 'Section 213 Loot' -AccentColor 'DarkYellow'
+                        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+                        Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
+                        Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+                        Write-Host ''
+
+                        for ($i = 0; $i -lt $availableChoices.Count; $i++) {
+                            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
+                        }
+                        $manageIndex = $availableChoices.Count + 1
+                        Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
+                        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+                        $choiceIndex = Read-LWInt -Prompt 'Section 213 choice' -Default 0 -Min 0 -Max $manageIndex -NoRefresh
+                        if ($choiceIndex -eq 0) {
+                            break
+                        }
+                        if ($choiceIndex -eq $manageIndex) {
+                            Invoke-LWBookFourStartingInventoryManagement
+                            $availableChoices = @(Get-LWBookFourSection213ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+                            continue
+                        }
+
+                        $choice = $availableChoices[$choiceIndex - 1]
+                        if (-not (Grant-LWBookFourSection213Choice -Choice $choice) -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+                            Invoke-LWBookFourStartingInventoryManagement
+                        }
+
+                        $availableChoices = @(Get-LWBookFourSection213ChoiceDefinitions | Where-Object { -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
                     }
                 }
                 222 {
@@ -4000,6 +4033,45 @@ function Grant-LWBookFourStartingChoice {
 
     Write-LWWarn ("Could not add the Book 4 starting item '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
     return $false
+}
+
+function Get-LWBookFourSection213ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'pickaxe'; FlagName = 'Book4Section213PickaxeClaimed'; DisplayName = 'Pickaxe'; Type = 'backpack'; Name = 'Pickaxe'; Quantity = 1; Description = 'Pickaxe' },
+        [pscustomobject]@{ Id = 'shovel'; FlagName = 'Book4Section213ShovelClaimed'; DisplayName = 'Shovel'; Type = 'backpack'; Name = 'Shovel'; Quantity = 1; Description = 'Shovel' },
+        [pscustomobject]@{ Id = 'axe'; FlagName = 'Book4Section213AxeClaimed'; DisplayName = 'Axe'; Type = 'weapon'; Name = 'Axe'; Quantity = 1; Description = 'Axe' },
+        [pscustomobject]@{ Id = 'torch'; FlagName = 'Book4Section213TorchClaimed'; DisplayName = 'Torch'; Type = 'backpack'; Name = 'Torch'; Quantity = 1; Description = 'Torch' },
+        [pscustomobject]@{ Id = 'tinderbox'; FlagName = 'Book4Section213TinderboxClaimed'; DisplayName = 'Tinderbox'; Type = 'backpack'; Name = 'Tinderbox'; Quantity = 1; Description = 'Tinderbox' },
+        [pscustomobject]@{ Id = 'hourglass'; FlagName = 'Book4Section213HourglassClaimed'; DisplayName = 'Hourglass'; Type = 'backpack'; Name = 'Hourglass'; Quantity = 1; Description = 'Hourglass' }
+    )
+}
+
+function Grant-LWBookFourSection213Choice {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    if ($null -eq $Choice) {
+        return $false
+    }
+
+    $granted = $false
+    if ([string]$Choice.Type -eq 'weapon') {
+        $granted = Add-LWWeaponWithOptionalReplace -Name ([string]$Choice.Name) -PromptLabel ([string]$Choice.DisplayName)
+    }
+    else {
+        $granted = TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)
+    }
+
+    if (-not $granted) {
+        Write-LWWarn ("Could not add the section 213 item '{0}' automatically. Make room and try again if you are keeping it." -f [string]$Choice.DisplayName)
+        return $false
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Choice.FlagName)) {
+        Set-LWStoryAchievementFlag -Name ([string]$Choice.FlagName)
+    }
+
+    Write-LWInfo ("Section 213: added {0}." -f [string]$Choice.Description)
+    return $true
 }
 
 function Format-LWBookFourStartingChoiceLine {

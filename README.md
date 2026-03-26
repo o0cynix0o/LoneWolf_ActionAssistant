@@ -353,6 +353,8 @@ Some items are now handled automatically instead of needing manual stat edits.
   Restores `4 END`
 - `Map of the Southlands`, `Badge of Rank`, `Onyx Medallion`, `Flask of Holy Water`, `Scroll`, `Iron Key`, `Brass Key`, and `Dagger of Vashna`
   Are all recognized by name for Book 4 automation and achievement checks
+- `Hourglass`
+  Is recognized as a normal Backpack item for Book 4 loot handling
 - `Captain D'Val's Sword` and `Whip`
   Are recognized weapons for Book 4 story handling
   Captain D'Val's Sword also adds `+1 Combat Skill`
