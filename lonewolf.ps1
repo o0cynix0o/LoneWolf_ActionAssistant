@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.17'
+$script:LWAppVersion = '0.7.18'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -5696,7 +5696,7 @@ function Test-LWAchievementSatisfied {
         'kill_the_mad_butcher' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 1 -and [string]$_.EnemyName -ieq 'Mad Butcher' }).Count -ge 1) }
         'whats_in_the_box_book1' { return (Test-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed') }
         'use_the_force' { return (Test-LWStoryAchievementFlag -Name 'Book1UseTheForcePath') }
-        'found_the_sommerswerd' { return ((Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') -or (Test-LWStateHasSommerswerd -State $script:GameState) -or @($runEntries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$_.Weapon)) -and (Get-LWCombatEntryBookNumber -Entry $_) -ge 2 }).Count -ge 1) }
+        'found_the_sommerswerd' { return (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') }
         'you_have_chosen_wisely' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 158 -and [string]$_.EnemyName -ieq 'Priest' }).Count -ge 1) }
         'neo_link' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains [string]$_.EnemyName }).Count -ge 1) }
         'snakes_why' { return (Test-LWStoryAchievementFlag -Name 'Book3SnakePitVisited') }
@@ -8627,11 +8627,15 @@ function Complete-LWBook {
     $availableNames = @($script:GameData.KaiDisciplines | ForEach-Object { $_.Name })
     if ($owned.Count -lt $availableNames.Count) {
         if (Read-LWYesNo -Prompt ("Choose your bonus Kai Discipline for {0} now?" -f $nextBookLabel) -Default $true) {
-            $newDisc = Select-LWKaiDisciplines -Count 1 -Exclude $owned
-            $script:GameState.Character.Disciplines = @($owned + $newDisc)
-            Write-LWInfo "Added discipline: $($newDisc[0])."
+            $newDiscName = $null
+            $newDiscSelection = @(Select-LWKaiDisciplines -Count 1 -Exclude $owned)
+            if ($newDiscSelection.Count -gt 0) {
+                $newDiscName = [string]$newDiscSelection[0]
+                $script:GameState.Character.Disciplines = @($owned + $newDiscName)
+                Write-LWInfo "Added discipline: $newDiscName."
+            }
 
-            if ($newDisc[0] -eq 'Weaponskill' -and [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
+            if ($newDiscName -eq 'Weaponskill' -and [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
                 $weaponRoll = Get-LWRandomDigit
                 $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
                 $script:GameState.Character.WeaponskillWeapon = $weaponName
