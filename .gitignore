@@ -11,6 +11,8 @@ data/rh-crtpos.png
 
 # Local scratch and test folders
 tmp-*/
+testing/*
+!testing/.gitkeep
 
 # Local docs / handoff notes
 agent.md
