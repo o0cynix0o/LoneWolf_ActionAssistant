@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.25'
+$script:LWAppVersion = '0.7.26'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -4652,6 +4652,20 @@ function Get-LWStateBroadswordPlusOneCombatSkillBonus {
     return 0
 }
 
+function Get-LWStateCaptainDValSwordCombatSkillBonus {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if (Test-LWWeaponIsCaptainDValSword -Weapon $activeWeapon) {
+        return 1
+    }
+
+    return 0
+}
+
 function Get-LWCombatKnockoutCombatSkillPenalty {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -8239,6 +8253,10 @@ function Show-LWInventory {
         Write-LWSubtle '  Drodarin War Hammer: +1 Combat Skill in combat and counts as a Warhammer.'
         Write-Host ''
     }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCaptainDValSwordWeaponNames) -Type 'weapon'))) {
+        Write-LWSubtle '  Captain D''Val''s Sword: +1 Combat Skill in combat and counts as a Sword.'
+        Write-Host ''
+    }
     if ((Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
         Write-LWSubtle '  Silver Helm: +2 Combat Skill while carried as a Special Item.'
         Write-Host ''
@@ -9412,9 +9430,15 @@ function Get-LWCombatBreakdownFromState {
             $notes += "Drodarin War Hammer +$drodarinWarHammerBonus"
         }
 
+        $captainDValSwordBonus = Get-LWStateCaptainDValSwordCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
+        if ($captainDValSwordBonus -gt 0) {
+            $playerCombatSkill += $captainDValSwordBonus
+            $notes += "Captain D'Val's Sword +$captainDValSwordBonus"
+        }
+
         if ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
             $playerCombatSkill += 2
-            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } else { [string]$State.Combat.EquippedWeapon }
+            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } elseif (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Sword' } else { [string]$State.Combat.EquippedWeapon }
             $notes += "Weaponskill +2 ($weaponskillLabel)"
         }
     }
@@ -11367,7 +11391,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer; Captain D''Val''s Sword adds +1 Combat Skill and counts as a Sword.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'

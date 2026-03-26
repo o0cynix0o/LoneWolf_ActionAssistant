@@ -31,6 +31,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - Silver Helm
   - Helmet
   - Broadsword +1
+  - Captain D'Val's Sword
   - Drodarin War Hammer
   - Chainmail Waistcoat / Wastecoat
   - Padded Leather Waistcoat / Wastecoat
@@ -307,6 +308,10 @@ Some items are now handled automatically instead of needing manual stat edits.
   Counts as a normal weapon
   Adds `+1 Combat Skill` in combat
   Counts as a `Warhammer` for Weaponskill and knockout rules
+- `Captain D'Val's Sword`
+  Counts as a normal weapon
+  Adds `+1 Combat Skill` in combat
+  Counts as a `Sword` for Weaponskill
 - `Chainmail Waistcoat` / `Chainmail Wastecoat`
   Adds `+4 Endurance`
 - `Padded Leather Waistcoat` / `Padded Leather Wastecoat`
@@ -350,6 +355,7 @@ Some items are now handled automatically instead of needing manual stat edits.
   Are all recognized by name for Book 4 automation and achievement checks
 - `Captain D'Val's Sword` and `Whip`
   Are recognized weapons for Book 4 story handling
+  Captain D'Val's Sword also adds `+1 Combat Skill`
 
 ## Stats and Achievements
 
