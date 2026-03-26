@@ -8,6 +8,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 - Screen-based terminal UI with ASCII banners and color-coded panels
 - New Kai character creation with random starting Combat Skill and Endurance
+- Book 1 start-package automation for Axe, Meal, Map of Sommerlund, random Gold, and the random monastery find
 - Kai discipline selection, including Weaponskill weapon assignment
 - Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
 - Inventory slot tracking for weapons (`2`), backpack items (`8`), special items (`12`), and gold
@@ -16,6 +17,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Potion handling for:
   - Healing Potion / Laumspur Potion
   - Concentrated Laumspur
+  - Book 1 Laumspur Herb
 - Combat assistant with:
   - combat ratio calculation
   - random number rolls
@@ -32,6 +34,10 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - Padded Leather Waistcoat / Wastecoat
   - Long Rope
   - Sommerswerd
+- Book 1 section-rule support for:
+  - Vordak Gem handling
+  - Burrowcrawler torch/darkness combat setup
+  - Crystal Star Pendant carry-forward tracking
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
@@ -319,7 +325,7 @@ The app tracks live book stats and run history, including:
 - fights, wins, defeats, evades, and rounds fought
 - highest enemy CS and END faced / defeated
 
-It also supports hidden story achievements. The first batch now includes Book 3 section/discovery achievements, including the Diamond from section `218`.
+It also supports hidden story achievements. The current batch includes Book 1 route/discovery achievements and Book 3 section/discovery achievements, including the Diamond from section `218`.
 - fastest, easiest, and longest fights
 - weapon usage and weapon victories
 - Mindblast usage and wins
