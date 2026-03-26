@@ -8,12 +8,12 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 - Screen-based terminal UI with ASCII banners and color-coded panels
 - New Kai character creation with random starting Combat Skill and Endurance
-- Book 1 and Book 2 start-package automation, including Book 2 carry-in armory exchange support
+- Book 1, Book 2, and Book 4 start-package automation, including carry-in gear support where needed
 - Kai discipline selection, including Weaponskill weapon assignment
 - Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
 - Inventory slot tracking for weapons (`2`), backpack items (`8`), special items (`12`), and gold
 - Section tracking with Healing support for non-combat sections
-- Meal handling with Hunting support, including Book 2 Wildlands and Book 3 / Kalte restrictions
+- Meal handling with Hunting support, including Book 2 Wildlands, Book 3 / Kalte, and Book 4 mines / wasteland restrictions
 - Potion handling for:
   - Healing Potion / Laumspur Potion
   - Potent Laumspur Potion
@@ -49,6 +49,13 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - section `106` Magic Spear / Helghast setup
   - section `313` spear loss and damage
   - section `337` storm gear-loss handling
+- Book 4 section-rule support for:
+  - startup gear, `Map of the Southlands`, `Badge of Rank`, and gold package
+  - real Backpack loss / recovery handling
+  - mine Torch / Tinderbox supply sections
+  - Book 4 forced-loss sections like `22`, `272`, and `327`
+  - Holy Water, Scroll, Onyx Medallion, and Captain D'Val's Sword hooks
+  - Barraka combat setup at sections `122` and `325`
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
@@ -308,6 +315,9 @@ Some items are now handled automatically instead of needing manual stat edits.
 - `Long Rope`
   Counts as a backpack item
   Uses `2` backpack slots instead of `1`
+- `Shovel`, `Pick`, `Pickaxe`
+  Count as backpack items
+  Use `2` backpack slots each
 - `Magic Spear`
   Counts as a weapon-like Special Item
   Counts as a `Spear` for Weaponskill
@@ -332,6 +342,14 @@ Some items are now handled automatically instead of needing manual stat edits.
   Available from Book 3 onward
   Must be used before combat starts
   `combat start` can consume it from the backpack and grant `+4 Combat Skill` for that fight only
+- `Special Rations`
+  Count as Meal substitutes in Book 4
+- `Potion of Red Liquid`
+  Restores `4 END`
+- `Map of the Southlands`, `Badge of Rank`, `Onyx Medallion`, `Flask of Holy Water`, `Scroll`, `Iron Key`, `Brass Key`, and `Dagger of Vashna`
+  Are all recognized by name for Book 4 automation and achievement checks
+- `Captain D'Val's Sword` and `Whip`
+  Are recognized weapons for Book 4 story handling
 
 ## Stats and Achievements
 
@@ -346,7 +364,7 @@ The app tracks live book stats and run history, including:
 - fights, wins, defeats, evades, and rounds fought
 - highest enemy CS and END faced / defeated
 
-It also supports hidden story achievements. The current batch now includes Book 1 routes, Book 2 route/story milestones, and Book 3 section/discovery achievements, including the Diamond from section `218`.
+It also supports hidden story achievements. The current batch now includes Book 1 routes, Book 2 route/story milestones, Book 3 section/discovery achievements, and the first full Book 4 route/story batch.
 - fastest, easiest, and longest fights
 - weapon usage and weapon victories
 - Mindblast usage and wins

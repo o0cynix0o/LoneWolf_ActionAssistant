@@ -4,7 +4,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.19`
+- App version: `0.7.22`
 - Main script: `lonewolf.ps1`
 - Latest shipped commit at time of writing: `3ce78bc` `Add Book 1 rule automation and route achievements`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
@@ -29,7 +29,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Veteran`
   - optional `Permadeath`
 - Tamper-evident run integrity
-- Book-aware rule support across Books 1-3
+- Book-aware rule support across Books 1-4
 - GitHub repo, wiki, and issue tracker workflow already in use
 
 ## Main Repo Files
@@ -52,16 +52,15 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 These are intentionally local and should normally stay out of git:
 
 - `saves/`
-- `logs/`
+- `testing/`
 - `data/last-save.txt`
 - `data/error.log`
-- `tmp-*.html`
-- other `tmp-*` test folders
+- ad-hoc temp files under `testing/tmp/`
 
 The working pattern has been:
 
-- keep reports and playtest artifacts in `logs/`
-- keep sandbox saves in `saves/`
+- keep reports and playtest artifacts in `testing/logs/`
+- keep sandbox saves in `testing/saves/`
 - commit code/docs changes, not live player state
 
 ## Current Book Status
@@ -87,10 +86,11 @@ Local reports:
 
 ### Book 2
 
-- Partial story-achievement support is implemented
+- Full audit completed
+- Route/story achievement batch implemented
 - Sommerswerd is implemented and gated to Book 2+
 - Broadsword +1 is implemented
-- Book 2 has not yet had the same full audit pass as Book 1 and Book 3
+- Book 2 startup, pass items, forged papers, Magic Spear hooks, storm loss, and Wildlands Hunting restriction are implemented
 
 ### Book 3
 
@@ -102,16 +102,23 @@ Local reports:
 
 Local reports:
 
-- `logs/BOOK3_READTEST_REPORT.md`
-- `logs/BOOK3_FULL_RUN_LOG.md`
-- `logs/BOOK3_ENDINGS_AND_ROUTE_FAMILIES.md`
-- `logs/BOOK3_RUN_MATRIX.json`
+- `testing/logs/BOOK3_READTEST_REPORT.md`
+- `testing/logs/BOOK3_FULL_RUN_LOG.md`
+- `testing/logs/BOOK3_ENDINGS_AND_ROUTE_FAMILIES.md`
+- `testing/logs/BOOK3_RUN_MATRIX.json`
 
 ### Book 4
 
-- Not audited yet
-- Not expanded yet
-- Natural next major content target after current Book 3 playtesting stabilizes
+- Full audit completed
+- First full Book 4 build implemented
+- Startup package, Backpack-loss state, mine lighting hooks, Book 4 Hunting restrictions, Barraka combat hooks, and the first Book 4 route/story achievement batch are implemented
+
+Local reports:
+
+- `testing/logs/BOOK4_ENDINGS_AND_ROUTE_FAMILIES.md`
+- `testing/logs/BOOK4_RULES_AND_ITEMS_AUDIT.md`
+- `testing/logs/BOOK4_ACHIEVEMENT_CANDIDATES.md`
+- `testing/logs/BOOK4_BUILD_VALIDATION.md`
 
 ## Existing Playtest Coverage
 
@@ -124,9 +131,9 @@ Local reports already exist for:
 
 Key files:
 
-- `logs/COMMAND_SURFACE_PLAYTEST_REPORT.md`
-- `logs/MODE_RULES_PLAYTEST_REPORT.md`
-- `logs/PERMADEATH_PLAYTEST_REPORT.md`
+- `testing/logs/COMMAND_SURFACE_PLAYTEST_REPORT.md`
+- `testing/logs/MODE_RULES_PLAYTEST_REPORT.md`
+- `testing/logs/PERMADEATH_PLAYTEST_REPORT.md`
 
 ## Standard Named Workflows
 
@@ -144,7 +151,7 @@ Meaning:
 - map endings and major winning route families
 - audit missing item/rule support
 - draft achievement candidates
-- write local reports in `logs/`
+- write local reports in `testing/logs/`
 - summarize findings in chat
 
 ### Full Book Audit + Build
@@ -196,7 +203,7 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 2. Read `docs/BOOK_AUDIT_WORKFLOW.md`
 3. Read `docs/PLAYTEST_AND_BUG_WORKFLOW.md`
 4. Check `git status`
-5. Check the newest local reports in `logs/`
+5. Check the newest local reports in `testing/logs/`
 6. Confirm whether the next task is:
    - content audit
    - implementation
@@ -206,10 +213,10 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 
 ## Good Next Steps
 
-- Run the Full Book Audit for Book 2
-- Continue Book 3 live playtesting and patch book-specific gaps
-- Start Book 4 support after Book 3 feels stable
-- Expand story-aware achievements book by book
+- Continue live playtesting from Book 4 onward and patch DE-specific rule differences
+- Expand story-aware achievements in later books
+- Run the Full Book Audit for the next unsupported book
+- Keep the handoff docs in sync as new books become implemented
 
 ## Important Cautions
 
