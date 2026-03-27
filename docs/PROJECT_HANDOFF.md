@@ -33,6 +33,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Project Aon baseline catch-up complete across Books 1-5 as of 2026-03-27
 - The Kai ruleset campaign is now complete through Book 5
 - GitHub repo, wiki, and issue tracker workflow already in use
+- Formal architecture planning docs now exist for the modular-engine refactor milestone
 
 ## Main Repo Files
 
@@ -42,6 +43,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Public-facing project overview and command surface
 - `docs/GITHUB_WORKFLOW.md`
   Git/GitHub workflow and README sanitization rules
+- `docs/MODULAR_ENGINE_REFACTOR_PLAN.md`
+  Formal architecture plan for splitting the monolith into an engine plus book/ruleset modules
+- `docs/PROJECT_MILESTONES.md`
+  Repo-tracked milestone list, including the modular-engine refactor
 - `data/kai-disciplines.json`
   Discipline definitions
 - `data/weaponskill-map.json`
@@ -256,8 +261,9 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 ## Good Next Steps
 
 - Continue live playtesting across Books 1-5 and patch DE-specific rule differences
+- Start `M1` Modular Engine Refactor when approved
 - Expand story-aware achievements in later books
-- Run the Full Book Audit for the next unsupported book
+- Run the Full Book Audit for the next unsupported book after the refactor plan is in motion
 - Keep the handoff docs in sync as new books become implemented
 
 ## Important Cautions
