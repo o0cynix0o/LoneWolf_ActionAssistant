@@ -8,6 +8,17 @@ function Set-LWModuleContext {
     }
 }
 
+function Clear-LWModuleNotifications {
+    if ($null -eq $script:LWUi) {
+        return
+    }
+
+    $script:LWUi.Notifications = @()
+    if (Get-Command -Name Request-LWRender -ErrorAction SilentlyContinue) {
+        Request-LWRender
+    }
+}
+
 function Invoke-LWCoreShowHelpScreen {
     param([hashtable]$Context)
 
@@ -106,7 +117,7 @@ function Invoke-LWCoreCommand {
 
     Set-LWModuleContext -Context $Context
 
-        Clear-LWNotifications
+        Clear-LWModuleNotifications
         $trimmed = $InputLine.Trim()
         if ([string]::IsNullOrWhiteSpace($trimmed)) {
             if ($script:GameState -and $script:GameState.Combat.Active) {
@@ -416,7 +427,7 @@ function Invoke-LWCoreStartTerminal {
 
     $script:LWUi.Enabled = $true
         Set-LWScreen -Name 'welcome'
-        Clear-LWNotifications
+        Clear-LWModuleNotifications
 
         if (-not [string]::IsNullOrWhiteSpace($Load)) {
             Load-LWGame -Path $Load
