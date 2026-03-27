@@ -192,6 +192,39 @@ Notes:
 - this starts only after `M1` is complete
 - saves should be movable through explicit ruleset metadata
 
+### M4 - Portable Distribution Packaging
+
+Status:
+
+- `in_progress`
+
+Goal:
+
+- prepare a repeatable portable release workflow for the current PowerShell app
+
+Deliverables:
+
+- repo-tracked release builder
+- generated launcher files in the portable package
+- package manifest
+- packaging workflow doc
+- local packaging validation notes
+
+Exit criteria:
+
+- portable staging folder builds cleanly
+- portable zip builds cleanly
+- staged copy initializes and loads modules correctly
+- staged copy passes a basic command-surface smoke check
+
+Local checkpoint:
+
+- repo-tracked builder planned at `build-release.ps1`
+- packaging workflow tracked in `docs/DISTRIBUTION_PACKAGING_PLAN.md`
+- keep generated packages local in `testing/releases/`
+- local package build + package smoke validation passed on 2026-03-27
+- see `testing/logs/PACKAGING_PREP_VALIDATION_20260327.md`
+
 ### M3 - UX Polish Pass
 
 Status:

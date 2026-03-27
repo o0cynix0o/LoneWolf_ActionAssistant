@@ -48,6 +48,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Formal architecture plan for splitting the monolith into an engine plus book/ruleset modules
 - `docs/PROJECT_MILESTONES.md`
   Repo-tracked milestone list, including the modular-engine refactor
+- `docs/DISTRIBUTION_PACKAGING_PLAN.md`
+  Portable-release packaging plan and workflow
+- `build-release.ps1`
+  Local portable release builder that assembles a clean distributable package under `testing/releases/`
 - `data/kai-disciplines.json`
   Discipline definitions
 - `data/weaponskill-map.json`
@@ -69,6 +73,7 @@ The working pattern has been:
 
 - keep reports and playtest artifacts in `testing/logs/`
 - keep sandbox saves in `testing/saves/`
+- keep local release bundles in `testing/releases/`
 - commit code/docs changes, not live player state
 
 ## Current Book Status
@@ -190,6 +195,13 @@ Local unpushed M1 checkpoint:
 - `60` full Books `1-5` sandbox campaigns passed on the local M1 build
 - `0` campaign failures
 - see `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
+
+Local packaging prep:
+
+- portable packaging workflow is now tracked in `docs/DISTRIBUTION_PACKAGING_PLAN.md`
+- local release builder lives at `build-release.ps1`
+- release artifacts should stay local under `testing/releases/` until intentionally published
+- local packaging validation is recorded in `testing/logs/PACKAGING_PREP_VALIDATION_20260327.md`
 
 ## Standard Named Workflows
 

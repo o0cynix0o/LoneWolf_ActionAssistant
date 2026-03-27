@@ -118,6 +118,25 @@ Launch and load a save immediately:
 
 If you run `load` inside the app, it scans the save folder, lists saves by number, and remembers the last one you used as the default.
 
+## Portable Packaging
+
+The project currently packages best as a **portable zip release** rather than a
+single executable.
+
+Build a local portable package from the repo root with:
+
+```powershell
+.\build-release.ps1
+```
+
+Default output:
+
+- `testing/releases/LoneWolf_ActionAssistant_v<version>_portable`
+- `testing/releases/LoneWolf_ActionAssistant_v<version>_portable.zip`
+
+See [docs/DISTRIBUTION_PACKAGING_PLAN.md](./docs/DISTRIBUTION_PACKAGING_PLAN.md)
+for the full packaging workflow.
+
 ## Core Commands
 
 ### Campaign
