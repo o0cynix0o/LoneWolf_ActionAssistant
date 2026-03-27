@@ -34,6 +34,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - The Kai ruleset campaign is now complete through Book 5
 - GitHub repo, wiki, and issue tracker workflow already in use
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
+- Local-only M1 modular refactor work is currently in progress and intentionally unpushed as of 2026-03-27
 
 ## Main Repo Files
 
@@ -172,6 +173,7 @@ Key files:
 - `testing/logs/PERMADEATH_PLAYTEST_REPORT.md`
 - `testing/logs/FULL_VALIDATION_SUMMARY_20260327.md`
 - `testing/logs/BOOK5_BUILD_VALIDATION.md`
+- `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
 
 Latest large-scale validation:
 
@@ -181,6 +183,13 @@ Latest large-scale validation:
 - command-surface smoke passed in both shells
 - no campaign failures in the March 27 full validation sweep
 - additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
+
+Local unpushed M1 checkpoint:
+
+- first core-module extraction completed locally
+- `60` full Books `1-5` sandbox campaigns passed on the local M1 build
+- `0` campaign failures
+- see `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
 
 ## Standard Named Workflows
 

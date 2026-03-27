@@ -63,6 +63,11 @@ Deliverables:
 - centralized import order
 - no behavioral changes intended
 
+Local checkpoint:
+
+- unpushed validation slice passed `60` full Books `1-5` sandbox campaigns on 2026-03-27
+- see `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
+
 ### M1.2 - Core Engine Extraction
 
 Status:
@@ -80,6 +85,15 @@ Deliverables:
 - save/integrity module
 - inventory/combat/stats modules
 - achievement/mode modules
+
+Local checkpoint:
+
+- first extracted modules:
+  - `modules/core/bootstrap.psm1`
+  - `modules/core/display.psm1`
+  - `modules/core/common.psm1`
+- validated locally before push
+- see `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
 
 ### M1.3 - Kai Ruleset Shell
 
