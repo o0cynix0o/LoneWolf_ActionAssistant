@@ -8,12 +8,12 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 - Screen-based terminal UI with ASCII banners and color-coded panels
 - New Kai character creation with random starting Combat Skill and Endurance
-- Book 1, Book 2, and Book 4 start-package automation, including carry-in gear support where needed
+- Book 1 through Book 5 start-package automation, including carry-in gear support where needed
 - Kai discipline selection, including Weaponskill weapon assignment
 - Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
 - Inventory slot tracking for weapons (`2`), backpack items (`8`), special items (`12`), and gold
 - Section tracking with Healing support for non-combat sections
-- Meal handling with Hunting support, including Book 2 Wildlands, Book 3 / Kalte, and Book 4 mines / wasteland restrictions
+- Meal handling with Hunting support, including Book 2 Wildlands, Book 3 / Kalte, Book 4 mines / wasteland restrictions, and Book 5 restricted meal sections
 - Potion handling for:
   - Healing Potion / Laumspur Potion
   - Potent Laumspur Potion
@@ -58,11 +58,17 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - Holy Water, Scroll, Onyx Medallion, and Captain D'Val's Sword hooks
   - section loot tables, damage/recovery hooks, and contextual random-number support
   - special combat rules like delayed evade, variable Mindforce loss, underwater oxygen loss, and Barraka setup
+- Book 5 section-rule support for:
+  - startup package, monastery safekeeping, and `Map of Vassagonia`
+  - confiscation / recovery state in the dungeons
+  - blood poisoning and Limbdeath condition handling
+  - Book 5 shops, loot tables, and carry-forward item hooks
+  - Book 5 special combat rules, endgame routing, and `Book of the Magnakai` recovery
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
 - Whole-run campaign review screens
-- Achievement system with current unlocks, progress, and planned phase-two ideas
+- Achievement system with current unlocks, progress, and Book 1-5 story/path coverage
 - Death tracking with death-only rewind checkpoints
 - Locked run difficulties with Story, Easy, Normal, Hard, and Veteran rules
 - Optional Permadeath runs with tamper-evident challenge tracking

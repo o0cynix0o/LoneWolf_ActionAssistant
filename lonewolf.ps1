@@ -26,7 +26,7 @@ if ([string]::IsNullOrWhiteSpace($DataDir)) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.36'
+$script:LWAppVersion = '0.7.37'
 $script:LWStateVersion = '0.5.0'
 $script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
 $script:LWErrorLogFile = Join-Path $DataDir 'error.log'
@@ -1534,6 +1534,16 @@ function New-LWStoryAchievementFlags {
         Book4ReturnToSenderPath     = $false
         Book4ChasmOfDoomSeen        = $false
         Book4DaggerOfVashnaClaimed  = $false
+        Book5OedeClaimed            = $false
+        Book5LimbdeathCured         = $false
+        Book5PrisonBreak            = $false
+        Book5TalonsTamed            = $false
+        Book5CrystalPendantRoute    = $false
+        Book5SoushillaNameHeard     = $false
+        Book5SoushillaAsked         = $false
+        Book5BanishmentRoute        = $false
+        Book5HaakonDuelRoute        = $false
+        Book5BookOfMagnakaiClaimed  = $false
     }
 }
 
@@ -1669,7 +1679,16 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'shovel_ready' -Name 'Shovel Ready' -Category 'Journey' -Description 'Take a two-slot mining tool in Book 4.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'light_in_the_depths' -Name 'Light in the Depths' -Category 'Journey' -Description 'Follow the lit mine path in Book 4.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'chasm_of_doom' -Name 'Chasm of Doom' -Category 'Journey' -Description 'Reach the signature failure ending at section 347 in Book 4.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'washed_away' -Name 'Washed Away' -Category 'Journey' -Description 'Survive the Book 4 waterfall route that costs you your Backpack.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'washed_away' -Name 'Washed Away' -Category 'Journey' -Description 'Survive the Book 4 waterfall route that costs you your Backpack.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'book_five_complete' -Name 'Book Five Complete' -Category 'Journey' -Description 'Complete Book 5.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'kai_master' -Name 'Kai Master' -Category 'Legend' -Description 'Complete the full Kai sequence through Book 5.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'apothecarys_answer' -Name 'Apothecary''s Answer' -Category 'Journey' -Description 'Claim the Oede Herb and cure Limbdeath in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'prison_break' -Name 'Prison Break' -Category 'Journey' -Description 'Recover your confiscated gear in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'talons_tamed' -Name 'Talons Tamed' -Category 'Journey' -Description 'Mount the Itikar without having to subdue it in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'star_guided' -Name 'Star-Guided' -Category 'Journey' -Description 'Use the Crystal Star Pendant route in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'name_the_lost' -Name 'Name the Lost' -Category 'Journey' -Description 'Learn Soushilla''s name and ask for her in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'shadow_on_the_sand' -Name 'Shadow on the Sand' -Category 'Journey' -Description 'Finish Book 5 through the glowing-stone endgame route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'face_to_face_with_haakon' -Name 'Face to Face with Haakon' -Category 'Journey' -Description 'Finish Book 5 through the Haakon duel route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
 
     return @($script:LWAchievementDefinitionsCache)
@@ -1894,6 +1913,37 @@ function Rebuild-LWStoryAchievementFlagsFromState {
             Set-LWStoryAchievementFlag -Name 'Book4ShovelReadyClaimed'
         }
     }
+
+    if ([int]$script:GameState.Character.BookNumber -eq 5) {
+        if ($visitedSections -contains 2) {
+            Set-LWStoryAchievementFlag -Name 'Book5OedeClaimed'
+            Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
+        }
+        if ($visitedSections -contains 14) {
+            Set-LWStoryAchievementFlag -Name 'Book5PrisonBreak'
+        }
+        if (@(308, 319) | Where-Object { $visitedSections -contains $_ }) {
+            Set-LWStoryAchievementFlag -Name 'Book5TalonsTamed'
+        }
+        if ($visitedSections -contains 336) {
+            Set-LWStoryAchievementFlag -Name 'Book5CrystalPendantRoute'
+        }
+        if ($visitedSections -contains 356) {
+            Set-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard'
+        }
+        if ($visitedSections -contains 307) {
+            Set-LWStoryAchievementFlag -Name 'Book5SoushillaAsked'
+        }
+        if ($visitedSections -contains 268) {
+            Set-LWStoryAchievementFlag -Name 'Book5BanishmentRoute'
+        }
+        if ($visitedSections -contains 353) {
+            Set-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWBookOfMagnakaiItemNames) -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book5BookOfMagnakaiClaimed'
+        }
+    }
 }
 
 function Test-LWStoryAchievementFlag {
@@ -2005,6 +2055,21 @@ function Register-LWStorySectionAchievementTriggers {
                 347 { Set-LWStoryAchievementFlag -Name 'Book4ChasmOfDoomSeen' }
             }
         }
+        5 {
+            switch ($Section) {
+                2 {
+                    Set-LWStoryAchievementFlag -Name 'Book5OedeClaimed'
+                    Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
+                }
+                14 { Set-LWStoryAchievementFlag -Name 'Book5PrisonBreak' }
+                307 { Set-LWStoryAchievementFlag -Name 'Book5SoushillaAsked' }
+                308 { Set-LWStoryAchievementFlag -Name 'Book5TalonsTamed' }
+                319 { Set-LWStoryAchievementFlag -Name 'Book5TalonsTamed' }
+                336 { Set-LWStoryAchievementFlag -Name 'Book5CrystalPendantRoute' }
+                353 { Set-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute' }
+                356 { Set-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard' }
+            }
+        }
     }
 }
 
@@ -2071,6 +2136,24 @@ function Register-LWStorySectionTransitionAchievementTriggers {
             274
         ) -contains $FromSection -and $ToSection -eq 325) {
         Set-LWStoryAchievementFlag -Name 'Book4SteelAgainstShadowRoute'
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 5 -and $FromSection -eq 221 -and $ToSection -eq 336) {
+        Set-LWStoryAchievementFlag -Name 'Book5CrystalPendantRoute'
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 5 -and @(
+            204,
+            335
+        ) -contains $FromSection -and $ToSection -eq 268) {
+        Set-LWStoryAchievementFlag -Name 'Book5BanishmentRoute'
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 5 -and $FromSection -eq 224 -and @(
+            308,
+            319
+        ) -contains $ToSection) {
+        Set-LWStoryAchievementFlag -Name 'Book5TalonsTamed'
+    }
+    if ([int]$script:GameState.Character.BookNumber -eq 5 -and $FromSection -eq 397 -and $ToSection -eq 307) {
+        Set-LWStoryAchievementFlag -Name 'Book5SoushillaAsked'
     }
 }
 
@@ -2147,6 +2230,18 @@ function Register-LWStoryInventoryAchievementTriggers {
             }
             if ($Type -eq 'backpack' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWMiningToolItemNames) -Target $Name))) {
                 Set-LWStoryAchievementFlag -Name 'Book4ShovelReadyClaimed'
+            }
+        }
+        5 {
+            if ($Type -eq 'backpack' -and [int]$script:GameState.CurrentSection -eq 2 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWOedeHerbItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book5OedeClaimed'
+                Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
+            }
+            if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBookOfMagnakaiItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book5BookOfMagnakaiClaimed'
+            }
+            if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBlackCrystalCubeItemNames) -Target $Name))) {
+                Set-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute'
             }
         }
     }
@@ -2330,6 +2425,14 @@ function Grant-LWBookFourGenericChoice {
         return $false
     }
 
+    $goldCost = if ((Test-LWPropertyExists -Object $Choice -Name 'GoldCost') -and $null -ne $Choice.GoldCost) { [int]$Choice.GoldCost } else { 0 }
+    if ($goldCost -gt 0) {
+        if ([int]$script:GameState.Inventory.GoldCrowns -lt $goldCost) {
+            Write-LWWarn ("You need {0} Gold Crown{1} for {2}." -f $goldCost, $(if ($goldCost -eq 1) { '' } else { 's' }), [string]$Choice.DisplayName)
+            return $false
+        }
+    }
+
     $granted = $false
     $successMessage = $null
     switch ([string]$Choice.Type) {
@@ -2367,6 +2470,11 @@ function Grant-LWBookFourGenericChoice {
         return $false
     }
 
+    if ($goldCost -gt 0) {
+        $script:GameState.Inventory.GoldCrowns = [Math]::Max(0, ([int]$script:GameState.Inventory.GoldCrowns - $goldCost))
+        Add-LWBookGoldDelta -Delta (-$goldCost)
+    }
+
     if (-not [string]::IsNullOrWhiteSpace([string]$Choice.FlagName)) {
         Set-LWStoryAchievementFlag -Name ([string]$Choice.FlagName)
     }
@@ -2375,7 +2483,12 @@ function Grant-LWBookFourGenericChoice {
         Write-LWInfo $successMessage
     }
     else {
-        Write-LWInfo ("{0}: added {1}." -f $ContextLabel, [string]$Choice.Description)
+        if ($goldCost -gt 0) {
+            Write-LWInfo ("{0}: added {1} for {2} Gold Crown{3}." -f $ContextLabel, [string]$Choice.Description, $goldCost, $(if ($goldCost -eq 1) { '' } else { 's' }))
+        }
+        else {
+            Write-LWInfo ("{0}: added {1}." -f $ContextLabel, [string]$Choice.Description)
+        }
     }
     return $true
 }
@@ -2644,6 +2757,290 @@ function Get-LWBookThreeSectionRandomNumberContext {
     }
 }
 
+function Get-LWBookFiveSectionRandomNumberContext {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or [int]$State.Character.BookNumber -ne 5) {
+        return $null
+    }
+
+    $section = [int]$State.CurrentSection
+    $disciplineCount = @($State.Character.Disciplines).Count
+    $modifier = 0
+    $modifierNotes = @()
+    $description = $null
+    $zeroCountsAsTen = $false
+    $bypassed = $false
+    $bypassReason = $null
+
+    switch ($section) {
+        11 {
+            $description = 'Stealth-around-the-pillars check.'
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Camouflage') -or (Test-LWStateHasDiscipline -State $State -Name 'Hunting')) {
+                $modifier -= 2
+                $modifierNotes += 'Camouflage or Hunting'
+            }
+        }
+        15 {
+            $description = 'Hide-in-the-tunnel check.'
+            if ($disciplineCount -ge 7) {
+                $modifier -= 1
+                $modifierNotes += 'Kai rank Guardian+'
+            }
+        }
+        23 {
+            $description = 'Steam-shaft climb check.'
+            if (Test-LWBookFiveLimbdeathActive) {
+                $modifier -= 3
+                $modifierNotes += 'Limbdeath'
+            }
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 2
+                $modifierNotes += 'Hunting'
+            }
+        }
+        48 {
+            $description = 'Kai lock-opening check.'
+            if ($disciplineCount -ge 7) {
+                $modifier += 3
+                $modifierNotes += 'Kai rank Guardian+'
+            }
+        }
+        49 {
+            $description = 'Courier ambush check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 1
+                $modifierNotes += 'Hunting'
+            }
+            if ($disciplineCount -ge 9) {
+                $modifier += 3
+                $modifierNotes += 'Kai rank Savant+'
+            }
+        }
+        56 {
+            $description = 'Harbour bow-shot check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') {
+                $modifier += 2
+                $modifierNotes += 'Weaponskill'
+            }
+        }
+        118 {
+            $description = 'Blowpipe dodge check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 2
+                $modifierNotes += 'Hunting'
+            }
+            if ($disciplineCount -ge 8) {
+                $modifier += 1
+                $modifierNotes += 'Kai rank Warmarn+'
+            }
+        }
+        125 {
+            $description = 'Leap-from-the-oars balance check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 2
+                $modifierNotes += 'Hunting'
+            }
+        }
+        127 {
+            $description = 'Smash-the-door check. Add 10 and compare against Combat Skill.'
+        }
+        146 {
+            $description = 'Forge stealth check.'
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Camouflage') -or (Test-LWStateHasDiscipline -State $State -Name 'Hunting')) {
+                $modifier -= 2
+                $modifierNotes += 'Camouflage or Hunting'
+            }
+        }
+        152 {
+            $description = 'Outer-ledge balance check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 2
+                $modifierNotes += 'Hunting'
+            }
+            if ($disciplineCount -ge 9) {
+                $modifier += 2
+                $modifierNotes += 'Kai rank Savant+'
+            }
+        }
+        162 {
+            $description = 'Steamspider climb damage roll. 0 counts as 10 if you cannot fight.'
+            $zeroCountsAsTen = $true
+        }
+        180 {
+            $description = 'Dagger-throw escape check.'
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense') -or (Test-LWStateHasDiscipline -State $State -Name 'Hunting')) {
+                $modifier += 3
+                $modifierNotes += 'Sixth Sense or Hunting'
+            }
+        }
+        198 {
+            $description = 'Maouk dart dodge check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 3
+                $modifierNotes += 'Hunting'
+            }
+        }
+        205 {
+            $description = 'Freefall landing check.'
+        }
+        222 {
+            $description = 'Vordak detection check.'
+        }
+        224 {
+            if (Test-LWStateHasDiscipline -State $State -Name 'Animal Kinship') {
+                $bypassed = $true
+                $bypassReason = 'Animal Kinship bypasses this Itikar random-number check.'
+            }
+            elseif (Test-LWStateHasInventoryItem -State $State -Names (Get-LWOnyxMedallionItemNames) -Type 'special') {
+                $bypassed = $true
+                $bypassReason = 'The Onyx Medallion bypasses this Itikar random-number check.'
+            }
+            else {
+                $description = 'Itikar approach check.'
+                if ($disciplineCount -ge 6) {
+                    $modifier += 2
+                    $modifierNotes += 'Kai rank Aspirant+'
+                }
+            }
+        }
+        229 {
+            $description = 'Black Crystal Cube backlash check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense') {
+                $modifier += 3
+                $modifierNotes += 'Sixth Sense'
+            }
+        }
+        239 {
+            if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWGraveweedItemNames) -Type 'backpack') {
+                $bypassed = $true
+                $bypassReason = 'A Tincture of Graveweed bypasses this check.'
+            }
+            else {
+                $description = 'Hidden-door discovery check.'
+                if ((Test-LWStateHasDiscipline -State $State -Name 'Hunting') -or (Test-LWStateHasDiscipline -State $State -Name 'Tracking') -or (Test-LWStateHasDiscipline -State $State -Name 'Camouflage')) {
+                    $modifier += 2
+                    $modifierNotes += 'Hunting, Tracking, or Camouflage'
+                }
+                if ($disciplineCount -ge 7) {
+                    $modifier += 3
+                    $modifierNotes += 'Kai rank Guardian+'
+                }
+            }
+        }
+        242 {
+            $description = 'Hide-from-the-Vordak check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Camouflage') {
+                $modifier += 2
+                $modifierNotes += 'Camouflage'
+            }
+            if (Test-LWStateHasDiscipline -State $State -Name 'Mindshield') {
+                $modifier += 3
+                $modifierNotes += 'Mindshield'
+            }
+        }
+        247 { $description = 'Approach-to-Ikaresh check.' }
+        275 { $description = 'Falling-Itikar landing check.' }
+        282 {
+            if (Test-LWStateHasDiscipline -State $State -Name 'Mind Over Matter') {
+                $bypassed = $true
+                $bypassReason = 'Mind Over Matter bypasses this gangplank stealth check.'
+            }
+            else {
+                $description = 'Gangplank stealth check.'
+                if ((Test-LWStateHasDiscipline -State $State -Name 'Hunting') -or (Test-LWStateHasDiscipline -State $State -Name 'Camouflage')) {
+                    $modifier += 2
+                    $modifierNotes += 'Hunting or Camouflage'
+                }
+                if ($disciplineCount -ge 8) {
+                    $modifier += 3
+                    $modifierNotes += 'Kai rank Warmarn+'
+                }
+            }
+        }
+        301 {
+            $description = 'Gate-spike climb check.'
+            if ($disciplineCount -ge 7) {
+                $modifier -= 2
+                $modifierNotes += 'Kai rank Guardian+'
+            }
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier -= 1
+                $modifierNotes += 'Hunting'
+            }
+        }
+        305 { $description = 'Falling-rope landing check.' }
+        312 {
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Hunting') -or (Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense')) {
+                $bypassed = $true
+                $bypassReason = 'Hunting or Sixth Sense bypasses this thrown-axe random-number check.'
+            }
+            else {
+                $description = 'Thrown-axe survival check.'
+            }
+        }
+        323 { $description = 'Skyship escape check.' }
+        325 {
+            $description = 'Blowpipe shot check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') {
+                $modifier += 2
+                $modifierNotes += 'Weaponskill'
+            }
+        }
+        336 { $description = 'Falling-Itikar landing check.' }
+        357 {
+            $description = 'Platform fight fall check. Picking a 1 makes you fall.'
+        }
+        360 {
+            $description = 'Twin-roll surprise check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 1
+                $modifierNotes += 'Hunting'
+            }
+        }
+        372 {
+            $description = 'Crossbow-bolt exposure check.'
+            if ($disciplineCount -ge 6) {
+                $modifier += 2
+                $modifierNotes += 'Kai rank Aspirant+'
+            }
+        }
+        381 {
+            $description = 'Axe-feint reaction check.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 2
+                $modifierNotes += 'Hunting'
+            }
+        }
+        392 {
+            $description = 'Ale-drinking balance check.'
+            if ([int]$State.Character.EnduranceCurrent -lt 15) {
+                $modifier -= 2
+                $modifierNotes += 'Current END below 15'
+            }
+            elseif ([int]$State.Character.EnduranceCurrent -gt 25) {
+                $modifier += 2
+                $modifierNotes += 'Current END above 25'
+            }
+            if ($disciplineCount -ge 9) {
+                $modifier += 3
+                $modifierNotes += 'Kai rank Savant+'
+            }
+        }
+        default { return $null }
+    }
+
+    return [pscustomobject]@{
+        Section         = $section
+        Description     = $description
+        Modifier        = $modifier
+        ModifierNotes   = @($modifierNotes)
+        ZeroCountsAsTen = $zeroCountsAsTen
+        Bypassed        = $bypassed
+        BypassReason    = $bypassReason
+    }
+}
+
 function Get-LWSectionRandomNumberContext {
     param([object]$State = $script:GameState)
 
@@ -2656,6 +3053,7 @@ function Get-LWSectionRandomNumberContext {
         2 { return (Get-LWBookTwoSectionRandomNumberContext -State $State) }
         3 { return (Get-LWBookThreeSectionRandomNumberContext -State $State) }
         4 { return (Get-LWBookFourSectionRandomNumberContext -State $State) }
+        5 { return (Get-LWBookFiveSectionRandomNumberContext -State $State) }
         default { return $null }
     }
 }
@@ -4018,6 +4416,213 @@ function Invoke-LWSectionEntryRules {
                         }
                         else {
                             Write-LWWarn 'No room to add the Dagger of Vashna automatically. Make room and add it manually if needed.'
+                        }
+                    }
+                }
+            }
+        }
+        5 {
+            switch ($section) {
+                2 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 2 Herbal Cache' -PromptLabel 'Section 2 choice' -ContextLabel 'Section 2' -Choices (Get-LWBookFiveSection002ChoiceDefinitions) -Intro 'Section 2: take the Oede Herb if you want to keep it.'
+                    if ((Test-LWStoryAchievementFlag -Name 'Book5Section002OedeClaimed') -and (Test-LWBookFiveLimbdeathActive -State $script:GameState)) {
+                        $script:GameState.Conditions.BookFiveLimbdeath = $false
+                        Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
+                        Write-LWInfo 'Section 2: the Oede Herb cures your Limbdeath. Your Shield can be used again.'
+                    }
+                }
+                3 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 3 Loot' -PromptLabel 'Section 3 choice' -ContextLabel 'Section 3' -Choices (Get-LWBookFiveSection003ChoiceDefinitions) -Intro 'Section 3: search the dead guards and keep whatever you want.'
+                }
+                10 {
+                    if (-not (Test-LWStateHasConfiscatedEquipment)) {
+                        Save-LWConfiscatedEquipment -WriteMessages -Reason 'Section 10: your captors strip you of all carried gear'
+                    }
+                }
+                14 {
+                    if (Restore-LWConfiscatedEquipment -WriteMessages) {
+                        Set-LWStoryAchievementFlag -Name 'Book5PrisonBreak'
+                    }
+                }
+                19 {
+                    [void](Invoke-LWBookFiveLoseBackpackItems -Count 2 -Reason 'Section 19: the guards seize part of your kit.' -ExcludeMeals)
+                }
+                27 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 27 Apothecary' -PromptLabel 'Section 27 choice' -ContextLabel 'Section 27' -Choices (Get-LWBookFiveSection027ChoiceDefinitions) -Intro 'Section 27: buy whatever remedies you want before you move on.'
+                }
+                29 {
+                    if ((Remove-LWInventoryItemSilently -Type 'backpack' -Name 'Rope' -Quantity 1) -gt 0) {
+                        Write-LWInfo 'Section 29: the Rope is used here and erased from your Backpack.'
+                    }
+                }
+                35 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 35 Chamber Loot' -PromptLabel 'Section 35 choice' -ContextLabel 'Section 35' -Choices (Get-LWBookFiveSection035ChoiceDefinitions) -Intro 'Section 35: keep the Jewelled Mace and Copper Key if you want them.'
+                }
+                40 {
+                    [void](Invoke-LWBookFiveLoseBackpackItems -Count 1 -Reason 'Section 40: the crowd strips one Backpack Item from you.')
+                    if ([int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Add-LWBookGoldDelta -Delta (-[int]$script:GameState.Inventory.GoldCrowns)
+                        $script:GameState.Inventory.GoldCrowns = 0
+                        Write-LWInfo 'Section 40: all Gold Crowns are taken from you.'
+                    }
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section040DamageApplied' -Delta -2 -MessagePrefix 'Section 40: the beating leaves you dazed and aching.' -FatalCause 'The beating at section 40 reduced your Endurance to zero.')
+                }
+                52 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 52 Loot' -PromptLabel 'Section 52 choice' -ContextLabel 'Section 52' -Choices (Get-LWBookFiveSection052ChoiceDefinitions) -Intro 'Section 52: search the dead guards and keep whatever you want.'
+                }
+                63 {
+                    if (-not (Test-LWBookFiveBloodPoisoningActive -State $script:GameState)) {
+                        $script:GameState.Conditions.BookFiveBloodPoisoning = $true
+                        Write-LWInfo 'Section 63: blood poisoning sets in. Lose 2 ENDURANCE at each new section until you swallow a Potion of Laumspur.'
+                    }
+                }
+                67 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section067QuarterstaffClaimed')) {
+                        if (Read-LWYesNo -Prompt 'Take the Quarterstaff?' -Default $true) {
+                            if (Add-LWWeaponWithOptionalReplace -Name 'Quarterstaff' -PromptLabel 'Quarterstaff') {
+                                Set-LWStoryAchievementFlag -Name 'Book5Section067QuarterstaffClaimed'
+                            }
+                        }
+                    }
+                }
+                69 {
+                    if (-not (Test-LWStateHasConfiscatedEquipment)) {
+                        Save-LWConfiscatedEquipment -WriteMessages -Reason 'Section 69: you are imprisoned and all your gear is confiscated'
+                    }
+                }
+                71 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section071TowelClaimed')) {
+                        if (Read-LWYesNo -Prompt 'Keep the Towel? (2 Backpack slots)' -Default $false) {
+                            if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Towel') {
+                                Set-LWStoryAchievementFlag -Name 'Book5Section071TowelClaimed'
+                                Write-LWInfo 'Section 71: Towel added to Backpack (2 slots).'
+                            }
+                            else {
+                                Write-LWWarn 'No room to keep the Towel. Make room and add it manually if you are keeping it.'
+                            }
+                        }
+                    }
+                }
+                100 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 100 Finds' -PromptLabel 'Section 100 choice' -ContextLabel 'Section 100' -Choices (Get-LWBookFiveSection100ChoiceDefinitions) -Intro 'Section 100: keep the Copper Key and Prism if you want them.'
+                }
+                101 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 101 Loot' -PromptLabel 'Section 101 choice' -ContextLabel 'Section 101' -Choices (Get-LWBookFiveSection003ChoiceDefinitions) -Intro 'Section 101: search the dead guards and keep whatever you want.'
+                }
+                102 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 102 Armoury Loot' -PromptLabel 'Section 102 choice' -ContextLabel 'Section 102' -Choices (Get-LWBookFiveSection102ChoiceDefinitions) -Intro 'Section 102: take whatever gear you want from the armoury.'
+                }
+                103 {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section103RecoveryApplied' -Delta 2 -MessagePrefix 'Section 103: the soothing purple oil restores your strength.')
+                }
+                108 {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section108DamageApplied' -Delta -2 -MessagePrefix 'Section 108: the corrosive gas burns your lungs and eyes.' -FatalCause 'The gas at section 108 reduced your Endurance to zero.')
+                }
+                130 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section130HerbPadClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Herb Pad') {
+                            Set-LWStoryAchievementFlag -Name 'Book5Section130HerbPadClaimed'
+                            Write-LWInfo 'Section 130: Herb Pad added to Special Items.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the Herb Pad automatically. Make room and add it manually if you are keeping it.'
+                        }
+                    }
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section130RecoveryApplied' -Delta 1 -MessagePrefix 'Section 130: the poultice refreshes you.')
+                }
+                131 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 131 Chamber Loot' -PromptLabel 'Section 131 choice' -ContextLabel 'Section 131' -Choices (Get-LWBookFiveSection131ChoiceDefinitions) -Intro 'Section 131: take whatever you want from the chamber.'
+                }
+                154 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 154 Apothecary' -PromptLabel 'Section 154 choice' -ContextLabel 'Section 154' -Choices (Get-LWBookFiveSection154ChoiceDefinitions) -Intro 'Section 154: buy whatever potions you want before moving on.'
+                }
+                159 {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section159DamageApplied' -Delta -2 -MessagePrefix 'Section 159: you crash through the door and take the brunt of the impact.' -FatalCause 'The crash at section 159 reduced your Endurance to zero.')
+                }
+                166 {
+                    if (-not (Test-LWBookFiveLimbdeathActive -State $script:GameState)) {
+                        $script:GameState.Conditions.BookFiveLimbdeath = $true
+                        Write-LWInfo 'Section 166: Limbdeath cripples your sword-arm. Shield use is lost and your Combat Skill suffers -3 until cured.'
+                    }
+                }
+                169 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 169 Market Stall' -PromptLabel 'Section 169 choice' -ContextLabel 'Section 169' -Choices (Get-LWBookFiveSection169ChoiceDefinitions) -Intro 'Section 169: buy the Black Sash if you want it.'
+                }
+                176 {
+                    if (-not (Test-LWStateHasConfiscatedEquipment)) {
+                        Save-LWConfiscatedEquipment -WriteMessages -Reason 'Section 176: surrender leaves you stripped of all your gear'
+                    }
+                }
+                207 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 207 Loot' -PromptLabel 'Section 207 choice' -ContextLabel 'Section 207' -Choices (Get-LWBookFiveSection207ChoiceDefinitions) -Intro 'Section 207: take the purse and Brass Whistle if you want them.'
+                }
+                211 {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section211RecoveryApplied' -Delta 2 -MessagePrefix 'Section 211: the rest and food restore your strength.')
+                    Invoke-LWBookFourChoiceTable -Title 'Section 211 Market' -PromptLabel 'Section 211 choice' -ContextLabel 'Section 211' -Choices (Get-LWBookFiveSection211ChoiceDefinitions) -Intro 'Section 211: buy the Bottle of Kourshah if you want it.'
+                }
+                254 {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section254DamageApplied' -Delta -2 -MessagePrefix 'Section 254: the brutal climb tears at your hands and knees.' -FatalCause 'The climb at section 254 reduced your Endurance to zero.')
+                }
+                255 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 255 Discovery' -PromptLabel 'Section 255 choice' -ContextLabel 'Section 255' -Choices (Get-LWBookFiveSection255ChoiceDefinitions) -Intro 'Section 255: keep the Black Crystal Cube if you want it.'
+                }
+                270 {
+                    $backpackCount = @(Get-LWInventoryItems -Type 'backpack').Count
+                    if ($backpackCount -gt 0) {
+                        $lossCount = [Math]::Min(2, $backpackCount)
+                        [void](Invoke-LWBookFiveLoseBackpackItems -Count $lossCount -Reason 'Section 270: the chaos costs you Backpack gear.')
+                    }
+                    else {
+                        Invoke-LWBookFourLoseOneWeapon -Reason 'Section 270 forces you to lose one Weapon.'
+                        $specialItems = @(Get-LWInventoryItems -Type 'special')
+                        if ($specialItems.Count -gt 0) {
+                            Show-LWInventorySlotsSection -Type 'special'
+                            $slot = if ($specialItems.Count -eq 1) { 1 } else { Read-LWInt -Prompt 'Special Item slot to lose' -Min 1 -Max $specialItems.Count }
+                            $lostSpecial = [string]$specialItems[$slot - 1]
+                            [void](Remove-LWInventoryItemSilently -Type 'special' -Name $lostSpecial -Quantity 1)
+                            Write-LWInfo ("Section 270: lost Special Item {0}." -f $lostSpecial)
+                        }
+                    }
+                }
+                281 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 281 Treasure' -PromptLabel 'Section 281 choice' -ContextLabel 'Section 281' -Choices (Get-LWBookFiveSection281ChoiceDefinitions) -Intro 'Section 281: keep the Jewelled Mace if you want it.'
+                }
+                302 {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section302RecoveryApplied' -Delta 3 -MessagePrefix 'Section 302: the food and rest restore your strength.')
+                    Write-LWInfo 'Section 302: if you accept the drugged ale here, move to section 392.'
+                }
+                350 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section350SommerswerdLost')) {
+                        $removed = Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWSommerswerdItemNames) -Types @('special')
+                        if ($removed -gt 0) {
+                            Set-LWStoryAchievementFlag -Name 'Book5Section350SommerswerdLost'
+                            Write-LWInfo 'Section 350: the Sommerswerd is torn from your grasp and lost in the abyss.'
+                        }
+                    }
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section350DamageApplied' -Delta -3 -MessagePrefix 'Section 350: the battle with the shadow drains you badly.' -FatalCause 'The confrontation at section 350 reduced your Endurance to zero.')
+                }
+                393 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section393MindAttackApplied') -and -not (Test-LWStateHasMindshield -State $script:GameState)) {
+                        Set-LWStoryAchievementFlag -Name 'Book5Section393MindAttackApplied'
+                        [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section393DamageApplied' -Delta -2 -MessagePrefix 'Section 393: the mental assault hits before steel is drawn.' -FatalCause 'The mental assault at section 393 reduced your Endurance to zero.')
+                    }
+                }
+                400 {
+                    if ((Test-LWStoryAchievementFlag -Name 'Book5Section350SommerswerdLost') -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWSommerswerdItemNames) -Type 'special')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Sommerswerd') {
+                            Write-LWInfo 'Section 400: the Sommerswerd is recovered from the ruins.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to restore the Sommerswerd automatically. Make room and add it manually if needed.'
+                        }
+                    }
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section400MagnakaiClaimed')) {
+                        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Book of the Magnakai') {
+                            Set-LWStoryAchievementFlag -Name 'Book5Section400MagnakaiClaimed'
+                            Write-LWInfo 'Section 400: Book of the Magnakai added to Special Items.'
+                        }
+                        else {
+                            Write-LWWarn 'No room to add the Book of the Magnakai automatically. Make room and add it manually if needed.'
                         }
                     }
                 }
@@ -5535,6 +6140,117 @@ function Get-LWBookThreeSection321ChoiceDefinitions {
     )
 }
 
+function Get-LWBookFiveSection002ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'oede_herb'; FlagName = 'Book5Section002OedeClaimed'; DisplayName = 'Oede Herb'; Type = 'backpack'; Name = 'Oede Herb'; Quantity = 1; Description = 'Oede Herb' }
+    )
+}
+
+function Get-LWBookFiveSection003ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book5Section003GoldClaimed'; DisplayName = '4 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 4; Description = '4 Gold Crowns' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book5Section003DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book5Section003SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'alether'; FlagName = 'Book5Section003AletherClaimed'; DisplayName = 'Potion of Alether'; Type = 'backpack'; Name = 'Potion of Alether'; Quantity = 1; Description = 'Potion of Alether' },
+        [pscustomobject]@{ Id = 'blowpipe'; FlagName = 'Book5Section003BlowpipeClaimed'; DisplayName = 'Blowpipe'; Type = 'backpack'; Name = 'Blowpipe'; Quantity = 1; Description = 'Blowpipe' },
+        [pscustomobject]@{ Id = 'sleep_dart'; FlagName = 'Book5Section003SleepDartClaimed'; DisplayName = 'Sleep Dart'; Type = 'backpack'; Name = 'Sleep Dart'; Quantity = 1; Description = 'Sleep Dart' }
+    )
+}
+
+function Get-LWBookFiveSection027ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'larnuma_oil'; FlagName = 'Book5Section027LarnumaOilBought'; DisplayName = 'Larnuma Oil'; Type = 'backpack'; Name = 'Larnuma Oil'; Quantity = 1; Description = 'Larnuma Oil'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'laumspur'; FlagName = 'Book5Section027LaumspurBought'; DisplayName = 'Potion of Laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; Description = 'Potion of Laumspur'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'rendalims_elixir'; FlagName = 'Book5Section027RendalimsElixirBought'; DisplayName = 'Rendalim''s Elixir'; Type = 'backpack'; Name = 'Rendalim''s Elixir'; Quantity = 1; Description = 'Rendalim''s Elixir'; GoldCost = 7 }
+    )
+}
+
+function Get-LWBookFiveSection035ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'jewelled_mace'; FlagName = 'Book5Section035JewelledMaceClaimed'; DisplayName = 'Jewelled Mace'; Type = 'special'; Name = 'Jewelled Mace'; Quantity = 1; Description = 'Jewelled Mace' },
+        [pscustomobject]@{ Id = 'copper_key'; FlagName = 'Book5Section035CopperKeyClaimed'; DisplayName = 'Copper Key'; Type = 'special'; Name = 'Copper Key'; Quantity = 1; Description = 'Copper Key' }
+    )
+}
+
+function Get-LWBookFiveSection052ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book5Section052GoldClaimed'; DisplayName = '4 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 4; Description = '4 Gold Crowns' },
+        [pscustomobject]@{ Id = 'gaolers_keys'; FlagName = 'Book5Section052GaolersKeysClaimed'; DisplayName = 'Gaoler''s Keys'; Type = 'special'; Name = 'Gaoler''s Keys'; Quantity = 1; Description = 'Gaoler''s Keys' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book5Section052DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book5Section052SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' }
+    )
+}
+
+function Get-LWBookFiveSection100ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'copper_key'; FlagName = 'Book5Section100CopperKeyClaimed'; DisplayName = 'Copper Key'; Type = 'special'; Name = 'Copper Key'; Quantity = 1; Description = 'Copper Key' },
+        [pscustomobject]@{ Id = 'prism'; FlagName = 'Book5Section100PrismClaimed'; DisplayName = 'Prism'; Type = 'backpack'; Name = 'Prism'; Quantity = 1; Description = 'Prism' }
+    )
+}
+
+function Get-LWBookFiveSection102ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book5Section102SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book5Section102DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'warhammer'; FlagName = 'Book5Section102WarhammerClaimed'; DisplayName = 'Warhammer'; Type = 'weapon'; Name = 'Warhammer'; Quantity = 1; Description = 'Warhammer' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book5Section102GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' },
+        [pscustomobject]@{ Id = 'gaolers_keys'; FlagName = 'Book5Section102GaolersKeysClaimed'; DisplayName = 'Gaoler''s Keys'; Type = 'special'; Name = 'Gaoler''s Keys'; Quantity = 1; Description = 'Gaoler''s Keys' }
+    )
+}
+
+function Get-LWBookFiveSection131ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'silver_comb'; FlagName = 'Book5Section131SilverCombClaimed'; DisplayName = 'Silver Comb'; Type = 'backpack'; Name = 'Silver Comb'; Quantity = 1; Description = 'Silver Comb' },
+        [pscustomobject]@{ Id = 'hourglass'; FlagName = 'Book5Section131HourglassClaimed'; DisplayName = 'Hourglass'; Type = 'backpack'; Name = 'Hourglass'; Quantity = 1; Description = 'Hourglass' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book5Section131DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'laumspur'; FlagName = 'Book5Section131LaumspurClaimed'; DisplayName = 'Healing Potion of Laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; Description = 'Healing Potion of Laumspur' },
+        [pscustomobject]@{ Id = 'prism'; FlagName = 'Book5Section131PrismClaimed'; DisplayName = 'Prism'; Type = 'backpack'; Name = 'Prism'; Quantity = 1; Description = 'Prism' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book5Section131MealsClaimed'; DisplayName = '3 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 3; Description = '3 Meals' }
+    )
+}
+
+function Get-LWBookFiveSection154ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'alether'; FlagName = 'Book5Section154AletherBought'; DisplayName = 'Potion of Alether'; Type = 'backpack'; Name = 'Potion of Alether'; Quantity = 1; Description = 'Potion of Alether'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'gallowbrush'; FlagName = 'Book5Section154GallowbrushBought'; DisplayName = 'Potion of Gallowbrush'; Type = 'backpack'; Name = 'Potion of Gallowbrush'; Quantity = 1; Description = 'Potion of Gallowbrush'; GoldCost = 2 },
+        [pscustomobject]@{ Id = 'laumspur'; FlagName = 'Book5Section154LaumspurBought'; DisplayName = 'Potion of Laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; Description = 'Potion of Laumspur'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'larnuma_oil'; FlagName = 'Book5Section154LarnumaBought'; DisplayName = 'Vial of Larnuma Oil'; Type = 'backpack'; Name = 'Vial of Larnuma Oil'; Quantity = 1; Description = 'Vial of Larnuma Oil'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'graveweed'; FlagName = 'Book5Section154GraveweedBought'; DisplayName = 'Tincture of Graveweed'; Type = 'backpack'; Name = 'Tincture of Graveweed'; Quantity = 1; Description = 'Tincture of Graveweed'; GoldCost = 1 },
+        [pscustomobject]@{ Id = 'calacena'; FlagName = 'Book5Section154CalacenaBought'; DisplayName = 'Tincture of Calacena'; Type = 'backpack'; Name = 'Tincture of Calacena'; Quantity = 1; Description = 'Tincture of Calacena'; GoldCost = 2 }
+    )
+}
+
+function Get-LWBookFiveSection169ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'black_sash'; FlagName = 'Book5Section169BlackSashBought'; DisplayName = 'Black Sash'; Type = 'special'; Name = 'Black Sash'; Quantity = 1; Description = 'Black Sash'; GoldCost = 2 }
+    )
+}
+
+function Get-LWBookFiveSection207ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book5Section207GoldClaimed'; DisplayName = '8 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 8; Description = '8 Gold Crowns' },
+        [pscustomobject]@{ Id = 'brass_whistle'; FlagName = 'Book5Section207WhistleClaimed'; DisplayName = 'Brass Whistle'; Type = 'special'; Name = 'Brass Whistle'; Quantity = 1; Description = 'Brass Whistle' }
+    )
+}
+
+function Get-LWBookFiveSection211ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'kourshah'; FlagName = 'Book5Section211KourshahBought'; DisplayName = 'Bottle of Kourshah'; Type = 'backpack'; Name = 'Bottle of Kourshah'; Quantity = 1; Description = 'Bottle of Kourshah'; GoldCost = 5 }
+    )
+}
+
+function Get-LWBookFiveSection255ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'black_crystal_cube'; FlagName = 'Book5Section255CubeClaimed'; DisplayName = 'Black Crystal Cube'; Type = 'special'; Name = 'Black Crystal Cube'; Quantity = 1; Description = 'Black Crystal Cube' }
+    )
+}
+
+function Get-LWBookFiveSection281ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'jewelled_mace'; FlagName = 'Book5Section281JewelledMaceClaimed'; DisplayName = 'Jewelled Mace'; Type = 'special'; Name = 'Jewelled Mace'; Quantity = 1; Description = 'Jewelled Mace' }
+    )
+}
+
 function Grant-LWBookFourSection213Choice {
     param([Parameter(Mandatory = $true)][object]$Choice)
 
@@ -5607,6 +6323,11 @@ function Grant-LWBookFourSection280Choice {
 function Format-LWBookFourStartingChoiceLine {
     param([Parameter(Mandatory = $true)][object]$Choice)
 
+    $costSuffix = ''
+    if ((Test-LWPropertyExists -Object $Choice -Name 'GoldCost') -and $null -ne $Choice.GoldCost -and [int]$Choice.GoldCost -gt 0) {
+        $costSuffix = " - $([int]$Choice.GoldCost) Gold"
+    }
+
     $typeLabel = switch ([string]$Choice.Type) {
         'weapon' { 'Weapon' }
         'special' { 'Special Item' }
@@ -5619,7 +6340,7 @@ function Format-LWBookFourStartingChoiceLine {
         default { [string]$Choice.Type }
     }
 
-    return ("{0} [{1}]" -f [string]$Choice.DisplayName, $typeLabel)
+    return ("{0} [{1}]{2}" -f [string]$Choice.DisplayName, $typeLabel, $costSuffix)
 }
 
 function Invoke-LWBookFourStartingInventoryManagement {
@@ -5637,6 +6358,148 @@ function Invoke-LWBookFourStartingInventoryManagement {
         Remove-LWInventoryInteractive -InputParts @('drop')
         if (-not (Read-LWYesNo -Prompt 'Drop another item?' -Default $false)) {
             break
+        }
+    }
+}
+
+function Get-LWBookFiveStartingChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'dagger'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'laumspur'; DisplayName = 'Potion of Laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; Description = 'Potion of Laumspur' },
+        [pscustomobject]@{ Id = 'sword'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'spear'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' },
+        [pscustomobject]@{ Id = 'special_rations'; DisplayName = '2 Special Rations'; Type = 'backpack'; Name = 'Special Rations'; Quantity = 2; Description = '2 Special Rations' },
+        [pscustomobject]@{ Id = 'mace'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'shield'; DisplayName = 'Shield'; Type = 'special'; Name = 'Shield'; Quantity = 1; Description = 'Shield' }
+    )
+}
+
+function Grant-LWBookFiveStartingChoice {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    if ($null -eq $Choice) {
+        return $false
+    }
+
+    if ([string]$Choice.Type -eq 'weapon') {
+        return (Add-LWWeaponWithOptionalReplace -Name ([string]$Choice.Name) -PromptLabel ([string]$Choice.DisplayName))
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)) {
+        Write-LWInfo ("Book 5 starting item added: {0}." -f [string]$Choice.Description)
+        return $true
+    }
+
+    Write-LWWarn ("Could not add the Book 5 starting item '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
+    return $false
+}
+
+function Invoke-LWBookFiveSafekeepingSelection {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $selected = @()
+    while ($true) {
+        $available = @($script:GameState.Inventory.SpecialItems | Where-Object { $selected -notcontains [string]$_ })
+        if ($available.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title 'Book 5 Safekeeping' -AccentColor 'DarkYellow'
+        Write-LWSubtle '  Leave carried Special Items at the Kai Monastery if you do not want to take them into Book 5.'
+        Write-Host ''
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt 'Safekeep which Special Item' -Default 0 -Min 0 -Max $available.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            break
+        }
+
+        $selected += [string]$available[$choiceIndex - 1]
+    }
+
+    if ($selected.Count -gt 0) {
+        Move-LWSpecialItemsToSafekeeping -Items @($selected) -WriteMessages
+    }
+}
+
+function Apply-LWBookFiveStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 5) {
+        return
+    }
+
+    if ($CarryExistingGear -and @($script:GameState.Inventory.SpecialItems).Count -gt 0) {
+        if (Read-LWYesNo -Prompt 'Leave any carried Special Items in monastery safekeeping before Book 5?' -Default $false) {
+            Invoke-LWBookFiveSafekeepingSelection
+        }
+    }
+
+    if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfVassagoniaItemNames) -Type 'special')) {
+        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Map of Vassagonia') {
+            Write-LWInfo 'Book 5 starting Special Item added: Map of Vassagonia.'
+        }
+        else {
+            Write-LWWarn 'No room to add the Book 5 map automatically. Make room and add it manually if needed.'
+        }
+    }
+
+    Restore-LWBackpackState
+
+    $startingGoldRoll = Get-LWRandomDigit
+    $goldGain = 10 + [int]$startingGoldRoll
+    $oldGold = [int]$script:GameState.Inventory.GoldCrowns
+    $newGold = [Math]::Min(50, ($oldGold + $goldGain))
+    $script:GameState.Inventory.GoldCrowns = $newGold
+
+    Write-LWInfo ("Book 5 starting gold roll: {0} -> +{1} Gold Crowns." -f $startingGoldRoll, $goldGain)
+    if ($newGold -ne ($oldGold + $goldGain)) {
+        Write-LWWarn 'Gold Crowns are capped at 50. Excess Book 5 starting gold is lost.'
+    }
+
+    Write-LWInfo $(if ($CarryExistingGear) { 'Choose up to four Book 5 starting items now. You may exchange carried weapons if needed.' } else { 'Choose up to four Book 5 starting items now.' })
+
+    $selectedIds = @()
+    while ($selectedIds.Count -lt 4) {
+        $availableChoices = @(Get-LWBookFiveStartingChoiceDefinitions | Where-Object { $selectedIds -notcontains [string]$_.Id })
+        if ($availableChoices.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title 'Book 5 Starting Gear' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Choices Made' -Value ("{0}/4" -f $selectedIds.Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+        Write-Host ''
+        for ($i = 0; $i -lt $availableChoices.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        $manageIndex = $availableChoices.Count + 1
+        Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt ("Book 5 choice #{0}" -f ($selectedIds.Count + 1)) -Default 0 -Min 0 -Max $manageIndex -NoRefresh
+        if ($choiceIndex -eq 0) {
+            break
+        }
+        if ($choiceIndex -eq $manageIndex) {
+            Invoke-LWBookFourStartingInventoryManagement
+            continue
+        }
+
+        $choice = $availableChoices[$choiceIndex - 1]
+        $granted = Grant-LWBookFiveStartingChoice -Choice $choice
+        if ($granted) {
+            $selectedIds += [string]$choice.Id
+        }
+        elseif (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true) {
+            Invoke-LWBookFourStartingInventoryManagement
         }
     }
 }
@@ -5795,6 +6658,98 @@ function Get-LWTabletOfPerfumedSoapItemNames {
 
 function Get-LWMapOfSouthlandsItemNames {
     return @('Map of the Southlands')
+}
+
+function Get-LWMapOfVassagoniaItemNames {
+    return @('Map of Vassagonia', 'Map of the Desert Empire', 'Map of Vassagonia / Desert Empire')
+}
+
+function Get-LWOedeHerbItemNames {
+    return @('Oede Herb')
+}
+
+function Get-LWBlowpipeItemNames {
+    return @('Blowpipe')
+}
+
+function Get-LWSleepDartItemNames {
+    return @('Sleep Dart', 'Sleep Darts')
+}
+
+function Get-LWGaolersKeysItemNames {
+    return @("Gaoler's Keys", "Gaoler's Keys", 'Gaolers Keys')
+}
+
+function Get-LWJakanBowWeaponNames {
+    return @('Jakan Bow')
+}
+
+function Get-LWArrowItemNames {
+    return @('Arrow', 'Arrows')
+}
+
+function Get-LWTowelItemNames {
+    return @('Towel')
+}
+
+function Get-LWCopperKeyItemNames {
+    return @('Copper Key')
+}
+
+function Get-LWHerbPadItemNames {
+    return @('Herb Pad')
+}
+
+function Get-LWSilverCombItemNames {
+    return @('Silver Comb')
+}
+
+function Get-LWHourglassItemNames {
+    return @('Hourglass')
+}
+
+function Get-LWPrismItemNames {
+    return @('Prism')
+}
+
+function Get-LWLarnumaOilItemNames {
+    return @('Larnuma Oil', 'Vial of Larnuma Oil')
+}
+
+function Get-LWRendalimsElixirItemNames {
+    return @("Rendalim's Elixir", 'Rendalims Elixir')
+}
+
+function Get-LWGallowbrushItemNames {
+    return @('Potion of Gallowbrush', 'Gallowbrush')
+}
+
+function Get-LWCalacenaItemNames {
+    return @('Tincture of Calacena', 'Calacena')
+}
+
+function Get-LWBlackSashItemNames {
+    return @('Black Sash')
+}
+
+function Get-LWBrassWhistleItemNames {
+    return @('Brass Whistle')
+}
+
+function Get-LWBottleOfKourshahItemNames {
+    return @('Bottle of Kourshah', 'Kourshah')
+}
+
+function Get-LWBlackCrystalCubeItemNames {
+    return @('Black Crystal Cube')
+}
+
+function Get-LWJewelledMaceItemNames {
+    return @('Jewelled Mace')
+}
+
+function Get-LWBookOfMagnakaiItemNames {
+    return @('Book of the Magnakai')
 }
 
 function Get-LWBadgeOfRankItemNames {
@@ -6085,6 +7040,10 @@ function Get-LWStateHelmetEnduranceBonus {
 function Get-LWStateShieldCombatSkillBonus {
     param([Parameter(Mandatory = $true)][object]$State)
 
+    if (Test-LWBookFiveLimbdeathActive -State $State) {
+        return 0
+    }
+
     if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWShieldItemNames)) {
         return 2
     }
@@ -6352,6 +7311,53 @@ function Show-LWSectionGateHints {
                 }
             }
         }
+        5 {
+            switch ($section) {
+                31 {
+                    if ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWFiresphereItemNames) -Type 'special') -or (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWTinderboxItemNames) -Type 'backpack')) {
+                        Write-LWInfo 'Section 31: your Firesphere or Tinderbox opens the lit-market route here.'
+                    }
+                }
+                137 {
+                    if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Tracking') -or (Test-LWStateHasDiscipline -State $script:GameState -Name 'Sixth Sense')) {
+                        Write-LWInfo 'Section 137: Tracking / Sixth Sense can guide you onto the safer route here.'
+                    }
+                }
+                221 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book1StarOfToranClaimed') {
+                        Write-LWInfo 'Section 221: Crystal Star Pendant continuity route is available here.'
+                    }
+                }
+                224 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Kinship') {
+                        Write-LWInfo 'Section 224: Animal Kinship route is available here.'
+                    }
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWOnyxMedallionItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 224: Onyx Medallion route is available here.'
+                    }
+                }
+                239 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGraveweedItemNames) -Type 'backpack') {
+                        Write-LWInfo 'Section 239: Tincture of Graveweed route is available here.'
+                    }
+                }
+                395 {
+                    if ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWPrismItemNames) -Type 'backpack') -or (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBlueStoneTriangleItemNames) -Type 'special')) {
+                        Write-LWInfo 'Section 395: Prism / Blue Stone Triangle route is available here.'
+                    }
+                }
+                397 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') {
+                        Write-LWInfo 'Section 397: you may ask whether the vaxeler is Soushilla.'
+                    }
+                }
+                256 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') {
+                        Write-LWInfo 'Section 256: the Soushilla question is available here because you learned her name earlier.'
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -6380,6 +7386,10 @@ function Get-LWStateHuntingMealRestrictionReason {
             269
         ) -contains [int]$State.CurrentSection) {
         return 'Hunting cannot be used for meals here in Book 4.'
+    }
+
+    if ([int]$State.Character.BookNumber -eq 5 -and [int]$State.CurrentSection -eq 320) {
+        return 'Hunting cannot be used for meals in the middle of this wasteland.'
     }
 
     return $null
@@ -6903,6 +7913,9 @@ function New-LWCombatState {
         EquippedWeapon            = $null
         SommerswerdSuppressed     = $false
         IgnoreFirstRoundEnduranceLoss = $false
+        IgnorePlayerEnduranceLossRounds = 0
+        IgnoreEnemyEnduranceLossRounds = 0
+        DoubleEnemyEnduranceLoss  = $false
         OneRoundOnly              = $false
         SpecialResolutionSection  = $null
         SpecialResolutionNote     = $null
@@ -6918,7 +7931,14 @@ function New-LWCombatState {
         OngoingFailureAfterRoundsNote = $null
         PlayerLossResolutionSection = $null
         PlayerLossResolutionNote  = $null
+        DefeatResolutionSection   = $null
+        DefeatResolutionNote      = $null
         JavekPoisonRule           = $false
+        FallOnRollValue           = $null
+        FallOnRollResolutionSection = $null
+        FallOnRollResolutionNote  = $null
+        RestoreHalfEnduranceLossOnVictory = $false
+        RestoreHalfEnduranceLossOnEvade = $false
         PlayerCombatSkillModifier = 0
         PlayerCombatSkillModifierRounds = 0
         PlayerCombatSkillModifierAfterRounds = 0
@@ -6945,6 +7965,28 @@ function New-LWInventoryRecoveryState {
         Weapon   = (New-LWInventoryRecoveryEntry)
         Backpack = (New-LWInventoryRecoveryEntry)
         Special  = (New-LWInventoryRecoveryEntry)
+    }
+}
+
+function New-LWStorageState {
+    return [pscustomobject]@{
+        SafekeepingSpecialItems = @()
+        Confiscated             = [pscustomobject]@{
+            Weapons       = @()
+            BackpackItems = @()
+            SpecialItems  = @()
+            GoldCrowns    = 0
+            BookNumber    = $null
+            Section       = $null
+            SavedOn       = $null
+        }
+    }
+}
+
+function New-LWConditionState {
+    return [pscustomobject]@{
+        BookFiveBloodPoisoning = $false
+        BookFiveLimbdeath      = $false
     }
 }
 
@@ -6979,6 +8021,8 @@ function New-LWDefaultState {
         BookHistory       = @()
         RunHistory        = @()
         RecoveryStash     = (New-LWInventoryRecoveryState)
+        Storage           = (New-LWStorageState)
+        Conditions        = (New-LWConditionState)
         SectionCheckpoints = @()
         DeathState        = (New-LWDeathState)
         DeathHistory      = @()
@@ -7063,6 +8107,41 @@ function Normalize-LWState {
     Ensure-LWAchievementState -State $State
     Ensure-LWRunState -State $State
     Ensure-LWRunHistory -State $State
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Storage') -or $null -eq $State.Storage) {
+        $State | Add-Member -Force -NotePropertyName Storage -NotePropertyValue (New-LWStorageState)
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Storage -Name 'SafekeepingSpecialItems') -or $null -eq $State.Storage.SafekeepingSpecialItems) {
+        $State.Storage | Add-Member -Force -NotePropertyName SafekeepingSpecialItems -NotePropertyValue @()
+    }
+    else {
+        $State.Storage.SafekeepingSpecialItems = @($State.Storage.SafekeepingSpecialItems)
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Storage -Name 'Confiscated') -or $null -eq $State.Storage.Confiscated) {
+        $State.Storage | Add-Member -Force -NotePropertyName Confiscated -NotePropertyValue (New-LWStorageState).Confiscated
+    }
+    foreach ($entryName in @('Weapons', 'BackpackItems', 'SpecialItems')) {
+        if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $entryName) -or $null -eq $State.Storage.Confiscated.$entryName) {
+            $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue @()
+        }
+        else {
+            $State.Storage.Confiscated.$entryName = @($State.Storage.Confiscated.$entryName)
+        }
+    }
+    foreach ($propertyName in @('GoldCrowns', 'BookNumber', 'Section', 'SavedOn')) {
+        if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $propertyName)) {
+            $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $null
+        }
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Conditions') -or $null -eq $State.Conditions) {
+        $State | Add-Member -Force -NotePropertyName Conditions -NotePropertyValue (New-LWConditionState)
+    }
+    foreach ($propertyName in @('BookFiveBloodPoisoning', 'BookFiveLimbdeath')) {
+        if (-not (Test-LWPropertyExists -Object $State.Conditions -Name $propertyName) -or $null -eq $State.Conditions.$propertyName) {
+            $State.Conditions | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
+        }
+    }
 
     if (-not (Test-LWPropertyExists -Object $State -Name 'RecoveryStash') -or $null -eq $State.RecoveryStash) {
         $State | Add-Member -Force -NotePropertyName RecoveryStash -NotePropertyValue (New-LWInventoryRecoveryState)
@@ -7239,8 +8318,39 @@ function Normalize-LWState {
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerLossResolutionNote')) {
         $State.Combat | Add-Member -Force -NotePropertyName PlayerLossResolutionNote -NotePropertyValue $null
     }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'DefeatResolutionSection')) {
+        $State.Combat | Add-Member -Force -NotePropertyName DefeatResolutionSection -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'DefeatResolutionNote')) {
+        $State.Combat | Add-Member -Force -NotePropertyName DefeatResolutionNote -NotePropertyValue $null
+    }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'JavekPoisonRule') -or $null -eq $State.Combat.JavekPoisonRule) {
         $State.Combat | Add-Member -Force -NotePropertyName JavekPoisonRule -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'IgnorePlayerEnduranceLossRounds') -or $null -eq $State.Combat.IgnorePlayerEnduranceLossRounds) {
+        $roundValue = if ((Test-LWPropertyExists -Object $State.Combat -Name 'IgnoreFirstRoundEnduranceLoss') -and [bool]$State.Combat.IgnoreFirstRoundEnduranceLoss) { 1 } else { 0 }
+        $State.Combat | Add-Member -Force -NotePropertyName IgnorePlayerEnduranceLossRounds -NotePropertyValue $roundValue
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'IgnoreEnemyEnduranceLossRounds') -or $null -eq $State.Combat.IgnoreEnemyEnduranceLossRounds) {
+        $State.Combat | Add-Member -Force -NotePropertyName IgnoreEnemyEnduranceLossRounds -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'DoubleEnemyEnduranceLoss') -or $null -eq $State.Combat.DoubleEnemyEnduranceLoss) {
+        $State.Combat | Add-Member -Force -NotePropertyName DoubleEnemyEnduranceLoss -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'FallOnRollValue')) {
+        $State.Combat | Add-Member -Force -NotePropertyName FallOnRollValue -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'FallOnRollResolutionSection')) {
+        $State.Combat | Add-Member -Force -NotePropertyName FallOnRollResolutionSection -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'FallOnRollResolutionNote')) {
+        $State.Combat | Add-Member -Force -NotePropertyName FallOnRollResolutionNote -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'RestoreHalfEnduranceLossOnVictory') -or $null -eq $State.Combat.RestoreHalfEnduranceLossOnVictory) {
+        $State.Combat | Add-Member -Force -NotePropertyName RestoreHalfEnduranceLossOnVictory -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'RestoreHalfEnduranceLossOnEvade') -or $null -eq $State.Combat.RestoreHalfEnduranceLossOnEvade) {
+        $State.Combat | Add-Member -Force -NotePropertyName RestoreHalfEnduranceLossOnEvade -NotePropertyValue $false
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerCombatSkillModifier')) {
         $State.Combat | Add-Member -Force -NotePropertyName PlayerCombatSkillModifier -NotePropertyValue 0
@@ -9543,6 +10653,15 @@ function Test-LWAchievementSatisfied {
         'light_in_the_depths' { return (Test-LWStoryAchievementFlag -Name 'Book4LightInTheDepths') }
         'chasm_of_doom' { return (Test-LWStoryAchievementFlag -Name 'Book4ChasmOfDoomSeen') }
         'washed_away' { return (Test-LWStoryAchievementFlag -Name 'Book4WashedAway') }
+        'book_five_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 5) }
+        'kai_master' { return ((@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5 })).Count -ge 5) }
+        'apothecarys_answer' { return ((Test-LWStoryAchievementFlag -Name 'Book5OedeClaimed') -and (Test-LWStoryAchievementFlag -Name 'Book5LimbdeathCured')) }
+        'prison_break' { return (Test-LWStoryAchievementFlag -Name 'Book5PrisonBreak') }
+        'talons_tamed' { return (Test-LWStoryAchievementFlag -Name 'Book5TalonsTamed') }
+        'star_guided' { return (Test-LWStoryAchievementFlag -Name 'Book5CrystalPendantRoute') }
+        'name_the_lost' { return ((Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') -and (Test-LWStoryAchievementFlag -Name 'Book5SoushillaAsked')) }
+        'shadow_on_the_sand' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWStoryAchievementFlag -Name 'Book5BanishmentRoute')) }
+        'face_to_face_with_haakon' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute')) }
         default { return $false }
     }
 }
@@ -9646,6 +10765,15 @@ function Get-LWAchievementProgressText {
         'light_in_the_depths' { return '' }
         'chasm_of_doom' { return '' }
         'washed_away' { return '' }
+        'book_five_complete' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 5) { 'Book 5 complete' } else { 'complete Book 5' }) }
+        'kai_master' { return ("{0}/5 Kai books complete" -f (@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5 })).Count) }
+        'apothecarys_answer' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5OedeClaimed') { 'Oede Herb claimed; cure Limbdeath with it' } else { 'claim the Oede Herb and use it to cure Limbdeath' }) }
+        'prison_break' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5PrisonBreak') { 'confiscated gear recovered' } else { 'recover your confiscated gear in Book 5' }) }
+        'talons_tamed' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5TalonsTamed') { 'Itikar route found' } else { 'mount the Itikar through the special route in Book 5' }) }
+        'star_guided' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5CrystalPendantRoute') { 'Crystal Star Pendant route found; finish Book 5' } else { 'use the Crystal Star Pendant route in Book 5' }) }
+        'name_the_lost' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') { 'Soushilla name learned; ask for her later' } else { 'learn Soushilla''s name and ask for her in Book 5' }) }
+        'shadow_on_the_sand' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5BanishmentRoute') { 'banishment route found; finish Book 5' } else { 'finish Book 5 through the glowing-stone route' }) }
+        'face_to_face_with_haakon' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute') { 'Haakon duel route found; finish Book 5' } else { 'finish Book 5 through the Haakon duel route' }) }
         default { return '' }
     }
 }
@@ -9989,6 +11117,10 @@ function Get-LWBackpackItemSlotSize {
         return 2
     }
 
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWTowelItemNames) -Target $Name))) {
+        return 2
+    }
+
     return 1
 }
 
@@ -10141,6 +11273,254 @@ function Restore-LWBackpackState {
     Set-LWBackpackState -HasBackpack:$true -WriteMessages:$WriteMessages
 }
 
+function Get-LWConfiscatedInventorySummaryText {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Storage -or $null -eq $State.Storage.Confiscated) {
+        return '(none)'
+    }
+
+    $parts = @()
+    $weapons = @($State.Storage.Confiscated.Weapons)
+    $backpack = @($State.Storage.Confiscated.BackpackItems)
+    $special = @($State.Storage.Confiscated.SpecialItems)
+    $gold = if ($null -ne $State.Storage.Confiscated.GoldCrowns) { [int]$State.Storage.Confiscated.GoldCrowns } else { 0 }
+
+    if ($weapons.Count -gt 0) {
+        $parts += ('Weapons: {0}' -f (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2))
+    }
+    if ($backpack.Count -gt 0) {
+        $parts += ('Backpack: {0}' -f (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3))
+    }
+    if ($special.Count -gt 0) {
+        $parts += ('Special: {0}' -f (Format-LWCompactInventorySummary -Items $special -MaxGroups 3))
+    }
+    if ($gold -gt 0) {
+        $parts += ('Gold: {0}' -f $gold)
+    }
+
+    if ($parts.Count -eq 0) {
+        return '(none)'
+    }
+
+    return ($parts -join ' | ')
+}
+
+function Test-LWStateHasConfiscatedEquipment {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Storage -or $null -eq $State.Storage.Confiscated) {
+        return $false
+    }
+
+    return (
+        @($State.Storage.Confiscated.Weapons).Count -gt 0 -or
+        @($State.Storage.Confiscated.BackpackItems).Count -gt 0 -or
+        @($State.Storage.Confiscated.SpecialItems).Count -gt 0 -or
+        [int]$State.Storage.Confiscated.GoldCrowns -gt 0
+    )
+}
+
+function Save-LWConfiscatedEquipment {
+    param(
+        [switch]$WriteMessages,
+        [string]$Reason = ''
+    )
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $script:GameState.Storage.Confiscated.Weapons = @($script:GameState.Inventory.Weapons)
+    $script:GameState.Storage.Confiscated.BackpackItems = @($script:GameState.Inventory.BackpackItems)
+    $script:GameState.Storage.Confiscated.SpecialItems = @($script:GameState.Inventory.SpecialItems)
+    $script:GameState.Storage.Confiscated.GoldCrowns = [int]$script:GameState.Inventory.GoldCrowns
+    $script:GameState.Storage.Confiscated.BookNumber = [int]$script:GameState.Character.BookNumber
+    $script:GameState.Storage.Confiscated.Section = [int]$script:GameState.CurrentSection
+    $script:GameState.Storage.Confiscated.SavedOn = (Get-Date).ToString('o')
+
+    $script:GameState.Inventory.Weapons = @()
+    $script:GameState.Inventory.SpecialItems = @()
+    $script:GameState.Inventory.GoldCrowns = 0
+    Set-LWBackpackState -HasBackpack:$false -ClearContents
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+
+    if ($WriteMessages) {
+        $label = if ([string]::IsNullOrWhiteSpace($Reason)) { 'Confiscated equipment stored' } else { $Reason }
+        Write-LWInfo ("{0}: {1}." -f $label, (Get-LWConfiscatedInventorySummaryText))
+    }
+}
+
+function Restore-LWConfiscatedEquipment {
+    param([switch]$WriteMessages)
+
+    if (-not (Test-LWHasState) -or -not (Test-LWStateHasConfiscatedEquipment)) {
+        return $false
+    }
+
+    $script:GameState.Inventory.Weapons = @($script:GameState.Storage.Confiscated.Weapons)
+    $script:GameState.Inventory.BackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems)
+    $script:GameState.Inventory.SpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems)
+    $script:GameState.Inventory.GoldCrowns = [int]$script:GameState.Storage.Confiscated.GoldCrowns
+    $script:GameState.Inventory.HasBackpack = $true
+
+    $script:GameState.Storage.Confiscated.Weapons = @()
+    $script:GameState.Storage.Confiscated.BackpackItems = @()
+    $script:GameState.Storage.Confiscated.SpecialItems = @()
+    $script:GameState.Storage.Confiscated.GoldCrowns = 0
+    $script:GameState.Storage.Confiscated.BookNumber = $null
+    $script:GameState.Storage.Confiscated.Section = $null
+    $script:GameState.Storage.Confiscated.SavedOn = $null
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+
+    if ($WriteMessages) {
+        Write-LWInfo 'Your confiscated equipment has been restored.'
+    }
+
+    return $true
+}
+
+function Move-LWSpecialItemsToSafekeeping {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Items,
+        [switch]$WriteMessages
+    )
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    foreach ($item in @($Items)) {
+        if ([string]::IsNullOrWhiteSpace($item)) {
+            continue
+        }
+
+        $removed = Remove-LWInventoryItemSilently -Type 'special' -Name $item -Quantity 1
+        if ($removed -gt 0) {
+            $script:GameState.Storage.SafekeepingSpecialItems = @($script:GameState.Storage.SafekeepingSpecialItems) + @($item)
+        }
+    }
+
+    if ($WriteMessages -and @($Items).Count -gt 0) {
+        Write-LWInfo ("Placed in monastery safekeeping: {0}." -f (Format-LWList -Items @($Items)))
+    }
+}
+
+function Test-LWBookFiveBloodPoisoningActive {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and $null -ne $State.Conditions -and [bool]$State.Conditions.BookFiveBloodPoisoning)
+}
+
+function Test-LWBookFiveLimbdeathActive {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and $null -ne $State.Conditions -and [bool]$State.Conditions.BookFiveLimbdeath)
+}
+
+function Get-LWStateLimbdeathCombatSkillPenalty {
+    param([object]$State = $script:GameState)
+
+    if (Test-LWBookFiveLimbdeathActive -State $State) {
+        return 3
+    }
+
+    return 0
+}
+
+function Invoke-LWBookFiveLoseBackpackItems {
+    param(
+        [int]$Count = 1,
+        [string]$Reason = 'You lose Backpack gear.',
+        [switch]$ExcludeMeals
+    )
+
+    if (-not (Test-LWHasState)) {
+        return @()
+    }
+
+    $lostItems = @()
+    $remainingToLose = [Math]::Max(0, [int]$Count)
+    while ($remainingToLose -gt 0) {
+        $backpackItems = @(Get-LWInventoryItems -Type 'backpack')
+        if ($backpackItems.Count -le 0) {
+            break
+        }
+
+        $slotMap = @(Get-LWBackpackSlotMap -Items $backpackItems | Where-Object { [bool]$_.IsPrimary })
+        if ($ExcludeMeals) {
+            $slotMap = @($slotMap | Where-Object { [string]$_.ItemName -cne 'Meal' })
+        }
+
+        if ($slotMap.Count -le 0) {
+            if ($ExcludeMeals) {
+                Write-LWInfo ("{0} No non-Meal Backpack Items remain to lose." -f $Reason)
+            }
+            break
+        }
+
+        Show-LWInventorySlotsSection -Type 'backpack'
+        $validSlots = @($slotMap | ForEach-Object { [int]$_.Slot })
+        $slot = if ($validSlots.Count -eq 1) { $validSlots[0] } else { $null }
+        while ($null -eq $slot) {
+            $candidate = Read-LWInt -Prompt ("Backpack slot to lose ({0})" -f ($validSlots -join ', ')) -Min ($validSlots | Measure-Object -Minimum).Minimum -Max ($validSlots | Measure-Object -Maximum).Maximum
+            if ($validSlots -contains [int]$candidate) {
+                $slot = [int]$candidate
+            }
+            else {
+                Write-LWWarn ("Choose one of the eligible Backpack slots: {0}." -f ($validSlots -join ', '))
+            }
+        }
+
+        $slotEntry = @($slotMap | Where-Object { [int]$_.Slot -eq $slot } | Select-Object -First 1)
+        if ($slotEntry.Count -eq 0) {
+            break
+        }
+
+        $itemName = [string]$slotEntry[0].ItemName
+        [void](Remove-LWInventoryItemSilently -Type 'backpack' -Name $itemName -Quantity 1)
+        $lostItems += $itemName
+        Write-LWInfo ("{0} Lost: {1}." -f $Reason, $itemName)
+        $remainingToLose--
+    }
+
+    return @($lostItems)
+}
+
+function Invoke-LWBookFiveBloodPoisoningSectionDamage {
+    param([int]$Section)
+
+    if (-not (Test-LWHasState) -or -not (Test-LWBookFiveBloodPoisoningActive -State $script:GameState) -or [int]$Section -eq 63) {
+        return $true
+    }
+
+    $before = [int]$script:GameState.Character.EnduranceCurrent
+    $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 2 -Source 'sectiondamage'
+    $appliedLoss = [int]$lossResolution.AppliedLoss
+    if ($appliedLoss -gt 0) {
+        $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
+        Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+    }
+
+    $message = 'Book 5 blood poisoning weakens you as you press on.'
+    if ($appliedLoss -gt 0) {
+        $message += " Lose $appliedLoss ENDURANCE point$(if ($appliedLoss -eq 1) { '' } else { 's' })."
+    }
+    else {
+        $message += ' No ENDURANCE is lost.'
+    }
+    if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+        $message += " $($lossResolution.Note)"
+    }
+    Write-LWInfo $message
+
+    if (Invoke-LWFatalEnduranceCheck -Cause 'Blood poisoning reduced your Endurance to zero.') {
+        return $false
+    }
+
+    return $true
+}
+
 function Add-LWWeaponWithOptionalReplace {
     param(
         [Parameter(Mandatory = $true)][string]$Name,
@@ -10280,6 +11660,7 @@ function Show-LWInventorySummary {
     $weapons = @($script:GameState.Inventory.Weapons)
     $backpack = @($script:GameState.Inventory.BackpackItems)
     $special = @($script:GameState.Inventory.SpecialItems)
+    $safekeeping = @($script:GameState.Storage.SafekeepingSpecialItems)
     $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
 
@@ -10292,6 +11673,12 @@ function Show-LWInventorySummary {
         Write-LWKeyValue -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
     }
     Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
+    if ($safekeeping.Count -gt 0) {
+        Write-LWKeyValue -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) -ValueColor 'DarkGray'
+    }
+    if (Test-LWStateHasConfiscatedEquipment) {
+        Write-LWKeyValue -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray'
+    }
     Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
 }
 
@@ -10310,6 +11697,14 @@ function Show-LWInventory {
     Write-Host ''
     Show-LWInventorySlotsSection -Type 'special'
     Write-Host ''
+    if (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0) {
+        Write-LWKeyValue -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items @($script:GameState.Storage.SafekeepingSpecialItems) -MaxGroups 4) -ValueColor 'DarkGray'
+        Write-Host ''
+    }
+    if (Test-LWStateHasConfiscatedEquipment) {
+        Write-LWKeyValue -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray'
+        Write-Host ''
+    }
     if (Test-LWStateHasSommerswerd -State $script:GameState) {
         $sommerswerdBonus = Get-LWStateSommerswerdCombatSkillBonus -State $script:GameState
         Write-LWSubtle ("  Sommerswerd: +{0} Combat Skill in combat; undead damage x2." -f $sommerswerdBonus)
@@ -10403,6 +11798,13 @@ function Show-LWSheet {
     }
     if ($silverHelmBonus -gt 0) {
         $combatSkillNotes += "Silver Helm +$silverHelmBonus"
+    }
+    if (Test-LWBookFiveLimbdeathActive -State $script:GameState) {
+        $displayCombatSkill -= 3
+        $combatSkillNotes += 'Limbdeath -3'
+        if ($shieldBonus -gt 0) {
+            $combatSkillNotes += 'Shield unusable'
+        }
     }
     if ($combatSkillNotes.Count -gt 0) {
         $combatSkillText = "{0} ({1})" -f $displayCombatSkill, ($combatSkillNotes -join ', ')
@@ -10513,6 +11915,13 @@ function Set-LWSection {
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
     Add-LWBookSectionVisit -Section $newSection
+    if ([int]$script:GameState.Character.BookNumber -eq 5) {
+        if (-not (Invoke-LWBookFiveBloodPoisoningSectionDamage -Section $newSection)) {
+            Write-LWInfo "Moved to section $newSection."
+            Invoke-LWMaybeAutosave
+            return
+        }
+    }
     Invoke-LWSectionEntryRules
     Write-LWInfo "Moved to section $newSection."
     Invoke-LWMaybeAutosave
@@ -11373,6 +12782,22 @@ function Use-LWHealingPotion {
         $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'
         $restoreAmount = 3
     }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWOedeHerbItemNames) -Type 'backpack'
+        $restoreAmount = 10
+    }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLarnumaOilItemNames) -Type 'backpack'
+        $restoreAmount = 2
+    }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWRendalimsElixirItemNames) -Type 'backpack'
+        $restoreAmount = 6
+    }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWBottleOfKourshahItemNames) -Type 'backpack'
+        $restoreAmount = 4
+    }
 
     if ([string]::IsNullOrWhiteSpace($potionName)) {
         Write-LWWarn 'No usable healing potion or Laumspur Herb found in backpack items.'
@@ -11386,9 +12811,30 @@ function Use-LWHealingPotion {
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
     }
     $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
+
+    $conditionMessages = @()
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHealingPotionItemNames) -Target $potionName)) -or
+        -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWLaumspurHerbItemNames) -Target $potionName))) {
+        if (Test-LWBookFiveBloodPoisoningActive -State $script:GameState) {
+            $script:GameState.Conditions.BookFiveBloodPoisoning = $false
+            $conditionMessages += 'Blood poisoning cured.'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWOedeHerbItemNames) -Target $potionName))) {
+        if (Test-LWBookFiveLimbdeathActive -State $script:GameState) {
+            $script:GameState.Conditions.BookFiveLimbdeath = $false
+            Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
+            $conditionMessages += 'Limbdeath cured.'
+        }
+    }
+
     Add-LWBookEnduranceDelta -Delta $restored
     Register-LWPotionUsed -PotionName $potionName -EnduranceRestored $restored
-    Write-LWInfo "$potionName restores $restoreAmount Endurance. Current Endurance: $($script:GameState.Character.EnduranceCurrent)."
+    $message = "$potionName restores $restoreAmount Endurance. Current Endurance: $($script:GameState.Character.EnduranceCurrent)."
+    if ($conditionMessages.Count -gt 0) {
+        $message += " $($conditionMessages -join ' ')"
+    }
+    Write-LWInfo $message
     Invoke-LWMaybeAutosave
 }
 
@@ -11441,6 +12887,14 @@ function Get-LWCombatBreakdownFromState {
     if ($aletherBonus -gt 0) {
         $playerCombatSkill += $aletherBonus
         $notes += "Alether +$aletherBonus"
+    }
+
+    if (Test-LWBookFiveLimbdeathActive -State $State) {
+        $playerCombatSkill -= 3
+        $notes += 'Limbdeath -3'
+        if ((Test-LWStateHasInventoryItem -State $State -Names (Get-LWShieldItemNames)) -and (Get-LWStateShieldCombatSkillBonus -State $State) -eq 0) {
+            $notes += 'Shield unusable'
+        }
     }
 
     $knockoutPenalty = Get-LWCombatKnockoutCombatSkillPenalty -State $State
@@ -12196,6 +13650,20 @@ function Resolve-LWCombatRound {
             $messages += "Sommerswerd doubles damage against undead: enemy loses $enemyLossApplied instead of $baseEnemyLoss."
         }
     }
+    if ($enemyLossApplied -gt 0 -and (Test-LWPropertyExists -Object $State.Combat -Name 'DoubleEnemyEnduranceLoss') -and [bool]$State.Combat.DoubleEnemyEnduranceLoss) {
+        $doubledLoss = [Math]::Min([int]$State.Combat.EnemyEnduranceCurrent, ($enemyLossApplied * 2))
+        if ($doubledLoss -gt $enemyLossApplied) {
+            $messages += "Special rule doubles the enemy's ENDURANCE loss to $doubledLoss."
+            $enemyLossApplied = $doubledLoss
+            $specialNotes += 'Enemy loss x2'
+        }
+    }
+    $ignoreEnemyLossRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'IgnoreEnemyEnduranceLossRounds') -and $null -ne $State.Combat.IgnoreEnemyEnduranceLossRounds) { [int]$State.Combat.IgnoreEnemyEnduranceLossRounds } else { 0 }
+    if ($enemyLossApplied -gt 0 -and $ignoreEnemyLossRounds -gt 0 -and $roundNumber -le $ignoreEnemyLossRounds) {
+        $messages += ("Special rule: ignore all enemy ENDURANCE loss in round {0}." -f $roundNumber)
+        $enemyLossApplied = 0
+        $specialNotes += 'Enemy loss ignored'
+    }
     if (-not [string]::IsNullOrWhiteSpace([string]$playerLossResolution.Note)) {
         $messages += [string]$playerLossResolution.Note
     }
@@ -12245,8 +13713,17 @@ function Resolve-LWCombatRound {
 
     $totalPlayerLossApplied = $combatPlayerLossApplied + $mindforceAppliedLoss + $specialAppliedLoss
     $totalPlayerLossBase = [int]$PlayerLoss + $mindforceBaseLoss + $specialBaseLoss
-    if ([bool]$State.Combat.IgnoreFirstRoundEnduranceLoss -and $roundNumber -eq 1 -and $totalPlayerLossApplied -gt 0) {
-        $messages += 'Surprise attack advantage: ignore all Lone Wolf END loss in the first round.'
+    $ignorePlayerLossRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'IgnorePlayerEnduranceLossRounds') -and $null -ne $State.Combat.IgnorePlayerEnduranceLossRounds) { [int]$State.Combat.IgnorePlayerEnduranceLossRounds } else { 0 }
+    if ([bool]$State.Combat.IgnoreFirstRoundEnduranceLoss -and $ignorePlayerLossRounds -lt 1) {
+        $ignorePlayerLossRounds = 1
+    }
+    if ($ignorePlayerLossRounds -gt 0 -and $roundNumber -le $ignorePlayerLossRounds -and $totalPlayerLossApplied -gt 0) {
+        if ($ignorePlayerLossRounds -eq 1) {
+            $messages += 'Surprise attack advantage: ignore all Lone Wolf END loss in the first round.'
+        }
+        else {
+            $messages += ("Surprise attack advantage: ignore all Lone Wolf END loss in rounds 1-{0}." -f $ignorePlayerLossRounds)
+        }
         $specialNotes += 'First-round loss ignored'
         $combatPlayerLossApplied = 0
         $mindforceAppliedLoss = 0
@@ -12280,8 +13757,23 @@ function Resolve-LWCombatRound {
     $outcome = 'Continue'
     $specialResolutionSection = $null
     $specialResolutionNote = $null
-    if ($newPlayerEnd -le 0) {
-        $outcome = 'Defeat'
+    $fallOnRollValue = if ((Test-LWPropertyExists -Object $State.Combat -Name 'FallOnRollValue') -and $null -ne $State.Combat.FallOnRollValue) { [int]$State.Combat.FallOnRollValue } else { $null }
+    if ($null -ne $fallOnRollValue -and [int]$Roll -eq $fallOnRollValue -and (Test-LWPropertyExists -Object $State.Combat -Name 'FallOnRollResolutionSection') -and $null -ne $State.Combat.FallOnRollResolutionSection) {
+        $outcome = 'Special'
+        $specialResolutionSection = [int]$State.Combat.FallOnRollResolutionSection
+        $specialResolutionNote = if ((Test-LWPropertyExists -Object $State.Combat -Name 'FallOnRollResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.FallOnRollResolutionNote)) { [string]$State.Combat.FallOnRollResolutionNote } else { ("Section result: this roll makes you fall. Turn to {0}." -f $specialResolutionSection) }
+        $messages += $specialResolutionNote
+    }
+    elseif ($newPlayerEnd -le 0) {
+        if ((Test-LWPropertyExists -Object $State.Combat -Name 'DefeatResolutionSection') -and $null -ne $State.Combat.DefeatResolutionSection) {
+            $outcome = 'Special'
+            $specialResolutionSection = [int]$State.Combat.DefeatResolutionSection
+            $specialResolutionNote = if ((Test-LWPropertyExists -Object $State.Combat -Name 'DefeatResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.DefeatResolutionNote)) { [string]$State.Combat.DefeatResolutionNote } else { ("Section result: losing this combat sends you to {0}." -f $specialResolutionSection) }
+            $messages += $specialResolutionNote
+        }
+        else {
+            $outcome = 'Defeat'
+        }
     }
     elseif ($totalPlayerLossApplied -gt 0 -and (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerLossResolutionSection') -and $null -ne $State.Combat.PlayerLossResolutionSection) {
         $outcome = 'Special'
@@ -12448,6 +13940,16 @@ function Start-LWCombat {
     $specialPlayerLossAmount = 0
     $specialPlayerLossStartRound = 1
     $specialPlayerLossReason = $null
+    $ignorePlayerEnduranceLossRounds = 0
+    $ignoreEnemyEnduranceLossRounds = 0
+    $doubleEnemyEnduranceLoss = $false
+    $defeatResolutionSection = $null
+    $defeatResolutionNote = $null
+    $fallOnRollValue = $null
+    $fallOnRollResolutionSection = $null
+    $fallOnRollResolutionNote = $null
+    $restoreHalfEnduranceLossOnVictory = $false
+    $restoreHalfEnduranceLossOnEvade = $false
     if (-not $useQuickDefaults) {
         $enemyImmune = Read-LWYesNo -Prompt 'Is the enemy immune to Mindblast?' -Default $false
         $enemyUndead = Read-LWYesNo -Prompt 'Is the enemy undead?' -Default $false
@@ -12891,6 +14393,220 @@ function Start-LWCombat {
         $oneRoundOnly = $true
         Write-LWInfo 'Book 4 section 333: this mounted pass lasts exactly one combat round before the horseman rushes past.'
     }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 4 -and [string]$enemyName -ieq 'Palace Gaoler') {
+        $ignoreEnemyEnduranceLossRounds = 1
+        $victoryWithinRoundsSection = 165
+        $victoryWithinRoundsMax = 4
+        $victoryWithinRoundsNote = 'Section 4 result: win within 4 rounds and turn to 165.'
+        $victoryResolutionSection = 180
+        $victoryResolutionNote = 'Section 4 result: if the fight lasts longer than 4 rounds, victory sends you to 180.'
+        Write-LWInfo 'Book 5 section 4: enemy ENDURANCE loss is ignored in round 1.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 12 -and [string]$enemyName -ieq 'Bloodlug') {
+        $enemyImmune = $true
+        $playerMod -= 2
+        $victoryResolutionSection = 95
+        $victoryResolutionNote = 'Section 12 result: victory sends you to 95.'
+        Write-LWInfo 'Book 5 section 12: Bloodlug is immune to Mindblast and you fight at -2 Combat Skill.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 20 -and [string]$enemyName -ieq 'Horseman') {
+        $canEvade = $true
+        $restoreHalfEnduranceLossOnVictory = $true
+        $restoreHalfEnduranceLossOnEvade = $true
+        $victoryWithinRoundsSection = 125
+        $victoryWithinRoundsMax = 3
+        $victoryWithinRoundsNote = 'Section 20 result: win in 3 rounds or less and turn to 125.'
+        $ongoingFailureAfterRoundsSection = 82
+        $ongoingFailureAfterRoundsThreshold = 4
+        $ongoingFailureAfterRoundsNote = 'Section 20 result: if the fight lasts longer than 3 rounds, stop and turn to 82.'
+        $defeatResolutionSection = 161
+        $defeatResolutionNote = 'Section 20 result: losing this fight sends you to 161, where half your lost ENDURANCE is restored.'
+        Write-LWInfo 'Book 5 section 20: you may evade manually to 142 or surrender to 176, and half END lost is restored after the clash.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 57 -and [string]$enemyName -ieq 'Elix') {
+        if (@($script:GameState.History | Where-Object { [string]$_.EnemyName -ieq 'Elix' }).Count -gt 0) {
+            $playerMod += 2
+            Write-LWInfo 'Book 5 section 57: prior Elix experience grants +2 Combat Skill.'
+        }
+        $canEvade = $false
+        $victoryResolutionSection = 2
+        $victoryResolutionNote = 'Section 57 result: victory sends you to 2.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and @(64, 110) -contains [int]$script:GameState.CurrentSection -and [string]$enemyName -ieq 'Kwaraz') {
+        $mindblastCombatSkillBonus = 4
+        Write-LWInfo ("Book 5 section {0}: Kwaraz is unusually susceptible to Mindblast, which grants +4 Combat Skill here." -f [int]$script:GameState.CurrentSection)
+        if ([int]$script:GameState.CurrentSection -eq 64) {
+            $victoryResolutionSection = 177
+            $victoryResolutionNote = 'Section 64 result: victory sends you to 177.'
+        }
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 91 -and [string]$enemyName -ieq 'Palace Gaoler') {
+        $playerMod -= 4
+        $victoryWithinRoundsSection = 65
+        $victoryWithinRoundsMax = 4
+        $victoryWithinRoundsNote = 'Section 91 result: win within 4 rounds and turn to 65.'
+        $victoryResolutionSection = 180
+        $victoryResolutionNote = 'Section 91 result: if the fight lasts longer than 4 rounds, victory sends you to 180.'
+        Write-LWInfo 'Book 5 section 91: fighting unarmed applies -4 Combat Skill.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 106 -and [string]$enemyName -ieq 'Courier') {
+        $playerMod -= 2
+        $playerModRounds = 3
+        $canEvade = $false
+        $victoryResolutionSection = 189
+        $victoryResolutionNote = 'Section 106 result: victory sends you to 189.'
+        Write-LWInfo 'Book 5 section 106: you fight at -2 Combat Skill for the first 3 rounds and cannot evade.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 119 -and [string]$enemyName -ieq 'Palace Gate Guardians') {
+        $ignorePlayerEnduranceLossRounds = 3
+        $victoryResolutionSection = 137
+        $victoryResolutionNote = 'Section 119 result: victory sends you to 137.'
+        Write-LWInfo 'Book 5 section 119: ignore Lone Wolf ENDURANCE loss in the first 3 rounds.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 123 -and [string]$enemyName -ieq 'Sharnazim Underlord') {
+        $canEvade = $true
+        $evadeResolutionSection = 51
+        $evadeResolutionNote = 'Section 123 result: evading sends you through the trapdoor to 51.'
+        $victoryResolutionSection = 198
+        $victoryResolutionNote = 'Section 123 result: victory sends you to 198.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 135 -and [string]$enemyName -ieq 'Sharnazim Warrior') {
+        $playerMod -= 2
+        $defeatResolutionSection = 161
+        $defeatResolutionNote = 'Section 135 result: losing this combat sends you to 161, where half your lost ENDURANCE is restored.'
+        $victoryResolutionSection = 130
+        $victoryResolutionNote = 'Section 135 result: victory sends you to 130 after half your lost ENDURANCE is restored.'
+        $restoreHalfEnduranceLossOnVictory = $true
+        Write-LWInfo 'Book 5 section 135: the noxious fumes apply -2 Combat Skill.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 159 -and [string]$enemyName -ieq 'Armoury Guard') {
+        $playerMod -= 2
+        $playerModRounds = 3
+        $canEvade = $false
+        $victoryResolutionSection = 52
+        $victoryResolutionNote = 'Section 159 result: victory sends you to 52.'
+        Write-LWInfo 'Book 5 section 159: you fight from the floor at -2 Combat Skill for the first 3 rounds and cannot evade.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 168 -and [string]$enemyName -ieq 'Vestibule Guard') {
+        $victoryWithinRoundsSection = 101
+        $victoryWithinRoundsMax = 3
+        $victoryWithinRoundsNote = 'Section 168 result: win in 3 rounds or less and turn to 101.'
+        $victoryResolutionSection = 46
+        $victoryResolutionNote = 'Section 168 result: if the fight lasts longer than 3 rounds, victory sends you to 46.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 178 -and [string]$enemyName -ieq 'Armoury Guard') {
+        $canEvade = $false
+        Write-LWInfo 'Book 5 section 178: this combat cannot be evaded. On victory, choose manually between searching the body (52) or entering the armoury (140).'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 190 -and [string]$enemyName -ieq 'Hammerfist the Armourer') {
+        $playerMod -= 2
+        $victoryResolutionSection = 111
+        $victoryResolutionNote = 'Section 190 result: victory sends you to 111.'
+        Write-LWInfo 'Book 5 section 190: the heat of the forge room applies -2 Combat Skill.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 194 -and [string]$enemyName -ieq 'Yas') {
+        if (-not (Test-LWDiscipline -Name 'Mindshield')) {
+            $playerMod -= 3
+            Write-LWWarn 'Book 5 section 194: the Yas hypnotizes you for -3 Combat Skill unless you possess Mindshield.'
+        }
+        $victoryResolutionSection = 35
+        $victoryResolutionNote = 'Section 194 result: victory sends you to 35.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 223 -and [string]$enemyName -ieq 'Crypt Spawn') {
+        $victoryResolutionSection = 353
+        $victoryResolutionNote = 'Section 223 result: victory sends you to 353.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and @(240, 370) -contains [int]$script:GameState.CurrentSection -and [string]$enemyName -ieq 'Itikar') {
+        $doubleEnemyEnduranceLoss = $true
+        if ([int]$script:GameState.CurrentSection -eq 240) {
+            $victoryResolutionSection = 217
+            $victoryResolutionNote = 'Section 240 result: subduing the Itikar sends you to 217.'
+        }
+        else {
+            $victoryResolutionSection = 267
+            $victoryResolutionNote = 'Section 370 result: subduing the Itikar sends you to 267.'
+        }
+        Write-LWInfo ("Book 5 section {0}: double all ENDURANCE lost by the Itikar." -f [int]$script:GameState.CurrentSection)
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 299 -and [string]$enemyName -ieq 'Vordak') {
+        $enemyImmune = $true
+        $canEvade = $false
+        if (-not (Test-LWDiscipline -Name 'Mindshield')) {
+            $playerMod -= 2
+            Write-LWWarn 'Book 5 section 299: the Vordak''s Mindforce applies -2 Combat Skill unless you possess Mindshield.'
+        }
+        Write-LWInfo 'Book 5 section 299: the Vordak is immune to Mindblast.'
+        $victoryResolutionSection = 203
+        $victoryResolutionNote = 'Section 299 result: victory sends you to 203.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 316 -and [string]$enemyName -ieq 'Drakkar') {
+        $playerMod -= 2
+        $playerModRounds = 3
+        $canEvade = $false
+        $victoryResolutionSection = 333
+        $victoryResolutionNote = 'Section 316 result: victory sends you to 333.'
+        Write-LWInfo 'Book 5 section 316: surprise attack applies -2 Combat Skill for the first 3 rounds and the fight cannot be evaded.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 330 -and [string]$enemyName -ieq 'Drakkar') {
+        $victoryWithinRoundsSection = 243
+        $victoryWithinRoundsMax = 2
+        $victoryWithinRoundsNote = 'Section 330 result: win in 2 rounds or less and turn to 243.'
+        $ongoingFailureAfterRoundsSection = 394
+        $ongoingFailureAfterRoundsThreshold = 3
+        $ongoingFailureAfterRoundsNote = 'Section 330 result: if the combat lasts longer than 2 rounds, stop and turn to 394.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 353 -and [string]$enemyName -ieq 'Darklord Haakon') {
+        if (Test-LWWeaponIsSommerswerd -Weapon $equippedWeapon) {
+            $sommerswerdSuppressed = $true
+            Write-LWWarn 'Book 5 section 353: underground, the Sommerswerd cannot discharge its power.'
+        }
+        if (-not (Test-LWDiscipline -Name 'Mindshield')) {
+            $playerMod -= 2
+            Write-LWWarn 'Book 5 section 353: Haakon''s psychic assault applies -2 Combat Skill unless you possess Mindshield.'
+        }
+        $victoryResolutionSection = 400
+        $victoryResolutionNote = 'Section 353 result: victory sends you to 400.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 355 -and [string]$enemyName -ieq 'Vordak') {
+        $enemyImmune = $true
+        if (-not (Test-LWDiscipline -Name 'Mindshield')) {
+            $playerMod -= 2
+            Write-LWWarn 'Book 5 section 355: the Vordak''s Mindforce applies -2 Combat Skill unless you possess Mindshield.'
+        }
+        Write-LWInfo 'Book 5 section 355: the Vordak is immune to Mindblast.'
+        $victoryWithinRoundsSection = 249
+        $victoryWithinRoundsMax = 4
+        $victoryWithinRoundsNote = 'Section 355 result: win in 4 rounds or less and turn to 249.'
+        $victoryResolutionSection = 304
+        $victoryResolutionNote = 'Section 355 result: if the fight lasts longer than 4 rounds, victory sends you to 304.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 357 -and [string]$enemyName -ieq 'Platform Sentry') {
+        $canEvade = $false
+        $playerMod -= 2
+        $fallOnRollValue = 1
+        $fallOnRollResolutionSection = 293
+        $fallOnRollResolutionNote = 'Section 357 result: a Random Number Table roll of 1 makes you lose your balance and fall to 293.'
+        Write-LWInfo 'Book 5 section 357: unstable footing applies -2 Combat Skill and a roll of 1 makes you fall.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 361 -and [string]$enemyName -ieq 'Drakkar') {
+        $victoryWithinRoundsSection = 288
+        $victoryWithinRoundsMax = 3
+        $victoryWithinRoundsNote = 'Section 361 result: win in 3 rounds or less and turn to 288.'
+        $ongoingFailureAfterRoundsSection = 382
+        $ongoingFailureAfterRoundsThreshold = 4
+        $ongoingFailureAfterRoundsNote = 'Section 361 result: if the fight reaches round 4, stop and turn to 382.'
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 393 -and [string]$enemyName -ieq 'Drakkar') {
+        $playerMod -= 2
+        $playerModRounds = 1
+        $canEvade = $true
+        $evadeAvailableAfterRound = 3
+        $evadeResolutionSection = 228
+        $evadeResolutionNote = 'Section 393 result: you may evade after round 3 by turning to 228.'
+        $victoryResolutionSection = 255
+        $victoryResolutionNote = 'Section 393 result: victory sends you to 255.'
+        Write-LWInfo 'Book 5 section 393: surprise attack applies -2 Combat Skill in round 1.'
+    }
 
     $useMindblast = $false
     if ((Test-LWDiscipline -Name 'Mindblast') -and -not $enemyImmune) {
@@ -12932,6 +14648,9 @@ function Start-LWCombat {
         EquippedWeapon            = $equippedWeapon
         SommerswerdSuppressed     = $sommerswerdSuppressed
         IgnoreFirstRoundEnduranceLoss = $ignoreFirstRoundEnduranceLoss
+        IgnorePlayerEnduranceLossRounds = $(if ($ignorePlayerEnduranceLossRounds -gt 0) { $ignorePlayerEnduranceLossRounds } elseif ($ignoreFirstRoundEnduranceLoss) { 1 } else { 0 })
+        IgnoreEnemyEnduranceLossRounds = $ignoreEnemyEnduranceLossRounds
+        DoubleEnemyEnduranceLoss  = $doubleEnemyEnduranceLoss
         OneRoundOnly              = $oneRoundOnly
         SpecialResolutionSection  = $null
         SpecialResolutionNote     = $null
@@ -12947,7 +14666,14 @@ function Start-LWCombat {
         OngoingFailureAfterRoundsNote = $ongoingFailureAfterRoundsNote
         PlayerLossResolutionSection = $playerLossResolutionSection
         PlayerLossResolutionNote  = $playerLossResolutionNote
+        DefeatResolutionSection   = $defeatResolutionSection
+        DefeatResolutionNote      = $defeatResolutionNote
         JavekPoisonRule           = $useJavekPoisonRule
+        FallOnRollValue           = $fallOnRollValue
+        FallOnRollResolutionSection = $fallOnRollResolutionSection
+        FallOnRollResolutionNote  = $fallOnRollResolutionNote
+        RestoreHalfEnduranceLossOnVictory = $restoreHalfEnduranceLossOnVictory
+        RestoreHalfEnduranceLossOnEvade = $restoreHalfEnduranceLossOnEvade
         MindforceLossPerRound     = $mindforceLossPerRound
         PlayerCombatSkillModifier = $playerMod
         PlayerCombatSkillModifierRounds = $playerModRounds
@@ -12985,6 +14711,28 @@ function Stop-LWCombat {
         return $null
     }
 
+    $combatLossMeasure = @(@($script:GameState.Combat.Log) | Measure-Object -Property PlayerLoss -Sum)
+    $combatTotalPlayerLoss = if ($combatLossMeasure.Count -gt 0) { $combatLossMeasure[0].Sum } else { $null }
+    if ($null -eq $combatTotalPlayerLoss) {
+        $combatTotalPlayerLoss = 0
+    }
+    $restoreHalfLoss = 0
+    if (([string]$Outcome -eq 'Victory' -and (Test-LWPropertyExists -Object $script:GameState.Combat -Name 'RestoreHalfEnduranceLossOnVictory') -and [bool]$script:GameState.Combat.RestoreHalfEnduranceLossOnVictory) -or
+        ([string]$Outcome -eq 'Evaded' -and (Test-LWPropertyExists -Object $script:GameState.Combat -Name 'RestoreHalfEnduranceLossOnEvade') -and [bool]$script:GameState.Combat.RestoreHalfEnduranceLossOnEvade) -or
+        ([string]$Outcome -eq 'Special' -and $null -ne $script:GameState.Combat.SpecialResolutionSection -and [int]$script:GameState.Combat.SpecialResolutionSection -eq 161)) {
+        $restoreHalfLoss = [math]::Floor(([int]$combatTotalPlayerLoss) / 2)
+    }
+    if ($restoreHalfLoss -gt 0) {
+        $beforeRestore = [int]$script:GameState.Character.EnduranceCurrent
+        $script:GameState.Character.EnduranceCurrent = [Math]::Min([int]$script:GameState.Character.EnduranceMax, ($beforeRestore + $restoreHalfLoss))
+        $actualRestore = [int]$script:GameState.Character.EnduranceCurrent - $beforeRestore
+        if ($actualRestore -gt 0) {
+            Add-LWBookEnduranceDelta -Delta $actualRestore
+            Register-LWManualRecoveryShortcut
+            Write-LWInfo ("Special combat rule restores {0} ENDURANCE after the fight." -f $actualRestore)
+        }
+    }
+
     $breakdown = Get-LWCombatBreakdown
     $summary = [pscustomobject]@{
         BookNumber        = [int]$script:GameState.Character.BookNumber
@@ -13016,6 +14764,7 @@ function Stop-LWCombat {
         SpecialPlayerEnduranceLossAmount = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'SpecialPlayerEnduranceLossAmount') -and $null -ne $script:GameState.Combat.SpecialPlayerEnduranceLossAmount) { [int]$script:GameState.Combat.SpecialPlayerEnduranceLossAmount } else { 0 }
         SpecialPlayerEnduranceLossStartRound = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'SpecialPlayerEnduranceLossStartRound') -and $null -ne $script:GameState.Combat.SpecialPlayerEnduranceLossStartRound) { [int]$script:GameState.Combat.SpecialPlayerEnduranceLossStartRound } else { 1 }
         SpecialPlayerEnduranceLossReason = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'SpecialPlayerEnduranceLossReason') -and $null -ne $script:GameState.Combat.SpecialPlayerEnduranceLossReason) { [string]$script:GameState.Combat.SpecialPlayerEnduranceLossReason } else { $null }
+        RestoredAfterCombat = $restoreHalfLoss
         SpecialResolutionSection = $script:GameState.Combat.SpecialResolutionSection
         SpecialResolutionNote = $script:GameState.Combat.SpecialResolutionNote
         Log               = @($script:GameState.Combat.Log)
@@ -13149,7 +14898,8 @@ function Invoke-LWCombatRound {
         [void](Stop-LWCombat -Outcome 'Special' -SkipAutosave:$SkipAutosave)
         return $resolution
     }
-    $combatTotalPlayerLoss = (@($script:GameState.Combat.Log) | Measure-Object -Property PlayerLoss -Sum).Sum
+    $combatLossMeasure = @(@($script:GameState.Combat.Log) | Measure-Object -Property PlayerLoss -Sum)
+    $combatTotalPlayerLoss = if ($combatLossMeasure.Count -gt 0) { $combatLossMeasure[0].Sum } else { $null }
     if ($null -eq $combatTotalPlayerLoss) {
         $combatTotalPlayerLoss = 0
     }
@@ -13503,9 +15253,6 @@ function Complete-LWBook {
     }
 
     $currentBook = [int]$script:GameState.Character.BookNumber
-    $nextBook = $currentBook + 1
-    $nextBookLabel = Format-LWBookLabel -BookNumber $nextBook -IncludePrefix
-    $nextBookStartSection = 1
     $stats = Ensure-LWCurrentBookStats
     $bookSummary = New-LWBookHistoryEntry -Stats $stats
 
@@ -13520,6 +15267,19 @@ function Complete-LWBook {
             CharacterName = $script:GameState.Character.Name
         })
 
+    if ($currentBook -ge 5) {
+        $script:GameState.Run.Status = 'Completed'
+        $script:GameState.Run.CompletedOn = (Get-Date).ToString('o')
+        $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
+        Clear-LWDeathState
+        Write-LWInfo 'Book 5 complete. The Kai ruleset campaign is now complete.'
+        Invoke-LWMaybeAutosave
+        return
+    }
+
+    $nextBook = $currentBook + 1
+    $nextBookLabel = Format-LWBookLabel -BookNumber $nextBook -IncludePrefix
+    $nextBookStartSection = 1
     $script:GameState.Character.BookNumber = $nextBook
     $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
     $script:GameState.CurrentSection = $nextBookStartSection
@@ -13567,6 +15327,9 @@ function Complete-LWBook {
     }
     elseif ($nextBook -eq 4) {
         Apply-LWBookFourStartingEquipment -CarryExistingGear
+    }
+    elseif ($nextBook -eq 5) {
+        Apply-LWBookFiveStartingEquipment -CarryExistingGear
     }
 
     Invoke-LWMaybeAutosave
@@ -13711,6 +15474,9 @@ function Start-LWNewGameCore {
     }
     elseif ($bookNumber -eq 4) {
         Apply-LWBookFourStartingEquipment
+    }
+    elseif ($bookNumber -eq 5) {
+        Apply-LWBookFiveStartingEquipment
     }
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
@@ -14552,5 +16318,7 @@ function Start-LWTerminal {
     Write-LWInfo 'Good luck on the Kai trail.'
 }
 
-Initialize-LWData
-Start-LWTerminal
+if ($MyInvocation.InvocationName -ne '.') {
+    Initialize-LWData
+    Start-LWTerminal
+}

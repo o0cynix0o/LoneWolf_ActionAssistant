@@ -4,7 +4,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.36`
+- App version: `0.7.37`
 - Main script: `lonewolf.ps1`
 - Latest shipped commit at time of writing: keep this synced with the newest pushed release; if unsure, check `git log -1`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
@@ -29,8 +29,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Veteran`
   - optional `Permadeath`
 - Tamper-evident run integrity
-- Book-aware rule support across Books 1-4
-- Project Aon baseline catch-up complete across Books 1-4 as of 2026-03-27
+- Book-aware rule support across Books 1-5
+- Project Aon baseline catch-up complete across Books 1-5 as of 2026-03-27
+- The Kai ruleset campaign is now complete through Book 5
 - GitHub repo, wiki, and issue tracker workflow already in use
 
 ## Main Repo Files
@@ -133,6 +134,22 @@ Local reports:
 - `testing/logs/BOOK4_BUILD_VALIDATION.md`
 - `testing/logs/BOOK4_FULL_RULE_GAP_REPORT.md`
 
+### Book 5
+
+- Full audit completed
+- Book 5 startup/carry-forward logic implemented
+- confiscation/recovery, blood poisoning, Limbdeath, and Book 5 endgame handling are implemented
+- Book 5 route/story achievement batch implemented
+- Remaining Project Aon baseline rule gaps from the Book 5 audit were closed on 2026-03-27
+
+Local reports:
+
+- `testing/logs/BOOK5_ENDINGS_AND_ROUTE_FAMILIES.md`
+- `testing/logs/BOOK5_RULES_AND_ITEMS_AUDIT.md`
+- `testing/logs/BOOK5_ACHIEVEMENT_CANDIDATES.md`
+- `testing/logs/BOOK5_FULL_RULE_GAP_REPORT.md`
+- `testing/logs/BOOK5_BUILD_VALIDATION.md`
+
 ## Existing Playtest Coverage
 
 Local reports already exist for:
@@ -141,6 +158,7 @@ Local reports already exist for:
 - run-mode rules playtest
 - permadeath playtest
 - Book 3 sandbox and route sweeps
+- Book 5 targeted validation and Books 1-5 campaign smoke
 
 Key files:
 
@@ -148,6 +166,7 @@ Key files:
 - `testing/logs/MODE_RULES_PLAYTEST_REPORT.md`
 - `testing/logs/PERMADEATH_PLAYTEST_REPORT.md`
 - `testing/logs/FULL_VALIDATION_SUMMARY_20260327.md`
+- `testing/logs/BOOK5_BUILD_VALIDATION.md`
 
 Latest large-scale validation:
 
@@ -156,6 +175,7 @@ Latest large-scale validation:
 - `20` runs in Windows PowerShell 5.1
 - command-surface smoke passed in both shells
 - no campaign failures in the March 27 full validation sweep
+- additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
 
 ## Standard Named Workflows
 
@@ -235,7 +255,7 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 
 ## Good Next Steps
 
-- Continue live playtesting from Book 4 onward and patch DE-specific rule differences
+- Continue live playtesting across Books 1-5 and patch DE-specific rule differences
 - Expand story-aware achievements in later books
 - Run the Full Book Audit for the next unsupported book
 - Keep the handoff docs in sync as new books become implemented
