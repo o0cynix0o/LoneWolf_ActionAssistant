@@ -24,7 +24,32 @@ if (-not (Test-Path -LiteralPath $script:LWBootstrapModulePath)) {
 Import-Module $script:LWBootstrapModulePath -Force -DisableNameChecking
 $script:LWDisplayModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\display.psm1'
 $script:LWCommonModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\common.psm1'
-foreach ($modulePath in @($script:LWDisplayModulePath, $script:LWCommonModulePath)) {
+$script:LWStateModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\state.psm1'
+$script:LWSaveModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\save.psm1'
+$script:LWCommandsModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\commands.psm1'
+$script:LWCombatModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\combat.psm1'
+$script:LWRulesetCoreModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\ruleset.psm1'
+$script:LWKaiBook1ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book1.psm1'
+$script:LWKaiBook2ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book2.psm1'
+$script:LWKaiBook3ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book3.psm1'
+$script:LWKaiBook4ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book4.psm1'
+$script:LWKaiBook5ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book5.psm1'
+$script:LWKaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\kai.psm1'
+foreach ($modulePath in @(
+        $script:LWDisplayModulePath,
+        $script:LWCommonModulePath,
+        $script:LWStateModulePath,
+        $script:LWSaveModulePath,
+        $script:LWCommandsModulePath,
+        $script:LWCombatModulePath,
+        $script:LWKaiBook1ModulePath,
+        $script:LWKaiBook2ModulePath,
+        $script:LWKaiBook3ModulePath,
+        $script:LWKaiBook4ModulePath,
+        $script:LWKaiBook5ModulePath,
+        $script:LWKaiRulesetModulePath,
+        $script:LWRulesetCoreModulePath
+    )) {
     if (-not (Test-Path -LiteralPath $modulePath)) {
         throw "Core module not found at $modulePath"
     }
@@ -15893,6 +15918,176 @@ function Start-LWTerminal {
 
     $script:LWUi.Enabled = $false
     Write-LWInfo 'Good luck on the Kai trail.'
+}
+
+function Get-LWModuleContext {
+    return @{
+        LWRootDir                    = $script:LWRootDir
+        SaveDir                      = $SaveDir
+        DataDir                      = $DataDir
+        LWAppName                    = $script:LWAppName
+        LWAppVersion                 = $script:LWAppVersion
+        LWStateVersion               = $script:LWStateVersion
+        LastUsedSavePathFile         = $script:LastUsedSavePathFile
+        LWErrorLogFile               = $script:LWErrorLogFile
+        GameState                    = $script:GameState
+        GameData                     = $script:GameData
+        LWAchievementDefinitionsCache = $script:LWAchievementDefinitionsCache
+        LWUi                         = $script:LWUi
+    }
+}
+
+function Sync-LWStateRefactorMetadata {
+    param([object]$State)
+
+    if ($null -eq $State) {
+        return $null
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'RuleSet') -or [string]::IsNullOrWhiteSpace([string]$State.RuleSet)) {
+        $State | Add-Member -Force -NotePropertyName RuleSet -NotePropertyValue 'Kai'
+    }
+
+    $rulesetVersion = Get-LWActiveRuleSetVersion -State $State
+    if (-not (Test-LWPropertyExists -Object $State -Name 'EngineVersion')) {
+        $State | Add-Member -Force -NotePropertyName EngineVersion -NotePropertyValue $script:LWAppVersion
+    }
+    else {
+        $State.EngineVersion = $script:LWAppVersion
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'RuleSetVersion')) {
+        $State | Add-Member -Force -NotePropertyName RuleSetVersion -NotePropertyValue $rulesetVersion
+    }
+    else {
+        $State.RuleSetVersion = $rulesetVersion
+    }
+
+    return $State
+}
+
+function Initialize-LWData {
+    $script:GameData = Invoke-LWCoreInitializeData -Context (Get-LWModuleContext)
+}
+
+function New-LWDefaultState {
+    $state = Invoke-LWCoreNewDefaultState -Context (Get-LWModuleContext)
+    return (Sync-LWStateRefactorMetadata -State $state)
+}
+
+function Normalize-LWState {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $normalized = Invoke-LWCoreNormalizeState -Context (Get-LWModuleContext) -State $State
+    return (Sync-LWStateRefactorMetadata -State $normalized)
+}
+
+function Save-LWGame {
+    param([switch]$PromptForPath)
+
+    if ($null -ne $script:GameState) {
+        [void](Sync-LWStateRefactorMetadata -State $script:GameState)
+    }
+
+    Invoke-LWCoreSaveGame -Context (Get-LWModuleContext) -PromptForPath:$PromptForPath
+}
+
+function Load-LWGame {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $loadedState = Invoke-LWCoreLoadGame -Context (Get-LWModuleContext) -Path $Path
+    if ($null -ne $loadedState) {
+        $script:GameState = Sync-LWStateRefactorMetadata -State $loadedState
+    }
+}
+
+function Load-LWGameInteractive {
+    param([string]$Selection)
+
+    Invoke-LWCoreLoadGameInteractive -Context (Get-LWModuleContext) -Selection $Selection | Out-Null
+}
+
+function Show-LWHelp {
+    Invoke-LWCoreShowHelpScreen -Context (Get-LWModuleContext)
+}
+
+function Invoke-LWCommand {
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$InputLine)
+
+    return (Invoke-LWCoreCommand -Context (Get-LWModuleContext) -InputLine $InputLine)
+}
+
+function Start-LWCombat {
+    param([string[]]$Arguments = @())
+
+    return (Invoke-LWCoreStartCombat -Context (Get-LWModuleContext) -Arguments $Arguments)
+}
+
+function Register-LWStorySectionAchievementTriggers {
+    param([Parameter(Mandatory = $true)][int]$Section)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    Invoke-LWRuleSetStorySectionAchievementTriggers -State $script:GameState -Section $Section
+}
+
+function Register-LWStorySectionTransitionAchievementTriggers {
+    param(
+        [Parameter(Mandatory = $true)][int]$FromSection,
+        [Parameter(Mandatory = $true)][int]$ToSection
+    )
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    Invoke-LWRuleSetStorySectionTransitionAchievementTriggers -State $script:GameState -FromSection $FromSection -ToSection $ToSection
+}
+
+function Get-LWSectionRandomNumberContext {
+    param([object]$State = $script:GameState)
+
+    return (Get-LWRuleSetSectionRandomNumberContext -State $State)
+}
+
+function Invoke-LWSectionEntryRules {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    Invoke-LWRuleSetSectionEntryRules -State $script:GameState
+}
+
+function Apply-LWBookOneStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 1 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookTwoStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 2 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookThreeStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 3 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookFourStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 4 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookFiveStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 5 -CarryExistingGear:$CarryExistingGear
 }
 
 if (Test-LWShouldAutoStart -InvocationName $MyInvocation.InvocationName) {

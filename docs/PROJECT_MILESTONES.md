@@ -13,7 +13,7 @@ Status values:
 
 Current top architectural milestone:
 
-- `in_progress` `M1` Modular Engine Refactor
+- `completed` `M1` Modular Engine Refactor
 
 ## Milestone List
 
@@ -21,7 +21,7 @@ Current top architectural milestone:
 
 Status:
 
-- `in_progress`
+- `completed`
 
 Goal:
 
@@ -43,6 +43,15 @@ Exit criteria:
 - validation passes in PowerShell 7 and Windows PowerShell 5.1
 - `100+` sandbox tests of the command surface and actual app pass across the full Kai campaign
 
+Local completion note:
+
+- completed locally on 2026-03-27 and intentionally held unpushed for playtesting
+- current local validation:
+  - `100` full Books `1-5` sandbox campaigns passed
+  - `60` initial campaigns
+  - `40` additional campaigns to clear the `100+` exit bar
+  - command-surface smoke passed in both shells
+
 Reference:
 
 - [MODULAR_ENGINE_REFACTOR_PLAN.md](./MODULAR_ENGINE_REFACTOR_PLAN.md)
@@ -51,7 +60,7 @@ Reference:
 
 Status:
 
-- `in_progress`
+- `completed`
 
 Goal:
 
@@ -65,14 +74,16 @@ Deliverables:
 
 Local checkpoint:
 
-- unpushed validation slice passed `60` full Books `1-5` sandbox campaigns on 2026-03-27
-- see `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
+- thin launcher/module import path is active in the local unpushed M1 build
+- latest validation notes:
+  - `testing/logs/M1_1_BOOTSTRAP_VALIDATION.md`
+  - `testing/logs/M1_7_COMPLETION_SUMMARY_20260327.md`
 
 ### M1.2 - Core Engine Extraction
 
 Status:
 
-- `in_progress`
+- `completed`
 
 Goal:
 
@@ -92,14 +103,20 @@ Local checkpoint:
   - `modules/core/bootstrap.psm1`
   - `modules/core/display.psm1`
   - `modules/core/common.psm1`
+- additional extracted engine modules in the local unpushed M1 build:
+  - `modules/core/state.psm1`
+  - `modules/core/save.psm1`
+  - `modules/core/commands.psm1`
+  - `modules/core/combat.psm1`
+  - `modules/core/ruleset.psm1`
 - validated locally before push
-- see `testing/logs/M1_LOCAL_CAMPAIGN_VALIDATION_20260327.md`
+- see `testing/logs/M1_7_COMPLETION_SUMMARY_20260327.md`
 
 ### M1.3 - Kai Ruleset Shell
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -111,11 +128,16 @@ Deliverables:
 - ruleset metadata and registration hooks
 - book-dispatch mechanism
 
+Local checkpoint:
+
+- Kai ruleset shell and dispatch are active in the local unpushed M1 build
+- book modules currently present for Kai Books `1-5`
+
 ### M1.4 - Kai Books 1-2 Extraction
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -127,11 +149,15 @@ Deliverables:
 - `book2.psm1`
 - startup, section, combat, and achievement hooks moved out of the monolith
 
+Local checkpoint:
+
+- Books `1-2` now load through `modules/rulesets/kai/` in the local unpushed M1 build
+
 ### M1.5 - Kai Books 3-5 Extraction
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -143,11 +169,15 @@ Deliverables:
 - `book4.psm1`
 - `book5.psm1`
 
+Local checkpoint:
+
+- Books `3-5` now load through `modules/rulesets/kai/` in the local unpushed M1 build
+
 ### M1.6 - Save Migration And Ruleset-Aware Saves
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -159,11 +189,15 @@ Deliverables:
 - migration logic
 - migration validation against existing live formats
 
+Local checkpoint:
+
+- saves now normalize `RuleSet`, `EngineVersion`, and `RuleSetVersion` in the local unpushed M1 build
+
 ### M1.7 - Full Regression Pass
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -176,6 +210,19 @@ Deliverables:
 - cross-shell validation
 - `100+` sandbox tests of the command surface and actual app across the full Kai campaign
 - updated handoff and validation notes
+
+Local checkpoint:
+
+- current local M1 validation:
+  - `100` full Books `1-5` campaigns
+  - command-surface smoke in both shells
+  - local reports:
+    - `testing/logs/FULL_VALIDATION_REPORT_M1_PWSH_40.md`
+    - `testing/logs/FULL_VALIDATION_REPORT_M1_PS51_20.md`
+    - `testing/logs/FULL_VALIDATION_REPORT_M1_PWSH_EXTRA20.md`
+    - `testing/logs/FULL_VALIDATION_REPORT_M1_PS51_EXTRA20.md`
+    - `testing/logs/FULL_VALIDATION_REPORT_M1_PWSH_40.md`
+    - `testing/logs/M1_7_COMPLETION_SUMMARY_20260327.md`
 
 ### M2 - Additional Rule Set Support
 
