@@ -4,9 +4,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.22`
+- App version: `0.7.35`
 - Main script: `lonewolf.ps1`
-- Latest shipped commit at time of writing: `3ce78bc` `Add Book 1 rule automation and route achievements`
+- Latest shipped commit at time of writing: keep this synced with the newest pushed release; if unsure, check `git log -1`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Public docs hygiene:
   - sanitize `README.md` before push
@@ -80,9 +80,9 @@ The working pattern has been:
 
 Local reports:
 
-- `logs/BOOK1_ENDINGS_AND_ROUTE_FAMILIES.md`
-- `logs/BOOK1_RULES_AND_ITEMS_AUDIT.md`
-- `logs/BOOK1_ACHIEVEMENT_CANDIDATES.md`
+- `testing/logs/BOOK1_ENDINGS_AND_ROUTE_FAMILIES.md`
+- `testing/logs/BOOK1_RULES_AND_ITEMS_AUDIT.md`
+- `testing/logs/BOOK1_ACHIEVEMENT_CANDIDATES.md`
 
 ### Book 2
 
@@ -111,7 +111,14 @@ Local reports:
 
 - Full audit completed
 - First full Book 4 build implemented
+- High-priority section-by-section rules pass implemented
 - Startup package, Backpack-loss state, mine lighting hooks, Book 4 Hunting restrictions, Barraka combat hooks, and the first Book 4 route/story achievement batch are implemented
+- Additional Book 4 support now includes:
+  - corrected Holy Water and Whip item typing
+  - section loot tables for common one-off pickups
+  - section damage/recovery hooks
+  - special combat rules like delayed evade, variable Mindforce loss, and underwater oxygen loss
+  - contextual `roll` output for Book 4 random-number sections
 
 Local reports:
 
@@ -119,6 +126,7 @@ Local reports:
 - `testing/logs/BOOK4_RULES_AND_ITEMS_AUDIT.md`
 - `testing/logs/BOOK4_ACHIEVEMENT_CANDIDATES.md`
 - `testing/logs/BOOK4_BUILD_VALIDATION.md`
+- `testing/logs/BOOK4_FULL_RULE_GAP_REPORT.md`
 
 ## Existing Playtest Coverage
 

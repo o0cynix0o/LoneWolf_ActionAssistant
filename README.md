@@ -53,10 +53,11 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Book 4 section-rule support for:
   - startup gear, `Map of the Southlands`, `Badge of Rank`, and gold package
   - real Backpack loss / recovery handling
-  - mine Torch / Tinderbox supply sections
+  - mine Torch / Tinderbox supply sections and lighting-aware routes
   - Book 4 forced-loss sections like `22`, `272`, and `327`
   - Holy Water, Scroll, Onyx Medallion, and Captain D'Val's Sword hooks
-  - Barraka combat setup at sections `122` and `325`
+  - section loot tables, damage/recovery hooks, and contextual random-number support
+  - special combat rules like delayed evade, variable Mindforce loss, underwater oxygen loss, and Barraka setup
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
@@ -355,9 +356,11 @@ Some items are now handled automatically instead of needing manual stat edits.
   Are all recognized by name for Book 4 automation and achievement checks
 - `Hourglass`
   Is recognized as a normal Backpack item for Book 4 loot handling
-- `Captain D'Val's Sword` and `Whip`
-  Are recognized weapons for Book 4 story handling
-  Captain D'Val's Sword also adds `+1 Combat Skill`
+- `Captain D'Val's Sword`
+  Is a recognized weapon for Book 4 story handling
+  Also adds `+1 Combat Skill`
+- `Whip`
+  Is recognized as a Backpack item for Book 4 story handling
 
 ## Stats and Achievements
 
