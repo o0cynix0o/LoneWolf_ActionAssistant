@@ -189,6 +189,7 @@ The refactor is not done unless these still pass:
 - mode and permadeath flow
 - combat smoke
 - Books `1-5` campaign progression smoke
+- `100+` sandbox tests covering the command surface and the actual app flow through the full Kai campaign
 
 Existing local validation harnesses should be preserved and extended where useful rather than thrown away.
 
@@ -212,6 +213,7 @@ This refactor milestone is complete when:
 - current saves still load or migrate cleanly
 - command surface still works
 - the validation baseline still passes
+- `100+` sandbox tests of the command surface and actual app behavior pass across the full campaign
 
 ## Relationship To Future Work
 

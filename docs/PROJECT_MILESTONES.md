@@ -41,6 +41,7 @@ Exit criteria:
 - existing saves load cleanly
 - command surface remains stable
 - validation passes in PowerShell 7 and Windows PowerShell 5.1
+- `100+` sandbox tests of the command surface and actual app pass across the full Kai campaign
 
 Reference:
 
@@ -159,6 +160,7 @@ Deliverables:
 - command-surface smoke
 - Books `1-5` campaign smoke
 - cross-shell validation
+- `100+` sandbox tests of the command surface and actual app across the full Kai campaign
 - updated handoff and validation notes
 
 ### M2 - Additional Rule Set Support
