@@ -4,7 +4,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.35`
+- App version: `0.7.36`
 - Main script: `lonewolf.ps1`
 - Latest shipped commit at time of writing: keep this synced with the newest pushed release; if unsure, check `git log -1`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
@@ -30,6 +30,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - optional `Permadeath`
 - Tamper-evident run integrity
 - Book-aware rule support across Books 1-4
+- Project Aon baseline catch-up complete across Books 1-4 as of 2026-03-27
 - GitHub repo, wiki, and issue tracker workflow already in use
 
 ## Main Repo Files
@@ -77,6 +78,7 @@ The working pattern has been:
   - Vordak Gem handling
   - Burrowcrawler torch/darkness setup
   - Crystal Star Pendant tracking
+- Remaining Project Aon baseline rule gaps from the earlier audit were closed on 2026-03-27
 
 Local reports:
 
@@ -91,6 +93,7 @@ Local reports:
 - Sommerswerd is implemented and gated to Book 2+
 - Broadsword +1 is implemented
 - Book 2 startup, pass items, forged papers, Magic Spear hooks, storm loss, and Wildlands Hunting restriction are implemented
+- Remaining Project Aon baseline rule gaps from the earlier audit were closed on 2026-03-27
 
 ### Book 3
 
@@ -99,6 +102,7 @@ Local reports:
 - Multiple readtest/full-run reports exist
 - Many Book 3-specific rules and achievements are implemented
 - Item/rule support includes Bone Sword, knockout fights, Mindforce, Book 3 Hunting restriction, ornate key logic, and endgame/path achievements
+- Remaining Project Aon baseline rule gaps from the earlier audit were closed on 2026-03-27
 
 Local reports:
 
@@ -119,6 +123,7 @@ Local reports:
   - section damage/recovery hooks
   - special combat rules like delayed evade, variable Mindforce loss, and underwater oxygen loss
   - contextual `roll` output for Book 4 random-number sections
+- Remaining Project Aon baseline rule gaps from the earlier audit were closed on 2026-03-27
 
 Local reports:
 
@@ -142,6 +147,15 @@ Key files:
 - `testing/logs/COMMAND_SURFACE_PLAYTEST_REPORT.md`
 - `testing/logs/MODE_RULES_PLAYTEST_REPORT.md`
 - `testing/logs/PERMADEATH_PLAYTEST_REPORT.md`
+- `testing/logs/FULL_VALIDATION_SUMMARY_20260327.md`
+
+Latest large-scale validation:
+
+- `100` full synthetic campaign runs spanning Books 1-4 in order
+- `80` runs in PowerShell 7
+- `20` runs in Windows PowerShell 5.1
+- command-surface smoke passed in both shells
+- no campaign failures in the March 27 full validation sweep
 
 ## Standard Named Workflows
 
