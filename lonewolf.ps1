@@ -1955,6 +1955,17 @@ function Get-LWBookFourSectionChoiceLine {
     return (Format-LWBookFourStartingChoiceLine -Choice $Choice)
 }
 
+function Write-LWInlineWarn {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    if ($script:LWUi.Enabled) {
+        Write-LWMessageLine -Level 'Warn' -Message $Message
+        return
+    }
+
+    Write-LWWarn $Message
+}
+
 function Write-LWLootNoRoomWarning {
     param(
         [Parameter(Mandatory = $true)][string]$DisplayName,
@@ -1966,7 +1977,7 @@ function Write-LWLootNoRoomWarning {
         $message = "{0} {1}" -f $message, $ExtraMessage.Trim()
     }
 
-    Write-LWWarn $message
+    Write-LWInlineWarn $message
 }
 
 function Grant-LWBookFourGenericChoice {
@@ -2103,11 +2114,11 @@ function Invoke-LWBookFourChoiceTable {
 
         $choiceIndex = 0
         if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
-            Write-LWWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+            Write-LWInlineWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
             continue
         }
         if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
-            Write-LWWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
+            Write-LWInlineWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
             continue
         }
 
@@ -3560,11 +3571,11 @@ function Invoke-LWSectionEntryRules {
 
                         $choiceIndex = 0
                         if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
-                            Write-LWWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+                            Write-LWInlineWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
                             continue
                         }
                         if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
-                            Write-LWWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
+                            Write-LWInlineWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
                             continue
                         }
 
@@ -3729,11 +3740,11 @@ function Invoke-LWSectionEntryRules {
 
                         $choiceIndex = 0
                         if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
-                            Write-LWWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+                            Write-LWInlineWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
                             continue
                         }
                         if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
-                            Write-LWWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
+                            Write-LWInlineWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
                             continue
                         }
 
@@ -3877,11 +3888,11 @@ function Invoke-LWSectionEntryRules {
 
                         $choiceIndex = 0
                         if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
-                            Write-LWWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+                            Write-LWInlineWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
                             continue
                         }
                         if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
-                            Write-LWWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
+                            Write-LWInlineWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
                             continue
                         }
 
