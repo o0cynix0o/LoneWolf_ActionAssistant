@@ -1955,6 +1955,20 @@ function Get-LWBookFourSectionChoiceLine {
     return (Format-LWBookFourStartingChoiceLine -Choice $Choice)
 }
 
+function Write-LWLootNoRoomWarning {
+    param(
+        [Parameter(Mandatory = $true)][string]$DisplayName,
+        [string]$ExtraMessage = ''
+    )
+
+    $message = "You don't have room for {0} right now." -f $DisplayName
+    if (-not [string]::IsNullOrWhiteSpace($ExtraMessage)) {
+        $message = "{0} {1}" -f $message, $ExtraMessage.Trim()
+    }
+
+    Write-LWWarn $message
+}
+
 function Grant-LWBookFourGenericChoice {
     param(
         [Parameter(Mandatory = $true)][object]$Choice,
@@ -1982,8 +1996,14 @@ function Grant-LWBookFourGenericChoice {
         'gold' {
             $oldGold = [int]$script:GameState.Inventory.GoldCrowns
             $newGold = [Math]::Min(50, ($oldGold + [int]$Choice.Quantity))
+            $addedGold = $newGold - $oldGold
+            if ($addedGold -le 0) {
+                Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Spend some Gold Crowns first if you want to keep it.'
+                return $false
+            }
+
             $script:GameState.Inventory.GoldCrowns = $newGold
-            Add-LWBookGoldDelta -Delta ($newGold - $oldGold)
+            Add-LWBookGoldDelta -Delta $addedGold
             [void](Sync-LWAchievements -Context 'gold')
             if ($newGold -lt ($oldGold + [int]$Choice.Quantity)) {
                 Write-LWWarn ("Gold Crowns are capped at 50. Excess gold from {0} is lost." -f $ContextLabel.ToLowerInvariant())
@@ -2006,7 +2026,7 @@ function Grant-LWBookFourGenericChoice {
     }
 
     if (-not $granted) {
-        Write-LWWarn ("Could not add the {0} item '{1}' automatically. Make room and try again if you are keeping it." -f $ContextLabel.ToLowerInvariant(), [string]$Choice.DisplayName)
+        Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Make room and try again if you are keeping it.'
         return $false
     }
 
@@ -2092,7 +2112,7 @@ function Invoke-LWBookFourChoiceTable {
         }
 
         $choice = $availableChoices[$choiceIndex - 1]
-        if (-not (Grant-LWBookFourGenericChoice -Choice $choice -ContextLabel $ContextLabel) -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+        if (-not (Grant-LWBookFourGenericChoice -Choice $choice -ContextLabel $ContextLabel) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
             Invoke-LWBookFourStartingInventoryManagement
         }
 
@@ -3549,7 +3569,7 @@ function Invoke-LWSectionEntryRules {
                         }
 
                         $choice = $availableChoices[$choiceIndex - 1]
-                        if (-not (Grant-LWBookFourSection12Choice -Choice $choice) -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+                        if (-not (Grant-LWBookFourSection12Choice -Choice $choice) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
                             Invoke-LWBookFourStartingInventoryManagement
                         }
 
@@ -3718,7 +3738,7 @@ function Invoke-LWSectionEntryRules {
                         }
 
                         $choice = $availableChoices[$choiceIndex - 1]
-                        if (-not (Grant-LWBookFourSection213Choice -Choice $choice) -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+                        if (-not (Grant-LWBookFourSection213Choice -Choice $choice) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
                             Invoke-LWBookFourStartingInventoryManagement
                         }
 
@@ -3866,7 +3886,7 @@ function Invoke-LWSectionEntryRules {
                         }
 
                         $choice = $availableChoices[$choiceIndex - 1]
-                        if (-not (Grant-LWBookFourSection280Choice -Choice $choice) -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+                        if (-not (Grant-LWBookFourSection280Choice -Choice $choice) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
                             Invoke-LWBookFourStartingInventoryManagement
                         }
 
@@ -5464,7 +5484,7 @@ function Grant-LWBookFourSection12Choice {
     }
 
     if (-not $granted) {
-        Write-LWWarn ("Could not add the section 12 item '{0}' automatically. Make room and try again if you are keeping it." -f [string]$Choice.DisplayName)
+        Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Make room and try again if you are keeping it.'
         return $false
     }
 
@@ -5807,7 +5827,7 @@ function Grant-LWBookFourSection213Choice {
     }
 
     if (-not $granted) {
-        Write-LWWarn ("Could not add the section 213 item '{0}' automatically. Make room and try again if you are keeping it." -f [string]$Choice.DisplayName)
+        Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Make room and try again if you are keeping it.'
         return $false
     }
 
@@ -5834,8 +5854,14 @@ function Grant-LWBookFourSection280Choice {
         'gold' {
             $oldGold = [int]$script:GameState.Inventory.GoldCrowns
             $newGold = [Math]::Min(50, ($oldGold + [int]$Choice.Quantity))
+            $addedGold = $newGold - $oldGold
+            if ($addedGold -le 0) {
+                Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Spend some Gold Crowns first if you want to keep it.'
+                return $false
+            }
+
             $script:GameState.Inventory.GoldCrowns = $newGold
-            Add-LWBookGoldDelta -Delta ($newGold - $oldGold)
+            Add-LWBookGoldDelta -Delta $addedGold
             [void](Sync-LWAchievements -Context 'gold')
             if ($newGold -lt ($oldGold + [int]$Choice.Quantity)) {
                 Write-LWWarn 'Gold Crowns are capped at 50. Excess gold from section 280 is lost.'
@@ -5848,7 +5874,7 @@ function Grant-LWBookFourSection280Choice {
     }
 
     if (-not $granted) {
-        Write-LWWarn ("Could not add the section 280 item '{0}' automatically. Make room and try again if you are keeping it." -f [string]$Choice.DisplayName)
+        Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Make room and try again if you are keeping it.'
         return $false
     }
 
