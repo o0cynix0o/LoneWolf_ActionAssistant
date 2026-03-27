@@ -13,7 +13,7 @@ Status values:
 
 Current top architectural milestone:
 
-- `planned` `M1` Modular Engine Refactor
+- `in_progress` `M1` Modular Engine Refactor
 
 ## Milestone List
 
@@ -21,7 +21,7 @@ Current top architectural milestone:
 
 Status:
 
-- `planned`
+- `in_progress`
 
 Goal:
 
@@ -51,7 +51,7 @@ Reference:
 
 Status:
 
-- `planned`
+- `in_progress`
 
 Goal:
 
@@ -67,7 +67,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `in_progress`
 
 Goal:
 

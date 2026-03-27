@@ -261,7 +261,7 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 ## Good Next Steps
 
 - Continue live playtesting across Books 1-5 and patch DE-specific rule differences
-- Start `M1` Modular Engine Refactor when approved
+- Continue `M1` Modular Engine Refactor and validate each extraction step locally before push
 - Expand story-aware achievements in later books
 - Run the Full Book Audit for the next unsupported book after the refactor plan is in motion
 - Keep the handoff docs in sync as new books become implemented

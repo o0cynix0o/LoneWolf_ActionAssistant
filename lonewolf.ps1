@@ -6,7 +6,7 @@ param(
     [string]$DataDir
 )
 
-$script:LWRootDir = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+$script:LWBootstrapRoot = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
     $PSScriptRoot
 }
 elseif ($MyInvocation.MyCommand.Path) {
@@ -16,31 +16,38 @@ else {
     (Get-Location).Path
 }
 
-if ([string]::IsNullOrWhiteSpace($SaveDir)) {
-    $SaveDir = Join-Path $script:LWRootDir 'saves'
+$script:LWBootstrapModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\bootstrap.psm1'
+if (-not (Test-Path -LiteralPath $script:LWBootstrapModulePath)) {
+    throw "Bootstrap module not found at $script:LWBootstrapModulePath"
 }
-if ([string]::IsNullOrWhiteSpace($DataDir)) {
-    $DataDir = Join-Path $script:LWRootDir 'data'
+
+Import-Module $script:LWBootstrapModulePath -Force -DisableNameChecking
+$script:LWDisplayModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\display.psm1'
+$script:LWCommonModulePath = Join-Path $script:LWBootstrapRoot 'modules\core\common.psm1'
+foreach ($modulePath in @($script:LWDisplayModulePath, $script:LWCommonModulePath)) {
+    if (-not (Test-Path -LiteralPath $modulePath)) {
+        throw "Core module not found at $modulePath"
+    }
+
+    Import-Module $modulePath -Force -DisableNameChecking
 }
+
+$script:LWBootstrap = New-LWBootstrapConfiguration -ScriptRoot $PSScriptRoot -MyCommandPath $MyInvocation.MyCommand.Path -SaveDir $SaveDir -DataDir $DataDir
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-$script:LWAppName = 'Lone Wolf Action Assistant'
-$script:LWAppVersion = '0.7.37'
-$script:LWStateVersion = '0.5.0'
-$script:LastUsedSavePathFile = Join-Path $DataDir 'last-save.txt'
-$script:LWErrorLogFile = Join-Path $DataDir 'error.log'
+$script:LWRootDir = $script:LWBootstrap.RootDir
+$SaveDir = $script:LWBootstrap.SaveDir
+$DataDir = $script:LWBootstrap.DataDir
+$script:LWAppName = $script:LWBootstrap.AppName
+$script:LWAppVersion = $script:LWBootstrap.AppVersion
+$script:LWStateVersion = $script:LWBootstrap.StateVersion
+$script:LastUsedSavePathFile = $script:LWBootstrap.LastUsedSavePathFile
+$script:LWErrorLogFile = $script:LWBootstrap.ErrorLogFile
 $script:GameState = $null
 $script:GameData = $null
 $script:LWAchievementDefinitionsCache = $null
-$script:LWUi = [pscustomobject]@{
-    Enabled       = $false
-    CurrentScreen = 'welcome'
-    ScreenData    = $null
-    Notifications = @()
-    IsRendering   = $false
-    NeedsRender   = $true
-}
+$script:LWUi = $script:LWBootstrap.UiState
 
 function Write-LWInfo {
     param([string]$Message)
@@ -705,425 +712,6 @@ function Refresh-LWScreen {
     Write-LWNotifications
 }
 
-function Write-LWPanelHeader {
-    param(
-        [Parameter(Mandatory = $true)][string]$Title,
-        [string]$AccentColor = 'Cyan',
-        [int]$Width = 54
-    )
-
-    $innerWidth = [Math]::Max(($Width - 4), ($Title.Length + 2))
-    $border = '+' + ('-' * ($innerWidth + 2)) + '+'
-
-    Write-Host ''
-    Write-Host $border -ForegroundColor DarkGray
-    Write-Host '| ' -NoNewline -ForegroundColor DarkGray
-    Write-Host $Title.PadRight($innerWidth) -NoNewline -ForegroundColor $AccentColor
-    Write-Host ' |' -ForegroundColor DarkGray
-    Write-Host $border -ForegroundColor DarkGray
-}
-
-function Write-LWKeyValue {
-    param(
-        [Parameter(Mandatory = $true)][string]$Label,
-        [Parameter(Mandatory = $true)][string]$Value,
-        [string]$ValueColor = 'Gray',
-        [string]$LabelColor = 'DarkGray'
-    )
-
-    Write-Host ("  {0,-16}: " -f $Label) -NoNewline -ForegroundColor $LabelColor
-    Write-Host $Value -ForegroundColor $ValueColor
-}
-
-function Write-LWBulletItem {
-    param(
-        [Parameter(Mandatory = $true)][string]$Text,
-        [string]$TextColor = 'Gray',
-        [string]$BulletColor = 'DarkGray',
-        [string]$Bullet = '-'
-    )
-
-    Write-Host "  $Bullet " -NoNewline -ForegroundColor $BulletColor
-    Write-Host $Text -ForegroundColor $TextColor
-}
-
-function Write-LWSubtle {
-    param([string]$Message)
-    Write-Host $Message -ForegroundColor DarkGray
-}
-
-function Get-LWEnduranceColor {
-    param(
-        [int]$Current,
-        [int]$Max
-    )
-
-    if ($Max -le 0) {
-        return 'Gray'
-    }
-
-    $ratio = $Current / [double]$Max
-    if ($ratio -le 0.25) {
-        return 'Red'
-    }
-    if ($ratio -le 0.60) {
-        return 'Yellow'
-    }
-
-    return 'Green'
-}
-
-function Get-LWOutcomeColor {
-    param([string]$Outcome)
-
-    switch ($Outcome) {
-        'Victory' { return 'Green' }
-        'Knockout' { return 'Green' }
-        'Defeat' { return 'Red' }
-        'Evaded' { return 'Yellow' }
-        'In Progress' { return 'Cyan' }
-        'Special' { return 'DarkYellow' }
-        'Stopped' { return 'DarkYellow' }
-        default { return 'Gray' }
-    }
-}
-
-function Get-LWCombatRatioColor {
-    param([int]$Ratio)
-
-    if ($Ratio -ge 4) {
-        return 'Green'
-    }
-    if ($Ratio -ge 0) {
-        return 'Yellow'
-    }
-
-    return 'Red'
-}
-
-function Get-LWModeColor {
-    param([string]$Mode)
-
-    switch ($Mode) {
-        'DataFile' { return 'Green' }
-        'ManualCRT' { return 'Yellow' }
-        default { return 'Gray' }
-    }
-}
-
-function Get-LWDifficultyColor {
-    param([string]$Difficulty)
-
-    switch ([string]$Difficulty) {
-        'Story' { return 'Magenta' }
-        'Easy' { return 'Green' }
-        'Normal' { return 'Cyan' }
-        'Hard' { return 'Yellow' }
-        'Veteran' { return 'Red' }
-        default { return 'Gray' }
-    }
-}
-
-function Get-LWIntegrityColor {
-    param([string]$IntegrityState)
-
-    switch ([string]$IntegrityState) {
-        'Clean' { return 'Green' }
-        'Tampered' { return 'Red' }
-        default { return 'Gray' }
-    }
-}
-
-function Format-LWSigned {
-    param([int]$Value)
-    if ($Value -gt 0) {
-        return "+$Value"
-    }
-    return [string]$Value
-}
-
-function Format-LWList {
-    param([object[]]$Items)
-    if (@($Items).Count -gt 0) {
-        return (@($Items) -join ', ')
-    }
-    return '(none)'
-}
-
-function Normalize-LWNamedCountEntries {
-    param([object[]]$Entries)
-
-    $normalized = @()
-    foreach ($entry in @($Entries)) {
-        if ($null -eq $entry) {
-            continue
-        }
-
-        $name = if ((Test-LWPropertyExists -Object $entry -Name 'Name') -and -not [string]::IsNullOrWhiteSpace([string]$entry.Name)) {
-            [string]$entry.Name
-        }
-        else {
-            [string]$entry
-        }
-
-        if ([string]::IsNullOrWhiteSpace($name)) {
-            continue
-        }
-
-        $count = 0
-        if ((Test-LWPropertyExists -Object $entry -Name 'Count') -and $null -ne $entry.Count) {
-            $count = [int]$entry.Count
-        }
-
-        if ($count -lt 0) {
-            $count = 0
-        }
-
-        $normalized += [pscustomobject]@{
-            Name  = $name
-            Count = $count
-        }
-    }
-
-    return @($normalized)
-}
-
-function Format-LWNamedCountSummary {
-    param([object[]]$Entries)
-
-    $values = @(Normalize-LWNamedCountEntries -Entries $Entries | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
-    if ($values.Count -eq 0) {
-        return '(none)'
-    }
-
-    return (@($values | ForEach-Object { "{0} x{1}" -f $_.Name, ([int]$_.Count) }) -join ', ')
-}
-
-function Format-LWCompactInventorySummary {
-    param(
-        [object[]]$Items,
-        [int]$MaxGroups = 3
-    )
-
-    $values = @($Items | Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_) })
-    if ($values.Count -eq 0) {
-        return '(none)'
-    }
-
-    $order = New-Object System.Collections.Generic.List[string]
-    $counts = @{}
-    foreach ($item in $values) {
-        $name = [string]$item
-        if (-not $counts.ContainsKey($name)) {
-            $counts[$name] = 0
-            [void]$order.Add($name)
-        }
-        $counts[$name] = [int]$counts[$name] + 1
-    }
-
-    $labels = @()
-    foreach ($name in $order) {
-        $count = [int]$counts[$name]
-        if ($count -gt 1) {
-            $labels += ("{0} x{1}" -f $name, $count)
-        }
-        else {
-            $labels += $name
-        }
-    }
-
-    if ($labels.Count -le $MaxGroups) {
-        return ($labels -join ', ')
-    }
-
-    $visible = @($labels[0..($MaxGroups - 1)])
-    return ("{0} +{1} more" -f ($visible -join ', '), ($labels.Count - $MaxGroups))
-}
-
-function Get-LWJsonProperty {
-    param(
-        [Parameter(Mandatory = $true)]
-        [object]$Object,
-        [Parameter(Mandatory = $true)]
-        [string]$Name
-    )
-
-    if ($null -eq $Object) {
-        return $null
-    }
-
-    if ($Object -is [System.Collections.IDictionary]) {
-        if ($Object.Contains($Name)) {
-            return $Object[$Name]
-        }
-        return $null
-    }
-
-    $prop = $Object.PSObject.Properties[$Name]
-    if ($null -ne $prop) {
-        return $prop.Value
-    }
-
-    return $null
-}
-
-function Test-LWPropertyExists {
-    param(
-        [Parameter(Mandatory = $true)]
-        [object]$Object,
-        [Parameter(Mandatory = $true)]
-        [string]$Name
-    )
-
-    if ($null -eq $Object) {
-        return $false
-    }
-
-    if ($Object -is [System.Collections.IDictionary]) {
-        return $Object.Contains($Name)
-    }
-
-    return ($null -ne $Object.PSObject.Properties[$Name])
-}
-
-function Get-LWBookTitle {
-    param([int]$BookNumber)
-
-    switch ($BookNumber) {
-        1 { return 'Flight from the Dark' }
-        2 { return 'Fire on the Water' }
-        3 { return 'The Caverns of Kalte' }
-        4 { return 'The Chasm of Doom' }
-        5 { return 'Shadow on the Sand' }
-        6 { return 'The Kingdoms of Terror' }
-        7 { return 'Castle Death' }
-        8 { return 'The Jungle of Horrors' }
-        9 { return 'The Cauldron of Fear' }
-        10 { return 'The Dungeons of Torgar' }
-        11 { return 'The Prisoners of Time' }
-        12 { return 'The Masters of Darkness' }
-        13 { return 'The Plague Lords of Ruel' }
-        14 { return 'The Captives of Kaag' }
-        15 { return 'The Darke Crusade' }
-        16 { return 'The Legacy of Vashna' }
-        17 { return 'Deathlord of Ixia' }
-        18 { return 'Dawn of the Dragons' }
-        19 { return 'Wolf''s Bane' }
-        20 { return 'The Curse of Naar' }
-        21 { return 'Voyage of the Moonstone' }
-        22 { return 'The Buccaneers of Shadaki' }
-        23 { return 'Mydnight''s Hero' }
-        24 { return 'Rune War' }
-        25 { return 'Trail of the Wolf' }
-        26 { return 'The Fall of Blood Mountain' }
-        27 { return 'Vampire Trail' }
-        28 { return 'The Hunger of Sejanoz' }
-        default { return $null }
-    }
-}
-
-function Get-LWBookNumberFromTitle {
-    param([string]$Title)
-
-    if ([string]::IsNullOrWhiteSpace($Title)) {
-        return $null
-    }
-
-    for ($bookNumber = 1; $bookNumber -le 5; $bookNumber++) {
-        if ((Get-LWBookTitle -BookNumber $bookNumber) -ieq $Title) {
-            return $bookNumber
-        }
-    }
-
-    return $null
-}
-
-function Format-LWBookLabel {
-    param(
-        [int]$BookNumber,
-        [switch]$IncludePrefix
-    )
-
-    $title = Get-LWBookTitle -BookNumber $BookNumber
-    if ([string]::IsNullOrWhiteSpace($title)) {
-        if ($IncludePrefix) {
-            return "Book $BookNumber"
-        }
-        return [string]$BookNumber
-    }
-
-    if ($IncludePrefix) {
-        return "Book $BookNumber - $title"
-    }
-
-    return "$BookNumber - $title"
-}
-
-function Get-LWDifficultyDefinitions {
-    return @(
-        [pscustomobject]@{
-            Name            = 'Story'
-            Description     = 'No normal END loss. Story and universal achievements only.'
-            AchievementNote = 'Universal + Story achievements'
-            PermadeathAllowed = $false
-        },
-        [pscustomobject]@{
-            Name            = 'Easy'
-            Description     = 'Incoming END loss is halved.'
-            AchievementNote = 'Universal achievements only'
-            PermadeathAllowed = $true
-        },
-        [pscustomobject]@{
-            Name            = 'Normal'
-            Description     = 'Standard Lone Wolf rules.'
-            AchievementNote = 'Universal + Combat achievements'
-            PermadeathAllowed = $true
-        },
-        [pscustomobject]@{
-            Name            = 'Hard'
-            Description     = 'Sommerswerd bonus halved. Healing capped at 10 END per book.'
-            AchievementNote = 'Universal + Combat + Challenge achievements'
-            PermadeathAllowed = $true
-        },
-        [pscustomobject]@{
-            Name            = 'Veteran'
-            Description     = 'Hard rules plus Sommerswerd only when the text allows it.'
-            AchievementNote = 'Universal + Combat + Challenge achievements'
-            PermadeathAllowed = $true
-        }
-    )
-}
-
-function Get-LWNormalizedDifficultyName {
-    param([string]$Difficulty = '')
-
-    $target = if ([string]::IsNullOrWhiteSpace($Difficulty)) { 'Normal' } else { $Difficulty.Trim() }
-    foreach ($entry in @(Get-LWDifficultyDefinitions)) {
-        if ([string]$entry.Name -ieq $target) {
-            return [string]$entry.Name
-        }
-    }
-
-    switch ($target.ToLowerInvariant()) {
-        'storymode' { return 'Story' }
-        'easymode' { return 'Easy' }
-        'hardmode' { return 'Hard' }
-        default { return 'Normal' }
-    }
-}
-
-function Get-LWDifficultyDefinition {
-    param([string]$Difficulty = '')
-
-    $normalized = Get-LWNormalizedDifficultyName -Difficulty $Difficulty
-    foreach ($entry in @(Get-LWDifficultyDefinitions)) {
-        if ([string]$entry.Name -eq $normalized) {
-            return $entry
-        }
-    }
-
-    return $null
-}
 
 function New-LWRunState {
     param(
@@ -1232,39 +820,6 @@ function Ensure-LWRunHistory {
     $State.RunHistory = @($State.RunHistory)
 }
 
-function Get-LWCanonicalDateText {
-    param([object]$Value)
-
-    if ($null -eq $Value) {
-        return ''
-    }
-
-    if ($Value -is [DateTimeOffset]) {
-        return $Value.ToString('o')
-    }
-
-    if ($Value -is [DateTime]) {
-        return $Value.ToString('o')
-    }
-
-    $text = [string]$Value
-    if ([string]::IsNullOrWhiteSpace($text)) {
-        return ''
-    }
-
-    $dateTimeOffsetValue = [DateTimeOffset]::MinValue
-    if ([DateTimeOffset]::TryParse($text, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind, [ref]$dateTimeOffsetValue)) {
-        return $dateTimeOffsetValue.ToString('o')
-    }
-
-    $dateTimeValue = [DateTime]::MinValue
-    if ([DateTime]::TryParse($text, [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::RoundtripKind, [ref]$dateTimeValue)) {
-        return $dateTimeValue.ToString('o')
-    }
-
-    return $text
-}
-
 function Get-LWRunSignaturePayload {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -1285,21 +840,6 @@ function Get-LWRunSignaturePayload {
         [string]([int]$State.CurrentSection),
         ($completedBooks -join ',')
     ) -join '|'
-}
-
-function Get-LWStringHash {
-    param([string]$Text = '')
-
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        $hashBytes = $sha.ComputeHash($bytes)
-    }
-    finally {
-        $sha.Dispose()
-    }
-
-    return ([System.BitConverter]::ToString($hashBytes)).Replace('-', '').ToLowerInvariant()
 }
 
 function Get-LWRunSignature {
@@ -16318,7 +15858,7 @@ function Start-LWTerminal {
     Write-LWInfo 'Good luck on the Kai trail.'
 }
 
-if ($MyInvocation.InvocationName -ne '.') {
+if (Test-LWShouldAutoStart -InvocationName $MyInvocation.InvocationName) {
     Initialize-LWData
     Start-LWTerminal
 }
