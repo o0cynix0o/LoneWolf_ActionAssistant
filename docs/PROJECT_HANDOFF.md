@@ -80,6 +80,32 @@ The working pattern has been:
 - keep local release bundles in `testing/releases/`
 - commit code/docs changes, not live player state
 
+## Live Terminal Capture
+
+When a user sees a fast-scrolling VS Code or terminal error that is hard to paste cleanly, prefer transcript capture first.
+
+Recommended pattern:
+
+```powershell
+Start-Transcript -Path 'C:\Scripts\Lone Wolf\testing\logs\live-terminal.txt' -Force
+```
+
+Reproduce the issue, then stop capture:
+
+```powershell
+Stop-Transcript
+```
+
+Then inspect:
+
+- `testing/logs/live-terminal.txt`
+
+For one-shot non-interactive startup capture, redirect all output instead:
+
+```powershell
+.\lonewolf.ps1 -Load 'C:\Scripts\Lone Wolf\saves\Cynix-book1.json' *> 'C:\Scripts\Lone Wolf\testing\logs\live-run.txt'
+```
+
 ## Current Book Status
 
 ### Book 1

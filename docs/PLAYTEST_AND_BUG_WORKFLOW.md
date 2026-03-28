@@ -17,7 +17,23 @@ Keep the player's real run untouched unless the user explicitly asks for a save 
 
 - clone the live save to a sandbox such as `readtest`
 - create throwaway mode-specific saves
-- keep all playtest artifacts local in `logs/`
+- keep all playtest artifacts local in `testing/logs/`
+
+For live terminal debugging, prefer transcript capture when output scrolls too fast to read:
+
+```powershell
+Start-Transcript -Path 'C:\Scripts\Lone Wolf\testing\logs\live-terminal.txt' -Force
+```
+
+Reproduce the issue, then stop capture:
+
+```powershell
+Stop-Transcript
+```
+
+Then inspect:
+
+- `testing/logs/live-terminal.txt`
 
 ## Standard Playtest Passes
 
