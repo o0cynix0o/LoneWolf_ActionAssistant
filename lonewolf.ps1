@@ -6508,6 +6508,139 @@ function Get-LWMagicSpearItemNames {
     return @('Magic Spear')
 }
 
+function Get-LWKnownInventoryNameGroups {
+    return @(
+        @('Axe'),
+        @('Sword'),
+        @('Short Sword'),
+        @('Dagger'),
+        @('Spear'),
+        @('Mace'),
+        @('Warhammer'),
+        @('Quarterstaff'),
+        @('Broadsword'),
+        @('Rope'),
+        @('Meal'),
+        @('Backpack'),
+        (Get-LWChainmailItemNames),
+        (Get-LWPaddedLeatherItemNames),
+        (Get-LWHelmetItemNames),
+        (Get-LWShieldItemNames),
+        (Get-LWSilverHelmItemNames),
+        (Get-LWMapOfSommerlundItemNames),
+        (Get-LWGoldenKeyItemNames),
+        (Get-LWSealOfHammerdalItemNames),
+        (Get-LWCoachTicketItemNames),
+        (Get-LWWhitePassItemNames),
+        (Get-LWRedPassItemNames),
+        (Get-LWVordakGemItemNames),
+        (Get-LWCrystalStarPendantItemNames),
+        (Get-LWMapOfKalteItemNames),
+        (Get-LWSilverKeyItemNames),
+        (Get-LWTombGuardianGemsItemNames),
+        (Get-LWPrincePelatharMessageItemNames),
+        (Get-LWTabletOfPerfumedSoapItemNames),
+        (Get-LWMapOfSouthlandsItemNames),
+        (Get-LWMapOfVassagoniaItemNames),
+        (Get-LWOedeHerbItemNames),
+        (Get-LWBlowpipeItemNames),
+        (Get-LWSleepDartItemNames),
+        (Get-LWGaolersKeysItemNames),
+        (Get-LWJakanBowWeaponNames),
+        (Get-LWArrowItemNames),
+        (Get-LWTowelItemNames),
+        (Get-LWCopperKeyItemNames),
+        (Get-LWHerbPadItemNames),
+        (Get-LWSilverCombItemNames),
+        (Get-LWHourglassItemNames),
+        (Get-LWPrismItemNames),
+        (Get-LWLarnumaOilItemNames),
+        (Get-LWRendalimsElixirItemNames),
+        (Get-LWGallowbrushItemNames),
+        (Get-LWCalacenaItemNames),
+        (Get-LWBlackSashItemNames),
+        (Get-LWBrassWhistleItemNames),
+        (Get-LWBottleOfKourshahItemNames),
+        (Get-LWBlackCrystalCubeItemNames),
+        (Get-LWJewelledMaceItemNames),
+        (Get-LWBookOfMagnakaiItemNames),
+        (Get-LWBadgeOfRankItemNames),
+        (Get-LWSpecialRationsItemNames),
+        (Get-LWOnyxMedallionItemNames),
+        (Get-LWFlaskOfHolyWaterItemNames),
+        (Get-LWScrollItemNames),
+        (Get-LWCaptainDValSwordWeaponNames),
+        (Get-LWDaggerOfVashnaItemNames),
+        (Get-LWIronKeyItemNames),
+        (Get-LWBrassKeyItemNames),
+        (Get-LWWhipItemNames),
+        (Get-LWPotionOfRedLiquidItemNames),
+        (Get-LWMiningToolItemNames),
+        (Get-LWFiresphereItemNames),
+        (Get-LWTorchItemNames),
+        (Get-LWTinderboxItemNames),
+        (Get-LWBaknarOilItemNames),
+        (Get-LWSleepingFursItemNames),
+        (Get-LWBlueStoneTriangleItemNames),
+        (Get-LWBlueStoneDiscItemNames),
+        (Get-LWStoneEffigyItemNames),
+        (Get-LWGoldBraceletItemNames),
+        (Get-LWOrnateSilverKeyItemNames),
+        (Get-LWPotionOfOrangeLiquidItemNames),
+        (Get-LWLaumspurHerbItemNames),
+        (Get-LWDrodarinWarHammerWeaponNames),
+        (Get-LWBroadswordPlusOneWeaponNames),
+        (Get-LWSommerswerdItemNames),
+        (Get-LWBoneSwordWeaponNames),
+        (Get-LWHealingPotionItemNames),
+        (Get-LWPotentHealingPotionItemNames),
+        (Get-LWConcentratedHealingPotionItemNames),
+        (Get-LWAletherPotionItemNames),
+        (Get-LWMealOfLaumspurItemNames),
+        (Get-LWGraveweedItemNames),
+        (Get-LWMagicSpearItemNames),
+        (Get-LWLongRopeItemNames)
+    )
+}
+
+function Convert-LWInventoryNameToDisplayCase {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    $text = $Name.Trim()
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $text
+    }
+
+    $textInfo = [System.Globalization.CultureInfo]::InvariantCulture.TextInfo
+    $displayName = $textInfo.ToTitleCase($text.ToLowerInvariant())
+    $displayName = [regex]::Replace($displayName, "\b(Of|The|And|Or|To|In|On|For|With|From|A|An)\b", { param($match) $match.Value.ToLowerInvariant() })
+    $displayName = [regex]::Replace($displayName, "(?<=\b[A-Za-z])'([a-z])", { param($match) "'" + $match.Groups[1].Value.ToUpperInvariant() })
+
+    if ($displayName.Length -gt 0) {
+        $displayName = $displayName.Substring(0, 1).ToUpperInvariant() + $displayName.Substring(1)
+    }
+
+    return $displayName
+}
+
+function Get-LWCanonicalInventoryItemName {
+    param([string]$Name = '')
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $Name
+    }
+
+    $trimmedName = $Name.Trim()
+    foreach ($group in @(Get-LWKnownInventoryNameGroups)) {
+        $match = Get-LWMatchingValue -Values @($group) -Target $trimmedName
+        if (-not [string]::IsNullOrWhiteSpace($match)) {
+            return [string]$match
+        }
+    }
+
+    return (Convert-LWInventoryNameToDisplayCase -Name $trimmedName)
+}
+
 function Test-LWPotentHealingPotionName {
     param([string]$Name)
 
@@ -10809,10 +10942,21 @@ function Set-LWInventoryItems {
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
     )
 
+    $normalizedItems = @(
+        foreach ($item in @($Items)) {
+            if ($item -is [string]) {
+                Get-LWCanonicalInventoryItemName -Name ([string]$item)
+            }
+            else {
+                $item
+            }
+        }
+    )
+
     switch ($Type) {
-        'weapon' { $script:GameState.Inventory.Weapons = @($Items) }
-        'backpack' { $script:GameState.Inventory.BackpackItems = @($Items) }
-        'special' { $script:GameState.Inventory.SpecialItems = @($Items) }
+        'weapon' { $script:GameState.Inventory.Weapons = @($normalizedItems) }
+        'backpack' { $script:GameState.Inventory.BackpackItems = @($normalizedItems) }
+        'special' { $script:GameState.Inventory.SpecialItems = @($normalizedItems) }
     }
 
     [void](Sync-LWAchievements -Context 'inventory')
@@ -11140,12 +11284,14 @@ function Add-LWWeaponWithOptionalReplace {
         return $false
     }
 
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+
     $weapons = @(Get-LWInventoryItems -Type 'weapon')
     if ($weapons.Count -lt 2) {
-        return (TryAdd-LWInventoryItemSilently -Type 'weapon' -Name $Name)
+        return (TryAdd-LWInventoryItemSilently -Type 'weapon' -Name $resolvedName)
     }
 
-    $displayName = if ([string]::IsNullOrWhiteSpace($PromptLabel)) { $Name } else { $PromptLabel }
+    $displayName = if ([string]::IsNullOrWhiteSpace($PromptLabel)) { $resolvedName } else { $PromptLabel }
     if (-not $Silent) {
         Write-LWInfo ("You must replace a carried weapon to take {0}." -f $displayName)
         Show-LWInventorySlotsSection -Type 'weapon'
@@ -11153,7 +11299,7 @@ function Add-LWWeaponWithOptionalReplace {
 
     $slot = Read-LWInt -Prompt ("Replace which weapon with {0}?" -f $displayName) -Min 1 -Max 2
     $replacedWeapon = [string]$weapons[$slot - 1]
-    $weapons[$slot - 1] = $Name
+    $weapons[$slot - 1] = $resolvedName
     Set-LWInventoryItems -Type 'weapon' -Items @($weapons)
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
 
@@ -11650,17 +11796,19 @@ function Add-LWInventoryItem {
         return
     }
 
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $label = Get-LWInventoryTypeLabel -Type $Type
     $current = @(Get-LWInventoryItems -Type $Type)
     $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $current
-    $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $Name) } else { $Quantity }
+    $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $resolvedName) } else { $Quantity }
     if ($null -ne $capacity -and (($currentUsedCapacity + $requiredCapacity) -gt $capacity)) {
         if ($Type -eq 'backpack') {
             $freeSlots = [Math]::Max(0, ([int]$capacity - [int]$currentUsedCapacity))
             $neededLabel = if ($requiredCapacity -eq 1) { 'slot' } else { 'slots' }
             $freeLabel = if ($freeSlots -eq 1) { 'is' } else { 'are' }
-            Write-LWWarn ("{0} needs {1} backpack {2}, but only {3} {4} free. Drop or use an item first." -f $Name, $requiredCapacity, $neededLabel, $freeSlots, $freeLabel)
+            Write-LWWarn ("{0} needs {1} backpack {2}, but only {3} {4} free. Drop or use an item first." -f $resolvedName, $requiredCapacity, $neededLabel, $freeSlots, $freeLabel)
         }
         else {
             Write-LWWarn ("You can only carry {0} {1}." -f $capacity, $label.ToLowerInvariant())
@@ -11669,7 +11817,7 @@ function Add-LWInventoryItem {
     }
 
     for ($i = 0; $i -lt $Quantity; $i++) {
-        $current += $Name
+        $current += $resolvedName
     }
 
     switch ($Type) {
@@ -11678,10 +11826,10 @@ function Add-LWInventoryItem {
         'special' { $script:GameState.Inventory.SpecialItems = $current }
     }
 
-    Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $Name
+    Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $resolvedName
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
     [void](Sync-LWAchievements -Context 'inventory')
-    Write-LWInfo "Added $Quantity x $Name to $Type inventory."
+    Write-LWInfo "Added $Quantity x $resolvedName to $Type inventory."
     Invoke-LWMaybeAutosave
 }
 
@@ -11700,16 +11848,18 @@ function TryAdd-LWInventoryItemSilently {
         return $false
     }
 
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $current = @(Get-LWInventoryItems -Type $Type)
     $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $current
-    $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $Name) } else { $Quantity }
+    $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $resolvedName) } else { $Quantity }
     if ($null -ne $capacity -and (($currentUsedCapacity + $requiredCapacity) -gt $capacity)) {
         if ($Type -eq 'backpack') {
             $freeSlots = [Math]::Max(0, ([int]$capacity - [int]$currentUsedCapacity))
             $neededLabel = if ($requiredCapacity -eq 1) { 'slot' } else { 'slots' }
             $freeLabel = if ($freeSlots -eq 1) { 'is' } else { 'are' }
-            Write-LWWarn ("{0} needs {1} backpack {2}, but only {3} {4} free. Drop or use an item first." -f $Name, $requiredCapacity, $neededLabel, $freeSlots, $freeLabel)
+            Write-LWWarn ("{0} needs {1} backpack {2}, but only {3} {4} free. Drop or use an item first." -f $resolvedName, $requiredCapacity, $neededLabel, $freeSlots, $freeLabel)
         }
         else {
             Write-LWWarn ("You can only carry {0} {1}." -f $capacity, (Get-LWInventoryTypeLabel -Type $Type).ToLowerInvariant())
@@ -11718,7 +11868,7 @@ function TryAdd-LWInventoryItemSilently {
     }
 
     for ($i = 0; $i -lt $Quantity; $i++) {
-        $current += $Name
+        $current += $resolvedName
     }
 
     switch ($Type) {
@@ -11727,7 +11877,7 @@ function TryAdd-LWInventoryItemSilently {
         'special' { $script:GameState.Inventory.SpecialItems = @($current) }
     }
 
-    Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $Name
+    Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $resolvedName
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
     [void](Sync-LWAchievements -Context 'inventory')
     return $true
