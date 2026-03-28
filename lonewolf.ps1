@@ -7280,6 +7280,16 @@ function Get-LWStateBroadswordPlusOneCombatSkillBonus {
     return 0
 }
 
+function Get-LWStateDaggerOfVashnaEndurancePenalty {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWDaggerOfVashnaItemNames) -Type 'special') {
+        return -3
+    }
+
+    return 0
+}
+
 function Get-LWStateCaptainDValSwordCombatSkillBonus {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -7481,6 +7491,10 @@ function Ensure-LWEquipmentBonusState {
     if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'HelmetEndurance') -or $null -eq $State.EquipmentBonuses.HelmetEndurance) {
         $State.EquipmentBonuses | Add-Member -Force -NotePropertyName HelmetEndurance -NotePropertyValue 0
     }
+
+    if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'DaggerOfVashnaEndurance') -or $null -eq $State.EquipmentBonuses.DaggerOfVashnaEndurance) {
+        $State.EquipmentBonuses | Add-Member -Force -NotePropertyName DaggerOfVashnaEndurance -NotePropertyValue 0
+    }
 }
 
 function Sync-LWStateEquipmentBonuses {
@@ -7503,7 +7517,11 @@ function Sync-LWStateEquipmentBonuses {
     $appliedHelmet = [int]$State.EquipmentBonuses.HelmetEndurance
     $helmetDelta = $desiredHelmet - $appliedHelmet
 
-    $delta = $chainmailDelta + $paddedLeatherDelta + $helmetDelta
+    $desiredDaggerOfVashna = Get-LWStateDaggerOfVashnaEndurancePenalty -State $State
+    $appliedDaggerOfVashna = [int]$State.EquipmentBonuses.DaggerOfVashnaEndurance
+    $daggerOfVashnaDelta = $desiredDaggerOfVashna - $appliedDaggerOfVashna
+
+    $delta = $chainmailDelta + $paddedLeatherDelta + $helmetDelta + $daggerOfVashnaDelta
 
     if ($delta -eq 0) {
         return
@@ -7523,6 +7541,7 @@ function Sync-LWStateEquipmentBonuses {
     $State.EquipmentBonuses.ChainmailEndurance = $desiredChainmail
     $State.EquipmentBonuses.PaddedLeatherEndurance = $desiredPaddedLeather
     $State.EquipmentBonuses.HelmetEndurance = $desiredHelmet
+    $State.EquipmentBonuses.DaggerOfVashnaEndurance = $desiredDaggerOfVashna
 
     if ($WriteMessages) {
         if ($chainmailDelta -ne 0) {
@@ -7536,6 +7555,10 @@ function Sync-LWStateEquipmentBonuses {
         if ($helmetDelta -ne 0) {
             $direction = if ($helmetDelta -gt 0) { 'applied' } else { 'removed' }
             Write-LWInfo ("Helmet bonus {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $helmetDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
+        }
+        if ($daggerOfVashnaDelta -ne 0) {
+            $direction = if ($daggerOfVashnaDelta -lt 0) { 'applied' } else { 'removed' }
+            Write-LWWarn ("Dagger of Vashna drain {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $daggerOfVashnaDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
         }
     }
 }
@@ -7774,6 +7797,7 @@ function New-LWDefaultState {
             ChainmailEndurance = 0
             PaddedLeatherEndurance = 0
             HelmetEndurance = 0
+            DaggerOfVashnaEndurance = 0
         }
         Settings          = [pscustomobject]@{
             CombatMode = 'ManualCRT'
@@ -11598,6 +11622,7 @@ function Show-LWSheet {
     $chainmailBonus = Get-LWStateChainmailEnduranceBonus -State $script:GameState
     $paddedLeatherBonus = Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState
     $helmetBonus = Get-LWStateHelmetEnduranceBonus -State $script:GameState
+    $daggerPenalty = Get-LWStateDaggerOfVashnaEndurancePenalty -State $script:GameState
     $enduranceText = "{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax
     $enduranceNotes = @()
     if ($chainmailBonus -gt 0) {
@@ -11608,6 +11633,9 @@ function Show-LWSheet {
     }
     if ($helmetBonus -gt 0) {
         $enduranceNotes += "Helmet +$helmetBonus"
+    }
+    if ($daggerPenalty -lt 0) {
+        $enduranceNotes += "Dagger of Vashna $daggerPenalty"
     }
     if ($enduranceNotes.Count -gt 0) {
         $enduranceText += " ({0})" -f ($enduranceNotes -join ', ')

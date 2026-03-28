@@ -109,6 +109,7 @@ function Invoke-LWCoreNewDefaultState {
                 ChainmailEndurance = 0
                 PaddedLeatherEndurance = 0
                 HelmetEndurance = 0
+                DaggerOfVashnaEndurance = 0
             }
             Settings          = [pscustomobject]@{
                 CombatMode = 'ManualCRT'
