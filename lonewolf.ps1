@@ -11110,10 +11110,21 @@ function Restore-LWConfiscatedEquipment {
         return $false
     }
 
-    $script:GameState.Inventory.Weapons = @($script:GameState.Storage.Confiscated.Weapons)
-    $script:GameState.Inventory.BackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems)
-    $script:GameState.Inventory.SpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems)
-    $script:GameState.Inventory.GoldCrowns = [int]$script:GameState.Storage.Confiscated.GoldCrowns
+    $currentWeapons = @($script:GameState.Inventory.Weapons)
+    $currentBackpackItems = @($script:GameState.Inventory.BackpackItems)
+    $currentSpecialItems = @($script:GameState.Inventory.SpecialItems)
+    $currentGoldCrowns = [int]$script:GameState.Inventory.GoldCrowns
+
+    $restoredWeapons = @($script:GameState.Storage.Confiscated.Weapons)
+    $restoredBackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems)
+    $restoredSpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems)
+    $restoredGoldCrowns = [int]$script:GameState.Storage.Confiscated.GoldCrowns
+
+    Set-LWInventoryItems -Type 'weapon' -Items @($currentWeapons + $restoredWeapons)
+    Set-LWInventoryItems -Type 'backpack' -Items @($currentBackpackItems + $restoredBackpackItems)
+    Set-LWInventoryItems -Type 'special' -Items @($currentSpecialItems + $restoredSpecialItems)
+    $totalGoldCrowns = $currentGoldCrowns + $restoredGoldCrowns
+    $script:GameState.Inventory.GoldCrowns = [Math]::Min(50, $totalGoldCrowns)
     $script:GameState.Inventory.HasBackpack = $true
 
     $script:GameState.Storage.Confiscated.Weapons = @()
@@ -11127,6 +11138,26 @@ function Restore-LWConfiscatedEquipment {
 
     if ($WriteMessages) {
         Write-LWInfo 'Your confiscated equipment has been restored.'
+        if ($totalGoldCrowns -gt 50) {
+            Write-LWWarn ("Restoring your confiscated Gold Crowns would take you to {0}. Gold remains capped at 50, so the excess is lost." -f $totalGoldCrowns)
+        }
+
+        $weaponCount = @($script:GameState.Inventory.Weapons).Count
+        $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items @($script:GameState.Inventory.BackpackItems)
+        $specialCount = @($script:GameState.Inventory.SpecialItems).Count
+        $overLimitWarnings = @()
+        if ($weaponCount -gt 2) {
+            $overLimitWarnings += ("Weapons {0}/2" -f $weaponCount)
+        }
+        if ($backpackUsedCapacity -gt 8) {
+            $overLimitWarnings += ("Backpack {0}/8" -f $backpackUsedCapacity)
+        }
+        if ($specialCount -gt 12) {
+            $overLimitWarnings += ("Special Items {0}/12" -f $specialCount)
+        }
+        if ($overLimitWarnings.Count -gt 0) {
+            Write-LWWarn ("Restoring your confiscated gear leaves you over the normal carry limits: {0}. Remove or drop items when you can." -f ($overLimitWarnings -join ', '))
+        }
     }
 
     return $true
