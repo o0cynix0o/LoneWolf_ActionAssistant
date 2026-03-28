@@ -16277,7 +16277,33 @@ function Apply-LWBookFiveStartingEquipment {
     Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 5 -CarryExistingGear:$CarryExistingGear
 }
 
+function Publish-LWScriptFunctionsToSession {
+    $scriptPath = if (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
+        $PSCommandPath
+    }
+    elseif ($MyInvocation.MyCommand.Path) {
+        $MyInvocation.MyCommand.Path
+    }
+    else {
+        $null
+    }
+
+    $functions = @(Get-Command -CommandType Function | Where-Object {
+            $_.Name -like '*-LW*' -and
+            $null -ne $_.ScriptBlock -and
+            (
+                [string]::IsNullOrWhiteSpace($scriptPath) -or
+                [string]$_.ScriptBlock.File -eq $scriptPath
+            )
+        })
+
+    foreach ($functionInfo in $functions) {
+        Set-Item -Path ("Function:\global:{0}" -f $functionInfo.Name) -Value $functionInfo.ScriptBlock -Force
+    }
+}
+
 if (Test-LWShouldAutoStart -InvocationName $MyInvocation.InvocationName) {
+    Publish-LWScriptFunctionsToSession
     Initialize-LWData
     Start-LWTerminal
 }
