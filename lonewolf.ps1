@@ -5753,6 +5753,12 @@ function Get-LWBookFiveSection003ChoiceDefinitions {
     )
 }
 
+function Get-LWBookFiveSection004ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book5Section004SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' }
+    )
+}
+
 function Get-LWBookFiveSection027ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'larnuma_oil'; FlagName = 'Book5Section027LarnumaOilBought'; DisplayName = 'Larnuma Oil'; Type = 'backpack'; Name = 'Larnuma Oil'; Quantity = 1; Description = 'Larnuma Oil'; GoldCost = 3 },

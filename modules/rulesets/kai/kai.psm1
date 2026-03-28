@@ -1376,6 +1376,9 @@ function Invoke-LWKaiSectionEntryRules {
                     3 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 3 Loot' -PromptLabel 'Section 3 choice' -ContextLabel 'Section 3' -Choices (Get-LWBookFiveSection003ChoiceDefinitions) -Intro 'Section 3: search the dead guards and keep whatever you want.'
                     }
+                    4 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 4 Sword' -PromptLabel 'Section 4 choice' -ContextLabel 'Section 4' -Choices (Get-LWBookFiveSection004ChoiceDefinitions) -Intro 'Section 4: grab the fallen sword if you want to fight with it.'
+                    }
                     10 {
                         if (-not (Test-LWStateHasConfiscatedEquipment)) {
                             Save-LWConfiscatedEquipment -WriteMessages -Reason 'Section 10: your captors strip you of all carried gear'
