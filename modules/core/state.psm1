@@ -8,6 +8,35 @@ function Set-LWModuleContext {
     }
 }
 
+function Resolve-LWCoreInventoryItemName {
+    param([string]$Name = '')
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $Name
+    }
+
+    if (Get-Command -Name 'Get-LWCanonicalInventoryItemName' -ErrorAction SilentlyContinue) {
+        return (Get-LWCanonicalInventoryItemName -Name $Name)
+    }
+
+    return $Name.Trim()
+}
+
+function Resolve-LWCoreInventoryItemList {
+    param([object[]]$Items = @())
+
+    return @(
+        foreach ($item in @($Items)) {
+            if ($item -is [string]) {
+                Resolve-LWCoreInventoryItemName -Name ([string]$item)
+            }
+            else {
+                $item
+            }
+        }
+    )
+}
+
 function Invoke-LWCoreInitializeData {
     param([hashtable]$Context)
 
@@ -148,7 +177,7 @@ function Invoke-LWCoreNormalizeState {
             $State.Storage | Add-Member -Force -NotePropertyName SafekeepingSpecialItems -NotePropertyValue @()
         }
         else {
-            $State.Storage.SafekeepingSpecialItems = @($State.Storage.SafekeepingSpecialItems)
+            $State.Storage.SafekeepingSpecialItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Storage.SafekeepingSpecialItems))
         }
         if (-not (Test-LWPropertyExists -Object $State.Storage -Name 'Confiscated') -or $null -eq $State.Storage.Confiscated) {
             $State.Storage | Add-Member -Force -NotePropertyName Confiscated -NotePropertyValue (New-LWStorageState).Confiscated
@@ -158,7 +187,7 @@ function Invoke-LWCoreNormalizeState {
                 $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue @()
             }
             else {
-                $State.Storage.Confiscated.$entryName = @($State.Storage.Confiscated.$entryName)
+                $State.Storage.Confiscated.$entryName = @(Resolve-LWCoreInventoryItemList -Items @($State.Storage.Confiscated.$entryName))
             }
         }
         foreach ($propertyName in @('GoldCrowns', 'BookNumber', 'Section', 'SavedOn')) {
@@ -188,7 +217,7 @@ function Invoke-LWCoreNormalizeState {
                 $State.RecoveryStash.$entryName | Add-Member -Force -NotePropertyName Items -NotePropertyValue @()
             }
             else {
-                $State.RecoveryStash.$entryName.Items = @($State.RecoveryStash.$entryName.Items)
+                $State.RecoveryStash.$entryName.Items = @(Resolve-LWCoreInventoryItemList -Items @($State.RecoveryStash.$entryName.Items))
             }
 
             foreach ($propertyName in @('BookNumber', 'Section', 'SavedOn')) {
@@ -258,14 +287,23 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'Weapons') -or $null -eq $State.Inventory.Weapons) {
             $State.Inventory.Weapons = @()
         }
+        else {
+            $State.Inventory.Weapons = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.Weapons))
+        }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'BackpackItems') -or $null -eq $State.Inventory.BackpackItems) {
             $State.Inventory.BackpackItems = @()
+        }
+        else {
+            $State.Inventory.BackpackItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.BackpackItems))
         }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HasBackpack') -or $null -eq $State.Inventory.HasBackpack) {
             $State.Inventory | Add-Member -Force -NotePropertyName HasBackpack -NotePropertyValue $true
         }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'SpecialItems') -or $null -eq $State.Inventory.SpecialItems) {
             $State.Inventory.SpecialItems = @()
+        }
+        else {
+            $State.Inventory.SpecialItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.SpecialItems))
         }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'Log') -or $null -eq $State.Combat.Log) {
             $State.Combat.Log = @()
