@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Lone Wolf",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/lonewolf.ps1",
+      "cwd": "${workspaceFolder}",
+      "args": []
+    },
+    {
+      "name": "Run Lone Wolf + Load Save",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/lonewolf.ps1",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "-Load",
+        "${input:lwSavePath}"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "lwSavePath",
+      "type": "promptString",
+      "description": "Absolute path to the save file to auto-load",
+      "default": "C:\\Scripts\\Lone Wolf\\saves\\Cynix-book1.json"
+    }
+  ]
+}
