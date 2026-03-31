@@ -2583,7 +2583,13 @@ function Get-LWBookFiveSectionRandomNumberContext {
                 $modifierNotes += 'Weaponskill'
             }
         }
-        336 { $description = 'Falling-Itikar landing check.' }
+            336 {
+                $description = 'Falling-Itikar landing check.'
+                if (Test-LWStateHasDiscipline -State $State -Name 'Animal Kinship') {
+                    $modifier -= 1
+                    $modifierNotes += 'Animal Kinship'
+                }
+            }
         357 {
             $description = 'Platform fight fall check. Picking a 1 makes you fall.'
         }
