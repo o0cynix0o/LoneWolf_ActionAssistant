@@ -697,6 +697,12 @@ function Invoke-LWCoreStartCombat {
             }
             Write-LWInfo ("Book 5 section {0}: double all ENDURANCE lost by the Itikar." -f [int]$script:GameState.CurrentSection)
         }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 280 -and [string]$enemyName -ieq 'Drakkar') {
+            $ignoreFirstRoundEnduranceLoss = $true
+            $victoryResolutionSection = 213
+            $victoryResolutionNote = 'Section 280 result: victory sends you to 213.'
+            Write-LWInfo 'Book 5 section 280: surprise attack lets you ignore all Lone Wolf END loss in the first round.'
+        }
         elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 299 -and [string]$enemyName -ieq 'Vordak') {
             $enemyImmune = $true
             $canEvade = $false
