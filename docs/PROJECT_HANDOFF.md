@@ -4,9 +4,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.38` local unpushed M1 build
+- App version: `0.7.38`
 - Main script: `lonewolf.ps1`
-- Latest shipped commit at time of writing: keep this synced with the newest pushed release; if unsure, check `git log -1`
+- Latest shipped commit at time of writing: `e5ef990`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Public docs hygiene:
   - sanitize `README.md` before push
@@ -34,7 +34,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - The Kai ruleset campaign is now complete through Book 5
 - GitHub repo, wiki, and issue tracker workflow already in use
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
-- Local-only M1 modular refactor work is complete and intentionally unpushed for playtesting as of 2026-03-27
+- M1 modular refactor is complete and pushed
 
 ## Main Repo Files
 
@@ -53,9 +53,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - `build-release.ps1`
   Local portable release builder that assembles a clean distributable package under `testing/releases/`
 - `modules/core/`
-  Local M1 core-engine modules, including state/save/command/combat/ruleset slices
+  Core-engine modules, including state/save/command/combat/ruleset slices
 - `modules/rulesets/kai/`
-  Local M1 Kai ruleset shell plus Book `1-5` modules
+  Kai ruleset shell plus Book `1-5` modules
 - `data/kai-disciplines.json`
   Discipline definitions
 - `data/weaponskill-map.json`
@@ -219,10 +219,10 @@ Latest large-scale validation:
 - no campaign failures in the March 27 full validation sweep
 - additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
 
-Local unpushed M1 checkpoint:
+M1 refactor status:
 
-- modular wrappers are active in the local build
-- extracted local modules now include:
+- modular wrappers are active in the shipped build
+- extracted modules include:
   - `modules/core/state.psm1`
   - `modules/core/save.psm1`
   - `modules/core/commands.psm1`
@@ -230,15 +230,15 @@ Local unpushed M1 checkpoint:
   - `modules/core/ruleset.psm1`
   - `modules/rulesets/kai/kai.psm1`
   - `modules/rulesets/kai/book1.psm1` through `book5.psm1`
-- saves now normalize:
+- saves normalize:
   - `RuleSet`
   - `EngineVersion`
   - `RuleSetVersion`
-- local validation cleared the documented M1 exit bar:
+- validation cleared the documented M1 exit bar:
   - `100` full Books `1-5` sandbox campaigns passed
   - `0` campaign failures
   - command-surface smoke passed in both shells
-- see:
+- reports:
   - `testing/logs/M1_7_COMPLETION_SUMMARY_20260327.md`
   - `testing/logs/FULL_VALIDATION_REPORT_M1_PWSH_40.md`
   - `testing/logs/FULL_VALIDATION_REPORT_M1_PS51_20.md`

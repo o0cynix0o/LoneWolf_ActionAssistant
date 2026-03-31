@@ -43,10 +43,10 @@ Exit criteria:
 - validation passes in PowerShell 7 and Windows PowerShell 5.1
 - `100+` sandbox tests of the command surface and actual app pass across the full Kai campaign
 
-Local completion note:
+Completion note:
 
-- completed locally on 2026-03-27 and intentionally held unpushed for playtesting
-- current local validation:
+- completed on 2026-03-27 and later pushed after playtesting
+- validation:
   - `100` full Books `1-5` sandbox campaigns passed
   - `60` initial campaigns
   - `40` additional campaigns to clear the `100+` exit bar
@@ -72,9 +72,9 @@ Deliverables:
 - centralized import order
 - no behavioral changes intended
 
-Local checkpoint:
+Checkpoint:
 
-- thin launcher/module import path is active in the local unpushed M1 build
+- thin launcher/module import path is active in the shipped build
 - latest validation notes:
   - `testing/logs/M1_1_BOOTSTRAP_VALIDATION.md`
   - `testing/logs/M1_7_COMPLETION_SUMMARY_20260327.md`
@@ -97,13 +97,13 @@ Deliverables:
 - inventory/combat/stats modules
 - achievement/mode modules
 
-Local checkpoint:
+Checkpoint:
 
 - first extracted modules:
   - `modules/core/bootstrap.psm1`
   - `modules/core/display.psm1`
   - `modules/core/common.psm1`
-- additional extracted engine modules in the local unpushed M1 build:
+- additional extracted engine modules in the shipped build:
   - `modules/core/state.psm1`
   - `modules/core/save.psm1`
   - `modules/core/commands.psm1`
@@ -128,9 +128,9 @@ Deliverables:
 - ruleset metadata and registration hooks
 - book-dispatch mechanism
 
-Local checkpoint:
+Checkpoint:
 
-- Kai ruleset shell and dispatch are active in the local unpushed M1 build
+- Kai ruleset shell and dispatch are active in the shipped build
 - book modules currently present for Kai Books `1-5`
 
 ### M1.4 - Kai Books 1-2 Extraction
@@ -149,9 +149,9 @@ Deliverables:
 - `book2.psm1`
 - startup, section, combat, and achievement hooks moved out of the monolith
 
-Local checkpoint:
+Checkpoint:
 
-- Books `1-2` now load through `modules/rulesets/kai/` in the local unpushed M1 build
+- Books `1-2` now load through `modules/rulesets/kai/` in the shipped build
 
 ### M1.5 - Kai Books 3-5 Extraction
 
@@ -169,9 +169,9 @@ Deliverables:
 - `book4.psm1`
 - `book5.psm1`
 
-Local checkpoint:
+Checkpoint:
 
-- Books `3-5` now load through `modules/rulesets/kai/` in the local unpushed M1 build
+- Books `3-5` now load through `modules/rulesets/kai/` in the shipped build
 
 ### M1.6 - Save Migration And Ruleset-Aware Saves
 
@@ -189,9 +189,9 @@ Deliverables:
 - migration logic
 - migration validation against existing live formats
 
-Local checkpoint:
+Checkpoint:
 
-- saves now normalize `RuleSet`, `EngineVersion`, and `RuleSetVersion` in the local unpushed M1 build
+- saves now normalize `RuleSet`, `EngineVersion`, and `RuleSetVersion` in the shipped build
 
 ### M1.7 - Full Regression Pass
 
@@ -211,9 +211,9 @@ Deliverables:
 - `100+` sandbox tests of the command surface and actual app across the full Kai campaign
 - updated handoff and validation notes
 
-Local checkpoint:
+Checkpoint:
 
-- current local M1 validation:
+- current M1 validation:
   - `100` full Books `1-5` campaigns
   - command-surface smoke in both shells
   - local reports:
