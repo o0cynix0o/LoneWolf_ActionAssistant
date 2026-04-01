@@ -2254,8 +2254,25 @@ function Get-LWBookOneSectionRandomNumberContext {
     }
 
     $section = [int]$State.CurrentSection
-    if (@(2, 7, 17, 21, 22, 36, 44, 49, 89, 158, 160, 188, 205, 226, 237, 275, 279, 294, 302, 314, 337, 350) -contains $section) {
-        return (New-LWSectionRandomNumberContext -Section $section)
+    switch ($section) {
+        337 {
+            $modifier = 0
+            $notes = @()
+            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
+                $modifier += 1
+                $notes += 'Hunting'
+            }
+            if (Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense') {
+                $modifier += 2
+                $notes += 'Sixth Sense'
+            }
+            return (New-LWSectionRandomNumberContext -Section $section -Description 'Book 1 route-finding check.' -Modifier $modifier -ModifierNotes $notes)
+        }
+        default {
+            if (@(2, 7, 17, 21, 22, 36, 44, 49, 89, 158, 160, 188, 205, 226, 237, 275, 279, 294, 302, 314, 350) -contains $section) {
+                return (New-LWSectionRandomNumberContext -Section $section)
+            }
+        }
     }
 
     return $null
