@@ -277,6 +277,13 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    82 {
+                        $solnarisName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSolnarisWeaponNames) -Type 'weapon'
+                        if (-not [string]::IsNullOrWhiteSpace($solnarisName)) {
+                            [void](Remove-LWInventoryItemSilently -Type 'weapon' -Name $solnarisName -Quantity 1)
+                            Write-LWInfo 'Section 82: Solnaris is returned to Prince Pelathar.'
+                        }
+                    }
                     113 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book1LaumspurClaimed')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Laumspur Herb' -Quantity 2) {

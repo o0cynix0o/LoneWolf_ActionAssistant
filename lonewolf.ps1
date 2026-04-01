@@ -2908,11 +2908,11 @@ function Invoke-LWSectionEntryRules {
     switch ($bookNumber) {
         1 {
             switch ($section) {
-                76 {
-                    if (-not (Test-LWStoryAchievementFlag -Name 'Book1VordakGem76Claimed')) {
-                        $before = [int]$script:GameState.Character.EnduranceCurrent
-                        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 2 -Source 'sectiondamage'
-                        $appliedLoss = [int]$lossResolution.AppliedLoss
+                    76 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book1VordakGem76Claimed')) {
+                            $before = [int]$script:GameState.Character.EnduranceCurrent
+                            $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 2 -Source 'sectiondamage'
+                            $appliedLoss = [int]$lossResolution.AppliedLoss
 
                         if ($appliedLoss -gt 0) {
                             $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
@@ -2937,14 +2937,21 @@ function Invoke-LWSectionEntryRules {
                         }
                         else {
                             Write-LWWarn 'No room to add the Vordak Gem automatically. Make room and add it manually if you are keeping it.'
+                            }
                         }
                     }
-                }
-                113 {
-                    if (-not (Test-LWStoryAchievementFlag -Name 'Book1LaumspurClaimed')) {
-                        if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Laumspur Herb' -Quantity 2) {
-                            Set-LWStoryAchievementFlag -Name 'Book1LaumspurClaimed'
-                            Write-LWInfo 'Section 113: added 2 x Laumspur Herb. Each use restores 3 ENDURANCE and can also satisfy a Meal.'
+                    82 {
+                        $solnarisName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSolnarisWeaponNames) -Type 'weapon'
+                        if (-not [string]::IsNullOrWhiteSpace($solnarisName)) {
+                            [void](Remove-LWInventoryItemSilently -Type 'weapon' -Name $solnarisName -Quantity 1)
+                            Write-LWInfo 'Section 82: Solnaris is returned to Prince Pelathar.'
+                        }
+                    }
+                    113 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book1LaumspurClaimed')) {
+                            if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Laumspur Herb' -Quantity 2) {
+                                Set-LWStoryAchievementFlag -Name 'Book1LaumspurClaimed'
+                                Write-LWInfo 'Section 113: added 2 x Laumspur Herb. Each use restores 3 ENDURANCE and can also satisfy a Meal.'
                         }
                         else {
                             Write-LWWarn 'No room to add the Laumspur Herb automatically. Make room and add it manually if you are keeping it.'
