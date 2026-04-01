@@ -1031,6 +1031,7 @@ function New-LWStoryAchievementFlags {
         Book1VordakGem76Claimed     = $false
         Book1VordakGem304Claimed    = $false
         Book1VordakGemCurseTriggered = $false
+        Book1Section255SolnarisClaimed = $false
         Book2CoachTicketClaimed     = $false
         Book2WhitePassClaimed       = $false
         Book2RedPassClaimed         = $false
@@ -1304,7 +1305,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book1Section255SolnarisClaimed', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -2996,6 +2997,9 @@ function Invoke-LWSectionEntryRules {
                         Set-LWInventoryItems -Type 'backpack' -Items @()
                         Write-LWInfo 'Section 205: all Weapons and Backpack Items are taken from you.'
                     }
+                }
+                255 {
+                    Invoke-LWBookFourChoiceTable -Title 'Section 255 Reward' -PromptLabel 'Section 255 choice' -ContextLabel 'Section 255' -Choices (Get-LWBookOneSection255ChoiceDefinitions) -Intro 'Section 255: keep Solnaris if you want the prince''s broadsword.'
                 }
                 267 {
                     Invoke-LWBookFourChoiceTable -Title 'Section 267 Saddlebag' -PromptLabel 'Section 267 choice' -ContextLabel 'Section 267' -Choices (Get-LWBookOneSection267ChoiceDefinitions) -Intro 'Section 267: keep the Message and Dagger if you want them.'
@@ -5639,6 +5643,12 @@ function Get-LWBookOneSection124ChoiceDefinitions {
     )
 }
 
+function Get-LWBookOneSection255ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'solnaris'; FlagName = 'Book1Section255SolnarisClaimed'; DisplayName = 'Solnaris'; Type = 'weapon'; Name = 'Solnaris'; Quantity = 1; Description = 'Solnaris' }
+    )
+}
+
 function Get-LWBookOneSection267ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'message'; FlagName = 'Book1Section267MessageClaimed'; DisplayName = 'Prince Pelathar''s Message'; Type = 'special'; Name = 'Prince Pelathar''s Message'; Quantity = 1; Description = 'Prince Pelathar''s Message' },
@@ -6404,6 +6414,10 @@ function Get-LWCaptainDValSwordWeaponNames {
     return @("Captain D'Val's Sword", 'Captain DVal Sword')
 }
 
+function Get-LWSolnarisWeaponNames {
+    return @('Solnaris', "Prince's Sword", 'Princes Sword', "Prince's Broadsword", 'Princes Broadsword')
+}
+
 function Get-LWDaggerOfVashnaItemNames {
     return @('Dagger of Vashna')
 }
@@ -6590,6 +6604,7 @@ function Get-LWKnownInventoryNameGroups {
         (Get-LWFlaskOfHolyWaterItemNames),
         (Get-LWScrollItemNames),
         (Get-LWCaptainDValSwordWeaponNames),
+        (Get-LWSolnarisWeaponNames),
         (Get-LWDaggerOfVashnaItemNames),
         (Get-LWIronKeyItemNames),
         (Get-LWBrassKeyItemNames),
@@ -6852,6 +6867,16 @@ function Test-LWWeaponIsBroadswordPlusOne {
     return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWBroadswordPlusOneWeaponNames) -Target $Weapon)))
 }
 
+function Test-LWWeaponIsSolnaris {
+    param([string]$Weapon)
+
+    if ([string]::IsNullOrWhiteSpace($Weapon)) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSolnarisWeaponNames) -Target $Weapon)))
+}
+
 function Test-LWWeaponIsMagicSpear {
     param([string]$Weapon)
 
@@ -6878,6 +6903,12 @@ function Test-LWStateHasBroadswordPlusOne {
     param([Parameter(Mandatory = $true)][object]$State)
 
     return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWBroadswordPlusOneWeaponNames) -Type 'weapon')
+}
+
+function Test-LWStateHasSolnaris {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return (Test-LWStateHasInventoryItem -State $State -Names (Get-LWSolnarisWeaponNames) -Type 'weapon')
 }
 
 function Test-LWStateHasMagicSpear {
@@ -7295,6 +7326,20 @@ function Get-LWStateBroadswordPlusOneCombatSkillBonus {
     $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
     if (Test-LWWeaponIsBroadswordPlusOne -Weapon $activeWeapon) {
         return 1
+    }
+
+    return 0
+}
+
+function Get-LWStateSolnarisCombatSkillBonus {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if (Test-LWWeaponIsSolnaris -Weapon $activeWeapon) {
+        return 2
     }
 
     return 0
@@ -8866,6 +8911,10 @@ function Test-LWWeaponMatchesWeaponskill {
         return $true
     }
 
+    if ((Test-LWWeaponIsSolnaris -Weapon $Weapon) -and @('Broadsword', 'Sword') -contains [string]$WeaponskillWeapon) {
+        return $true
+    }
+
     if ((Test-LWWeaponIsMagicSpear -Weapon $Weapon) -and [string]$WeaponskillWeapon -ieq 'Spear') {
         return $true
     }
@@ -8900,7 +8949,10 @@ function Get-LWPreferredCombatWeapon {
         $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$_) } | Select-Object -First 1)
     }
     if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Broadsword') {
-        $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$_) } | Select-Object -First 1)
+        $weaponskillWeapon = [string]($weapons | Where-Object { (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$_)) -or (Test-LWWeaponIsSolnaris -Weapon ([string]$_)) } | Select-Object -First 1)
+    }
+    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Sword') {
+        $weaponskillWeapon = [string]($weapons | Where-Object { (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$_)) -or (Test-LWWeaponIsSolnaris -Weapon ([string]$_)) } | Select-Object -First 1)
     }
     if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Spear') {
         $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsMagicSpear -Weapon ([string]$_) } | Select-Object -First 1)
@@ -11560,6 +11612,10 @@ function Show-LWInventory {
         Write-LWSubtle '  Captain D''Val''s Sword: +1 Combat Skill in combat and counts as a Sword.'
         Write-Host ''
     }
+    if (Test-LWStateHasSolnaris -State $script:GameState) {
+        Write-LWSubtle '  Solnaris: +2 Combat Skill in combat and counts as a Sword or Broadsword for Weaponskill.'
+        Write-Host ''
+    }
     if ((Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
         Write-LWSubtle '  Silver Helm: +2 Combat Skill while carried as a Special Item.'
         Write-Host ''
@@ -12807,9 +12863,15 @@ function Get-LWCombatBreakdownFromState {
             $notes += "Captain D'Val's Sword +$captainDValSwordBonus"
         }
 
+        $solnarisBonus = Get-LWStateSolnarisCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
+        if ($solnarisBonus -gt 0) {
+            $playerCombatSkill += $solnarisBonus
+            $notes += "Solnaris +$solnarisBonus"
+        }
+
         if ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
             $playerCombatSkill += 2
-            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } elseif (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Sword' } else { [string]$State.Combat.EquippedWeapon }
+            $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } elseif (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Sword' } elseif (Test-LWWeaponIsSolnaris -Weapon ([string]$State.Combat.EquippedWeapon)) { [string]$State.Character.WeaponskillWeapon } else { [string]$State.Combat.EquippedWeapon }
             $notes += "Weaponskill +2 ($weaponskillLabel)"
         }
     }
@@ -13037,6 +13099,9 @@ function Get-LWCombatDisplayWeapon {
     }
     if (Test-LWWeaponIsBoneSword -Weapon $Weapon) {
         return 'Bone Sword'
+    }
+    if (Test-LWWeaponIsSolnaris -Weapon $Weapon) {
+        return 'Solnaris'
     }
     if (Test-LWWeaponIsMagicSpear -Weapon $Weapon) {
         return 'Magic Spear'
@@ -15686,7 +15751,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer; Captain D''Val''s Sword adds +1 Combat Skill and counts as a Sword.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer; Captain D''Val''s Sword adds +1 Combat Skill and counts as a Sword; Solnaris adds +2 Combat Skill and counts as a Sword or Broadsword for Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'

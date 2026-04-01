@@ -335,6 +335,9 @@ function Invoke-LWKaiSectionEntryRules {
                             Write-LWInfo 'Section 205: all Weapons and Backpack Items are taken from you.'
                         }
                     }
+                    255 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 255 Reward' -PromptLabel 'Section 255 choice' -ContextLabel 'Section 255' -Choices (Get-LWBookOneSection255ChoiceDefinitions) -Intro 'Section 255: keep Solnaris if you want the prince''s broadsword.'
+                    }
                     267 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 267 Saddlebag' -PromptLabel 'Section 267 choice' -ContextLabel 'Section 267' -Choices (Get-LWBookOneSection267ChoiceDefinitions) -Intro 'Section 267: keep the Message and Dagger if you want them.'
                     }
