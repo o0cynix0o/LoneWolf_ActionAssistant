@@ -74,7 +74,7 @@ function Apply-LWKaiBookTwoStartingEquipment {
                 Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$availableChoices[$i].DisplayName) -TextColor 'Gray' -BulletColor 'Yellow'
             }
 
-            $choiceIndex = Read-LWInt -Prompt ("Armory choice #{0}" -f ($selectedIds.Count + 1)) -Min 1 -Max $availableChoices.Count
+            $choiceIndex = Read-LWInt -Prompt ("Armory choice #{0}" -f ($selectedIds.Count + 1)) -Min 1 -Max $availableChoices.Count -NoRefresh
             $choice = $availableChoices[$choiceIndex - 1]
             $selectedIds += [string]$choice.Id
             Grant-LWBookTwoArmoryChoice -Choice $choice
