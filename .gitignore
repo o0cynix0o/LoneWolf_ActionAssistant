@@ -14,9 +14,6 @@ tmp-*/
 testing/*
 !testing/.gitkeep
 
-# Local docs / handoff notes
-agent.md
-
 # Editor and OS noise
 .vscode/
 !.vscode/
