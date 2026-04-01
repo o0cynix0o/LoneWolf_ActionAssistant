@@ -277,6 +277,12 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    61 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section61NoteAdded')) {
+                            Set-LWStoryAchievementFlag -Name 'Book1Section61NoteAdded'
+                            Add-LWNote -Text 'Survived the Graveyard of the Ancients'
+                        }
+                    }
                     82 {
                         $solnarisName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSolnarisWeaponNames) -Type 'weapon'
                         if (-not [string]::IsNullOrWhiteSpace($solnarisName)) {
