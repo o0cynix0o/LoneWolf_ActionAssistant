@@ -11734,6 +11734,22 @@ function Show-LWSheet {
     if (Test-LWStateHasBoneSword -State $script:GameState) {
         Write-LWKeyValue -Label 'Bone Sword' -Value $(if (Test-LWStateIsInKalte -State $script:GameState) { '+1 in Book 3 / Kalte combat' } else { 'No bonus outside Book 3 / Kalte' }) -ValueColor 'DarkYellow'
     }
+    if (Test-LWStateHasBroadswordPlusOne -State $script:GameState) {
+        Write-LWKeyValue -Label 'Broadsword +1' -Value '+1 in combat' -ValueColor 'DarkYellow'
+    }
+    if (Test-LWStateHasDrodarinWarHammer -State $script:GameState) {
+        Write-LWKeyValue -Label 'Drodarin War Hammer' -Value '+1 in combat; counts as Warhammer for Weaponskill' -ValueColor 'DarkYellow'
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCaptainDValSwordWeaponNames) -Type 'weapon'))) {
+        Write-LWKeyValue -Label 'Captain D''Val''s Sword' -Value '+1 in combat; counts as Sword for Weaponskill' -ValueColor 'DarkYellow'
+    }
+    if (Test-LWStateHasSolnaris -State $script:GameState) {
+        $solnarisText = '+2 in combat; counts as Sword or Broadsword for Weaponskill'
+        if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Weaponskill') -and @('Sword', 'Broadsword') -contains [string]$script:GameState.Character.WeaponskillWeapon) {
+            $solnarisText = "+4 total in combat with $([string]$script:GameState.Character.WeaponskillWeapon) Weaponskill"
+        }
+        Write-LWKeyValue -Label 'Solnaris' -Value $solnarisText -ValueColor 'DarkYellow'
+    }
     if (Test-LWStateHasMagicSpear -State $script:GameState) {
         Write-LWKeyValue -Label 'Magic Spear' -Value 'Weapon-like Special Item; counts as a Spear in combat.' -ValueColor 'DarkYellow'
     }
