@@ -16339,6 +16339,7 @@ function Get-LWModuleContext {
         GameData                     = $script:GameData
         LWAchievementDefinitionsCache = $script:LWAchievementDefinitionsCache
         LWUi                         = $script:LWUi
+        CanonicalInventoryItemResolver = ${function:Get-LWCanonicalInventoryItemName}
     }
 }
 

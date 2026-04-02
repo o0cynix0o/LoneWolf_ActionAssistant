@@ -16,7 +16,7 @@ For deeper project state, workflow details, and local report locations, use:
 
 ## Current Reality
 
-- App version: `0.7.39`
+- App version: `0.7.40`
 - Main script: `lonewolf.ps1`
 - Runtime target:
   - Windows PowerShell 5.1

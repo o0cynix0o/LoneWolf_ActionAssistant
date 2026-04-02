@@ -15,6 +15,10 @@ function Resolve-LWCoreInventoryItemName {
         return $Name
     }
 
+    if ($CanonicalInventoryItemResolver -is [scriptblock]) {
+        return (& $CanonicalInventoryItemResolver -Name $Name)
+    }
+
     if (Get-Command -Name 'Get-LWCanonicalInventoryItemName' -ErrorAction SilentlyContinue) {
         return (Get-LWCanonicalInventoryItemName -Name $Name)
     }
