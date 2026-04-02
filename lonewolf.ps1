@@ -5335,7 +5335,7 @@ function Grant-LWBookTwoArmoryChoice {
     param([Parameter(Mandatory = $true)][object]$Choice)
 
     if ($null -eq $Choice) {
-        return
+        return $false
     }
 
     if ([string]$Choice.Type -eq 'weapon' -and @($script:GameState.Inventory.Weapons).Count -ge 2) {
@@ -5348,15 +5348,16 @@ function Grant-LWBookTwoArmoryChoice {
         Set-LWInventoryItems -Type 'weapon' -Items @($weapons)
         Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
         Write-LWInfo ("Exchanged {0} for {1}." -f $replacedWeapon, [string]$Choice.DisplayName)
-        return
+        return $true
     }
 
     if (TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)) {
         Write-LWInfo ("Book 2 armory choice added: {0}." -f [string]$Choice.Description)
-        return
+        return $true
     }
 
     Write-LWWarn ("Could not add the Book 2 armory choice '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
+    return $false
 }
 
 function Apply-LWBookTwoStartingEquipment {
@@ -5399,14 +5400,31 @@ function Apply-LWBookTwoStartingEquipment {
         }
 
         Write-LWPanelHeader -Title 'Book 2 Armory' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Choices Made' -Value ("{0}/2" -f $selectedIds.Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+        Write-Host ''
         for ($i = 0; $i -lt $availableChoices.Count; $i++) {
-            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$availableChoices[$i].DisplayName) -TextColor 'Gray' -BulletColor 'Yellow'
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        $manageIndex = $availableChoices.Count + 1
+        Write-LWBulletItem -Text ("{0}. Review inventory / make room" -f $manageIndex) -TextColor 'Gray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt ("Armory choice #{0}" -f ($selectedIds.Count + 1)) -Min 1 -Max $manageIndex -NoRefresh
+        if ($choiceIndex -eq $manageIndex) {
+            Invoke-LWBookFourStartingInventoryManagement
+            continue
         }
 
-        $choiceIndex = Read-LWInt -Prompt ("Armory choice #{0}" -f ($selectedIds.Count + 1)) -Min 1 -Max $availableChoices.Count -NoRefresh
         $choice = $availableChoices[$choiceIndex - 1]
-        $selectedIds += [string]$choice.Id
-        Grant-LWBookTwoArmoryChoice -Choice $choice
+        $granted = Grant-LWBookTwoArmoryChoice -Choice $choice
+        if ($granted) {
+            $selectedIds += [string]$choice.Id
+        }
+        elseif (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true) {
+            Invoke-LWBookFourStartingInventoryManagement
+        }
     }
 }
 
@@ -11069,6 +11087,23 @@ function Set-LWInventoryItems {
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
     )
 
+    $normalizedItems = Normalize-LWInventoryItemCollection -Type $Type -Items @($Items)
+
+    switch ($Type) {
+        'weapon' { $script:GameState.Inventory.Weapons = @($normalizedItems) }
+        'backpack' { $script:GameState.Inventory.BackpackItems = @($normalizedItems) }
+        'special' { $script:GameState.Inventory.SpecialItems = @($normalizedItems) }
+    }
+
+    [void](Sync-LWAchievements -Context 'inventory')
+}
+
+function Normalize-LWInventoryItemCollection {
+    param(
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
+    )
+
     $normalizedItems = @(
         foreach ($item in @($Items)) {
             if ($item -is [string]) {
@@ -11080,13 +11115,28 @@ function Set-LWInventoryItems {
         }
     )
 
-    switch ($Type) {
-        'weapon' { $script:GameState.Inventory.Weapons = @($normalizedItems) }
-        'backpack' { $script:GameState.Inventory.BackpackItems = @($normalizedItems) }
-        'special' { $script:GameState.Inventory.SpecialItems = @($normalizedItems) }
+    if ($Type -ne 'special') {
+        return @($normalizedItems)
     }
 
-    [void](Sync-LWAchievements -Context 'inventory')
+    $seen = @{}
+    $deduped = @()
+    foreach ($item in @($normalizedItems)) {
+        if (-not ($item -is [string])) {
+            $deduped += $item
+            continue
+        }
+
+        $key = ([string]$item).ToLowerInvariant()
+        if ($seen.ContainsKey($key)) {
+            continue
+        }
+
+        $seen[$key] = $true
+        $deduped += $item
+    }
+
+    return @($deduped)
 }
 
 function Set-LWBackpackState {
@@ -11957,6 +12007,10 @@ function Add-LWInventoryItem {
         Write-LWWarn 'Quantity must be at least 1.'
         return
     }
+    if ($Type -eq 'special' -and $Quantity -gt 1) {
+        Write-LWWarn 'Special Items cannot be stacked. Add them one at a time.'
+        return
+    }
     if ($Type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
         Write-LWWarn 'You do not currently have a Backpack. Recover one before adding Backpack items.'
         return
@@ -11967,6 +12021,10 @@ function Add-LWInventoryItem {
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $label = Get-LWInventoryTypeLabel -Type $Type
     $current = @(Get-LWInventoryItems -Type $Type)
+    if ($Type -eq 'special' -and (@($current | ForEach-Object { Get-LWCanonicalInventoryItemName -Name ([string]$_) }) -icontains $resolvedName)) {
+        Write-LWWarn ("{0} is already in Special Items." -f $resolvedName)
+        return
+    }
     $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $current
     $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $resolvedName) } else { $Quantity }
     if ($null -ne $capacity -and (($currentUsedCapacity + $requiredCapacity) -gt $capacity)) {
@@ -11985,6 +12043,7 @@ function Add-LWInventoryItem {
     for ($i = 0; $i -lt $Quantity; $i++) {
         $current += $resolvedName
     }
+    $current = Normalize-LWInventoryItemCollection -Type $Type -Items @($current)
 
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = $current }
@@ -12009,6 +12068,10 @@ function TryAdd-LWInventoryItemSilently {
     if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name) -or $Quantity -lt 1) {
         return $false
     }
+    if ($Type -eq 'special' -and $Quantity -gt 1) {
+        Write-LWWarn 'Special Items cannot be stacked. Add them one at a time.'
+        return $false
+    }
     if ($Type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
         Write-LWWarn 'You do not currently have a Backpack. Recover one before adding Backpack items.'
         return $false
@@ -12018,6 +12081,10 @@ function TryAdd-LWInventoryItemSilently {
 
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $current = @(Get-LWInventoryItems -Type $Type)
+    if ($Type -eq 'special' -and (@($current | ForEach-Object { Get-LWCanonicalInventoryItemName -Name ([string]$_) }) -icontains $resolvedName)) {
+        Write-LWWarn ("{0} is already in Special Items." -f $resolvedName)
+        return $false
+    }
     $currentUsedCapacity = Get-LWInventoryUsedCapacity -Type $Type -Items $current
     $requiredCapacity = if ($Type -eq 'backpack') { $Quantity * (Get-LWBackpackItemSlotSize -Name $resolvedName) } else { $Quantity }
     if ($null -ne $capacity -and (($currentUsedCapacity + $requiredCapacity) -gt $capacity)) {
@@ -12036,6 +12103,7 @@ function TryAdd-LWInventoryItemSilently {
     for ($i = 0; $i -lt $Quantity; $i++) {
         $current += $resolvedName
     }
+    $current = Normalize-LWInventoryItemCollection -Type $Type -Items @($current)
 
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = @($current) }

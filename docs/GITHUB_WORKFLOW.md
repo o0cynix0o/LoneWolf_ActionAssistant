@@ -10,7 +10,6 @@ This repo is set up so the public project stays clean while local play data stay
 - `data/rh-crtneg.png`
 - `data/rh-crtpos.png`
 - local `tmp-*` test folders
-- `agent.md`
 
 ## Normal Update Flow
 

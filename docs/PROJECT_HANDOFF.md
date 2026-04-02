@@ -4,7 +4,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.38`
+- App version: `0.7.39`
 - Main script: `lonewolf.ps1`
 - Latest shipped commit at time of writing: `e5ef990`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
