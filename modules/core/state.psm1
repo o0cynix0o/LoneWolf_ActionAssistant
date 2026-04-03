@@ -80,13 +80,19 @@ function Invoke-LWCoreInitializeData {
         }
 
         $disciplinesPath = Join-Path $DataDir 'kai-disciplines.json'
+        $magnakaiDisciplinesPath = Join-Path $DataDir 'magnakai-disciplines.json'
+        $magnakaiRanksPath = Join-Path $DataDir 'magnakai-ranks.json'
+        $magnakaiLoreCirclesPath = Join-Path $DataDir 'magnakai-lore-circles.json'
         $weaponskillPath = Join-Path $DataDir 'weaponskill-map.json'
         $crtPath = Join-Path $DataDir 'crt.json'
 
         $script:GameData = [pscustomobject]@{
-            KaiDisciplines = @(Import-LWJson -Path $disciplinesPath -Default @())
-            WeaponskillMap = (Import-LWJson -Path $weaponskillPath -Default $null)
-            CRT            = (Import-LWJson -Path $crtPath -Default $null)
+            KaiDisciplines      = @(Import-LWJson -Path $disciplinesPath -Default @())
+            MagnakaiDisciplines = @(Import-LWJson -Path $magnakaiDisciplinesPath -Default @())
+            MagnakaiRanks       = @(Import-LWJson -Path $magnakaiRanksPath -Default @())
+            MagnakaiLoreCircles = @(Import-LWJson -Path $magnakaiLoreCirclesPath -Default @())
+            WeaponskillMap      = (Import-LWJson -Path $weaponskillPath -Default $null)
+            CRT                 = (Import-LWJson -Path $crtPath -Default $null)
         }
 
     return $script:GameData
@@ -110,7 +116,13 @@ function Invoke-LWCoreNewDefaultState {
                 EnduranceCurrent = 0
                 EnduranceMax     = 0
                 Disciplines      = @()
+                MagnakaiDisciplines = @()
+                MagnakaiRank     = $null
                 WeaponskillWeapon = $null
+                WeaponmasteryWeapons = @()
+                LoreCirclesCompleted = @()
+                ImprovedDisciplines = @()
+                LegacyKaiComplete = $false
                 LastCombatWeapon = $null
                 CompletedBooks   = @()
                 Notes            = @()
@@ -121,6 +133,7 @@ function Invoke-LWCoreNewDefaultState {
                 SpecialItems  = @()
                 GoldCrowns    = 0
                 HasBackpack   = $true
+                QuiverArrows  = 0
             }
             Combat            = (New-LWCombatState)
             History           = @()
@@ -140,6 +153,8 @@ function Invoke-LWCoreNewDefaultState {
                 PaddedLeatherEndurance = 0
                 HelmetEndurance = 0
                 DaggerOfVashnaEndurance = 0
+                LoreCircleCombatSkill = 0
+                LoreCircleEndurance = 0
             }
             Settings          = [pscustomobject]@{
                 CombatMode = 'ManualCRT'
@@ -313,6 +328,24 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Character -Name 'Disciplines') -or $null -eq $State.Character.Disciplines) {
             $State.Character.Disciplines = @()
         }
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name 'MagnakaiDisciplines') -or $null -eq $State.Character.MagnakaiDisciplines) {
+            $State.Character | Add-Member -Force -NotePropertyName MagnakaiDisciplines -NotePropertyValue @()
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name 'MagnakaiRank')) {
+            $State.Character | Add-Member -Force -NotePropertyName MagnakaiRank -NotePropertyValue $null
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name 'WeaponmasteryWeapons') -or $null -eq $State.Character.WeaponmasteryWeapons) {
+            $State.Character | Add-Member -Force -NotePropertyName WeaponmasteryWeapons -NotePropertyValue @()
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name 'LoreCirclesCompleted') -or $null -eq $State.Character.LoreCirclesCompleted) {
+            $State.Character | Add-Member -Force -NotePropertyName LoreCirclesCompleted -NotePropertyValue @()
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name 'ImprovedDisciplines') -or $null -eq $State.Character.ImprovedDisciplines) {
+            $State.Character | Add-Member -Force -NotePropertyName ImprovedDisciplines -NotePropertyValue @()
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name 'LegacyKaiComplete') -or $null -eq $State.Character.LegacyKaiComplete) {
+            $State.Character | Add-Member -Force -NotePropertyName LegacyKaiComplete -NotePropertyValue $false
+        }
         if (-not (Test-LWPropertyExists -Object $State.Character -Name 'LastCombatWeapon')) {
             $State.Character | Add-Member -NotePropertyName LastCombatWeapon -NotePropertyValue $null
         }
@@ -339,6 +372,9 @@ function Invoke-LWCoreNormalizeState {
         }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HasBackpack') -or $null -eq $State.Inventory.HasBackpack) {
             $State.Inventory | Add-Member -Force -NotePropertyName HasBackpack -NotePropertyValue $true
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'QuiverArrows') -or $null -eq $State.Inventory.QuiverArrows) {
+            $State.Inventory | Add-Member -Force -NotePropertyName QuiverArrows -NotePropertyValue 0
         }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'SpecialItems') -or $null -eq $State.Inventory.SpecialItems) {
             $State.Inventory.SpecialItems = @()
@@ -369,6 +405,9 @@ function Invoke-LWCoreNormalizeState {
         }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'MindblastCombatSkillBonus') -or $null -eq $State.Combat.MindblastCombatSkillBonus) {
             $State.Combat | Add-Member -Force -NotePropertyName MindblastCombatSkillBonus -NotePropertyValue 2
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PsychicAttackMode') -or [string]::IsNullOrWhiteSpace([string]$State.Combat.PsychicAttackMode)) {
+            $State.Combat | Add-Member -Force -NotePropertyName PsychicAttackMode -NotePropertyValue 'Mindblast'
         }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'AttemptKnockout') -or $null -eq $State.Combat.AttemptKnockout) {
             $State.Combat | Add-Member -Force -NotePropertyName AttemptKnockout -NotePropertyValue $false
@@ -464,6 +503,18 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'RestoreHalfEnduranceLossOnEvade') -or $null -eq $State.Combat.RestoreHalfEnduranceLossOnEvade) {
             $State.Combat | Add-Member -Force -NotePropertyName RestoreHalfEnduranceLossOnEvade -NotePropertyValue $false
         }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'UsePlayerTargetEndurance') -or $null -eq $State.Combat.UsePlayerTargetEndurance) {
+            $State.Combat | Add-Member -Force -NotePropertyName UsePlayerTargetEndurance -NotePropertyValue $false
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerTargetEnduranceCurrent') -or $null -eq $State.Combat.PlayerTargetEnduranceCurrent) {
+            $State.Combat | Add-Member -Force -NotePropertyName PlayerTargetEnduranceCurrent -NotePropertyValue 0
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerTargetEnduranceMax') -or $null -eq $State.Combat.PlayerTargetEnduranceMax) {
+            $State.Combat | Add-Member -Force -NotePropertyName PlayerTargetEnduranceMax -NotePropertyValue 0
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SuppressShieldCombatSkillBonus') -or $null -eq $State.Combat.SuppressShieldCombatSkillBonus) {
+            $State.Combat | Add-Member -Force -NotePropertyName SuppressShieldCombatSkillBonus -NotePropertyValue $false
+        }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerCombatSkillModifier')) {
             $State.Combat | Add-Member -Force -NotePropertyName PlayerCombatSkillModifier -NotePropertyValue 0
         }
@@ -524,7 +575,7 @@ function Invoke-LWCoreNormalizeState {
             }
         }
 
-        return $State
+    return $State
 }
 
 Export-ModuleMember -Function `

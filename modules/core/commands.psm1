@@ -25,7 +25,7 @@ function Invoke-LWCoreShowHelpScreen {
     Set-LWModuleContext -Context $Context
 
     Write-LWPanelHeader -Title 'Commands' -AccentColor 'Cyan'
-        Write-LWKeyValue -Label 'new' -Value 'Create a new Kai character' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'new' -Value 'Create a new Lone Wolf character' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'newrun' -Value 'Start a fresh run on the same profile and keep achievements' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'sheet' -Value 'Show character sheet' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'modes' -Value 'Show run mode rules and locked settings' -ValueColor 'Gray'
@@ -33,7 +33,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWKeyValue -Label 'permadeath [on|off]' -Value 'Show the locked permadeath setting' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'inv' -Value 'Show inventory slots' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'disciplines' -Value 'Show disciplines' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed Kai discipline reward' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed discipline reward for the active ruleset' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'notes' -Value 'Show notes' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'note [text]' -Value 'Add a note' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'note remove [n]' -Value 'Remove a note by number' -ValueColor 'Gray'
@@ -64,7 +64,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWKeyValue -Label 'combat stop' -Value 'Stop and archive current combat' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'fight [enemy cs end]' -Value 'Start combat, then auto-resolve it' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'mode [manual|data]' -Value 'Switch combat mode' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'complete' -Value 'Mark current book complete and add 1 discipline' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'complete' -Value 'Mark current book complete and advance to the next supported book' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'setcs' -Value 'Manually set base Combat Skill' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'setend [current]' -Value 'Manually set current Endurance only' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'setmaxend [max]' -Value 'Manually set maximum Endurance' -ValueColor 'Gray'
@@ -84,7 +84,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWBulletItem -Text 'Use inv to see exact weapon, backpack, and special-item slots, including empty spaces.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
+        Write-LWBulletItem -Text 'Use discipline add to open the current ruleset discipline picker, or discipline add <name> to grant one directly.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer; Captain D''Val''s Sword adds +1 Combat Skill and counts as a Sword; Solnaris adds +2 Combat Skill and counts as a Sword or Broadsword for Weaponskill.' -TextColor 'Gray'
@@ -189,10 +189,10 @@ function Invoke-LWCoreCommand {
                 switch ($parts[1].ToLowerInvariant()) {
                     'add' {
                         $disciplineName = if ($parts.Count -gt 2) { ($parts[2..($parts.Count - 1)] -join ' ') } else { '' }
-                        Add-LWKaiDiscipline -Name $disciplineName
+                        Add-LWDiscipline -Name $disciplineName
                     }
                     default {
-                        Write-LWWarn 'Use discipline add [name] to grant a missed Kai discipline.'
+                        Write-LWWarn 'Use discipline add [name] to grant a missed discipline.'
                     }
                 }
                 return $null

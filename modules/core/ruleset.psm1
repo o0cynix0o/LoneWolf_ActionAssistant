@@ -19,6 +19,7 @@ function Get-LWActiveRuleSetVersion {
 
     switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
         'kai' { return (Get-LWKaiRulesetVersion) }
+        'magnakai' { return (Get-LWMagnakaiRulesetVersion) }
         default { return '1.0.0' }
     }
 }
@@ -28,6 +29,7 @@ function Get-LWRuleSetSectionRandomNumberContext {
 
     switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
         'kai' { return (Get-LWKaiSectionRandomNumberContext -State $State) }
+        'magnakai' { return (Get-LWMagnakaiSectionRandomNumberContext -State $State) }
         default { return $null }
     }
 }
@@ -40,6 +42,7 @@ function Invoke-LWRuleSetStorySectionAchievementTriggers {
 
     switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
         'kai' { Invoke-LWKaiStorySectionAchievementTriggers -State $State -Section $Section; return }
+        'magnakai' { Invoke-LWMagnakaiStorySectionAchievementTriggers -State $State -Section $Section; return }
     }
 }
 
@@ -52,6 +55,7 @@ function Invoke-LWRuleSetStorySectionTransitionAchievementTriggers {
 
     switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
         'kai' { Invoke-LWKaiStorySectionTransitionAchievementTriggers -State $State -FromSection $FromSection -ToSection $ToSection; return }
+        'magnakai' { Invoke-LWMagnakaiStorySectionTransitionAchievementTriggers -State $State -FromSection $FromSection -ToSection $ToSection; return }
     }
 }
 
@@ -60,6 +64,7 @@ function Invoke-LWRuleSetSectionEntryRules {
 
     switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
         'kai' { Invoke-LWKaiSectionEntryRules -State $State; return }
+        'magnakai' { Invoke-LWMagnakaiSectionEntryRules -State $State; return }
     }
 }
 
@@ -72,6 +77,7 @@ function Invoke-LWRuleSetStartingEquipment {
 
     switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
         'kai' { Invoke-LWKaiStartingEquipment -State $State -BookNumber $BookNumber -CarryExistingGear:$CarryExistingGear; return }
+        'magnakai' { Invoke-LWMagnakaiStartingEquipment -State $State -BookNumber $BookNumber -CarryExistingGear:$CarryExistingGear; return }
     }
 }
 

@@ -4,9 +4,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.7.40`
+- App version: `0.8.0-dev` on `dev`
 - Main script: `lonewolf.ps1`
-- Latest shipped commit at time of writing: `e5ef990`
+- Latest public release on `main`: `v0.7.40`
+- Active development branch for Magnakai work: `dev`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Public docs hygiene:
   - sanitize `README.md` before push
@@ -29,15 +30,15 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Veteran`
   - optional `Permadeath`
 - Tamper-evident run integrity
-- Book-aware rule support across Books 1-5
-- Project Aon baseline catch-up complete across Books 1-5 as of 2026-03-27
-- The Kai ruleset campaign is now complete through Book 5
+- Book-aware rule support across Books 1-6
+- Project Aon baseline catch-up complete across Books 1-5, plus first-pass Book 6 / Magnakai support on `dev`
+- The Kai ruleset campaign is complete through Book 5, and the first Magnakai transition book is now playable on `dev`
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
 - GitHub Project board is now live
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
 - M1 modular refactor is complete and pushed
-- Book `6` / Magnakai transition planning now exists, but Book `6` is not implemented yet
+- M2 Magnakai / Book `6` support is complete on `dev`
 
 ## Main Repo Files
 
@@ -59,8 +60,16 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Core-engine modules, including state/save/command/combat/ruleset slices
 - `modules/rulesets/kai/`
   Kai ruleset shell plus Book `1-5` modules
+- `modules/rulesets/magnakai/`
+  Magnakai ruleset shell plus Book `6`
 - `data/kai-disciplines.json`
   Discipline definitions
+- `data/magnakai-disciplines.json`
+  Magnakai discipline definitions
+- `data/magnakai-ranks.json`
+  Magnakai rank titles
+- `data/magnakai-lore-circles.json`
+  Lore-circle groupings and bonus metadata
 - `data/weaponskill-map.json`
   Weaponskill roll mapping
 - `data/crt.json`
@@ -70,7 +79,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - `docs/GITHUB_TRACKING.md`
   GitHub labels, milestones, issue forms, and project-board notes
 - `docs/MAGNAKAI_BOOK6_PLAN.md`
-  Planned ruleset transition for Book `6` and the Magnakai series
+  Magnakai ruleset transition design and implementation notes for Book `6`
 
 ## Local-Only Working Material
 
@@ -249,18 +258,39 @@ Local reports:
 
 ### Book 6
 
-- Not implemented yet
-- Book `6` is the first Magnakai book and should be treated as a new ruleset transition, not just the next Kai book
-- planning now exists for:
+- Implemented on `dev`
+- Book `6` is the first Magnakai book and is now treated as a real ruleset transition, not just the next Kai book
+- implemented support includes:
   - Magnakai ruleset shell
   - Book `5` -> `6` transition
-  - Magnakai sheet/state changes
-  - Book `6` audit/build sequencing
+  - ruleset-aware sheet/state changes
+  - Magnakai discipline, Weaponmastery, and lore-circle support
+  - Book `6` startup package and carry-forward handling
+  - Book `6` section-entry rules, item hooks, combat hooks, and achievements
+
+Current achievement additions:
+
+- `Book Six Complete`
+- `Magnakai Rising`
+- `Jump the Wagons`
+- `Water Bearer`
+- `Tekaro Cartographer`
+- `Key to Varetta`
+- `Silver Oak Prize`
+- `Cess to Enter`
+- `Cold Comfort`
+- `Mind Over Malice`
 
 Reference:
 
 - `docs/MAGNAKAI_BOOK6_PLAN.md`
 - GitHub issue `#18` `Plan Book 6 Magnakai ruleset transition`
+
+Local reports:
+
+- `testing/logs/BOOK6_BUILD_VALIDATION.md`
+- `testing/logs/BOOK6_ROUTE_STRATEGY_REPORT.md`
+- `testing/logs/M2_7_COMPLETION_SUMMARY_20260403.md`
 
 ## Existing Playtest Coverage
 
@@ -271,6 +301,7 @@ Local reports already exist for:
 - permadeath playtest
 - Book 3 sandbox and route sweeps
 - Book 5 targeted validation and Books 1-5 campaign smoke
+- Book 6 targeted validation and Magnakai transition smoke on `dev`
 
 Key files:
 
@@ -289,6 +320,8 @@ Latest large-scale validation:
 - command-surface smoke passed in both shells
 - no campaign failures in the March 27 full validation sweep
 - additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
+- Book 6 targeted validation passed in both shells on `dev`
+- an interrupted long-run PowerShell 7 Books `1-6` validator completed `44` full campaigns before the user approved moving on
 
 M1 refactor status:
 
@@ -402,10 +435,9 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 
 ## Good Next Steps
 
-- Continue live playtesting across Books 1-5 and patch DE-specific rule differences
-- Continue `M1` Modular Engine Refactor and validate each extraction step locally before push
-- Expand story-aware achievements in later books
-- Run the Full Book Audit for the next unsupported book after the refactor plan is in motion
+- Continue live playtesting across Books 1-6 and patch DE-specific rule differences
+- Deepen Book `6` route reporting and strategy support as more play data comes in
+- Plan Book `7` / the next Magnakai audit once Book `6` feels stable
 - Keep the handoff docs in sync as new books become implemented
 
 ## Important Cautions

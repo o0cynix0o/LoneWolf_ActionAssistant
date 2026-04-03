@@ -228,7 +228,7 @@ Checkpoint:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -254,7 +254,11 @@ Exit criteria:
 - Book `5` -> `6` carry-over flow works
 - existing Kai saves still load cleanly
 - validation passes in PowerShell 7 and Windows PowerShell 5.1
-- `100+` sandbox tests of the command surface and actual app pass across the full Books `1-6` campaign
+- user-approved reduced validation checkpoint recorded on `2026-04-03`:
+  - targeted Book `6` validation passed in both shells
+  - direct Book `6` start and command-surface smoke passed
+  - `44` full PowerShell `7` Books `1-6` campaigns completed before the long rerun was stopped
+  - the larger long-run regression sweep can be resumed later if desired
 
 Reference:
 
@@ -268,7 +272,7 @@ Tracking issue:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -283,7 +287,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -301,7 +305,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -319,7 +323,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -335,7 +339,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -353,7 +357,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -382,7 +386,10 @@ Deliverables:
 - command-surface smoke
 - cross-shell validation
 - standalone Book `6` validation
-- `100+` sandbox tests across the full Books `1-6` campaign
+- user-approved reduced validation checkpoint with:
+  - targeted Book `6` validation in both shells
+  - direct Book `6` smoke
+  - `44` full PowerShell `7` Books `1-6` campaigns from the interrupted long sweep
 
 ### M4 - Portable Distribution Packaging
 

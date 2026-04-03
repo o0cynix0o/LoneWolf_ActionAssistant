@@ -37,7 +37,7 @@ function New-LWBootstrapConfiguration {
         [string]$MyCommandPath,
         [string]$SaveDir,
         [string]$DataDir,
-        [string]$AppVersion = '0.7.40',
+        [string]$AppVersion = '0.8.0-dev',
         [string]$StateVersion = '0.5.0'
     )
 

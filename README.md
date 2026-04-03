@@ -1,6 +1,6 @@
 # Lone Wolf Action Assistant
 
-A PowerShell terminal companion for the Kai-era **Lone Wolf** gamebooks.
+A PowerShell terminal companion for the **Lone Wolf** gamebooks, currently supporting the full Kai sequence and the first Magnakai book.
 
 This project is built to act like a digital Action Chart and play aid, not a replacement for the books. It handles the bookkeeping that tends to slow play down: character state, inventory, combat math, saves, notes, healing, book progression, stats, and achievements.
 
@@ -8,9 +8,11 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 - Screen-based terminal UI with ASCII banners and color-coded panels
 - New Kai character creation with random starting Combat Skill and Endurance
-- Book 1 through Book 5 start-package automation, including carry-in gear support where needed
+- Book 1 through Book 6 start-package automation, including carry-in gear support where needed
 - Kai discipline selection, including Weaponskill weapon assignment
+- Magnakai discipline selection, including Weaponmastery starter weapon choice
 - Derived Kai rank titles from discipline count, shown on the sheet and campaign overview
+- Derived Magnakai rank titles and lore-circle progress when the ruleset changes
 - Inventory slot tracking for weapons (`2`), backpack items (`8`), special items (`12`), and gold
 - Section tracking with Healing support for non-combat sections
 - Meal handling with Hunting support, including Book 2 Wildlands, Book 3 / Kalte, Book 4 mines / wasteland restrictions, and Book 5 restricted meal sections
@@ -64,25 +66,31 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - blood poisoning and Limbdeath condition handling
   - Book 5 shops, loot tables, and carry-forward item hooks
   - Book 5 special combat rules, endgame routing, and `Book of the Magnakai` recovery
+- Book 6 / Magnakai support for:
+  - Book `5` -> `6` ruleset handoff
+  - Magnakai discipline and Weaponmastery selection
+  - lore-circle bonus handling
+  - Book 6 startup package and item selection
+  - Book 6 section automation, combat hooks, and achievement support
 - JSON save/load with autosave support
 - Numbered save picker and remembered last-used save
 - Book completion summaries with live campaign stats
 - Whole-run campaign review screens
-- Achievement system with current unlocks, progress, and Book 1-5 story/path coverage
+- Achievement system with current unlocks, progress, and Book 1-6 story/path coverage
 - Death tracking with death-only rewind checkpoints
 - Locked run difficulties with Story, Easy, Normal, Hard, and Veteran rules
 - Optional Permadeath runs with tamper-evident challenge tracking
 
 ## Scope
 
-- Focused on the **Kai** ruleset
+- Focused on the Kai sequence plus the first **Magnakai** ruleset transition
 - Intended for use alongside the books
 - Does **not** include book text
 - Designed to stay flexible when book-specific exceptions come up
 
 ## Tracking And Support
 
-- The GitHub wiki contains route and strategy-guide material for Books `1-5`
+- The GitHub wiki contains route and strategy-guide material for Books `1-6`
 - GitHub issues now use issue forms for bugs, DE differences, rule gaps, UX notes, and audit/build requests
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
@@ -99,6 +107,12 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   Main terminal application
 - `data/kai-disciplines.json`
   Kai discipline list and selection data
+- `data/magnakai-disciplines.json`
+  Magnakai discipline list and selection data
+- `data/magnakai-ranks.json`
+  Magnakai rank ladder data
+- `data/magnakai-lore-circles.json`
+  Lore-circle groupings and bonus metadata
 - `data/weaponskill-map.json`
   Weaponskill roll mapping
 - `data/crt.json`

@@ -35,6 +35,8 @@ $script:LWKaiBook3ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulese
 $script:LWKaiBook4ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book4.psm1'
 $script:LWKaiBook5ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\book5.psm1'
 $script:LWKaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\kai.psm1'
+$script:LWMagnakaiBook6ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\book6.psm1'
+$script:LWMagnakaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\magnakai.psm1'
 foreach ($modulePath in @(
         $script:LWDisplayModulePath,
         $script:LWCommonModulePath,
@@ -48,6 +50,8 @@ foreach ($modulePath in @(
         $script:LWKaiBook4ModulePath,
         $script:LWKaiBook5ModulePath,
         $script:LWKaiRulesetModulePath,
+        $script:LWMagnakaiBook6ModulePath,
+        $script:LWMagnakaiRulesetModulePath,
         $script:LWRulesetCoreModulePath
     )) {
     if (-not (Test-Path -LiteralPath $modulePath)) {
@@ -410,9 +414,11 @@ function Show-LWDisciplineSelectionScreen {
     $screenData = $script:LWUi.ScreenData
     $available = if ($null -ne $screenData -and (Test-LWPropertyExists -Object $screenData -Name 'Available')) { @($screenData.Available) } else { @() }
     $count = if ($null -ne $screenData -and (Test-LWPropertyExists -Object $screenData -Name 'Count')) { [int]$screenData.Count } else { 1 }
+    $ruleSetName = if ($null -ne $screenData -and (Test-LWPropertyExists -Object $screenData -Name 'RuleSet') -and -not [string]::IsNullOrWhiteSpace([string]$screenData.RuleSet)) { [string]$screenData.RuleSet } else { 'Kai' }
+    $title = if ($ruleSetName -ieq 'Magnakai') { 'Choose Magnakai Discipline' } else { 'Choose Kai Discipline' }
 
     Write-LWBanner
-    Write-LWPanelHeader -Title 'Choose Kai Discipline' -AccentColor 'DarkYellow'
+    Write-LWPanelHeader -Title $title -AccentColor 'DarkYellow'
     Write-LWBulletItem -Text ("Choose {0} discipline{1} for this character." -f $count, $(if ($count -eq 1) { '' } else { 's' })) -TextColor 'Gray'
     Write-LWSubtle ''
 
@@ -1006,6 +1012,82 @@ function Format-LWKaiRankLabel {
     return "{0} - {1}" -f $displayCount, $rankTitle
 }
 
+function Get-LWMagnakaiRankTitle {
+    param([int]$Level)
+
+    if ($Level -le 0) {
+        return $null
+    }
+
+    $rankEntry = @($script:GameData.MagnakaiRanks | Where-Object { [int]$_.Level -eq $Level } | Select-Object -First 1)
+    if ($rankEntry.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$rankEntry[0].Name)) {
+        return [string]$rankEntry[0].Name
+    }
+
+    switch ($Level) {
+        1 { return 'Kai Master' }
+        2 { return 'Kai Master Senior' }
+        3 { return 'Kai Master Superior' }
+        4 { return 'Primate' }
+        5 { return 'Tutelary' }
+        6 { return 'Principalin' }
+        7 { return 'Mentora' }
+        8 { return 'Scion-kai' }
+        9 { return 'Archmaster' }
+        default { return 'Kai Grand Master' }
+    }
+}
+
+function Format-LWMagnakaiRankLabel {
+    param([int]$Level)
+
+    $rankTitle = Get-LWMagnakaiRankTitle -Level $Level
+    if ([string]::IsNullOrWhiteSpace($rankTitle)) {
+        return '(unranked)'
+    }
+
+    return "{0} - {1}" -f $Level, $rankTitle
+}
+
+function Get-LWKnownKaiDisciplineNames {
+    if ($null -ne $script:GameData -and $null -ne $script:GameData.KaiDisciplines -and @($script:GameData.KaiDisciplines).Count -gt 0) {
+        return @($script:GameData.KaiDisciplines | ForEach-Object { [string]$_.Name })
+    }
+
+    return @('Camouflage', 'Hunting', 'Sixth Sense', 'Tracking', 'Healing', 'Weaponskill', 'Mindblast', 'Mindshield', 'Animal Kinship', 'Mind Over Matter')
+}
+
+function Get-LWKnownMagnakaiDisciplineNames {
+    if ($null -ne $script:GameData -and $null -ne $script:GameData.MagnakaiDisciplines -and @($script:GameData.MagnakaiDisciplines).Count -gt 0) {
+        return @($script:GameData.MagnakaiDisciplines | ForEach-Object { [string]$_.Name })
+    }
+
+    return @('Weaponmastery', 'Animal Control', 'Curing', 'Invisibility', 'Huntmastery', 'Pathsmanship', 'Psi-surge', 'Psi-screen', 'Nexus', 'Divination')
+}
+
+function Test-LWStateIsMagnakaiRuleset {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    return ([string]$State.RuleSet -ieq 'Magnakai')
+}
+
+function Get-LWCurrentRankLabel {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWStateIsMagnakaiRuleset -State $State) {
+        $level = if ((Test-LWPropertyExists -Object $State.Character -Name 'MagnakaiRank') -and $null -ne $State.Character.MagnakaiRank -and [int]$State.Character.MagnakaiRank -gt 0) {
+            [int]$State.Character.MagnakaiRank
+        }
+        else {
+            [Math]::Max(1, @($State.Character.MagnakaiDisciplines).Count)
+        }
+
+        return (Format-LWMagnakaiRankLabel -Level $level)
+    }
+
+    return (Format-LWKaiRankLabel -DisciplineCount @($State.Character.Disciplines).Count)
+}
+
 function New-LWAchievementProgressFlags {
     return [pscustomobject]@{
         PerfectVictories     = 0
@@ -1113,6 +1195,48 @@ function New-LWStoryAchievementFlags {
         Book5BanishmentRoute        = $false
         Book5HaakonDuelRoute        = $false
         Book5BookOfMagnakaiClaimed  = $false
+        Book6Section004LossApplied  = $false
+        Book6Section035MealsRuined  = $false
+        Book6Section040GoldClaimed  = $false
+        Book6Section040WineClaimed  = $false
+        Book6Section040MirrorClaimed = $false
+        Book6Section048GoldClaimed  = $false
+        Book6Section048MapClaimed   = $false
+        Book6Section065TaunorWaterResolved = $false
+        Book6Section106TaunorWaterResolved = $false
+        Book6Section109MapClaimed   = $false
+        Book6Section112TaunorWaterResolved = $false
+        Book6Section158SilverKeyClaimed = $false
+        Book6Section158QuarterstaffClaimed = $false
+        Book6Section158MealsClaimed = $false
+        Book6Section158MaceClaimed  = $false
+        Book6Section158WhistleClaimed = $false
+        Book6Section158RopeClaimed  = $false
+        Book6Section158ShortSwordClaimed = $false
+        Book6Section190TaunorWaterResolved = $false
+        Book6Section232RoomPaid     = $false
+        Book6Section232MealDeducted = $false
+        Book6Section246TaunorWaterResolved = $false
+        Book6Section252SilverBowClaimed = $false
+        Book6Section282DamageApplied = $false
+        Book6Section293SilverKeyUsed = $false
+        Book6Section304CessClaimed  = $false
+        Book6Section306ColdDamageApplied = $false
+        Book6Section306NexusProtected = $false
+        Book6Section307Handled      = $false
+        Book6Section307NoMealLossApplied = $false
+        Book6Section310DamageApplied = $false
+        Book6Section315MindforceApplied = $false
+        Book6Section315MindforceLossApplied = $false
+        Book6Section315MindforceBlocked = $false
+        Book6Section322TollPaid     = $false
+        Book6Section348WarhammerLost = $false
+        Book6JumpTheWagonsRoute     = $false
+        Book6TaunorWaterStored      = $false
+        Book6MapOfTekaroClaimed     = $false
+        Book6SmallSilverKeyClaimed  = $false
+        Book6SilverBowClaimed       = $false
+        Book6CessClaimed            = $false
     }
 }
 
@@ -1251,13 +1375,23 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'washed_away' -Name 'Washed Away' -Category 'Journey' -Description 'Survive the Book 4 waterfall route that costs you your Backpack.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'book_five_complete' -Name 'Book Five Complete' -Category 'Journey' -Description 'Complete Book 5.' -Backfill:$true -ModePool 'Universal'),
         (New-LWAchievementDefinition -Id 'kai_master' -Name 'Kai Master' -Category 'Legend' -Description 'Complete the full Kai sequence through Book 5.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'book_six_complete' -Name 'Book Six Complete' -Category 'Journey' -Description 'Complete Book 6.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'magnakai_rising' -Name 'Magnakai Rising' -Category 'Legend' -Description 'Carry a single character through the full Books 1-6 sequence.' -Backfill:$true -ModePool 'Universal'),
         (New-LWAchievementDefinition -Id 'apothecarys_answer' -Name 'Apothecary''s Answer' -Category 'Journey' -Description 'Claim the Oede Herb and cure Limbdeath in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'prison_break' -Name 'Prison Break' -Category 'Journey' -Description 'Recover your confiscated gear in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'talons_tamed' -Name 'Talons Tamed' -Category 'Journey' -Description 'Mount the Itikar without having to subdue it in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'star_guided' -Name 'Star-Guided' -Category 'Journey' -Description 'Use the Crystal Star Pendant route in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'name_the_lost' -Name 'Name the Lost' -Category 'Journey' -Description 'Learn Soushilla''s name and ask for her in Book 5.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'shadow_on_the_sand' -Name 'Shadow on the Sand' -Category 'Journey' -Description 'Finish Book 5 through the glowing-stone endgame route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'face_to_face_with_haakon' -Name 'Face to Face with Haakon' -Category 'Journey' -Description 'Finish Book 5 through the Haakon duel route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'face_to_face_with_haakon' -Name 'Face to Face with Haakon' -Category 'Journey' -Description 'Finish Book 5 through the Haakon duel route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'jump_the_wagons' -Name 'Jump the Wagons' -Category 'Journey' -Description 'Clear the wagon jump route in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'water_bearer' -Name 'Water Bearer' -Category 'Journey' -Description 'Keep Taunor Water stored for later use in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'tekaro_cartographer' -Name 'Tekaro Cartographer' -Category 'Journey' -Description 'Claim a Map of Tekaro in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'key_to_varetta' -Name 'Key to Varetta' -Category 'Journey' -Description 'Claim the Small Silver Key in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'silver_oak_prize' -Name 'Silver Oak Prize' -Category 'Journey' -Description 'Win the Silver Bow of Duadon in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'cess_to_enter' -Name 'Cess to Enter' -Category 'Journey' -Description 'Pocket a valid Cess for Amory in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'cold_comfort' -Name 'Cold Comfort' -Category 'Journey' -Description 'Let Nexus save you from the frozen river in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'mind_over_malice_book6' -Name 'Mind Over Malice' -Category 'Journey' -Description 'Have Psi-screen block the cursed Mindforce assault in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
 
     return @($script:LWAchievementDefinitionsCache)
@@ -1306,7 +1440,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book1Section61NoteAdded', 'Book1Section255SolnarisClaimed', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book1Section61NoteAdded', 'Book1Section255SolnarisClaimed', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied', 'Book6Section004LossApplied', 'Book6Section035MealsRuined', 'Book6Section040GoldClaimed', 'Book6Section040WineClaimed', 'Book6Section040MirrorClaimed', 'Book6Section048GoldClaimed', 'Book6Section048MapClaimed', 'Book6Section065TaunorWaterResolved', 'Book6Section106TaunorWaterResolved', 'Book6Section109MapClaimed', 'Book6Section112TaunorWaterResolved', 'Book6Section158SilverKeyClaimed', 'Book6Section158QuarterstaffClaimed', 'Book6Section158MealsClaimed', 'Book6Section158MaceClaimed', 'Book6Section158WhistleClaimed', 'Book6Section158RopeClaimed', 'Book6Section158ShortSwordClaimed', 'Book6Section190TaunorWaterResolved', 'Book6Section232RoomPaid', 'Book6Section232MealDeducted', 'Book6Section246TaunorWaterResolved', 'Book6Section252SilverBowClaimed', 'Book6Section282DamageApplied', 'Book6Section293SilverKeyUsed', 'Book6Section304CessClaimed', 'Book6Section306ColdDamageApplied', 'Book6Section306NexusProtected', 'Book6Section307Handled', 'Book6Section307NoMealLossApplied', 'Book6Section310DamageApplied', 'Book6Section315MindforceApplied', 'Book6Section315MindforceLossApplied', 'Book6Section315MindforceBlocked', 'Book6Section322TollPaid', 'Book6Section348WarhammerLost', 'Book6JumpTheWagonsRoute', 'Book6TaunorWaterStored', 'Book6MapOfTekaroClaimed', 'Book6SmallSilverKeyClaimed', 'Book6SilverBowClaimed', 'Book6CessClaimed')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1511,6 +1645,71 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         }
         if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWBookOfMagnakaiItemNames) -Type 'special'))) {
             Set-LWStoryAchievementFlag -Name 'Book5BookOfMagnakaiClaimed'
+        }
+    }
+
+    if ([int]$script:GameState.Character.BookNumber -ge 6) {
+        if ($visitedSections -contains 4) { Set-LWStoryAchievementFlag -Name 'Book6Section004LossApplied' }
+        if ($visitedSections -contains 35) { Set-LWStoryAchievementFlag -Name 'Book6Section035MealsRuined' }
+        if ($visitedSections -contains 65) { Set-LWStoryAchievementFlag -Name 'Book6Section065TaunorWaterResolved' }
+        if ($visitedSections -contains 106) { Set-LWStoryAchievementFlag -Name 'Book6Section106TaunorWaterResolved' }
+        if ($visitedSections -contains 112) { Set-LWStoryAchievementFlag -Name 'Book6Section112TaunorWaterResolved' }
+        if ($visitedSections -contains 158) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section158SilverKeyClaimed'
+            Set-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed'
+        }
+        if ($visitedSections -contains 190) { Set-LWStoryAchievementFlag -Name 'Book6Section190TaunorWaterResolved' }
+        if ($visitedSections -contains 232) { Set-LWStoryAchievementFlag -Name 'Book6Section232RoomPaid' }
+        if ($visitedSections -contains 246) { Set-LWStoryAchievementFlag -Name 'Book6Section246TaunorWaterResolved' }
+        if ($visitedSections -contains 252) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section252SilverBowClaimed'
+            Set-LWStoryAchievementFlag -Name 'Book6SilverBowClaimed'
+        }
+        if ($visitedSections -contains 282) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section282DamageApplied'
+        }
+        if ($visitedSections -contains 274) {
+            Set-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute'
+        }
+        if ($visitedSections -contains 293) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
+        }
+        if ($visitedSections -contains 304) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section304CessClaimed'
+            Set-LWStoryAchievementFlag -Name 'Book6CessClaimed'
+        }
+        if ($visitedSections -contains 306 -and (Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus')) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section306NexusProtected'
+        }
+        if ($visitedSections -contains 307) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section307Handled'
+        }
+        if ($visitedSections -contains 310) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section310DamageApplied'
+        }
+        if ($visitedSections -contains 315) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section315MindforceApplied'
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-screen') {
+                Set-LWStoryAchievementFlag -Name 'Book6Section315MindforceBlocked'
+            }
+        }
+        if ($visitedSections -contains 348) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section348WarhammerLost'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Type 'backpack'))) {
+            Set-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMapOfTekaroItemNames) -Type 'backpack'))) {
+            Set-LWStoryAchievementFlag -Name 'Book6MapOfTekaroClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSmallSilverKeyItemNames) -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSilverBowOfDuadonItemNames) -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book6SilverBowClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCessItemNames) -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book6CessClaimed'
         }
     }
 }
@@ -6351,6 +6550,10 @@ function Get-LWMapOfVassagoniaItemNames {
     return @('Map of Vassagonia', 'Map of the Desert Empire', 'Map of Vassagonia / Desert Empire')
 }
 
+function Get-LWMapOfStornlandsItemNames {
+    return @('Map of the Stornlands', 'Map of Stornlands')
+}
+
 function Get-LWOedeHerbItemNames {
     return @('Oede Herb')
 }
@@ -6369,6 +6572,14 @@ function Get-LWGaolersKeysItemNames {
 
 function Get-LWJakanBowWeaponNames {
     return @('Jakan Bow')
+}
+
+function Get-LWBowWeaponNames {
+    return @('Bow')
+}
+
+function Get-LWQuiverItemNames {
+    return @('Quiver')
 }
 
 function Get-LWArrowItemNames {
@@ -6393,6 +6604,34 @@ function Get-LWSilverCombItemNames {
 
 function Get-LWHourglassItemNames {
     return @('Hourglass')
+}
+
+function Get-LWMapOfTekaroItemNames {
+    return @('Map of Tekaro')
+}
+
+function Get-LWTaunorWaterItemNames {
+    return @('Taunor Water')
+}
+
+function Get-LWSmallSilverKeyItemNames {
+    return @('Small Silver Key')
+}
+
+function Get-LWSilverBowOfDuadonItemNames {
+    return @('Silver Bow of Duadon', 'Silver Bow')
+}
+
+function Get-LWCessItemNames {
+    return @('Cess')
+}
+
+function Get-LWBottleOfWineItemNames {
+    return @('Bottle of Wine')
+}
+
+function Get-LWMirrorItemNames {
+    return @('Mirror')
 }
 
 function Get-LWPrismItemNames {
@@ -6625,17 +6864,27 @@ function Get-LWKnownInventoryNameGroups {
         (Get-LWTabletOfPerfumedSoapItemNames),
         (Get-LWMapOfSouthlandsItemNames),
         (Get-LWMapOfVassagoniaItemNames),
+        (Get-LWMapOfStornlandsItemNames),
         (Get-LWOedeHerbItemNames),
         (Get-LWBlowpipeItemNames),
         (Get-LWSleepDartItemNames),
         (Get-LWGaolersKeysItemNames),
         (Get-LWJakanBowWeaponNames),
+        (Get-LWBowWeaponNames),
+        (Get-LWQuiverItemNames),
         (Get-LWArrowItemNames),
         (Get-LWTowelItemNames),
         (Get-LWCopperKeyItemNames),
         (Get-LWHerbPadItemNames),
         (Get-LWSilverCombItemNames),
         (Get-LWHourglassItemNames),
+        (Get-LWMapOfTekaroItemNames),
+        (Get-LWTaunorWaterItemNames),
+        (Get-LWSmallSilverKeyItemNames),
+        (Get-LWSilverBowOfDuadonItemNames),
+        (Get-LWCessItemNames),
+        (Get-LWBottleOfWineItemNames),
+        (Get-LWMirrorItemNames),
         (Get-LWPrismItemNames),
         (Get-LWLarnumaOilItemNames),
         (Get-LWRendalimsElixirItemNames),
@@ -6864,6 +7113,12 @@ function Get-LWStateHelmetEnduranceBonus {
 
 function Get-LWStateShieldCombatSkillBonus {
     param([Parameter(Mandatory = $true)][object]$State)
+
+    if ((Test-LWPropertyExists -Object $State -Name 'Combat') -and
+        (Test-LWPropertyExists -Object $State.Combat -Name 'SuppressShieldCombatSkillBonus') -and
+        [bool]$State.Combat.SuppressShieldCombatSkillBonus) {
+        return 0
+    }
 
     if (Test-LWBookFiveLimbdeathActive -State $State) {
         return 0
@@ -7394,6 +7649,108 @@ function Get-LWStateSolnarisCombatSkillBonus {
     return 0
 }
 
+function Test-LWWeaponMatchesWeaponmastery {
+    param(
+        [string]$Weapon,
+        [string[]]$WeaponmasteryWeapons = @()
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Weapon) -or @($WeaponmasteryWeapons).Count -eq 0) {
+        return $false
+    }
+
+    foreach ($masteredWeapon in @($WeaponmasteryWeapons)) {
+        if ($Weapon -ieq [string]$masteredWeapon) {
+            return $true
+        }
+
+        if ((Test-LWWeaponIsDrodarinWarHammer -Weapon $Weapon) -and [string]$masteredWeapon -ieq 'Warhammer') {
+            return $true
+        }
+        if ((Test-LWWeaponIsBroadswordPlusOne -Weapon $Weapon) -and [string]$masteredWeapon -ieq 'Broadsword') {
+            return $true
+        }
+        if ((Test-LWWeaponIsCaptainDValSword -Weapon $Weapon) -and [string]$masteredWeapon -ieq 'Sword') {
+            return $true
+        }
+        if ((Test-LWWeaponIsSolnaris -Weapon $Weapon) -and @('Sword', 'Broadsword') -contains [string]$masteredWeapon) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Get-LWStateWeaponmasteryCombatSkillBonus {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Weapon = $null
+    )
+
+    if (-not (Test-LWStateHasDiscipline -State $State -Name 'Weaponmastery')) {
+        return 0
+    }
+
+    $activeWeapon = if ([string]::IsNullOrWhiteSpace($Weapon)) { [string]$State.Combat.EquippedWeapon } else { [string]$Weapon }
+    if ([string]::IsNullOrWhiteSpace($activeWeapon)) {
+        return 0
+    }
+
+    if (Test-LWWeaponMatchesWeaponmastery -Weapon $activeWeapon -WeaponmasteryWeapons @($State.Character.WeaponmasteryWeapons)) {
+        return 3
+    }
+
+    return 0
+}
+
+function Test-LWCombatPsychicAttackUsesPsiSurge {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if ((Test-LWPropertyExists -Object $State.Combat -Name 'PsychicAttackMode') -and [string]$State.Combat.PsychicAttackMode -ieq 'Psi-surge') {
+        return [bool]$State.Combat.UseMindblast
+    }
+
+    return ((Test-LWStateIsMagnakaiRuleset -State $State) -and [bool]$State.Combat.UseMindblast -and (Test-LWStateHasDiscipline -State $State -Name 'Psi-surge'))
+}
+
+function Get-LWCombatPsychicAttackLabel {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if ((Test-LWPropertyExists -Object $State.Combat -Name 'PsychicAttackMode') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.PsychicAttackMode)) {
+        return [string]$State.Combat.PsychicAttackMode
+    }
+
+    if (Test-LWCombatPsychicAttackUsesPsiSurge -State $State) {
+        return 'Psi-surge'
+    }
+
+    return 'Mindblast'
+}
+
+function Get-LWCombatPsychicAttackBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWCombatPsychicAttackUsesPsiSurge -State $State) {
+        return 4
+    }
+
+    if ((Test-LWPropertyExists -Object $State.Combat -Name 'MindblastCombatSkillBonus') -and $null -ne $State.Combat.MindblastCombatSkillBonus) {
+        return [int]$State.Combat.MindblastCombatSkillBonus
+    }
+
+    return 2
+}
+
+function Get-LWCombatPsychicAttackEnduranceDrain {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (Test-LWCombatPsychicAttackUsesPsiSurge -State $State) {
+        return 2
+    }
+
+    return 0
+}
+
 function Get-LWStateDaggerOfVashnaEndurancePenalty {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -7507,6 +7864,91 @@ function Test-LWCombatMindforceBlockedByMindshield {
     return ((Test-LWCombatUsesMindforce -State $State) -and (Test-LWStateHasDiscipline -State $State -Name 'Mindshield'))
 }
 
+function Get-LWStateCompletedLoreCircles {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $definitions = @($script:GameData.MagnakaiLoreCircles)
+    $owned = @($State.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+    if ($definitions.Count -eq 0 -or $owned.Count -eq 0) {
+        return @()
+    }
+
+    return @(
+        foreach ($definition in $definitions) {
+            $required = @($definition.Disciplines | ForEach-Object { [string]$_ })
+            if ($required.Count -gt 0 -and @($required | Where-Object { $owned -notcontains $_ }).Count -eq 0) {
+                $definition
+            }
+        }
+    )
+}
+
+function Get-LWStateLoreCircleCombatSkillBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $bonus = 0
+    foreach ($circle in @(Get-LWStateCompletedLoreCircles -State $State)) {
+        $bonus += [int]$circle.CombatSkillBonus
+    }
+
+    return $bonus
+}
+
+function Get-LWStateLoreCircleEnduranceBonus {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $bonus = 0
+    foreach ($circle in @(Get-LWStateCompletedLoreCircles -State $State)) {
+        $bonus += [int]$circle.EnduranceBonus
+    }
+
+    return $bonus
+}
+
+function Sync-LWMagnakaiLoreCircleBonuses {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [switch]$WriteMessages
+    )
+
+    Ensure-LWEquipmentBonusState -State $State
+
+    $completedCircles = @(Get-LWStateCompletedLoreCircles -State $State)
+    $circleNames = @($completedCircles | ForEach-Object { [string]$_.Name })
+    $desiredCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State
+    $desiredEndurance = Get-LWStateLoreCircleEnduranceBonus -State $State
+    $appliedCombatSkill = [int]$State.EquipmentBonuses.LoreCircleCombatSkill
+    $appliedEndurance = [int]$State.EquipmentBonuses.LoreCircleEndurance
+    $combatDelta = $desiredCombatSkill - $appliedCombatSkill
+    $enduranceDelta = $desiredEndurance - $appliedEndurance
+
+    $State.Character.LoreCirclesCompleted = @($circleNames)
+
+    if ($combatDelta -eq 0 -and $enduranceDelta -eq 0) {
+        return
+    }
+
+    $State.Character.CombatSkillBase = [Math]::Max(0, ([int]$State.Character.CombatSkillBase + $combatDelta))
+    $newMax = [Math]::Max(1, ([int]$State.Character.EnduranceMax + $enduranceDelta))
+    $newCurrent = [int]$State.Character.EnduranceCurrent + $enduranceDelta
+    if ($newCurrent -lt 0) {
+        $newCurrent = 0
+    }
+    if ($newCurrent -gt $newMax) {
+        $newCurrent = $newMax
+    }
+
+    $State.Character.EnduranceMax = $newMax
+    $State.Character.EnduranceCurrent = $newCurrent
+    $State.EquipmentBonuses.LoreCircleCombatSkill = $desiredCombatSkill
+    $State.EquipmentBonuses.LoreCircleEndurance = $desiredEndurance
+
+    if ($WriteMessages) {
+        $circleSummary = if ($circleNames.Count -gt 0) { $circleNames -join ', ' } else { 'none' }
+        Write-LWInfo ("Lore-circle bonuses updated: CS {0}, END {1}. Circles: {2}." -f (Format-LWSigned -Value $combatDelta), (Format-LWSigned -Value $enduranceDelta), $circleSummary)
+    }
+}
+
 function Get-LWCombatMindforceLossPerRound {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -7576,7 +8018,9 @@ function Get-LWCombatMindforceStatusText {
     }
 
     if (Test-LWCombatMindforceBlockedByMindshield -State $State) {
-        return 'Blocked by Mindshield'
+        $usesPsiScreen = ((Test-LWCombatPsychicAttackUsesPsiSurge -State $State) -or (Test-LWStateHasDiscipline -State $State -Name 'Psi-screen'))
+        $shieldLabel = if ($usesPsiScreen) { 'Psi-screen' } else { 'Mindshield' }
+        return ("Blocked by {0}" -f $shieldLabel)
     }
 
     $loss = Get-LWCombatMindforceLossPerRound -State $State
@@ -7609,6 +8053,12 @@ function Ensure-LWEquipmentBonusState {
     if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'DaggerOfVashnaEndurance') -or $null -eq $State.EquipmentBonuses.DaggerOfVashnaEndurance) {
         $State.EquipmentBonuses | Add-Member -Force -NotePropertyName DaggerOfVashnaEndurance -NotePropertyValue 0
     }
+    if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'LoreCircleCombatSkill') -or $null -eq $State.EquipmentBonuses.LoreCircleCombatSkill) {
+        $State.EquipmentBonuses | Add-Member -Force -NotePropertyName LoreCircleCombatSkill -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $State.EquipmentBonuses -Name 'LoreCircleEndurance') -or $null -eq $State.EquipmentBonuses.LoreCircleEndurance) {
+        $State.EquipmentBonuses | Add-Member -Force -NotePropertyName LoreCircleEndurance -NotePropertyValue 0
+    }
 }
 
 function Sync-LWStateEquipmentBonuses {
@@ -7635,9 +8085,16 @@ function Sync-LWStateEquipmentBonuses {
     $appliedDaggerOfVashna = [int]$State.EquipmentBonuses.DaggerOfVashnaEndurance
     $daggerOfVashnaDelta = $desiredDaggerOfVashna - $appliedDaggerOfVashna
 
-    $delta = $chainmailDelta + $paddedLeatherDelta + $helmetDelta + $daggerOfVashnaDelta
+    $desiredLoreCircleEndurance = Get-LWStateLoreCircleEnduranceBonus -State $State
+    $appliedLoreCircleEndurance = [int]$State.EquipmentBonuses.LoreCircleEndurance
+    $loreCircleEnduranceDelta = $desiredLoreCircleEndurance - $appliedLoreCircleEndurance
+
+    $delta = $chainmailDelta + $paddedLeatherDelta + $helmetDelta + $daggerOfVashnaDelta + $loreCircleEnduranceDelta
 
     if ($delta -eq 0) {
+        $State.EquipmentBonuses.LoreCircleCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State
+        $State.EquipmentBonuses.LoreCircleEndurance = $desiredLoreCircleEndurance
+        $State.Character.LoreCirclesCompleted = @((Get-LWStateCompletedLoreCircles -State $State) | ForEach-Object { [string]$_.Name })
         return
     }
 
@@ -7656,6 +8113,9 @@ function Sync-LWStateEquipmentBonuses {
     $State.EquipmentBonuses.PaddedLeatherEndurance = $desiredPaddedLeather
     $State.EquipmentBonuses.HelmetEndurance = $desiredHelmet
     $State.EquipmentBonuses.DaggerOfVashnaEndurance = $desiredDaggerOfVashna
+    $State.EquipmentBonuses.LoreCircleCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State
+    $State.EquipmentBonuses.LoreCircleEndurance = $desiredLoreCircleEndurance
+    $State.Character.LoreCirclesCompleted = @((Get-LWStateCompletedLoreCircles -State $State) | ForEach-Object { [string]$_.Name })
 
     if ($WriteMessages) {
         if ($chainmailDelta -ne 0) {
@@ -7673,6 +8133,9 @@ function Sync-LWStateEquipmentBonuses {
         if ($daggerOfVashnaDelta -ne 0) {
             $direction = if ($daggerOfVashnaDelta -lt 0) { 'applied' } else { 'removed' }
             Write-LWWarn ("Dagger of Vashna drain {0}: {1} END. Current Endurance: {2} / {3}." -f $direction, (Format-LWSigned -Value $daggerOfVashnaDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
+        }
+        if ($loreCircleEnduranceDelta -ne 0) {
+            Write-LWInfo ("Lore-circle END bonus updated: {0}. Current Endurance: {1} / {2}." -f (Format-LWSigned -Value $loreCircleEnduranceDelta), $State.Character.EnduranceCurrent, $State.Character.EnduranceMax)
         }
     }
 }
@@ -7703,6 +8166,31 @@ function Read-LWYesNo {
             'n' { return $false }
             'no' { return $false }
             default { Write-LWWarn 'Please enter y or n.' }
+        }
+    }
+}
+
+function Read-LWInlineYesNo {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+        [bool]$Default = $true
+    )
+
+    while ($true) {
+        $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
+        $raw = Read-Host "$Prompt $suffix"
+
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return $Default
+        }
+
+        switch ($raw.Trim().ToLowerInvariant()) {
+            'y' { return $true }
+            'yes' { return $true }
+            'n' { return $false }
+            'no' { return $false }
+            default { Write-LWInlineWarn 'Please enter y or n.' }
         }
     }
 }
@@ -7781,6 +8269,7 @@ function New-LWCombatState {
         EnemyRequiresMagicalWeapon = $false
         EnemyImmuneToMindblast    = $false
         UseMindblast              = $false
+        PsychicAttackMode         = 'Mindblast'
         MindblastCombatSkillBonus = 2
         AletherCombatSkillBonus   = 0
         AttemptKnockout           = $false
@@ -7817,6 +8306,10 @@ function New-LWCombatState {
         FallOnRollResolutionNote  = $null
         RestoreHalfEnduranceLossOnVictory = $false
         RestoreHalfEnduranceLossOnEvade = $false
+        UsePlayerTargetEndurance = $false
+        PlayerTargetEnduranceCurrent = 0
+        PlayerTargetEnduranceMax = 0
+        SuppressShieldCombatSkillBonus = $false
         PlayerCombatSkillModifier = 0
         PlayerCombatSkillModifierRounds = 0
         PlayerCombatSkillModifierAfterRounds = 0
@@ -8136,6 +8629,9 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'MindblastCombatSkillBonus') -or $null -eq $State.Combat.MindblastCombatSkillBonus) {
         $State.Combat | Add-Member -Force -NotePropertyName MindblastCombatSkillBonus -NotePropertyValue 2
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PsychicAttackMode') -or [string]::IsNullOrWhiteSpace([string]$State.Combat.PsychicAttackMode)) {
+        $State.Combat | Add-Member -Force -NotePropertyName PsychicAttackMode -NotePropertyValue 'Mindblast'
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'AttemptKnockout') -or $null -eq $State.Combat.AttemptKnockout) {
         $State.Combat | Add-Member -Force -NotePropertyName AttemptKnockout -NotePropertyValue $false
@@ -8911,7 +9407,12 @@ function Show-LWBookCompletionSummary {
 
 function Test-LWDiscipline {
     param([Parameter(Mandatory = $true)][string]$Name)
-    return (@($script:GameState.Character.Disciplines) -contains $Name)
+
+    if (-not (Test-LWHasState)) {
+        return $false
+    }
+
+    return (Test-LWStateHasDiscipline -State $script:GameState -Name $Name)
 }
 
 function Test-LWStateHasDiscipline {
@@ -8920,7 +9421,57 @@ function Test-LWStateHasDiscipline {
         [Parameter(Mandatory = $true)][string]$Name
     )
 
-    return (@($State.Character.Disciplines) -contains $Name)
+    $target = [string]$Name
+    if ([string]::IsNullOrWhiteSpace($target) -or $null -eq $State -or $null -eq $State.Character) {
+        return $false
+    }
+
+    $kaiDisciplines = @($State.Character.Disciplines | ForEach-Object { [string]$_ })
+    $magnakaiDisciplines = if ((Test-LWPropertyExists -Object $State.Character -Name 'MagnakaiDisciplines') -and $null -ne $State.Character.MagnakaiDisciplines) {
+        @($State.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+    }
+    else {
+        @()
+    }
+
+    if ($kaiDisciplines -icontains $target) {
+        return $true
+    }
+    if ($magnakaiDisciplines -icontains $target) {
+        return $true
+    }
+
+    $isMagnakai = Test-LWStateIsMagnakaiRuleset -State $State
+    $hasLegacyKai = (Test-LWPropertyExists -Object $State.Character -Name 'LegacyKaiComplete') -and [bool]$State.Character.LegacyKaiComplete
+    if ($isMagnakai -and $hasLegacyKai -and ((Get-LWKnownKaiDisciplineNames) -icontains $target)) {
+        return $true
+    }
+
+    switch -Regex ($target) {
+        '^Healing$' {
+            return ($magnakaiDisciplines -icontains 'Curing')
+        }
+        '^Hunting$' {
+            return ($magnakaiDisciplines -icontains 'Huntmastery')
+        }
+        '^Mindshield$' {
+            return ($magnakaiDisciplines -icontains 'Psi-screen')
+        }
+        '^Mindblast$' {
+            return ($magnakaiDisciplines -icontains 'Psi-surge')
+        }
+        '^Weaponskill$' {
+            return ($magnakaiDisciplines -icontains 'Weaponmastery')
+        }
+        '^Animal Kinship$' {
+            return ($magnakaiDisciplines -icontains 'Animal Control')
+        }
+        '^Mind Over Matter$' {
+            return ($magnakaiDisciplines -icontains 'Nexus')
+        }
+    }
+
+    return $false
 }
 
 function Get-LWMatchingValue {
@@ -9008,6 +9559,13 @@ function Get-LWPreferredCombatWeapon {
     }
     if (-not [string]::IsNullOrWhiteSpace($weaponskillWeapon)) {
         return $weaponskillWeapon
+    }
+
+    if ((Test-LWStateIsMagnakaiRuleset -State $State) -and @($State.Character.WeaponmasteryWeapons).Count -gt 0) {
+        $weaponmasteryWeapon = [string]($weapons | Where-Object { Test-LWWeaponMatchesWeaponmastery -Weapon ([string]$_) -WeaponmasteryWeapons @($State.Character.WeaponmasteryWeapons) } | Select-Object -First 1)
+        if (-not [string]::IsNullOrWhiteSpace($weaponmasteryWeapon)) {
+            return $weaponmasteryWeapon
+        }
     }
 
     return [string]$weapons[0]
@@ -9330,14 +9888,29 @@ function Show-LWDisciplines {
         return
     }
 
-    Write-LWPanelHeader -Title 'Kai Disciplines' -AccentColor 'DarkYellow'
+    $isMagnakai = Test-LWStateIsMagnakaiRuleset -State $script:GameState
+    $panelTitle = if ($isMagnakai) { 'Magnakai Disciplines' } else { 'Kai Disciplines' }
+    Write-LWPanelHeader -Title $panelTitle -AccentColor 'DarkYellow'
+
     $displayDisciplines = @()
-    foreach ($discipline in @($script:GameState.Character.Disciplines)) {
-        if ($discipline -eq 'Weaponskill' -and -not [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
-            $displayDisciplines += "Weaponskill ($($script:GameState.Character.WeaponskillWeapon))"
+    if ($isMagnakai) {
+        foreach ($discipline in @($script:GameState.Character.MagnakaiDisciplines)) {
+            if ($discipline -eq 'Weaponmastery' -and @($script:GameState.Character.WeaponmasteryWeapons).Count -gt 0) {
+                $displayDisciplines += ("Weaponmastery ({0})" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
+            }
+            else {
+                $displayDisciplines += [string]$discipline
+            }
         }
-        else {
-            $displayDisciplines += [string]$discipline
+    }
+    else {
+        foreach ($discipline in @($script:GameState.Character.Disciplines)) {
+            if ($discipline -eq 'Weaponskill' -and -not [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
+                $displayDisciplines += "Weaponskill ($($script:GameState.Character.WeaponskillWeapon))"
+            }
+            else {
+                $displayDisciplines += [string]$discipline
+            }
         }
     }
 
@@ -9360,6 +9933,30 @@ function Show-LWDisciplines {
         }
         else {
             Write-Host ''
+        }
+    }
+
+    if ($isMagnakai) {
+        $circleDefinitions = @($script:GameData.MagnakaiLoreCircles)
+        if ($circleDefinitions.Count -gt 0) {
+            Write-Host ''
+            Write-LWPanelHeader -Title 'Lore-circles' -AccentColor 'Magenta'
+            $owned = @($script:GameState.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+            foreach ($definition in $circleDefinitions) {
+                $required = @($definition.Disciplines | ForEach-Object { [string]$_ })
+                $ownedCount = @($required | Where-Object { $owned -contains $_ }).Count
+                $status = if ($ownedCount -ge $required.Count) { 'complete' } elseif ($ownedCount -gt 0) { 'partial' } else { 'empty' }
+                $bonusParts = @()
+                if ([int]$definition.CombatSkillBonus -gt 0) {
+                    $bonusParts += ("+{0} CS" -f [int]$definition.CombatSkillBonus)
+                }
+                if ([int]$definition.EnduranceBonus -gt 0) {
+                    $bonusParts += ("+{0} END" -f [int]$definition.EnduranceBonus)
+                }
+                $label = "{0} ({1})" -f [string]$definition.Name, ($required -join ', ')
+                $value = "{0}; {1}" -f $status, ($(if ($bonusParts.Count -gt 0) { $bonusParts -join ', ' } else { 'no bonus' }))
+                Write-LWKeyValue -Label $label -Value $value -ValueColor $(if ($status -eq 'complete') { 'Green' } elseif ($status -eq 'partial') { 'Yellow' } else { 'DarkGray' })
+            }
         }
     }
 }
@@ -9839,7 +10436,8 @@ function Get-LWCampaignSummary {
     $summary = [pscustomobject]@{
         CharacterName                     = [string]$script:GameState.Character.Name
         CurrentBookLabel                  = Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber) -IncludePrefix
-        KaiRankLabel                      = Format-LWKaiRankLabel -DisciplineCount @($script:GameState.Character.Disciplines).Count
+        CurrentRankLabel                  = Get-LWCurrentRankLabel -State $script:GameState
+        CurrentRankFieldLabel             = $(if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) { 'Magnakai Rank' } else { 'Kai Rank' })
         Difficulty                        = Get-LWCurrentDifficulty
         PermadeathEnabled                 = [bool](Test-LWPermadeathEnabled)
         RunIntegrityState                 = [string]$script:GameState.Run.IntegrityState
@@ -9940,7 +10538,7 @@ function Show-LWCampaignOverview {
     Write-LWKeyValue -Label 'Permadeath' -Value $(if ($Summary.PermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if ($Summary.PermadeathEnabled) { 'Red' } else { 'Gray' })
     Write-LWKeyValue -Label 'Run Integrity' -Value $Summary.RunIntegrityState -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$Summary.RunIntegrityState))
     Write-LWKeyValue -Label 'Achievement Pool' -Value $Summary.AchievementPoolLabel -ValueColor 'DarkYellow'
-    Write-LWKeyValue -Label 'Kai Rank' -Value $Summary.KaiRankLabel -ValueColor 'DarkYellow'
+    Write-LWKeyValue -Label $Summary.CurrentRankFieldLabel -Value $Summary.CurrentRankLabel -ValueColor 'DarkYellow'
     Write-LWKeyValue -Label 'Current Section' -Value ([string]$Summary.CurrentSection) -ValueColor 'White'
     Write-LWKeyValue -Label 'Completed Books' -Value $Summary.CompletedBooksLabel -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Books Complete' -Value ([string]$Summary.BooksCompletedCount) -ValueColor 'Gray'
@@ -10548,6 +11146,16 @@ function Test-LWAchievementSatisfied {
         'name_the_lost' { return ((Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') -and (Test-LWStoryAchievementFlag -Name 'Book5SoushillaAsked')) }
         'shadow_on_the_sand' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWStoryAchievementFlag -Name 'Book5BanishmentRoute')) }
         'face_to_face_with_haakon' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute')) }
+        'book_six_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 6) }
+        'magnakai_rising' { return ((@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6 })).Count -ge 6) }
+        'jump_the_wagons' { return (Test-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute') }
+        'water_bearer' { return (Test-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored') }
+        'tekaro_cartographer' { return (Test-LWStoryAchievementFlag -Name 'Book6MapOfTekaroClaimed') }
+        'key_to_varetta' { return (Test-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed') }
+        'silver_oak_prize' { return (Test-LWStoryAchievementFlag -Name 'Book6SilverBowClaimed') }
+        'cess_to_enter' { return (Test-LWStoryAchievementFlag -Name 'Book6CessClaimed') }
+        'cold_comfort' { return (Test-LWStoryAchievementFlag -Name 'Book6Section306NexusProtected') }
+        'mind_over_malice_book6' { return (Test-LWStoryAchievementFlag -Name 'Book6Section315MindforceBlocked') }
         default { return $false }
     }
 }
@@ -10660,6 +11268,16 @@ function Get-LWAchievementProgressText {
         'name_the_lost' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') { 'Soushilla name learned; ask for her later' } else { 'learn Soushilla''s name and ask for her in Book 5' }) }
         'shadow_on_the_sand' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5BanishmentRoute') { 'banishment route found; finish Book 5' } else { 'finish Book 5 through the glowing-stone route' }) }
         'face_to_face_with_haakon' { return $(if (Test-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute') { 'Haakon duel route found; finish Book 5' } else { 'finish Book 5 through the Haakon duel route' }) }
+        'book_six_complete' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 6) { 'Book 6 complete' } else { 'complete Book 6' }) }
+        'magnakai_rising' { return ("{0}/6 books complete" -f (@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6 }).Count)) }
+        'jump_the_wagons' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute') { 'wagon-jump route cleared' } else { 'clear the wagon-jump route in Book 6' }) }
+        'water_bearer' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored') { 'Taunor Water stored for later use' } else { 'store Taunor Water for later use in Book 6' }) }
+        'tekaro_cartographer' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6MapOfTekaroClaimed') { 'Map of Tekaro claimed' } else { 'claim a Map of Tekaro in Book 6' }) }
+        'key_to_varetta' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed') { 'Small Silver Key claimed' } else { 'claim the Small Silver Key in Book 6' }) }
+        'silver_oak_prize' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6SilverBowClaimed') { 'Silver Bow of Duadon claimed' } else { 'win the Silver Bow of Duadon in Book 6' }) }
+        'cess_to_enter' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6CessClaimed') { 'Cess claimed' } else { 'pocket a valid Cess for Amory in Book 6' }) }
+        'cold_comfort' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6Section306NexusProtected') { 'Nexus has already protected you from the cold' } else { 'reach the frozen-river route with Nexus in Book 6' }) }
+        'mind_over_malice_book6' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6Section315MindforceBlocked') { 'Psi-screen blocked the Mindforce assault' } else { 'reach section 315 with Psi-screen' }) }
         default { return '' }
     }
 }
@@ -11635,6 +12253,9 @@ function Show-LWInventorySummary {
         Write-LWKeyValue -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
     }
     Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
+    if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
+        Write-LWKeyValue -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
+    }
     if ($safekeeping.Count -gt 0) {
         Write-LWKeyValue -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) -ValueColor 'DarkGray'
     }
@@ -11659,6 +12280,10 @@ function Show-LWInventory {
     Write-Host ''
     Show-LWInventorySlotsSection -Type 'special'
     Write-Host ''
+    if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
+        Write-LWKeyValue -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
+        Write-Host ''
+    }
     if (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0) {
         Write-LWKeyValue -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items @($script:GameState.Storage.SafekeepingSpecialItems) -MaxGroups 4) -ValueColor 'DarkGray'
         Write-Host ''
@@ -11733,6 +12358,10 @@ function Show-LWInventory {
         Write-LWSubtle '  Long Rope: occupies 2 backpack slots.'
         Write-Host ''
     }
+    if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
+        Write-LWSubtle ("  Quiver: {0} arrow{1} ready for use with a Bow." -f [int]$script:GameState.Inventory.QuiverArrows, $(if ([int]$script:GameState.Inventory.QuiverArrows -eq 1) { '' } else { 's' }))
+        Write-Host ''
+    }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
     Write-LWSubtle '  Use drop <type> <slot> to remove by slot number, or drop <type> all to clear a section.'
     Write-LWSubtle '  Use recover <type> or recover all to restore stashed gear from a bulk drop.'
@@ -11805,7 +12434,10 @@ function Show-LWSheet {
     Write-LWKeyValue -Label 'Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
     Write-LWKeyValue -Label 'Permadeath' -Value $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
     Write-LWKeyValue -Label 'Run Integrity' -Value ([string]$script:GameState.Run.IntegrityState) -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState))
-    Write-LWKeyValue -Label 'Kai Rank' -Value (Format-LWKaiRankLabel -DisciplineCount @($script:GameState.Character.Disciplines).Count) -ValueColor 'DarkYellow'
+    Write-LWKeyValue -Label $(if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) { 'Magnakai Rank' } else { 'Kai Rank' }) -Value (Get-LWCurrentRankLabel -State $script:GameState) -ValueColor 'DarkYellow'
+    if ((Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and [bool]$script:GameState.Character.LegacyKaiComplete) {
+        Write-LWKeyValue -Label 'Legacy Kai' -Value 'Mastered' -ValueColor 'Gray'
+    }
     Write-LWKeyValue -Label 'Combat Skill' -Value $combatSkillText -ValueColor 'Cyan'
     Write-LWKeyValue -Label 'Endurance' -Value $enduranceText -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
     if (Test-LWStateHasSommerswerd -State $script:GameState) {
@@ -11822,6 +12454,9 @@ function Show-LWSheet {
         Write-LWKeyValue -Label 'Silver Helm' -Value ("+{0} Combat Skill" -f $silverHelmBonus) -ValueColor 'DarkYellow'
     }
     Write-LWKeyValue -Label 'Combat Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
+    if ((Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and @($script:GameState.Character.ImprovedDisciplines).Count -gt 0) {
+        Write-LWKeyValue -Label 'Improved Disciplines' -Value (@($script:GameState.Character.ImprovedDisciplines) -join ', ') -ValueColor 'Gray'
+    }
     Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Current Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
     Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f (Get-LWAchievementEligibleUnlockedCount), (Get-LWAchievementAvailableCount)) -ValueColor 'Magenta'
@@ -12051,6 +12686,10 @@ function Add-LWInventoryItem {
         'special' { $script:GameState.Inventory.SpecialItems = $current }
     }
 
+    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWQuiverItemNames) -Target $resolvedName))) {
+        $script:GameState.Inventory.QuiverArrows = 6
+    }
+
     Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $resolvedName
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
     [void](Sync-LWAchievements -Context 'inventory')
@@ -12111,6 +12750,10 @@ function TryAdd-LWInventoryItemSilently {
         'special' { $script:GameState.Inventory.SpecialItems = @($current) }
     }
 
+    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWQuiverItemNames) -Target $resolvedName))) {
+        $script:GameState.Inventory.QuiverArrows = 6
+    }
+
     Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $resolvedName
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
     [void](Sync-LWAchievements -Context 'inventory')
@@ -12152,6 +12795,10 @@ function Remove-LWInventoryItemSilently {
         'weapon' { $script:GameState.Inventory.Weapons = @($remaining) }
         'backpack' { $script:GameState.Inventory.BackpackItems = @($remaining) }
         'special' { $script:GameState.Inventory.SpecialItems = @($remaining) }
+    }
+
+    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWQuiverItemNames) -Target $Name)) -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWQuiverItemNames) -Type 'special')) {
+        $script:GameState.Inventory.QuiverArrows = 0
     }
 
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
@@ -12790,9 +13437,13 @@ function Use-LWHealingPotion {
         $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWBottleOfKourshahItemNames) -Type 'backpack'
         $restoreAmount = 4
     }
+    if ([string]::IsNullOrWhiteSpace($potionName)) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Type 'backpack'
+        $restoreAmount = 6
+    }
 
     if ([string]::IsNullOrWhiteSpace($potionName)) {
-        Write-LWWarn 'No usable healing potion or Laumspur Herb found in backpack items.'
+        Write-LWWarn 'No usable healing item found in backpack items.'
         return
     }
 
@@ -12846,6 +13497,32 @@ function Get-LWStateAletherCombatSkillBonus {
     return [int]$State.Combat.AletherCombatSkillBonus
 }
 
+function Get-LWCombatPlayerEndurancePool {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $usesTarget = ((Test-LWPropertyExists -Object $State -Name 'Combat') -and
+        (Test-LWPropertyExists -Object $State.Combat -Name 'UsePlayerTargetEndurance') -and
+        [bool]$State.Combat.UsePlayerTargetEndurance)
+
+    if ($usesTarget) {
+        $current = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerTargetEnduranceCurrent') -and $null -ne $State.Combat.PlayerTargetEnduranceCurrent) { [int]$State.Combat.PlayerTargetEnduranceCurrent } else { 0 }
+        $max = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerTargetEnduranceMax') -and $null -ne $State.Combat.PlayerTargetEnduranceMax) { [int]$State.Combat.PlayerTargetEnduranceMax } else { $current }
+        return [pscustomobject]@{
+            UsesTarget = $true
+            Current    = $current
+            Max        = $max
+            Label      = 'Target'
+        }
+    }
+
+    return [pscustomobject]@{
+        UsesTarget = $false
+        Current    = [int]$State.Character.EnduranceCurrent
+        Max        = [int]$State.Character.EnduranceMax
+        Label      = 'Endurance'
+    }
+}
+
 function Get-LWCombatBreakdownFromState {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -12862,6 +13539,11 @@ function Get-LWCombatBreakdownFromState {
         $playerCombatSkill += $shieldBonus
         $notes += "Shield +$shieldBonus"
     }
+    elseif ((Test-LWPropertyExists -Object $State.Combat -Name 'SuppressShieldCombatSkillBonus') -and
+        [bool]$State.Combat.SuppressShieldCombatSkillBonus -and
+        (Test-LWStateHasInventoryItem -State $State -Names (Get-LWShieldItemNames))) {
+        $notes += 'Shield suppressed'
+    }
 
     $silverHelmBonus = Get-LWStateSilverHelmCombatSkillBonus -State $State
     if ($silverHelmBonus -gt 0) {
@@ -12870,9 +13552,10 @@ function Get-LWCombatBreakdownFromState {
     }
 
     if ($State.Combat.UseMindblast) {
-        $mindblastBonus = if ((Test-LWPropertyExists -Object $State.Combat -Name 'MindblastCombatSkillBonus') -and $null -ne $State.Combat.MindblastCombatSkillBonus) { [int]$State.Combat.MindblastCombatSkillBonus } else { 2 }
-        $playerCombatSkill += $mindblastBonus
-        $notes += "Mindblast +$mindblastBonus"
+        $psychicBonus = Get-LWCombatPsychicAttackBonus -State $State
+        $psychicLabel = Get-LWCombatPsychicAttackLabel -State $State
+        $playerCombatSkill += $psychicBonus
+        $notes += "$psychicLabel +$psychicBonus"
     }
 
     $aletherBonus = Get-LWStateAletherCombatSkillBonus -State $State
@@ -12968,6 +13651,12 @@ function Get-LWCombatBreakdownFromState {
             $notes += "Solnaris +$solnarisBonus"
         }
 
+        $weaponmasteryBonus = Get-LWStateWeaponmasteryCombatSkillBonus -State $State -Weapon ([string]$State.Combat.EquippedWeapon)
+        if ($weaponmasteryBonus -gt 0) {
+            $playerCombatSkill += $weaponmasteryBonus
+            $notes += "Weaponmastery +$weaponmasteryBonus"
+        }
+
         if ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
             $playerCombatSkill += 2
             $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } elseif (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Sword' } elseif (Test-LWWeaponIsSolnaris -Weapon ([string]$State.Combat.EquippedWeapon)) { [string]$State.Character.WeaponskillWeapon } else { [string]$State.Combat.EquippedWeapon }
@@ -12977,7 +13666,7 @@ function Get-LWCombatBreakdownFromState {
 
     if ([bool]$State.Combat.EnemyUsesMindforce) {
         if (Test-LWCombatMindforceBlockedByMindshield -State $State) {
-            $notes += 'Mindforce blocked by Mindshield'
+            $notes += ("Mindforce blocked by {0}" -f $(if (Test-LWStateHasDiscipline -State $State -Name 'Psi-screen') { 'Psi-screen' } else { 'Mindshield' }))
         }
         else {
             $notes += ("Mindforce -{0} END each round" -f (Get-LWCombatMindforceLossPerRound -State $State))
@@ -13023,6 +13712,11 @@ function Get-LWCombatBreakdownFromState {
     if ([int]$State.Combat.EnemyCombatSkillModifier -ne 0) {
         $enemyCombatSkill += [int]$State.Combat.EnemyCombatSkillModifier
         $notes += "Enemy modifier $(Format-LWSigned -Value ([int]$State.Combat.EnemyCombatSkillModifier))"
+    }
+
+    $playerEndurancePool = Get-LWCombatPlayerEndurancePool -State $State
+    if ([bool]$playerEndurancePool.UsesTarget) {
+        $notes += 'Target points combat'
     }
 
     $specialLossAmount = if ((Test-LWPropertyExists -Object $State.Combat -Name 'SpecialPlayerEnduranceLossAmount') -and $null -ne $State.Combat.SpecialPlayerEnduranceLossAmount) { [int]$State.Combat.SpecialPlayerEnduranceLossAmount } else { 0 }
@@ -13329,6 +14023,7 @@ function Show-LWCombatTacticalPanel {
     param(
         [Parameter(Mandatory = $true)][string]$Weapon,
         [Parameter(Mandatory = $true)][bool]$UseMindblast,
+        [string]$PsychicAttackLabel = 'Mindblast',
         [Parameter(Mandatory = $true)][bool]$EnemyIsUndead,
         [Parameter(Mandatory = $true)][string]$MindforceStatus,
         [Parameter(Mandatory = $true)][string]$KnockoutStatus,
@@ -13341,7 +14036,7 @@ function Show-LWCombatTacticalPanel {
 
     Write-LWPanelHeader -Title 'Tactical Readout' -AccentColor 'DarkYellow'
     Write-LWKeyValue -Label 'Weapon' -Value $Weapon -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Mindblast' -Value $(if ($UseMindblast) { 'On' } else { 'Off' }) -ValueColor $(if ($UseMindblast) { 'Cyan' } else { 'Gray' })
+    Write-LWKeyValue -Label $PsychicAttackLabel -Value $(if ($UseMindblast) { 'On' } else { 'Off' }) -ValueColor $(if ($UseMindblast) { 'Cyan' } else { 'Gray' })
     Write-LWKeyValue -Label 'Undead Enemy' -Value $(if ($EnemyIsUndead) { 'Yes' } else { 'No' }) -ValueColor $(if ($EnemyIsUndead) { 'DarkYellow' } else { 'Gray' })
     $mindforceColor = 'Gray'
     if ($MindforceStatus -like 'Active*') {
@@ -13379,13 +14074,16 @@ function Get-LWCurrentCombatLogEntry {
         return $null
     }
 
+    $playerPool = Get-LWCombatPlayerEndurancePool -State $script:GameState
     return [pscustomobject]@{
         BookNumber = [int]$script:GameState.Character.BookNumber
         BookTitle  = [string](Get-LWBookTitle -BookNumber ([int]$script:GameState.Character.BookNumber))
         EnemyName  = $script:GameState.Combat.EnemyName
         Outcome    = 'In Progress'
         RoundCount = @($script:GameState.Combat.Log).Count
-        PlayerEnd  = $script:GameState.Character.EnduranceCurrent
+        PlayerEnd  = [int]$playerPool.Current
+        PlayerEnduranceMax = [int]$playerPool.Max
+        UsesPlayerTargetEndurance = [bool]$playerPool.UsesTarget
         EnemyEnd   = $script:GameState.Combat.EnemyEnduranceCurrent
         EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
         MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
@@ -13530,11 +14228,14 @@ function Show-LWCombatSummary {
     Write-LWPanelHeader -Title 'Combat Summary' -AccentColor 'DarkRed'
     Write-LWKeyValue -Label 'Enemy' -Value $Summary.EnemyName -ValueColor 'White'
     Write-LWKeyValue -Label 'Outcome' -Value $Summary.Outcome -ValueColor (Get-LWOutcomeColor -Outcome $Summary.Outcome)
+    if ((Test-LWPropertyExists -Object $Summary -Name 'UsesPlayerTargetEndurance') -and [bool]$Summary.UsesPlayerTargetEndurance) {
+        Write-LWKeyValue -Label 'Player Pool' -Value 'Target points' -ValueColor 'Gray'
+    }
     if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionSection') -and $null -ne $Summary.SpecialResolutionSection) {
         Write-LWKeyValue -Label 'Next Section' -Value ([string]$Summary.SpecialResolutionSection) -ValueColor 'Yellow'
     }
     Show-LWCombatDuelPanel -Title 'Aftermath' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
-    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
+    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
     Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round Recap'
     if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.SpecialResolutionNote)) {
         Write-LWSubtle ("  {0}" -f [string]$Summary.SpecialResolutionNote)
@@ -13549,12 +14250,16 @@ function Show-LWCombatStatus {
     }
 
     $breakdown = Get-LWCombatBreakdown
+    $playerPool = Get-LWCombatPlayerEndurancePool -State $script:GameState
     $mindforceStatus = Get-LWCombatMindforceStatusText -State $script:GameState
     $knockoutStatus = if ([bool]$script:GameState.Combat.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }
     Write-LWPanelHeader -Title 'Combat Status' -AccentColor 'Red'
     Write-LWKeyValue -Label 'Enemy' -Value $script:GameState.Combat.EnemyName -ValueColor 'White'
-    Show-LWCombatDuelPanel -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$script:GameState.Character.EnduranceCurrent) -PlayerMax ([int]$script:GameState.Character.EnduranceMax) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
-    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus (Get-LWCombatEvadeStatusText -State $script:GameState) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
+    if ([bool]$playerPool.UsesTarget) {
+        Write-LWKeyValue -Label 'Player Pool' -Value 'Target points' -ValueColor 'Gray'
+    }
+    Show-LWCombatDuelPanel -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$playerPool.Current) -PlayerMax ([int]$playerPool.Max) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
+    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus (Get-LWCombatEvadeStatusText -State $script:GameState) -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
     Show-LWCombatRecentRounds -Rounds @($script:GameState.Combat.Log) -Count 3
     Show-LWCombatPromptHint
 }
@@ -13586,7 +14291,8 @@ function Resolve-LWCombatRound {
         }
         else {
             $EnemyLoss = Convert-LWCRTLossValue -Value $crtResult.EnemyLossRaw -CurrentEndurance ([int]$State.Combat.EnemyEnduranceCurrent)
-            $PlayerLoss = Convert-LWCRTLossValue -Value $crtResult.PlayerLossRaw -CurrentEndurance ([int]$State.Character.EnduranceCurrent)
+            $playerEndurancePool = Get-LWCombatPlayerEndurancePool -State $State
+            $PlayerLoss = Convert-LWCRTLossValue -Value $crtResult.PlayerLossRaw -CurrentEndurance ([int]$playerEndurancePool.Current)
             if ($null -eq $EnemyLoss -or $null -eq $PlayerLoss) {
                 $messages += 'CRT data contains an invalid result. Falling back to manual entry.'
                 $EnemyLoss = $null
@@ -13622,11 +14328,14 @@ function Resolve-LWCombatRound {
     $baseEnemyLoss = [int]$EnemyLoss
     $enemyLossApplied = $baseEnemyLoss
     $combatPlayerLossApplied = [int]$playerLossResolution.AppliedLoss
-    $currentPlayerEnd = [int]$State.Character.EnduranceCurrent
+    $playerEndurancePool = Get-LWCombatPlayerEndurancePool -State $State
+    $currentPlayerEnd = [int]$playerEndurancePool.Current
     $mindforceBaseLoss = 0
     $mindforceAppliedLoss = 0
     $specialBaseLoss = 0
     $specialAppliedLoss = 0
+    $psychicBaseLoss = 0
+    $psychicAppliedLoss = 0
     $specialNotes = @()
 
     if ([bool]$State.Combat.EnemyRequiresMagicSpear -and -not (Test-LWWeaponIsMagicSpear -Weapon ([string]$State.Combat.EquippedWeapon))) {
@@ -13712,8 +14421,26 @@ function Resolve-LWCombatRound {
         }
     }
 
-    $totalPlayerLossApplied = $combatPlayerLossApplied + $mindforceAppliedLoss + $specialAppliedLoss
-    $totalPlayerLossBase = [int]$PlayerLoss + $mindforceBaseLoss + $specialBaseLoss
+    $psychicDrain = Get-LWCombatPsychicAttackEnduranceDrain -State $State
+    if ([bool]$State.Combat.UseMindblast -and $psychicDrain -gt 0) {
+        $psychicBaseLoss = $psychicDrain
+        $psychicResolution = Resolve-LWGameplayEnduranceLoss -Loss $psychicBaseLoss -Source 'combat' -State $State
+        $remainingAfterAllHazards = [Math]::Max(0, ($currentPlayerEnd - $combatPlayerLossApplied - $mindforceAppliedLoss - $specialAppliedLoss))
+        $psychicAppliedLoss = [Math]::Min($remainingAfterAllHazards, [int]$psychicResolution.AppliedLoss)
+        if ($psychicAppliedLoss -gt 0) {
+            $specialNotes += 'Psi-surge drain'
+            $messages += ("Psi-surge costs {0} END." -f $psychicAppliedLoss)
+        }
+        else {
+            $messages += 'Psi-surge is active, but no END is lost.'
+        }
+        if (-not [string]::IsNullOrWhiteSpace([string]$psychicResolution.Note)) {
+            $messages += [string]$psychicResolution.Note
+        }
+    }
+
+    $totalPlayerLossApplied = $combatPlayerLossApplied + $mindforceAppliedLoss + $specialAppliedLoss + $psychicAppliedLoss
+    $totalPlayerLossBase = [int]$PlayerLoss + $mindforceBaseLoss + $specialBaseLoss + $psychicBaseLoss
     $ignorePlayerLossRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'IgnorePlayerEnduranceLossRounds') -and $null -ne $State.Combat.IgnorePlayerEnduranceLossRounds) { [int]$State.Combat.IgnorePlayerEnduranceLossRounds } else { 0 }
     if ([bool]$State.Combat.IgnoreFirstRoundEnduranceLoss -and $ignorePlayerLossRounds -lt 1) {
         $ignorePlayerLossRounds = 1
@@ -13729,6 +14456,7 @@ function Resolve-LWCombatRound {
         $combatPlayerLossApplied = 0
         $mindforceAppliedLoss = 0
         $specialAppliedLoss = 0
+        $psychicAppliedLoss = 0
         $totalPlayerLossApplied = 0
     }
 
@@ -13739,6 +14467,7 @@ function Resolve-LWCombatRound {
             $combatPlayerLossApplied = $currentPlayerEnd
             $mindforceAppliedLoss = 0
             $specialAppliedLoss = 0
+            $psychicAppliedLoss = 0
             $totalPlayerLossApplied = $currentPlayerEnd
             $messages += 'The Javek''s fangs pierce your padded arm. The venom stops your heart.'
             $specialNotes += 'Javek venom'
@@ -13747,6 +14476,7 @@ function Resolve-LWCombatRound {
             $combatPlayerLossApplied = 0
             $mindforceAppliedLoss = 0
             $specialAppliedLoss = 0
+            $psychicAppliedLoss = 0
             $totalPlayerLossApplied = 0
             $messages += 'The Javek''s fangs sink harmlessly into your padded arm. You lose no ENDURANCE.'
             $specialNotes += 'Padded arm'
@@ -13780,6 +14510,14 @@ function Resolve-LWCombatRound {
         $outcome = 'Special'
         $specialResolutionSection = [int]$State.Combat.PlayerLossResolutionSection
         $specialResolutionNote = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerLossResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.PlayerLossResolutionNote)) { [string]$State.Combat.PlayerLossResolutionNote } else { ("Section result: losing ENDURANCE sends you to {0}." -f $specialResolutionSection) }
+        $messages += $specialResolutionNote
+    }
+    elseif ((Test-LWPropertyExists -Object $State.Combat -Name 'EnemyEnduranceThreshold') -and $null -ne $State.Combat.EnemyEnduranceThreshold -and
+        (Test-LWPropertyExists -Object $State.Combat -Name 'EnemyEnduranceThresholdSection') -and $null -ne $State.Combat.EnemyEnduranceThresholdSection -and
+        $newEnemyEnd -le [int]$State.Combat.EnemyEnduranceThreshold) {
+        $outcome = 'Special'
+        $specialResolutionSection = [int]$State.Combat.EnemyEnduranceThresholdSection
+        $specialResolutionNote = if ((Test-LWPropertyExists -Object $State.Combat -Name 'EnemyEnduranceThresholdNote') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.EnemyEnduranceThresholdNote)) { [string]$State.Combat.EnemyEnduranceThresholdNote } else { ("Section result: once the enemy reaches the threshold, turn to {0}." -f $specialResolutionSection) }
         $messages += $specialResolutionNote
     }
     elseif ($newEnemyEnd -le 0) {
@@ -13827,6 +14565,8 @@ function Resolve-LWCombatRound {
             MindforceLossBase = $mindforceBaseLoss
             SpecialLoss = $specialAppliedLoss
             SpecialLossBase = $specialBaseLoss
+            PsychicLoss = $psychicAppliedLoss
+            PsychicLossBase = $psychicBaseLoss
             EnemyEnd   = $newEnemyEnd
             PlayerEnd  = $newPlayerEnd
             SpecialNote = $(if ($specialNotes.Count -gt 0) { $specialNotes -join ', ' } else { $null })
@@ -13838,9 +14578,14 @@ function Apply-LWCombatRoundResolution {
     param([Parameter(Mandatory = $true)][object]$Resolution)
 
     $script:GameState.Combat.EnemyEnduranceCurrent = $Resolution.NewEnemyEnd
-    $script:GameState.Character.EnduranceCurrent = $Resolution.NewPlayerEnd
+    if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'UsePlayerTargetEndurance') -and [bool]$script:GameState.Combat.UsePlayerTargetEndurance) {
+        $script:GameState.Combat.PlayerTargetEnduranceCurrent = $Resolution.NewPlayerEnd
+    }
+    else {
+        $script:GameState.Character.EnduranceCurrent = $Resolution.NewPlayerEnd
+    }
     $script:GameState.Combat.Log = @($script:GameState.Combat.Log) + $Resolution.LogEntry
-    if ([int]$Resolution.PlayerLoss -gt 0) {
+    if ([int]$Resolution.PlayerLoss -gt 0 -and -not ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'UsePlayerTargetEndurance') -and [bool]$script:GameState.Combat.UsePlayerTargetEndurance)) {
         Add-LWBookEnduranceDelta -Delta (-[int]$Resolution.PlayerLoss)
     }
 }
@@ -14615,14 +15360,33 @@ function Start-LWCombat {
         Write-LWInfo 'Book 5 section 393: surprise attack applies -2 Combat Skill in round 1.'
     }
 
+    $psychicAttackMode = 'Mindblast'
     $useMindblast = $false
-    if ((Test-LWDiscipline -Name 'Mindblast') -and -not $enemyImmune) {
-        if ($useQuickDefaults) {
-            $useMindblast = $true
-            Write-LWInfo 'Mindblast is available and enabled by default for this combat.'
+    $hasPsiSurge = (Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')
+    $hasMindblast = Test-LWStateHasDiscipline -State $script:GameState -Name 'Mindblast'
+    if (-not $enemyImmune -and ($hasPsiSurge -or $hasMindblast)) {
+        if ($hasPsiSurge -and [int]$script:GameState.Character.EnduranceCurrent -le 6) {
+            Write-LWWarn 'Psi-surge cannot be used at 6 ENDURANCE or lower.'
         }
-        else {
-            $useMindblast = Read-LWYesNo -Prompt 'Use Mindblast in this combat?' -Default $true
+        elseif ($hasPsiSurge) {
+            $psychicAttackMode = 'Psi-surge'
+            if ($useQuickDefaults) {
+                $useMindblast = $true
+                Write-LWInfo 'Psi-surge is available and enabled by default for this combat.'
+            }
+            else {
+                $useMindblast = Read-LWYesNo -Prompt 'Use Psi-surge in this combat?' -Default $true
+            }
+        }
+        elseif ($hasMindblast) {
+            $psychicAttackMode = 'Mindblast'
+            if ($useQuickDefaults) {
+                $useMindblast = $true
+                Write-LWInfo 'Mindblast is available and enabled by default for this combat.'
+            }
+            else {
+                $useMindblast = Read-LWYesNo -Prompt 'Use Mindblast in this combat?' -Default $true
+            }
         }
     }
 
@@ -14645,6 +15409,7 @@ function Start-LWCombat {
         EnemyRequiresMagicalWeapon = $enemyRequiresMagicalWeapon
         EnemyImmuneToMindblast    = $enemyImmune
         UseMindblast              = $useMindblast
+        PsychicAttackMode         = $psychicAttackMode
         MindblastCombatSkillBonus = $mindblastCombatSkillBonus
         AletherCombatSkillBonus   = $aletherCombatSkillBonus
         AttemptKnockout           = $attemptKnockout
@@ -14718,6 +15483,7 @@ function Stop-LWCombat {
         return $null
     }
 
+    $playerPool = Get-LWCombatPlayerEndurancePool -State $script:GameState
     $combatLossMeasure = @(@($script:GameState.Combat.Log) | Measure-Object -Property PlayerLoss -Sum)
     $combatTotalPlayerLoss = if ($combatLossMeasure.Count -gt 0) { $combatLossMeasure[0].Sum } else { $null }
     if ($null -eq $combatTotalPlayerLoss) {
@@ -14730,25 +15496,35 @@ function Stop-LWCombat {
         $restoreHalfLoss = [math]::Floor(([int]$combatTotalPlayerLoss) / 2)
     }
     if ($restoreHalfLoss -gt 0) {
-        $beforeRestore = [int]$script:GameState.Character.EnduranceCurrent
-        $script:GameState.Character.EnduranceCurrent = [Math]::Min([int]$script:GameState.Character.EnduranceMax, ($beforeRestore + $restoreHalfLoss))
-        $actualRestore = [int]$script:GameState.Character.EnduranceCurrent - $beforeRestore
+        $beforeRestore = [int]$playerPool.Current
+        $restoredTarget = [Math]::Min([int]$playerPool.Max, ($beforeRestore + $restoreHalfLoss))
+        if ([bool]$playerPool.UsesTarget) {
+            $script:GameState.Combat.PlayerTargetEnduranceCurrent = $restoredTarget
+        }
+        else {
+            $script:GameState.Character.EnduranceCurrent = $restoredTarget
+        }
+        $actualRestore = $restoredTarget - $beforeRestore
         if ($actualRestore -gt 0) {
-            Add-LWBookEnduranceDelta -Delta $actualRestore
-            Register-LWManualRecoveryShortcut
-            Write-LWInfo ("Special combat rule restores {0} ENDURANCE after the fight." -f $actualRestore)
+            if (-not [bool]$playerPool.UsesTarget) {
+                Add-LWBookEnduranceDelta -Delta $actualRestore
+                Register-LWManualRecoveryShortcut
+            }
+            Write-LWInfo ("Special combat rule restores {0} {1} after the fight." -f $actualRestore, $(if ([bool]$playerPool.UsesTarget) { 'TARGET point(s)' } else { 'ENDURANCE' }))
         }
     }
 
     $breakdown = Get-LWCombatBreakdown
+    $playerPool = Get-LWCombatPlayerEndurancePool -State $script:GameState
     $summary = [pscustomobject]@{
         BookNumber        = [int]$script:GameState.Character.BookNumber
         BookTitle         = Get-LWBookTitle -BookNumber ([int]$script:GameState.Character.BookNumber)
         EnemyName         = $script:GameState.Combat.EnemyName
         Outcome           = $Outcome
         RoundCount        = @($script:GameState.Combat.Log).Count
-        PlayerEnd         = $script:GameState.Character.EnduranceCurrent
-        PlayerEnduranceMax = $script:GameState.Character.EnduranceMax
+        PlayerEnd         = [int]$playerPool.Current
+        PlayerEnduranceMax = [int]$playerPool.Max
+        UsesPlayerTargetEndurance = [bool]$playerPool.UsesTarget
         EnemyEnd          = $script:GameState.Combat.EnemyEnduranceCurrent
         EnemyEnduranceMax = $script:GameState.Combat.EnemyEnduranceMax
         EnemyIsUndead     = [bool]$script:GameState.Combat.EnemyIsUndead
@@ -15274,12 +16050,12 @@ function Complete-LWBook {
             CharacterName = $script:GameState.Character.Name
         })
 
-    if ($currentBook -ge 5) {
+    if ($currentBook -ge 6) {
         $script:GameState.Run.Status = 'Completed'
         $script:GameState.Run.CompletedOn = (Get-Date).ToString('o')
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
         Clear-LWDeathState
-        Write-LWInfo 'Book 5 complete. The Kai ruleset campaign is now complete.'
+        Write-LWInfo 'Book 6 complete. The current Magnakai campaign is now complete.'
         Invoke-LWMaybeAutosave
         return
     }
@@ -15288,7 +16064,9 @@ function Complete-LWBook {
     $nextBookLabel = Format-LWBookLabel -BookNumber $nextBook -IncludePrefix
     $nextBookStartSection = 1
     $script:GameState.Character.BookNumber = $nextBook
-    $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
+    if ($nextBook -le 5) {
+        $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
+    }
     $script:GameState.CurrentSection = $nextBookStartSection
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
@@ -15297,28 +16075,37 @@ function Complete-LWBook {
     Reset-LWSectionCheckpoints -SeedCurrentSection
     Write-LWInfo "Advanced to $nextBookLabel. Current section reset to $nextBookStartSection."
 
-    $owned = @($script:GameState.Character.Disciplines)
-    $availableNames = @($script:GameData.KaiDisciplines | ForEach-Object { $_.Name })
-    if ($owned.Count -lt $availableNames.Count) {
-        if (Read-LWYesNo -Prompt ("Choose your bonus Kai Discipline for {0} now?" -f $nextBookLabel) -Default $true) {
-            $newDiscName = $null
-            $newDiscSelection = @(Select-LWKaiDisciplines -Count 1 -Exclude $owned)
-            if ($newDiscSelection.Count -gt 0) {
-                $newDiscName = [string]$newDiscSelection[0]
-                $script:GameState.Character.Disciplines = @($owned + $newDiscName)
-                Write-LWInfo "Added discipline: $newDiscName."
-            }
+    if ($nextBook -le 5) {
+        $owned = @($script:GameState.Character.Disciplines)
+        $availableNames = @($script:GameData.KaiDisciplines | ForEach-Object { $_.Name })
+        if ($owned.Count -lt $availableNames.Count) {
+            if (Read-LWYesNo -Prompt ("Choose your bonus Kai Discipline for {0} now?" -f $nextBookLabel) -Default $true) {
+                $newDiscName = $null
+                $newDiscSelection = @(Select-LWKaiDisciplines -Count 1 -Exclude $owned)
+                if ($newDiscSelection.Count -gt 0) {
+                    $newDiscName = [string]$newDiscSelection[0]
+                    $script:GameState.Character.Disciplines = @($owned + $newDiscName)
+                    Write-LWInfo "Added discipline: $newDiscName."
+                }
 
-            if ($newDiscName -eq 'Weaponskill' -and [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
-                $weaponRoll = Get-LWRandomDigit
-                $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
-                $script:GameState.Character.WeaponskillWeapon = $weaponName
-                Write-LWInfo "Weaponskill roll: $weaponRoll -> $weaponName"
+                if ($newDiscName -eq 'Weaponskill' -and [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
+                    $weaponRoll = Get-LWRandomDigit
+                    $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
+                    $script:GameState.Character.WeaponskillWeapon = $weaponName
+                    Write-LWInfo "Weaponskill roll: $weaponRoll -> $weaponName"
+                }
             }
+        }
+        else {
+            Write-LWInfo 'All Kai Disciplines are already owned.'
         }
     }
     else {
-        Write-LWInfo 'All Kai Disciplines are already owned.'
+        $script:GameState.RuleSet = 'Magnakai'
+        $script:GameState.Character.LegacyKaiComplete = $true
+        if (-not $script:GameState.Character.MagnakaiRank -or [int]$script:GameState.Character.MagnakaiRank -lt 3) {
+            $script:GameState.Character.MagnakaiRank = 3
+        }
     }
 
     if ($currentBook -eq 4 -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
@@ -15338,8 +16125,208 @@ function Complete-LWBook {
     elseif ($nextBook -eq 5) {
         Apply-LWBookFiveStartingEquipment -CarryExistingGear
     }
+    elseif ($nextBook -eq 6) {
+        Apply-LWBookSixStartingEquipment -CarryExistingGear
+    }
 
     Invoke-LWMaybeAutosave
+}
+
+function Get-LWMagnakaiWeaponmasteryOptions {
+    return @('Dagger', 'Spear', 'Mace', 'Warhammer', 'Sword', 'Axe', 'Short Sword', 'Quarterstaff', 'Broadsword', 'Bow')
+}
+
+function Select-LWMagnakaiDisciplines {
+    param(
+        [int]$Count = 3,
+        [string[]]$Exclude = @()
+    )
+
+    $available = @($script:GameData.MagnakaiDisciplines | Where-Object { $Exclude -notcontains [string]$_.Name })
+    if ($available.Count -lt $Count) {
+        throw "Not enough Magnakai disciplines available to choose $Count item(s)."
+    }
+
+    $previousScreen = $script:LWUi.CurrentScreen
+    $previousData = $script:LWUi.ScreenData
+    if ($script:LWUi.Enabled) {
+        Set-LWScreen -Name 'disciplineselect' -Data ([pscustomobject]@{
+                Available = @($available)
+                Count     = $Count
+                RuleSet   = 'Magnakai'
+            })
+    }
+
+    try {
+        while ($true) {
+            Refresh-LWScreen
+            $raw = Read-Host "Enter $Count number(s) separated by commas"
+            if ([string]::IsNullOrWhiteSpace($raw)) {
+                Write-LWWarn 'Please choose at least one discipline.'
+                continue
+            }
+
+            $pieces = @($raw.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+            $numbers = @()
+            $valid = $true
+
+            foreach ($piece in $pieces) {
+                $number = 0
+                if (-not [int]::TryParse($piece, [ref]$number)) {
+                    $valid = $false
+                    break
+                }
+                if ($number -lt 1 -or $number -gt $available.Count) {
+                    $valid = $false
+                    break
+                }
+                if ($numbers -contains $number) {
+                    $valid = $false
+                    break
+                }
+                $numbers += $number
+            }
+
+            if (-not $valid -or $numbers.Count -ne $Count) {
+                Write-LWWarn "Enter exactly $Count unique number(s) from the list."
+                continue
+            }
+
+            return @(
+                foreach ($number in $numbers) {
+                    [string]$available[$number - 1].Name
+                }
+            )
+        }
+    }
+    finally {
+        if ($script:LWUi.Enabled) {
+            Set-LWScreen -Name $previousScreen -Data $previousData
+        }
+    }
+}
+
+function Select-LWWeaponmasteryWeapons {
+    param(
+        [int]$Count = 3,
+        [string[]]$Exclude = @()
+    )
+
+    $available = @(Get-LWMagnakaiWeaponmasteryOptions | Where-Object { $Exclude -notcontains $_ })
+    if ($available.Count -lt $Count) {
+        throw "Not enough Weaponmastery weapons available to choose $Count item(s)."
+    }
+
+    while ($true) {
+        Write-LWPanelHeader -Title 'Weaponmastery' -AccentColor 'DarkYellow'
+        Write-LWSubtle '  Choose your mastered weapons.'
+        Write-Host ''
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+
+        $raw = [string](Read-LWText -Prompt "Choose $Count mastered weapon number(s) separated by commas" -NoRefresh)
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            Write-LWWarn 'Please choose at least one weapon.'
+            continue
+        }
+
+        $pieces = @($raw.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+        $numbers = @()
+        $valid = $true
+        foreach ($piece in $pieces) {
+            $number = 0
+            if (-not [int]::TryParse($piece, [ref]$number)) {
+                $valid = $false
+                break
+            }
+            if ($number -lt 1 -or $number -gt $available.Count -or $numbers -contains $number) {
+                $valid = $false
+                break
+            }
+            $numbers += $number
+        }
+
+        if (-not $valid -or $numbers.Count -ne $Count) {
+            Write-LWWarn "Enter exactly $Count unique number(s) from the list."
+            continue
+        }
+
+        return @(
+            foreach ($number in $numbers) {
+                [string]$available[$number - 1]
+            }
+        )
+    }
+}
+
+function Add-LWMagnakaiDiscipline {
+    param([string]$Name = '')
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $owned = @($script:GameState.Character.MagnakaiDisciplines)
+    $availableNames = @($script:GameData.MagnakaiDisciplines | ForEach-Object { [string]$_.Name })
+    $remainingNames = @($availableNames | Where-Object { $owned -notcontains $_ })
+
+    if ($remainingNames.Count -eq 0) {
+        Write-LWWarn 'All Magnakai Disciplines are already owned.'
+        return
+    }
+
+    $disciplineName = $null
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        $selection = Select-LWMagnakaiDisciplines -Count 1 -Exclude $owned
+        if (@($selection).Count -gt 0) {
+            $disciplineName = [string]$selection[0]
+        }
+    }
+    else {
+        $disciplineName = Get-LWMatchingValue -Values $remainingNames -Target $Name.Trim()
+        if ([string]::IsNullOrWhiteSpace($disciplineName)) {
+            Write-LWWarn ("Unknown or already owned Magnakai discipline: {0}" -f $Name.Trim())
+            return
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($disciplineName)) {
+        Write-LWWarn 'No discipline was selected.'
+        return
+    }
+
+    $script:GameState.Character.MagnakaiDisciplines = @($owned + $disciplineName)
+    if (-not $script:GameState.Character.MagnakaiRank -or [int]$script:GameState.Character.MagnakaiRank -lt @($script:GameState.Character.MagnakaiDisciplines).Count) {
+        $script:GameState.Character.MagnakaiRank = @($script:GameState.Character.MagnakaiDisciplines).Count
+    }
+
+    if ($disciplineName -eq 'Weaponmastery' -and @($script:GameState.Character.WeaponmasteryWeapons).Count -lt 3) {
+        $script:GameState.Character.WeaponmasteryWeapons = @(Select-LWWeaponmasteryWeapons -Count 3 -Exclude @())
+        Write-LWInfo ("Weaponmastery selection: {0}" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
+    }
+
+    Sync-LWMagnakaiLoreCircleBonuses -State $script:GameState -WriteMessages
+    Set-LWScreen -Name 'disciplines'
+    Write-LWInfo "Added Magnakai discipline: $disciplineName."
+    Invoke-LWMaybeAutosave
+}
+
+function Add-LWDiscipline {
+    param([string]$Name = '')
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) {
+        Add-LWMagnakaiDiscipline -Name $Name
+        return
+    }
+
+    Add-LWKaiDiscipline -Name $Name
 }
 
 function Select-LWRunConfiguration {
@@ -15443,7 +16430,7 @@ function Start-LWNewGameCore {
     Set-LWScreen -Name 'sheet'
 
     $name = Read-LWText -Prompt 'Character name' -Default $defaultName
-    $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1
+    $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1 -Max 6
     $startSection = Read-LWInt -Prompt 'Starting section' -Default 1 -Min 1
 
     $csRoll = Get-LWRandomDigit
@@ -15454,22 +16441,38 @@ function Start-LWNewGameCore {
     Write-LWInfo "Combat Skill roll: $csRoll -> $combatSkill"
     Write-LWInfo "Endurance roll: $endRoll -> $endurance"
 
-    $disciplines = Select-LWKaiDisciplines -Count 5
-    $weaponskillWeapon = $null
-    if ($disciplines -contains 'Weaponskill') {
-        $weaponRoll = Get-LWRandomDigit
-        $weaponskillWeapon = Get-LWWeaponskillWeapon -Roll $weaponRoll
-        Write-LWInfo "Weaponskill roll: $weaponRoll -> $weaponskillWeapon"
-    }
-
     $script:GameState.Character.Name = $name
     $script:GameState.Character.BookNumber = $bookNumber
     $script:GameState.Character.CombatSkillBase = $combatSkill
     $script:GameState.Character.EnduranceCurrent = $endurance
     $script:GameState.Character.EnduranceMax = $endurance
-    $script:GameState.Character.Disciplines = $disciplines
-    $script:GameState.Character.WeaponskillWeapon = $weaponskillWeapon
     $script:GameState.CurrentSection = $startSection
+
+    if ($bookNumber -ge 6) {
+        $script:GameState.RuleSet = 'Magnakai'
+        $script:GameState.Character.LegacyKaiComplete = $true
+        $magnakaiDisciplines = Select-LWMagnakaiDisciplines -Count 3
+        $script:GameState.Character.MagnakaiDisciplines = @($magnakaiDisciplines)
+        $script:GameState.Character.MagnakaiRank = 3
+        if ($magnakaiDisciplines -contains 'Weaponmastery') {
+            $script:GameState.Character.WeaponmasteryWeapons = @(Select-LWWeaponmasteryWeapons -Count 3)
+            Write-LWInfo ("Weaponmastery selection: {0}" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
+        }
+        Sync-LWMagnakaiLoreCircleBonuses -State $script:GameState -WriteMessages
+    }
+    else {
+        $disciplines = Select-LWKaiDisciplines -Count 5
+        $weaponskillWeapon = $null
+        if ($disciplines -contains 'Weaponskill') {
+            $weaponRoll = Get-LWRandomDigit
+            $weaponskillWeapon = Get-LWWeaponskillWeapon -Roll $weaponRoll
+            Write-LWInfo "Weaponskill roll: $weaponRoll -> $weaponskillWeapon"
+        }
+
+        $script:GameState.Character.Disciplines = $disciplines
+        $script:GameState.Character.WeaponskillWeapon = $weaponskillWeapon
+    }
+
     if ($bookNumber -eq 1) {
         Apply-LWBookOneStartingEquipment
     }
@@ -15484,6 +16487,9 @@ function Start-LWNewGameCore {
     }
     elseif ($bookNumber -eq 5) {
         Apply-LWBookFiveStartingEquipment
+    }
+    elseif ($bookNumber -eq 6) {
+        Apply-LWBookSixStartingEquipment
     }
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
@@ -15796,7 +16802,7 @@ function Show-LWHelp {
     Write-LWKeyValue -Label 'permadeath [on|off]' -Value 'Show the locked permadeath setting' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'inv' -Value 'Show inventory slots' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'disciplines' -Value 'Show disciplines' -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed Kai discipline reward' -ValueColor 'Gray'
+    Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed discipline reward for the active ruleset' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'notes' -Value 'Show notes' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'note [text]' -Value 'Add a note' -ValueColor 'Gray'
     Write-LWKeyValue -Label 'note remove [n]' -Value 'Remove a note by number' -ValueColor 'Gray'
@@ -15847,7 +16853,7 @@ function Show-LWHelp {
     Write-LWBulletItem -Text 'Use inv to see exact weapon, backpack, and special-item slots, including empty spaces.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
-    Write-LWBulletItem -Text 'Use discipline add to open the Kai discipline picker, or discipline add Mindblast to grant one directly.' -TextColor 'Gray'
+    Write-LWBulletItem -Text 'Use discipline add to open the current ruleset discipline picker, or discipline add [name] to grant one directly.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
     Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer; Captain D''Val''s Sword adds +1 Combat Skill and counts as a Sword; Solnaris adds +2 Combat Skill and counts as a Sword or Broadsword for Weaponskill.' -TextColor 'Gray'
@@ -16066,7 +17072,7 @@ function Invoke-LWCommand {
                     Add-LWKaiDiscipline -Name $disciplineName
                 }
                 default {
-                    Write-LWWarn 'Use discipline add [name] to grant a missed Kai discipline.'
+                    Write-LWWarn 'Use discipline add [name] to grant a missed discipline for the active ruleset.'
                 }
             }
             return $null
@@ -16494,6 +17500,12 @@ function Apply-LWBookFiveStartingEquipment {
     param([switch]$CarryExistingGear)
 
     Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 5 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookSixStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 6 -CarryExistingGear:$CarryExistingGear
 }
 
 function Publish-LWScriptFunctionsToSession {

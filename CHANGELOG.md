@@ -6,7 +6,31 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
-- No unreleased notes yet.
+- Dev branch currently carries the Book `6` / Magnakai implementation work that is not part of the `v0.7.40` public release yet.
+
+## v0.8.0-dev - 2026-04-03
+
+Current `dev` branch checkpoint.
+
+### Highlights
+
+- Magnakai ruleset support now exists for Book `6`
+- Book `5` now hands off into Book `6` with:
+  - ruleset change
+  - Magnakai discipline selection
+  - Weaponmastery starter selection
+  - lore-circle bonus handling
+- Book `6` section, combat, and achievement support added
+- Total achievements increased to `111`
+
+### Validation Notes
+
+- targeted Book `6` validation passed in:
+  - PowerShell `7`
+  - Windows PowerShell `5.1`
+- Books `1-6` full-campaign validation repeatedly cleared the Kai -> Magnakai handoff
+- an interrupted long-run validator still completed `44` full PowerShell `7` Books `1-6` campaigns before the user stopped the sweep
+- the user explicitly approved moving forward before a fresh full long-run rerun was finished
 
 ## v0.7.40 - 2026-04-02
 

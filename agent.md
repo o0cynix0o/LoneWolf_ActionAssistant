@@ -1,6 +1,6 @@
 # Lone Wolf Terminal - Agent Handoff
 
-Last updated: 2026-04-01
+Last updated: 2026-04-03
 
 ## What This File Is For
 
@@ -16,17 +16,20 @@ For deeper project state, workflow details, and local report locations, use:
 
 ## Current Reality
 
-- App version: `0.7.40`
+- App version: `0.8.0-dev` on `dev`
 - Main script: `lonewolf.ps1`
 - Runtime target:
   - Windows PowerShell 5.1
   - PowerShell 7
 - Kai ruleset support is complete through Books `1-5`
+- Magnakai support is live for Book `6` on `dev`
 - M1 modular refactor is complete and pushed
 - Core modules live under:
   - `modules/core/`
 - Kai ruleset modules live under:
   - `modules/rulesets/kai/`
+- Magnakai ruleset modules live under:
+  - `modules/rulesets/magnakai/`
 
 This project is no longer a “single-script starter kit with combat overhaul next.”
 That old framing is stale.
@@ -35,10 +38,10 @@ That old framing is stale.
 
 The highest-value work now is:
 
-1. live playtesting across Books `1-5`
+1. live playtesting across Books `1-6`
 2. fixing DE-specific rule differences found during play
 3. keeping repo docs/workflow current
-4. preparing for future book/ruleset expansion cleanly
+4. preparing Book `7+` expansion cleanly
 
 Combat is already a shipped system.
 It still gets polish and bug fixes, but it is not the defining unfinished milestone anymore.
@@ -129,14 +132,14 @@ Meaning:
 
 ## Good Next Steps
 
-- continue Books `1-5` live playtesting
+- continue Books `1-6` live playtesting
 - patch DE differences as they appear
 - keep `PROJECT_HANDOFF.md` and milestone docs current
-- expand to Book `6+` / Magnakai only after the user is ready
+- expand to Book `7+` once Book `6` feels stable
 
 ## Bottom Line
 
-This is now a real shipped Kai-era assistant through Book `5`, not a prototype waiting on combat redesign.
+This is now a real Books `1-6` assistant on `dev`, with the Kai run complete and the first Magnakai ruleset handoff working.
 
 The main job is no longer “invent the app.”
 The main job is:

@@ -119,6 +119,13 @@ function Invoke-LWCoreStartCombat {
         $fallOnRollResolutionNote = $null
         $restoreHalfEnduranceLossOnVictory = $false
         $restoreHalfEnduranceLossOnEvade = $false
+        $enemyEnduranceThreshold = $null
+        $enemyEnduranceThresholdSection = $null
+        $enemyEnduranceThresholdNote = $null
+        $usePlayerTargetEndurance = $false
+        $playerTargetEnduranceCurrent = 0
+        $playerTargetEnduranceMax = 0
+        $suppressShieldCombatSkillBonus = $false
         if (-not $useQuickDefaults) {
             $enemyImmune = Read-LWYesNo -Prompt 'Is the enemy immune to Mindblast?' -Default $false
             $enemyUndead = Read-LWYesNo -Prompt 'Is the enemy undead?' -Default $false
@@ -782,15 +789,157 @@ function Invoke-LWCoreStartCombat {
             $victoryResolutionNote = 'Section 393 result: victory sends you to 255.'
             Write-LWInfo 'Book 5 section 393: surprise attack applies -2 Combat Skill in round 1.'
         }
-
-        $useMindblast = $false
-        if ((Test-LWDiscipline -Name 'Mindblast') -and -not $enemyImmune) {
-            if ($useQuickDefaults) {
-                $useMindblast = $true
-                Write-LWInfo 'Mindblast is available and enabled by default for this combat.'
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 26 -and [string]$enemyName -ieq 'Altan') {
+            $canEvade = $false
+            $suppressShieldCombatSkillBonus = $true
+            $usePlayerTargetEndurance = $true
+            $playerTargetEnduranceCurrent = 50
+            $playerTargetEnduranceMax = 50
+            $equippedWeapon = 'Bow'
+            $victoryResolutionSection = 252
+            $victoryResolutionNote = 'Section 26 result: if Altan loses all 50 TARGET points, turn to 252.'
+            $defeatResolutionSection = 183
+            $defeatResolutionNote = 'Section 26 result: if you lose all 50 TARGET points, turn to 183.'
+            Write-LWInfo 'Book 6 section 26: the final is fought with Bow shots only, Shield bonuses are suppressed, and both archers use 50 TARGET points instead of normal ENDURANCE.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 71 -and [string]$enemyName -ieq 'Redbeard') {
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                $playerMod += 2
+                Write-LWInfo 'Book 6 section 71: Animal Control grants +2 Combat Skill while you fight from the saddle.'
             }
-            else {
-                $useMindblast = Read-LWYesNo -Prompt 'Use Mindblast in this combat?' -Default $true
+            $canEvade = $true
+            $evadeResolutionSection = 279
+            $evadeResolutionNote = 'Section 71 result: you may evade at any time by galloping along the street to 279.'
+            $victoryResolutionSection = 237
+            $victoryResolutionNote = 'Section 71 result: victory sends you to 237.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 77 -and [string]$enemyName -ieq 'Pirate Berserkers') {
+            if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                $enemyImmune = $true
+            }
+            $victoryResolutionSection = 297
+            $victoryResolutionNote = 'Section 77 result: victory sends you to 297.'
+            Write-LWInfo 'Book 6 section 77: pirate berserkers are immune to Mindblast, but not Psi-surge.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 138 -and [string]$enemyName -ieq 'Varetta City Watch') {
+            $canEvade = $false
+            $victoryResolutionSection = 34
+            $victoryResolutionNote = 'Section 138 result: victory sends you to 34.'
+            Write-LWInfo 'Book 6 section 138: this fight cannot be evaded.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 159 -and [string]$enemyName -ieq 'Varettian Mercenaries') {
+            $canEvade = $false
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
+                $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+                    $equippedWeapon = $fallbackWeapon
+                    Write-LWWarn ("Book 6 section 159: a Bow cannot be used here, so you switch to {0}." -f $fallbackWeapon)
+                }
+                else {
+                    $equippedWeapon = $null
+                    Write-LWWarn 'Book 6 section 159: a Bow cannot be used here and no other weapon is ready, so you fight unarmed.'
+                }
+            }
+            $victoryResolutionSection = 48
+            $victoryResolutionNote = 'Section 159 result: victory sends you to 48.'
+            Write-LWInfo 'Book 6 section 159: this fight cannot be evaded and Bows are unusable.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 194 -and [string]$enemyName -ieq 'Acolytes of Vashna') {
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                $playerMod += 2
+                Write-LWInfo 'Book 6 section 194: Animal Control grants +2 Combat Skill while you command your horse to attack.'
+            }
+            $canEvade = $true
+            $evadeResolutionSection = 289
+            $evadeResolutionNote = 'Section 194 result: you may evade at any time by turning to 289.'
+            $victoryResolutionSection = 145
+            $victoryResolutionNote = 'Section 194 result: victory sends you to 145.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 270 -and [string]$enemyName -ieq 'Undead Summonation') {
+            $enemyUndead = $true
+            $enemyImmune = $true
+            if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                $playerMod -= 2
+                $playerModRounds = 2
+            }
+            if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus')) {
+                $specialPlayerLossAmount = 2
+                $specialPlayerLossStartRound = 1
+                $specialPlayerLossReason = 'Bitter cold'
+            }
+            if (Test-LWWeaponIsSommerswerd -Weapon ([string]$equippedWeapon)) {
+                $doubleEnemyEnduranceLoss = $true
+            }
+            $victoryResolutionSection = 326
+            $victoryResolutionNote = 'Section 270 result: victory sends you to 326.'
+            Write-LWInfo 'Book 6 section 270: the undead are immune to Psi-surge and Mindblast, and the Sommerswerd doubles the ENDURANCE you inflict here.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 282 -and [string]$enemyName -ieq 'Backstabbers') {
+            $canEvade = $false
+            $victoryResolutionSection = 88
+            $victoryResolutionNote = 'Section 282 result: victory sends you to 88.'
+            Write-LWInfo 'Book 6 section 282: this fight cannot be evaded.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 283 -and [string]$enemyName -ieq 'Armoured Assassin') {
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
+                $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+                    $equippedWeapon = $fallbackWeapon
+                    Write-LWWarn ("Book 6 section 283: a Bow cannot be used here, so you switch to {0}." -f $fallbackWeapon)
+                }
+                else {
+                    $equippedWeapon = $null
+                    Write-LWWarn 'Book 6 section 283: a Bow cannot be used here and no other weapon is ready, so you fight unarmed.'
+                }
+            }
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                $playerMod += 1
+                Write-LWInfo 'Book 6 section 283: Animal Control grants +1 Combat Skill for this fight.'
+            }
+            $canEvade = $false
+            $victoryResolutionSection = 28
+            $victoryResolutionNote = 'Section 283 result: victory sends you to 28.'
+            Write-LWInfo 'Book 6 section 283: this fight cannot be evaded and Bows are unusable.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 344 -and [string]$enemyName -ieq 'Dakomyd') {
+            $enemyImmune = $true
+            $enemyEnduranceThreshold = 25
+            $enemyEnduranceThresholdSection = 310
+            $enemyEnduranceThresholdNote = 'Section 344 result: once Dakomyd is reduced to 25 ENDURANCE or less, stop combat and turn to 310.'
+            Write-LWInfo 'Book 6 section 344: Dakomyd is immune to Psi-surge and Mindblast, and combat stops once it falls to 25 ENDURANCE or less.'
+        }
+
+        $psychicAttackMode = 'Mindblast'
+        $useMindblast = $false
+        $hasPsiSurge = (Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')
+        $hasMindblast = Test-LWStateHasDiscipline -State $script:GameState -Name 'Mindblast'
+        if (-not $enemyImmune -and ($hasPsiSurge -or $hasMindblast)) {
+            if ($hasPsiSurge -and [int]$script:GameState.Character.EnduranceCurrent -le 6) {
+                Write-LWWarn 'Psi-surge cannot be used at 6 ENDURANCE or lower.'
+            }
+            elseif ($hasPsiSurge) {
+                $psychicAttackMode = 'Psi-surge'
+                if ($useQuickDefaults) {
+                    $useMindblast = $true
+                    Write-LWInfo 'Psi-surge is available and enabled by default for this combat.'
+                }
+                else {
+                    $useMindblast = Read-LWYesNo -Prompt 'Use Psi-surge in this combat?' -Default $true
+                }
+            }
+            elseif ($hasMindblast) {
+                $psychicAttackMode = 'Mindblast'
+                if ($useQuickDefaults) {
+                    $useMindblast = $true
+                    Write-LWInfo 'Mindblast is available and enabled by default for this combat.'
+                }
+                else {
+                    $useMindblast = Read-LWYesNo -Prompt 'Use Mindblast in this combat?' -Default $true
+                }
             }
         }
 
@@ -813,6 +962,7 @@ function Invoke-LWCoreStartCombat {
             EnemyRequiresMagicalWeapon = $enemyRequiresMagicalWeapon
             EnemyImmuneToMindblast    = $enemyImmune
             UseMindblast              = $useMindblast
+            PsychicAttackMode         = $psychicAttackMode
             MindblastCombatSkillBonus = $mindblastCombatSkillBonus
             AletherCombatSkillBonus   = $aletherCombatSkillBonus
             AttemptKnockout           = $attemptKnockout
@@ -849,7 +999,14 @@ function Invoke-LWCoreStartCombat {
             FallOnRollResolutionNote  = $fallOnRollResolutionNote
             RestoreHalfEnduranceLossOnVictory = $restoreHalfEnduranceLossOnVictory
             RestoreHalfEnduranceLossOnEvade = $restoreHalfEnduranceLossOnEvade
+            EnemyEnduranceThreshold = $enemyEnduranceThreshold
+            EnemyEnduranceThresholdSection = $enemyEnduranceThresholdSection
+            EnemyEnduranceThresholdNote = $enemyEnduranceThresholdNote
             MindforceLossPerRound     = $mindforceLossPerRound
+            UsePlayerTargetEndurance = $usePlayerTargetEndurance
+            PlayerTargetEnduranceCurrent = $playerTargetEnduranceCurrent
+            PlayerTargetEnduranceMax = $playerTargetEnduranceMax
+            SuppressShieldCombatSkillBonus = $suppressShieldCombatSkillBonus
             PlayerCombatSkillModifier = $playerMod
             PlayerCombatSkillModifierRounds = $playerModRounds
             PlayerCombatSkillModifierAfterRounds = $playerModAfterRounds
