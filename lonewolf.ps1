@@ -6281,36 +6281,7 @@ function Grant-LWBookFiveStartingChoice {
 }
 
 function Invoke-LWBookFiveSafekeepingSelection {
-    if (-not (Test-LWHasState)) {
-        return
-    }
-
-    $selected = @()
-    while ($true) {
-        $available = @($script:GameState.Inventory.SpecialItems | Where-Object { $selected -notcontains [string]$_ })
-        if ($available.Count -eq 0) {
-            break
-        }
-
-        Write-LWPanelHeader -Title 'Book 5 Safekeeping' -AccentColor 'DarkYellow'
-        Write-LWSubtle '  Leave carried Special Items at the Kai Monastery if you do not want to take them into Book 5.'
-        Write-Host ''
-        for ($i = 0; $i -lt $available.Count; $i++) {
-            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
-        }
-        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
-
-        $choiceIndex = Read-LWInt -Prompt 'Safekeep which Special Item' -Default 0 -Min 0 -Max $available.Count -NoRefresh
-        if ($choiceIndex -eq 0) {
-            break
-        }
-
-        $selected += [string]$available[$choiceIndex - 1]
-    }
-
-    if ($selected.Count -gt 0) {
-        Move-LWSpecialItemsToSafekeeping -Items @($selected) -WriteMessages
-    }
+    Invoke-LWTransitionSafekeepingInventorySelection -BookNumber 5
 }
 
 function Apply-LWBookFiveStartingEquipment {
@@ -11980,7 +11951,233 @@ function Move-LWSpecialItemsToSafekeeping {
     }
 
     if ($WriteMessages -and @($Items).Count -gt 0) {
-        Write-LWInfo ("Placed in monastery safekeeping: {0}." -f (Format-LWList -Items @($Items)))
+        Write-LWInfo ("Placed in safekeeping: {0}." -f (Format-LWList -Items @($Items)))
+    }
+}
+
+function Move-LWSpecialItemsFromSafekeeping {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Items,
+        [switch]$WriteMessages
+    )
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $reclaimed = New-Object System.Collections.Generic.List[string]
+    $failed = New-Object System.Collections.Generic.List[string]
+    $remaining = New-Object System.Collections.Generic.List[string]
+    foreach ($storedItem in @($script:GameState.Storage.SafekeepingSpecialItems)) {
+        [void]$remaining.Add([string]$storedItem)
+    }
+
+    foreach ($item in @($Items)) {
+        if ([string]::IsNullOrWhiteSpace($item)) {
+            continue
+        }
+
+        $matchIndex = -1
+        for ($i = 0; $i -lt $remaining.Count; $i++) {
+            if ([string]$remaining[$i] -ieq [string]$item) {
+                $matchIndex = $i
+                break
+            }
+        }
+
+        if ($matchIndex -lt 0) {
+            continue
+        }
+
+        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name ([string]$remaining[$matchIndex])) {
+            [void]$reclaimed.Add([string]$remaining[$matchIndex])
+            $remaining.RemoveAt($matchIndex)
+        }
+        else {
+            [void]$failed.Add([string]$remaining[$matchIndex])
+        }
+    }
+
+    $script:GameState.Storage.SafekeepingSpecialItems = @($remaining.ToArray())
+
+    if ($WriteMessages -and $reclaimed.Count -gt 0) {
+        Write-LWInfo ("Recovered from safekeeping: {0}." -f (Format-LWList -Items @($reclaimed.ToArray())))
+    }
+    if ($WriteMessages -and $failed.Count -gt 0) {
+        Write-LWWarn ("No room to reclaim from safekeeping right now: {0}." -f (Format-LWList -Items @($failed.ToArray())))
+    }
+}
+
+function Invoke-LWTransitionSafekeepingInventorySelection {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $selected = @()
+    while ($true) {
+        $available = @($script:GameState.Inventory.SpecialItems | Where-Object { $selected -notcontains [string]$_ })
+        if ($available.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title ("Book {0} Safekeeping" -f $BookNumber) -AccentColor 'DarkYellow'
+        Write-LWSubtle ("  Choose carried Special Items to leave in safekeeping before Book {0} begins." -f $BookNumber)
+        Write-Host ''
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt 'Safekeep which Special Item' -Default 0 -Min 0 -Max $available.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            break
+        }
+
+        $selected += [string]$available[$choiceIndex - 1]
+    }
+
+    if ($selected.Count -gt 0) {
+        Move-LWSpecialItemsToSafekeeping -Items @($selected) -WriteMessages
+    }
+}
+
+function Invoke-LWTransitionSafekeepingReclaimSelection {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $selected = @()
+    while ($true) {
+        $available = @($script:GameState.Storage.SafekeepingSpecialItems | Where-Object { $selected -notcontains [string]$_ })
+        if ($available.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title ("Book {0} Safekeeping" -f $BookNumber) -AccentColor 'DarkYellow'
+        Write-LWSubtle ("  Reclaim stored Special Items before Book {0} begins." -f $BookNumber)
+        Write-Host ''
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt 'Reclaim which Special Item' -Default 0 -Min 0 -Max $available.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            break
+        }
+
+        $selected += [string]$available[$choiceIndex - 1]
+    }
+
+    if ($selected.Count -gt 0) {
+        Move-LWSpecialItemsFromSafekeeping -Items @($selected) -WriteMessages
+    }
+}
+
+function Invoke-LWBookTransitionSafekeepingPrompt {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $targetBookTitle = [string](Get-LWBookTitle -BookNumber $BookNumber)
+    $continueLabel = if ([string]::IsNullOrWhiteSpace($targetBookTitle)) { "Book $BookNumber" } else { "Book $BookNumber - $targetBookTitle" }
+
+    $promptComplete = $false
+    while (-not $promptComplete) {
+        $carriedItems = @($script:GameState.Inventory.SpecialItems)
+        $storedItems = @($script:GameState.Storage.SafekeepingSpecialItems)
+
+        if ($carriedItems.Count -eq 0 -and $storedItems.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title ("Book {0} Safekeeping" -f $BookNumber) -AccentColor 'DarkYellow'
+        Write-LWSubtle ("  Manage Special Items in safekeeping before {0} begins." -f $continueLabel)
+        Write-LWSubtle '  You can leave carried Special Items here and reclaim stored ones during book-to-book transitions.'
+        Write-Host ''
+        Write-LWKeyValue -Label 'Carried Special Items' -Value $(if ($carriedItems.Count -gt 0) { Format-LWCompactInventorySummary -Items $carriedItems -MaxGroups 4 } else { '(none)' }) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Safekeeping' -Value $(if ($storedItems.Count -gt 0) { Format-LWCompactInventorySummary -Items $storedItems -MaxGroups 4 } else { '(none)' }) -ValueColor 'DarkGray'
+        Write-Host ''
+        if ($carriedItems.Count -gt 0) {
+            Write-LWBulletItem -Text 'Y. Choose carried Special Items to leave in safekeeping' -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        if ($storedItems.Count -gt 0) {
+            Write-LWBulletItem -Text 'R. Reclaim Special Items from safekeeping' -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text 'I. Review inventory first' -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text ("N. Continue into {0}" -f $continueLabel) -TextColor 'Gray' -BulletColor 'Yellow'
+
+        $safekeepingChoice = [string](Read-LWText -Prompt 'Safekeeping choice' -Default 'N' -NoRefresh)
+        switch ($safekeepingChoice.Trim().ToLowerInvariant()) {
+            'y' {
+                if ($carriedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingInventorySelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no carried Special Items to place in safekeeping right now.'
+                }
+                break
+            }
+            'yes' {
+                if ($carriedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingInventorySelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no carried Special Items to place in safekeeping right now.'
+                }
+                break
+            }
+            'r' {
+                if ($storedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingReclaimSelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no safekept Special Items to reclaim right now.'
+                }
+                break
+            }
+            'reclaim' {
+                if ($storedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingReclaimSelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no safekept Special Items to reclaim right now.'
+                }
+                break
+            }
+            'i' {
+                Show-LWInventory
+                [void](Read-LWText -Prompt 'Press Enter to return to the safekeeping prompt' -NoRefresh)
+                break
+            }
+            'inv' {
+                Show-LWInventory
+                [void](Read-LWText -Prompt 'Press Enter to return to the safekeeping prompt' -NoRefresh)
+                break
+            }
+            'inventory' {
+                Show-LWInventory
+                [void](Read-LWText -Prompt 'Press Enter to return to the safekeeping prompt' -NoRefresh)
+                break
+            }
+            'n' {
+                $promptComplete = $true
+                break
+            }
+            'no' {
+                $promptComplete = $true
+                break
+            }
+            default {
+                Write-LWWarn 'Choose Y to safekeep items, R to reclaim items, I to review inventory, or N to continue.'
+            }
+        }
     }
 }
 

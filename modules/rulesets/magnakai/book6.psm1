@@ -666,6 +666,10 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
 
     Sync-LWMagnakaiLoreCircleBonuses -State $script:GameState -WriteMessages
 
+    if ($CarryExistingGear -and ((@($script:GameState.Inventory.SpecialItems).Count -gt 0) -or (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0))) {
+        Invoke-LWBookTransitionSafekeepingPrompt -BookNumber 6
+    }
+
     if ($CarryExistingGear) {
         $carriedBackpackItems = @($script:GameState.Inventory.BackpackItems)
         if ($carriedBackpackItems.Count -gt 0) {

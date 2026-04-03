@@ -31,6 +31,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - optional `Permadeath`
 - Tamper-evident run integrity
 - Book-aware rule support across Books 1-6
+- Transition-only Special Item safekeeping beginning at the Book `4` -> `5` handoff and continuing on later book-to-book transitions
 - Project Aon baseline catch-up complete across Books 1-5, plus first-pass Book 6 / Magnakai support on `dev`
 - The Kai ruleset campaign is complete through Book 5, and the first Magnakai transition book is now playable on `dev`
 - GitHub repo, wiki, and issue tracker workflow already in use

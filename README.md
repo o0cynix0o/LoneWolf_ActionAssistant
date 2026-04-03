@@ -61,7 +61,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   - section loot tables, damage/recovery hooks, and contextual random-number support
   - special combat rules like delayed evade, variable Mindforce loss, underwater oxygen loss, and Barraka setup
 - Book 5 section-rule support for:
-  - startup package, monastery safekeeping, and `Map of Vassagonia`
+  - startup package, transition safekeeping, and `Map of Vassagonia`
   - confiscation / recovery state in the dungeons
   - blood poisoning and Limbdeath condition handling
   - Book 5 shops, loot tables, and carry-forward item hooks
@@ -80,6 +80,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Death tracking with death-only rewind checkpoints
 - Locked run difficulties with Story, Easy, Normal, Hard, and Veteran rules
 - Optional Permadeath runs with tamper-evident challenge tracking
+- Transition-only Special Item safekeeping starting with the Book `4` -> `5` handoff and continuing on later book-to-book transitions
 
 ## Scope
 

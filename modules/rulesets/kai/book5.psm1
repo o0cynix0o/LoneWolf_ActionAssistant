@@ -312,56 +312,8 @@ function Apply-LWKaiBookFiveStartingEquipment {
             return
         }
 
-        if ($CarryExistingGear -and @($script:GameState.Inventory.SpecialItems).Count -gt 0) {
-            $safekeepingPromptComplete = $false
-            while (-not $safekeepingPromptComplete) {
-                Write-LWPanelHeader -Title 'Book 5 Safekeeping' -AccentColor 'DarkYellow'
-                Write-LWSubtle '  Leave carried Special Items at the Kai Monastery if you do not want to take them into Book 5.'
-                Write-Host ''
-                Write-LWBulletItem -Text 'Y. Choose Special Items to leave in safekeeping' -TextColor 'Gray' -BulletColor 'Yellow'
-                Write-LWBulletItem -Text 'I. Review inventory first' -TextColor 'Gray' -BulletColor 'Yellow'
-                Write-LWBulletItem -Text 'N. Keep everything with you' -TextColor 'Gray' -BulletColor 'Yellow'
-
-                $safekeepingChoice = [string](Read-LWText -Prompt 'Safekeeping choice' -Default 'N' -NoRefresh)
-                switch ($safekeepingChoice.Trim().ToLowerInvariant()) {
-                    'y' {
-                        Invoke-LWBookFiveSafekeepingSelection
-                        $safekeepingPromptComplete = $true
-                        break
-                    }
-                    'yes' {
-                        Invoke-LWBookFiveSafekeepingSelection
-                        $safekeepingPromptComplete = $true
-                        break
-                    }
-                    'i' {
-                        Show-LWInventory
-                        [void](Read-LWText -Prompt 'Press Enter to return to the Book 5 safekeeping prompt' -NoRefresh)
-                        break
-                    }
-                    'inv' {
-                        Show-LWInventory
-                        [void](Read-LWText -Prompt 'Press Enter to return to the Book 5 safekeeping prompt' -NoRefresh)
-                        break
-                    }
-                    'inventory' {
-                        Show-LWInventory
-                        [void](Read-LWText -Prompt 'Press Enter to return to the Book 5 safekeeping prompt' -NoRefresh)
-                        break
-                    }
-                    'n' {
-                        $safekeepingPromptComplete = $true
-                        break
-                    }
-                    'no' {
-                        $safekeepingPromptComplete = $true
-                        break
-                    }
-                    default {
-                        Write-LWWarn 'Choose Y to safekeep items, I to review inventory, or N to keep everything with you.'
-                    }
-                }
-            }
+        if ($CarryExistingGear -and ((@($script:GameState.Inventory.SpecialItems).Count -gt 0) -or (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0))) {
+            Invoke-LWBookTransitionSafekeepingPrompt -BookNumber 5
         }
 
         if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfVassagoniaItemNames) -Type 'special')) {
