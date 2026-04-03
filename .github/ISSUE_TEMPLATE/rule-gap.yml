@@ -1,0 +1,54 @@
+name: Rule Gap
+description: Report missing rule coverage, section automation, or item handling.
+title: "[Rule Gap]: "
+labels:
+  - rules
+  - automation
+body:
+  - type: dropdown
+    id: book
+    attributes:
+      label: Book
+      options:
+        - Book 1
+        - Book 2
+        - Book 3
+        - Book 4
+        - Book 5
+        - Cross-book
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: Section
+      placeholder: "Example: 385"
+  - type: dropdown
+    id: gap_type
+    attributes:
+      label: Gap type
+      options:
+        - Forced damage / recovery
+        - Loot / item pickup
+        - Item loss / confiscation
+        - Random-number modifier
+        - Discipline / item gate
+        - Combat special rule
+        - Story note / notes entry
+        - Carry-forward / startup package
+    validations:
+      required: true
+  - type: textarea
+    id: missing_rule
+    attributes:
+      label: Missing rule
+      description: What is the app not handling yet?
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: Desired behavior
+      description: Describe how the app should handle it.
+    validations:
+      required: true

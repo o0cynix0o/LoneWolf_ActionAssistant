@@ -80,6 +80,12 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Does **not** include book text
 - Designed to stay flexible when book-specific exceptions come up
 
+## Tracking And Support
+
+- The GitHub wiki contains route and strategy-guide material for Books `1-5`
+- GitHub issues now use issue forms for bugs, DE differences, rule gaps, UX notes, and audit/build requests
+- GitHub milestones track the top-level roadmap
+
 ## Requirements
 
 - Windows PowerShell `5.1` or PowerShell `7+`

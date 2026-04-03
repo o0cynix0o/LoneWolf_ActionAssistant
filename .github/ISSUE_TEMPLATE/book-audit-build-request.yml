@@ -1,0 +1,45 @@
+name: Book Audit / Build Request
+description: Request a full audit/build pass for a book or ruleset expansion.
+title: "[Audit]: "
+labels:
+  - enhancement
+  - testing
+body:
+  - type: dropdown
+    id: target
+    attributes:
+      label: Target
+      options:
+        - Book 1
+        - Book 2
+        - Book 3
+        - Book 4
+        - Book 5
+        - Book 6+
+        - New ruleset
+    validations:
+      required: true
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      options:
+        - Full Book Audit
+        - Full Book Audit + Build
+        - Strategy Guide
+        - DE difference pass
+        - Ruleset expansion planning
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope details
+      description: Describe what should be covered, including any known special focus areas.
+    validations:
+      required: true
+  - type: textarea
+    id: source_notes
+    attributes:
+      label: Source notes
+      description: Note whether local corpus, DE text, or other references should be favored.

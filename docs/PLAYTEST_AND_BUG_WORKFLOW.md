@@ -115,11 +115,18 @@ Do not open issues for every design idea or content request. Reserve issues for 
 When a real bug is confirmed:
 
 - open an issue
+- prefer the matching GitHub issue form
 - fix the bug
 - validate it
 - close the issue with the fix reference
 
 This repo already uses the issue tracker as the historical bug ledger.
+
+Recommended labels after confirmation:
+
+- one book label such as `book-2` or `cross-book`
+- one or two area labels such as `inventory`, `combat`, `rules`, `ui-ux`
+- an optional priority label when it helps triage
 
 ## Validation Expectations
 

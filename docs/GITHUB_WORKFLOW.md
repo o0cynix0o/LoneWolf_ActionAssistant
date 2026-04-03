@@ -53,6 +53,10 @@ Before the first commit/push, this machine needs:
 - Keep `data/crt.json` local unless you have confirmed redistribution rights for that data.
 - Prefer one focused commit per feature or fix.
 - Update `README.md` when command surface or major features change.
+- Keep GitHub labels, issue state, milestones, and wiki pages current when user-facing project state changes.
+- Prefer the repo issue forms under `.github/ISSUE_TEMPLATE/` instead of blank freeform issues.
+- Use GitHub milestones only for top-level roadmap items; keep sub-milestones in `docs/PROJECT_MILESTONES.md`.
+- If GitHub Projects are used later, mirror the board structure documented in `docs/GITHUB_TRACKING.md`.
 
 ## README Sanitization Before Push
 

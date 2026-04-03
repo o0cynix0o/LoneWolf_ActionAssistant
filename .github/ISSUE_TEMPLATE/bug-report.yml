@@ -1,0 +1,74 @@
+name: Bug Report
+description: Report a reproducible app defect.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for real defects in the app, not general design ideas.
+        If the bug is tied to a specific book section, include the book and section.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Where does this defect happen?
+      options:
+        - Book 1
+        - Book 2
+        - Book 3
+        - Book 4
+        - Book 5
+        - Cross-book / whole app
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: Section
+      description: Book section number if relevant.
+      placeholder: "Example: 109"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Rules / automation
+        - Combat
+        - Inventory / items
+        - Save / load / rewind
+        - Command surface
+        - UI / UX
+        - Achievements
+        - Docs / wiki
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: List the exact steps needed to hit the bug.
+      placeholder: |
+        1. Load save...
+        2. Go to section...
+        3. Choose...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / transcript / screenshots
+      description: Paste any useful output, transcript details, or extra context.

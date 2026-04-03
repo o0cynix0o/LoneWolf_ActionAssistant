@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Strategy Guide Wiki
+    url: https://github.com/o0cynix0o/LoneWolf_ActionAssistant/wiki/Strategy-Guide
+    about: Check the strategy guide pages before opening route-planning or book-strategy issues.
+  - name: Playtest And Bug Workflow
+    url: https://github.com/o0cynix0o/LoneWolf_ActionAssistant/blob/main/docs/PLAYTEST_AND_BUG_WORKFLOW.md
+    about: Read the project playtest and bug workflow before filing a detailed defect report.

@@ -1,0 +1,53 @@
+name: UX / Playtest Note
+description: Report UI friction, prompt confusion, layout clutter, or flow problems found in play.
+title: "[UX]: "
+labels:
+  - ui-ux
+  - testing
+body:
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Startup / new game
+        - Save / load
+        - Inventory
+        - Combat
+        - Character sheet
+        - Section prompt / loot picker
+        - Achievements / campaign review
+        - Docs / wiki
+        - Whole app
+    validations:
+      required: true
+  - type: dropdown
+    id: book
+    attributes:
+      label: Book
+      options:
+        - Not book-specific
+        - Book 1
+        - Book 2
+        - Book 3
+        - Book 4
+        - Book 5
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: Section
+      placeholder: "Optional"
+  - type: textarea
+    id: friction
+    attributes:
+      label: What felt off?
+      description: Describe the friction point in plain language.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
+      description: Optional, but helpful if you already know what would feel better.

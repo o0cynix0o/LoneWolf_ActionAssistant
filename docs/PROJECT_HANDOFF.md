@@ -33,6 +33,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Project Aon baseline catch-up complete across Books 1-5 as of 2026-03-27
 - The Kai ruleset campaign is now complete through Book 5
 - GitHub repo, wiki, and issue tracker workflow already in use
+- GitHub labels, issue forms, and milestones are now live
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
 - M1 modular refactor is complete and pushed
 
@@ -64,6 +65,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Data CRT used by `DataFile` mode
 - `docs/BOOK_SOURCE_MAP.md`
   Local source-corpus map for audits and future book work
+- `docs/GITHUB_TRACKING.md`
+  GitHub labels, milestones, issue forms, and project-board notes
 
 ## Local-Only Working Material
 
@@ -135,6 +138,23 @@ For one-shot non-interactive startup capture, redirect all output instead:
 ```powershell
 .\lonewolf.ps1 -Load 'C:\Scripts\Lone Wolf\saves\Cynix-book1.json' *> 'C:\Scripts\Lone Wolf\testing\logs\live-run.txt'
 ```
+
+## GitHub Tracking
+
+GitHub tracking now includes:
+
+- labels
+- issue forms
+- milestones
+- wiki updates alongside repo updates
+
+The only GitHub tracking piece not live yet is a GitHub Project board.
+
+That setup is documented in:
+
+- `docs/GITHUB_TRACKING.md`
+
+and currently requires a token with GitHub Projects write access.
 
 ## Current Book Status
 

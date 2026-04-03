@@ -51,6 +51,8 @@ When the user says to keep the repo current, that means:
 - `README.md`
 - wiki
 - issue tracker
+- labels
+- issue forms
 - milestone docs
 - handoff docs
 

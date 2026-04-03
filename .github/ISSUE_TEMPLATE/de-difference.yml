@@ -1,0 +1,52 @@
+name: DE Difference
+description: Report a Definitive Edition rule or text difference from the baseline source.
+title: "[DE Diff]: "
+labels:
+  - de-diff
+  - rules
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when the Definitive Edition text differs in a way that should change app behavior.
+        A concise paraphrase is usually enough; full copyrighted text is not needed.
+  - type: dropdown
+    id: book
+    attributes:
+      label: Book
+      options:
+        - Book 1
+        - Book 2
+        - Book 3
+        - Book 4
+        - Book 5
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: Section
+      placeholder: "Example: 61"
+    validations:
+      required: true
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Baseline behavior
+      description: What the current app or baseline source does now.
+    validations:
+      required: true
+  - type: textarea
+    id: de_behavior
+    attributes:
+      label: DE behavior
+      description: What the Definitive Edition requires instead.
+    validations:
+      required: true
+  - type: textarea
+    id: automation
+    attributes:
+      label: Suggested app behavior
+      description: Describe the automation, prompt, or state change the app should make.
+    validations:
+      required: true
