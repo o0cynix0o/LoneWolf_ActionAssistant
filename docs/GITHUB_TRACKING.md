@@ -45,7 +45,9 @@ Book labels:
 - `book-3`
 - `book-4`
 - `book-5`
+- `book-6`
 - `cross-book`
+- `magnakai`
 
 Work-type labels:
 

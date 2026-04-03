@@ -238,6 +238,151 @@ Notes:
 
 - this starts only after `M1` is complete
 - saves should be movable through explicit ruleset metadata
+- Book `6` / Magnakai is the planned entry point for `M2`
+
+Deliverables:
+
+- `modules/rulesets/magnakai/` ruleset shell
+- Book `5` -> `6` transition flow
+- ruleset-neutral state and sheet handling
+- Magnakai discipline engine
+- Book `6` audit/build support
+
+Exit criteria:
+
+- standalone Book `6` new-game flow works
+- Book `5` -> `6` carry-over flow works
+- existing Kai saves still load cleanly
+- validation passes in PowerShell 7 and Windows PowerShell 5.1
+- `100+` sandbox tests of the command surface and actual app pass across the full Books `1-6` campaign
+
+Reference:
+
+- [MAGNAKAI_BOOK6_PLAN.md](./MAGNAKAI_BOOK6_PLAN.md)
+
+Tracking issue:
+
+- GitHub issue `#18` `Plan Book 6 Magnakai ruleset transition`
+
+### M2.1 - Magnakai Ruleset Shell
+
+Status:
+
+- `planned`
+
+Goal:
+
+- add a real second ruleset shell beside Kai
+
+Deliverables:
+
+- `modules/rulesets/magnakai/magnakai.psm1`
+- ruleset dispatch entries for Magnakai
+
+### M2.2 - Ruleset-Neutral Character State
+
+Status:
+
+- `planned`
+
+Goal:
+
+- evolve the save/state model so Magnakai data is first-class instead of bolted onto Kai fields
+
+Deliverables:
+
+- Magnakai discipline state
+- Magnakai rank state
+- Weaponmastery checklist state
+- Lore-circle completion state
+- Improved Discipline placeholder state
+
+### M2.3 - Book 5 To Book 6 Transition
+
+Status:
+
+- `planned`
+
+Goal:
+
+- implement the actual ruleset handoff from Kai to Magnakai
+
+Deliverables:
+
+- carry-over CS / END handling
+- carry-over Weapons / Special Items handling
+- Book `6` starting gold and item package
+- Magnakai discipline selection
+- Weaponmastery starter selection
+
+### M2.4 - Magnakai Sheet And Command Surface
+
+Status:
+
+- `planned`
+
+Goal:
+
+- make the UI and commands ruleset-aware instead of Kai-only
+
+Deliverables:
+
+- Magnakai sheet layout
+- ruleset-aware discipline panels
+- updated command help text
+
+### M2.5 - Magnakai Combat And Discipline Engine
+
+Status:
+
+- `planned`
+
+Goal:
+
+- support the Book `6` mechanical differences in the core engine
+
+Deliverables:
+
+- Weaponmastery handling
+- Psi-surge / Mindblast handling
+- Psi-screen handling
+- Huntmastery and Nexus handling
+- Lore-circle bonus engine
+
+### M2.6 - Book 6 Full Audit + Build
+
+Status:
+
+- `planned`
+
+Goal:
+
+- do the standard full audit/build pass for Book `6`
+
+Deliverables:
+
+- route audit
+- rules and items audit
+- Book `6` implementation
+- Book `6` achievements
+- Book `6` strategy guide
+
+### M2.7 - Full Regression Pass Through Book 6
+
+Status:
+
+- `planned`
+
+Goal:
+
+- prove the new ruleset and transition did not break the existing campaign
+
+Deliverables:
+
+- command-surface smoke
+- cross-shell validation
+- standalone Book `6` validation
+- `100+` sandbox tests across the full Books `1-6` campaign
 
 ### M4 - Portable Distribution Packaging
 

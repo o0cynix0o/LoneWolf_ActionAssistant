@@ -37,6 +37,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - GitHub Project board is now live
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
 - M1 modular refactor is complete and pushed
+- Book `6` / Magnakai transition planning now exists, but Book `6` is not implemented yet
 
 ## Main Repo Files
 
@@ -68,6 +69,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Local source-corpus map for audits and future book work
 - `docs/GITHUB_TRACKING.md`
   GitHub labels, milestones, issue forms, and project-board notes
+- `docs/MAGNAKAI_BOOK6_PLAN.md`
+  Planned ruleset transition for Book `6` and the Magnakai series
 
 ## Local-Only Working Material
 
@@ -243,6 +246,21 @@ Local reports:
 - `testing/logs/BOOK5_ACHIEVEMENT_CANDIDATES.md`
 - `testing/logs/BOOK5_FULL_RULE_GAP_REPORT.md`
 - `testing/logs/BOOK5_BUILD_VALIDATION.md`
+
+### Book 6
+
+- Not implemented yet
+- Book `6` is the first Magnakai book and should be treated as a new ruleset transition, not just the next Kai book
+- planning now exists for:
+  - Magnakai ruleset shell
+  - Book `5` -> `6` transition
+  - Magnakai sheet/state changes
+  - Book `6` audit/build sequencing
+
+Reference:
+
+- `docs/MAGNAKAI_BOOK6_PLAN.md`
+- GitHub issue `#18` `Plan Book 6 Magnakai ruleset transition`
 
 ## Existing Playtest Coverage
 
