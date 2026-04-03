@@ -29,12 +29,33 @@ The second means:
 
 ## Source Material
 
-Use official Project Aon sources as the primary book reference:
+Use the local book corpus first:
 
-- the book text
-- the relevant errata page, if it exists
+- `books/lw/`
+
+For Lone Wolf book audits, the preferred source order is:
+
+1. local corpus under `books/lw/<book-code>/`
+2. local supporting pages in the same folder such as:
+   - `gamerulz.htm`
+   - `footnotz.htm`
+   - `equipmnt.htm`
+   - `action.htm`
+   - `random.htm`
+3. Project Aon text and errata as fallback, cross-check, or gap filler when the local corpus is missing something
+
+The local corpus is the primary offline audit baseline because it gives:
+
+- section files directly
+- footnotes and rules pages locally
+- faster section-to-section tracing
+- a stable source base without web dependency
 
 Do not copy large passages into committed docs.
+
+See also:
+
+- `docs/BOOK_SOURCE_MAP.md`
 
 ## Expected Local Report Outputs
 
@@ -44,11 +65,26 @@ For each book, the audit should usually produce:
 - `BOOKX_RULES_AND_ITEMS_AUDIT.md`
 - `BOOKX_ACHIEVEMENT_CANDIDATES.md`
 
-These are local working reports and normally stay in `logs/`.
+These are local working reports and normally stay in `testing/logs/`.
 
 ## Audit Steps
 
 ### 1. Read The Book Text
+
+Start in the local corpus:
+
+- find the book folder under `books/lw/`
+- use `title.htm` to confirm the book
+- use `sect*.htm` for section text
+- use `footnotz.htm`, `gamerulz.htm`, and `equipmnt.htm` for supporting rules and item context
+
+Only fall back to Project Aon if:
+
+- the local corpus file is missing
+- the local copy appears incomplete or malformed
+- you need to cross-check a suspected difference
+
+When a Definitive Edition difference is reported in live play, treat that as the correction layer over the Project Aon/local baseline.
 
 Review the book and errata with an eye toward:
 
@@ -193,6 +229,12 @@ Reports:
 - `BOOK3_*`
 
 Keep names consistent so later chats can find them quickly.
+
+## Source Hygiene
+
+- treat `books/` as local reference material, not repo content
+- do not commit the local book corpus
+- keep committed docs focused on app behavior, route structure, and audit results rather than copied source text
 
 ## Success Condition
 

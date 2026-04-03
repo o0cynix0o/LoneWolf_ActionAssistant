@@ -62,6 +62,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Weaponskill roll mapping
 - `data/crt.json`
   Data CRT used by `DataFile` mode
+- `docs/BOOK_SOURCE_MAP.md`
+  Local source-corpus map for audits and future book work
 
 ## Local-Only Working Material
 
@@ -69,6 +71,7 @@ These are intentionally local and should normally stay out of git:
 
 - `saves/`
 - `testing/`
+- `books/`
 - `data/last-save.txt`
 - `data/error.log`
 - ad-hoc temp files under `testing/tmp/`
@@ -78,7 +81,34 @@ The working pattern has been:
 - keep reports and playtest artifacts in `testing/logs/`
 - keep sandbox saves in `testing/saves/`
 - keep local release bundles in `testing/releases/`
+- keep local book corpus files in `books/`
 - commit code/docs changes, not live player state
+
+## Local Book Corpus
+
+The preferred audit source is now the local book corpus:
+
+- `books/lw/`
+
+This local corpus includes Lone Wolf book folders from:
+
+- `01fftd`
+- through
+- `29tsoc`
+
+and also:
+
+- `dotd`
+
+The audit workflow should now use:
+
+1. local corpus first
+2. Project Aon plus errata as fallback or cross-check
+3. Definitive Edition playtesting as the correction layer when differences are confirmed
+
+See:
+
+- `docs/BOOK_SOURCE_MAP.md`
 
 ## Live Terminal Capture
 
@@ -264,7 +294,8 @@ Standard user phrasing:
 
 Meaning:
 
-- read Project Aon book text and errata
+- read the local book corpus first
+- use Project Aon and errata only as fallback or cross-check
 - map endings and major winning route families
 - audit missing item/rule support
 - draft achievement candidates
