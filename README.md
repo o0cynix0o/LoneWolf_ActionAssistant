@@ -86,6 +86,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - GitHub issues now use issue forms for bugs, DE differences, rule gaps, UX notes, and audit/build requests
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
+- [CHANGELOG.md](./CHANGELOG.md) tracks public release history
 
 ## Requirements
 
