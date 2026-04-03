@@ -96,28 +96,30 @@ When player-facing strategy or feature behavior changes meaningfully, review the
 
 ## Project Board
 
-The next GitHub tracking layer should be a GitHub Project board for day-to-day issue flow.
+The repo now has a GitHub Project board for day-to-day issue flow:
 
-Recommended fields:
+- `Lone Wolf Tracker`
+- `https://github.com/users/o0cynix0o/projects/1`
+
+Current custom fields:
 
 - `Status`
 - `Book`
 - `Area`
 - `Type`
 - `Priority`
-- `DE?`
+- `DE Diff`
 
-As of `2026-04-02`, project creation is still blocked by token permissions.
+The default GitHub project fields remain useful too:
 
-The current token can:
+- `Title`
+- `Assignees`
+- `Labels`
+- `Milestone`
+- `Repository`
 
-- push code through git
-- manage issues
-- manage labels
-- manage milestones
+Recommended usage:
 
-The current token cannot:
-
-- create or mutate GitHub Projects
-
-If project-board setup is needed, use a token with GitHub Projects write access and then create the board from this document’s field plan.
+- use milestones for top-level roadmap
+- use the project board for day-to-day triage and routing
+- keep book/area/type/priority consistent with the GitHub labels

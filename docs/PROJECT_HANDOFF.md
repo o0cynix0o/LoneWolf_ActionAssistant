@@ -34,6 +34,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - The Kai ruleset campaign is now complete through Book 5
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
+- GitHub Project board is now live
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
 - M1 modular refactor is complete and pushed
 
@@ -146,15 +147,17 @@ GitHub tracking now includes:
 - labels
 - issue forms
 - milestones
+- project board
 - wiki updates alongside repo updates
 
-The only GitHub tracking piece not live yet is a GitHub Project board.
+Project board:
 
-That setup is documented in:
+- `Lone Wolf Tracker`
+- `https://github.com/users/o0cynix0o/projects/1`
+
+Field design and tracking notes are documented in:
 
 - `docs/GITHUB_TRACKING.md`
-
-and currently requires a token with GitHub Projects write access.
 
 ## Current Book Status
 

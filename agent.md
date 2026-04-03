@@ -50,6 +50,7 @@ When the user says to keep the repo current, that means:
 - code
 - `README.md`
 - wiki
+- project board
 - issue tracker
 - labels
 - issue forms
