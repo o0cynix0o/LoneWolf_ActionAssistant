@@ -11381,6 +11381,155 @@ function Update-LWAchievementProgressFlagsFromSummary {
     }
 }
 
+function New-LWAchievementEvaluationContext {
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    Ensure-LWAchievementState -State $script:GameState
+
+    $unlockedById = @{}
+    foreach ($entry in @($script:GameState.Achievements.Unlocked)) {
+        if ($null -ne $entry -and (Test-LWPropertyExists -Object $entry -Name 'Id') -and -not [string]::IsNullOrWhiteSpace([string]$entry.Id)) {
+            $unlockedById[[string]$entry.Id] = $true
+        }
+    }
+
+    return [pscustomobject]@{
+        RunEntries              = @(Get-LWRunCombatEntries)
+        RunVictories            = @(Get-LWRunVictoryEntries)
+        BookSummaries           = @(Get-LWAllAchievementBookSummaries)
+        CompletedBookSummaries  = @(Get-LWCompletedAchievementBookSummaries)
+        CurrentSummary          = Get-LWLiveBookStatsSummary
+        Flags                   = $script:GameState.Achievements.ProgressFlags
+        UnlockedById            = $unlockedById
+    }
+}
+
+function Get-LWAchievementDefinitionsForContext {
+    param([string]$Context = 'general')
+
+    $definitions = @(Get-LWAchievementDefinitions)
+    $contextName = if ([string]::IsNullOrWhiteSpace($Context)) { 'general' } else { $Context.Trim().ToLowerInvariant() }
+
+    switch ($contextName) {
+        'section' {
+            $sectionIds = @(
+                'pathfinder',
+                'long_road',
+                'aim_for_the_bushes',
+                'found_the_clubhouse',
+                'whats_in_the_box_book1',
+                'use_the_force',
+                'open_sesame',
+                'hot_hands',
+                'star_of_toran',
+                'field_medic',
+                'found_the_sommerswerd',
+                'papers_please',
+                'snakes_why',
+                'cliffhanger',
+                'whats_in_the_box',
+                'snowblind',
+                'you_touched_it_with_your_hands',
+                'lucky_button_theory',
+                'well_it_worked_once',
+                'cellfish',
+                'badge_of_office',
+                'wearing_the_enemys_colors',
+                'read_the_signs',
+                'return_to_sender',
+                'deep_pockets_poor_timing',
+                'bagless_but_breathing',
+                'shovel_ready',
+                'light_in_the_depths',
+                'chasm_of_doom',
+                'washed_away',
+                'apothecarys_answer',
+                'prison_break',
+                'talons_tamed',
+                'star_guided',
+                'name_the_lost',
+                'jump_the_wagons',
+                'water_bearer',
+                'tekaro_cartographer',
+                'key_to_varetta',
+                'silver_oak_prize',
+                'cess_to_enter',
+                'cold_comfort',
+                'mind_over_malice_book6'
+            )
+            return @(
+                $definitions |
+                Where-Object { $sectionIds -contains [string]$_.Id }
+            )
+        }
+        'healing' {
+            return @(
+                $definitions |
+                Where-Object { @('second_wind', 'lean_healing') -contains [string]$_.Id }
+            )
+        }
+        'inventory' {
+            return @(
+                $definitions |
+                Where-Object { @('sun_sword', 'loaded_purse', 'fully_armed', 'relic_hunter') -contains [string]$_.Id }
+            )
+        }
+        'gold' {
+            return @(
+                $definitions |
+                Where-Object { @('loaded_purse') -contains [string]$_.Id }
+            )
+        }
+        'meal' {
+            return @(
+                $definitions |
+                Where-Object { @('trail_survivor') -contains [string]$_.Id }
+            )
+        }
+        'hunting' {
+            return @(
+                $definitions |
+                Where-Object { @('hunters_instinct') -contains [string]$_.Id }
+            )
+        }
+        'starvation' {
+            return @(
+                $definitions |
+                Where-Object { @('hard_lessons') -contains [string]$_.Id }
+            )
+        }
+        'potion' {
+            return @(
+                $definitions |
+                Where-Object { @('herbal_relief', 'deep_draught') -contains [string]$_.Id }
+            )
+        }
+        'rewind' {
+            return @(
+                $definitions |
+                Where-Object { @('true_path', 'iron_wolf') -contains [string]$_.Id }
+            )
+        }
+        'recovery' {
+            return @(
+                $definitions |
+                Where-Object { @('iron_wolf') -contains [string]$_.Id }
+            )
+        }
+        'death' {
+            return @(
+                $definitions |
+                Where-Object { @('still_standing', 'unbroken', 'iron_wolf') -contains [string]$_.Id }
+            )
+        }
+        default {
+            return @($definitions)
+        }
+    }
+}
+
 function Test-LWAchievementUnlocked {
     param([Parameter(Mandatory = $true)][string]$Id)
 
@@ -11457,18 +11606,21 @@ function Get-LWSommerswerdUndeadVictoryCount {
 }
 
 function Test-LWAchievementSatisfied {
-    param([Parameter(Mandatory = $true)][object]$Definition)
+    param(
+        [Parameter(Mandatory = $true)][object]$Definition,
+        [object]$EvaluationContext = $null
+    )
 
     if (-not (Test-LWHasState)) {
         return $false
     }
 
-    $runEntries = @(Get-LWRunCombatEntries)
-    $runVictories = @(Get-LWRunVictoryEntries)
-    $bookSummaries = @(Get-LWAllAchievementBookSummaries)
-    $completedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
-    $currentSummary = Get-LWLiveBookStatsSummary
-    $flags = $script:GameState.Achievements.ProgressFlags
+    $runEntries = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'RunEntries')) { @($EvaluationContext.RunEntries) } else { @(Get-LWRunCombatEntries) }
+    $runVictories = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'RunVictories')) { @($EvaluationContext.RunVictories) } else { @(Get-LWRunVictoryEntries) }
+    $bookSummaries = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'BookSummaries')) { @($EvaluationContext.BookSummaries) } else { @(Get-LWAllAchievementBookSummaries) }
+    $completedBookSummaries = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'CompletedBookSummaries')) { @($EvaluationContext.CompletedBookSummaries) } else { @(Get-LWCompletedAchievementBookSummaries) }
+    $currentSummary = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'CurrentSummary')) { $EvaluationContext.CurrentSummary } else { Get-LWLiveBookStatsSummary }
+    $flags = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'Flags') -and $null -ne $EvaluationContext.Flags) { $EvaluationContext.Flags } else { $script:GameState.Achievements.ProgressFlags }
 
     switch ([string]$Definition.Id) {
         'first_blood' { return ($runVictories.Count -ge 1) }
@@ -11728,20 +11880,25 @@ function Sync-LWAchievements {
         Update-LWAchievementProgressFlagsFromSummary -Summary $Data
     }
 
+    $evaluationContext = New-LWAchievementEvaluationContext
     $newUnlocks = @()
-    foreach ($definition in @(Get-LWAchievementDefinitions)) {
+    foreach ($definition in @(Get-LWAchievementDefinitionsForContext -Context $Context)) {
         if ([string]$Context -eq 'load' -and -not [bool]$definition.Backfill) {
             continue
         }
         if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
             continue
         }
-        if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
+        $definitionId = [string]$definition.Id
+        if ($null -ne $evaluationContext -and $null -ne $evaluationContext.UnlockedById -and $evaluationContext.UnlockedById.ContainsKey($definitionId)) {
             continue
         }
-        if (Test-LWAchievementSatisfied -Definition $definition) {
+        if (Test-LWAchievementSatisfied -Definition $definition -EvaluationContext $evaluationContext) {
             $unlocked = Unlock-LWAchievement -Definition $definition -Silent:$Silent
             if ($null -ne $unlocked) {
+                if ($null -ne $evaluationContext -and $null -ne $evaluationContext.UnlockedById) {
+                    $evaluationContext.UnlockedById[$definitionId] = $true
+                }
                 $newUnlocks += $unlocked
             }
         }
