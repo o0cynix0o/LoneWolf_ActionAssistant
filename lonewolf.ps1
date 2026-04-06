@@ -11406,27 +11406,38 @@ function New-LWAchievementEvaluationContext {
     }
 }
 
-function Get-LWAchievementDefinitionsForContext {
-    param([string]$Context = 'general')
+function Get-LWBookSectionContextAchievementIds {
+    param([int]$BookNumber)
 
-    $definitions = @(Get-LWAchievementDefinitions)
-    $contextName = if ([string]::IsNullOrWhiteSpace($Context)) { 'general' } else { $Context.Trim().ToLowerInvariant() }
-
-    switch ($contextName) {
-        'section' {
-            $sectionIds = @(
-                'pathfinder',
-                'long_road',
+    switch ($BookNumber) {
+        1 {
+            return @(
                 'aim_for_the_bushes',
                 'found_the_clubhouse',
                 'whats_in_the_box_book1',
                 'use_the_force',
+                'straight_to_the_throne',
+                'royal_recovery',
+                'the_back_way_in',
                 'open_sesame',
                 'hot_hands',
                 'star_of_toran',
-                'field_medic',
+                'field_medic'
+            )
+        }
+        2 {
+            return @(
                 'found_the_sommerswerd',
-                'papers_please',
+                'by_a_thread',
+                'skyfall',
+                'fight_through_the_smoke',
+                'storm_tossed',
+                'seal_of_approval',
+                'papers_please'
+            )
+        }
+        3 {
+            return @(
                 'snakes_why',
                 'cliffhanger',
                 'whats_in_the_box',
@@ -11435,6 +11446,18 @@ function Get-LWAchievementDefinitionsForContext {
                 'lucky_button_theory',
                 'well_it_worked_once',
                 'cellfish',
+                'loi_kymar_lives',
+                'puppet_master',
+                'sun_on_the_ice',
+                'lucky_break',
+                'too_slow'
+            )
+        }
+        4 {
+            return @(
+                'sun_below_the_earth',
+                'blessed_be_the_throw',
+                'steel_against_shadow',
                 'badge_of_office',
                 'wearing_the_enemys_colors',
                 'read_the_signs',
@@ -11444,12 +11467,22 @@ function Get-LWAchievementDefinitionsForContext {
                 'shovel_ready',
                 'light_in_the_depths',
                 'chasm_of_doom',
-                'washed_away',
+                'washed_away'
+            )
+        }
+        5 {
+            return @(
                 'apothecarys_answer',
                 'prison_break',
                 'talons_tamed',
                 'star_guided',
                 'name_the_lost',
+                'shadow_on_the_sand',
+                'face_to_face_with_haakon'
+            )
+        }
+        6 {
+            return @(
                 'jump_the_wagons',
                 'water_bearer',
                 'tekaro_cartographer',
@@ -11459,6 +11492,28 @@ function Get-LWAchievementDefinitionsForContext {
                 'cold_comfort',
                 'mind_over_malice_book6'
             )
+        }
+        default { return @() }
+    }
+}
+
+function Get-LWAchievementDefinitionsForContext {
+    param(
+        [string]$Context = 'general',
+        [object]$State = $script:GameState
+    )
+
+    $definitions = @(Get-LWAchievementDefinitions)
+    $contextName = if ([string]::IsNullOrWhiteSpace($Context)) { 'general' } else { $Context.Trim().ToLowerInvariant() }
+
+    switch ($contextName) {
+        'section' {
+            $globalSectionIds = @(
+                'pathfinder',
+                'long_road'
+            )
+            $bookNumber = if ($null -ne $State -and $null -ne $State.Character -and $null -ne $State.Character.BookNumber) { [int]$State.Character.BookNumber } else { 0 }
+            $sectionIds = @($globalSectionIds + (Get-LWBookSectionContextAchievementIds -BookNumber $bookNumber))
             return @(
                 $definitions |
                 Where-Object { $sectionIds -contains [string]$_.Id }
@@ -11882,7 +11937,7 @@ function Sync-LWAchievements {
 
     $evaluationContext = New-LWAchievementEvaluationContext
     $newUnlocks = @()
-    foreach ($definition in @(Get-LWAchievementDefinitionsForContext -Context $Context)) {
+    foreach ($definition in @(Get-LWAchievementDefinitionsForContext -Context $Context -State $script:GameState)) {
         if ([string]$Context -eq 'load' -and -not [bool]$definition.Backfill) {
             continue
         }
