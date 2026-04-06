@@ -1927,7 +1927,7 @@ function Register-LWStorySectionTransitionAchievementTriggers {
 
 function Register-LWStoryInventoryAchievementTriggers {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][string]$Name
     )
 
@@ -6454,7 +6454,7 @@ function Get-LWHelmetItemNames {
 }
 
 function Get-LWShieldItemNames {
-    return @('Shield')
+    return @('Shield', 'Kai Shield')
 }
 
 function Get-LWSilverHelmItemNames {
@@ -6713,6 +6713,64 @@ function Get-LWTinderboxItemNames {
     return @('Tinderbox')
 }
 
+function Get-LWBlanketItemNames {
+    return @('Blanket')
+}
+
+function Get-LWHerbPouchItemNames {
+    return @('Herb Pouch')
+}
+
+function Get-LWHerbPouchPotionItemNames {
+    $names = New-Object System.Collections.Generic.List[string]
+    foreach ($group in @(
+            (Get-LWHealingPotionItemNames),
+            (Get-LWPotentHealingPotionItemNames),
+            (Get-LWConcentratedHealingPotionItemNames),
+            (Get-LWAletherPotionItemNames),
+            (Get-LWGallowbrushItemNames),
+            (Get-LWCalacenaItemNames),
+            (Get-LWPotionOfRedLiquidItemNames),
+            (Get-LWPotionOfOrangeLiquidItemNames)
+        )) {
+        foreach ($name in @($group)) {
+            $resolvedName = [string]$name
+            if ([string]::IsNullOrWhiteSpace($resolvedName)) {
+                continue
+            }
+            if (-not $names.Contains($resolvedName)) {
+                [void]$names.Add($resolvedName)
+            }
+        }
+    }
+
+    return @($names.ToArray())
+}
+
+function Test-LWHerbPouchPotionItemName {
+    param([string]$Name = '')
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHerbPouchPotionItemNames) -Target $Name)))
+}
+
+function Test-LWStateHasHerbPouch {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and
+        $null -ne $State.Inventory -and
+        (Test-LWPropertyExists -Object $State.Inventory -Name 'HasHerbPouch') -and
+        [bool]$State.Inventory.HasHerbPouch)
+}
+
+function Test-LWHerbPouchFeatureAvailable {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and
+        (Test-LWStateIsMagnakaiRuleset -State $State) -and
+        [int]$State.Character.BookNumber -ge 6 -and
+        (Get-LWBookSixDECuringOption -State $State) -eq 3)
+}
+
 function Get-LWBaknarOilItemNames {
     return @('Baknar Oil')
 }
@@ -6883,6 +6941,8 @@ function Get-LWKnownInventoryNameGroups {
         (Get-LWFiresphereItemNames),
         (Get-LWTorchItemNames),
         (Get-LWTinderboxItemNames),
+        (Get-LWBlanketItemNames),
+        (Get-LWHerbPouchItemNames),
         (Get-LWBaknarOilItemNames),
         (Get-LWSleepingFursItemNames),
         (Get-LWBlueStoneTriangleItemNames),
@@ -6970,11 +7030,14 @@ function Get-LWStateInventoryItems {
         'backpack' {
             return @($State.Inventory.BackpackItems)
         }
+        'herbpouch' {
+            return @($State.Inventory.HerbPouchItems)
+        }
         'special' {
             return @($State.Inventory.SpecialItems)
         }
         default {
-            return @($State.Inventory.Weapons) + @($State.Inventory.BackpackItems) + @($State.Inventory.SpecialItems)
+            return @($State.Inventory.Weapons) + @($State.Inventory.BackpackItems) + @($State.Inventory.HerbPouchItems) + @($State.Inventory.SpecialItems)
         }
     }
 }
@@ -7012,7 +7075,7 @@ function Find-LWStateInventoryItemLocation {
     param(
         [Parameter(Mandatory = $true)][object]$State,
         [Parameter(Mandatory = $true)][string[]]$Names,
-        [string[]]$Types = @('backpack', 'special', 'weapon')
+        [string[]]$Types = @('herbpouch', 'backpack', 'special', 'weapon')
     )
 
     foreach ($type in @($Types)) {
@@ -7033,7 +7096,7 @@ function Remove-LWStateInventoryItemByNames {
         [Parameter(Mandatory = $true)][object]$State,
         [Parameter(Mandatory = $true)][string[]]$Names,
         [int]$Quantity = 1,
-        [string[]]$Types = @('backpack', 'special', 'weapon')
+        [string[]]$Types = @('herbpouch', 'backpack', 'special', 'weapon')
     )
 
     if ($Quantity -lt 1) {
@@ -8304,9 +8367,10 @@ function New-LWInventoryRecoveryEntry {
 
 function New-LWInventoryRecoveryState {
     return [pscustomobject]@{
-        Weapon   = (New-LWInventoryRecoveryEntry)
-        Backpack = (New-LWInventoryRecoveryEntry)
-        Special  = (New-LWInventoryRecoveryEntry)
+        Weapon    = (New-LWInventoryRecoveryEntry)
+        Backpack  = (New-LWInventoryRecoveryEntry)
+        Special   = (New-LWInventoryRecoveryEntry)
+        HerbPouch = (New-LWInventoryRecoveryEntry)
     }
 }
 
@@ -8314,13 +8378,15 @@ function New-LWStorageState {
     return [pscustomobject]@{
         SafekeepingSpecialItems = @()
         Confiscated             = [pscustomobject]@{
-            Weapons       = @()
-            BackpackItems = @()
-            SpecialItems  = @()
-            GoldCrowns    = 0
-            BookNumber    = $null
-            Section       = $null
-            SavedOn       = $null
+            Weapons        = @()
+            BackpackItems  = @()
+            SpecialItems   = @()
+            HerbPouchItems = @()
+            HasHerbPouch   = $false
+            GoldCrowns     = 0
+            BookNumber     = $null
+            Section        = $null
+            SavedOn        = $null
         }
     }
 }
@@ -8329,6 +8395,8 @@ function New-LWConditionState {
     return [pscustomobject]@{
         BookFiveBloodPoisoning = $false
         BookFiveLimbdeath      = $false
+        BookSixDECuringOption  = -1
+        BookSixDEWeaponskillOption = -1
     }
 }
 
@@ -8484,6 +8552,12 @@ function Normalize-LWState {
         if (-not (Test-LWPropertyExists -Object $State.Conditions -Name $propertyName) -or $null -eq $State.Conditions.$propertyName) {
             $State.Conditions | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDECuringOption') -or $null -eq $State.Conditions.BookSixDECuringOption) {
+        $State.Conditions | Add-Member -Force -NotePropertyName BookSixDECuringOption -NotePropertyValue -1
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDEWeaponskillOption') -or $null -eq $State.Conditions.BookSixDEWeaponskillOption) {
+        $State.Conditions | Add-Member -Force -NotePropertyName BookSixDEWeaponskillOption -NotePropertyValue -1
     }
 
     if (-not (Test-LWPropertyExists -Object $State -Name 'RecoveryStash') -or $null -eq $State.RecoveryStash) {
@@ -9057,11 +9131,372 @@ function Resolve-LWGameplayEnduranceLoss {
 function Get-LWHealingRestorationCap {
     param([object]$State = $script:GameState)
 
+    $capInfo = Get-LWHealingRestorationCapInfo -State $State
+    if ($null -eq $capInfo) {
+        return $null
+    }
+
+    return [int]$capInfo.Cap
+}
+
+function Get-LWBookSixDECuringOption {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Conditions) {
+        return -1
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDECuringOption') -or $null -eq $State.Conditions.BookSixDECuringOption) {
+        return -1
+    }
+
+    return [int]$State.Conditions.BookSixDECuringOption
+}
+
+function Set-LWBookSixDECuringOption {
+    param(
+        [Parameter(Mandatory = $true)][int]$Option,
+        [object]$State = $script:GameState
+    )
+
+    if ($null -eq $State) {
+        return
+    }
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Conditions') -or $null -eq $State.Conditions) {
+        $State | Add-Member -Force -NotePropertyName Conditions -NotePropertyValue (New-LWConditionState)
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDECuringOption')) {
+        $State.Conditions | Add-Member -Force -NotePropertyName BookSixDECuringOption -NotePropertyValue $Option
+    }
+    else {
+        $State.Conditions.BookSixDECuringOption = $Option
+    }
+}
+
+function Get-LWBookSixDECuringOptionLabel {
+    param(
+        [int]$Option = (Get-LWBookSixDECuringOption),
+        [object]$State = $script:GameState
+    )
+
+    switch ([int]$Option) {
+        0 {
+            if ($null -ne $State -and -not (Test-LWStateHasDiscipline -State $State -Name 'Curing')) {
+                return 'Standard Magnakai'
+            }
+            return 'Standard Curing'
+        }
+        1 { return 'Curing Cap' }
+        2 { return 'Healing Instead' }
+        3 { return 'Herb Pouch' }
+        default { return 'Not Selected' }
+    }
+}
+
+function Get-LWBookSixDEWeaponskillOption {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Conditions) {
+        return -1
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDEWeaponskillOption') -or $null -eq $State.Conditions.BookSixDEWeaponskillOption) {
+        return -1
+    }
+
+    return [int]$State.Conditions.BookSixDEWeaponskillOption
+}
+
+function Set-LWBookSixDEWeaponskillOption {
+    param(
+        [object]$State = $script:GameState,
+        [ValidateSet(-1, 0, 1)][int]$Option
+    )
+
+    if ($null -eq $State) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Conditions') -or $null -eq $State.Conditions) {
+        $State | Add-Member -Force -NotePropertyName Conditions -NotePropertyValue (New-LWConditionState)
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDEWeaponskillOption')) {
+        $State.Conditions | Add-Member -Force -NotePropertyName BookSixDEWeaponskillOption -NotePropertyValue $Option
+    }
+    else {
+        $State.Conditions.BookSixDEWeaponskillOption = $Option
+    }
+}
+
+function Test-LWBookSixDEWeaponskillEnabled {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and
+        (Test-LWStateIsMagnakaiRuleset -State $State) -and
+        [int]$State.Character.BookNumber -eq 6 -and
+        (Get-LWBookSixDEWeaponskillOption -State $State) -eq 1 -and
+        -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon))
+}
+
+function Get-LWBookSixDEWeaponskillOptionLabel {
+    param([object]$State = $script:GameState)
+
+    if (-not (Test-LWBookSixDEWeaponskillEnabled -State $State)) {
+        return 'Disabled'
+    }
+
+    return ('Weaponskill ({0})' -f [string]$State.Character.WeaponskillWeapon)
+}
+
+function Get-LWBookSixDEAdventureRuleSummary {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or -not (Test-LWStateIsMagnakaiRuleset -State $State) -or [int]$State.Character.BookNumber -ne 6) {
+        return @()
+    }
+
+    $rules = @()
+    switch (Get-LWBookSixDECuringOption -State $State) {
+        1 { $rules += 'Curing Cap' }
+        2 { $rules += 'Healing Instead' }
+        3 { $rules += 'Herb Pouch' }
+    }
+
+    if (Test-LWBookSixDEWeaponskillEnabled -State $State) {
+        $rules += (Get-LWBookSixDEWeaponskillOptionLabel -State $State)
+    }
+
+    return @($rules)
+}
+
+function Test-LWStateHasActiveWeaponskill {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Character -or [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon)) {
+        return $false
+    }
+
+    if ((Test-LWStateIsMagnakaiRuleset -State $State) -and [int]$State.Character.BookNumber -eq 6) {
+        return (Test-LWBookSixDEWeaponskillEnabled -State $State)
+    }
+
+    return (Test-LWStateHasDiscipline -State $State -Name 'Weaponskill')
+}
+
+function Get-LWHealingRestorationCapInfo {
+    param([object]$State = $script:GameState)
+
+    $capRules = @()
     if (@('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty -State $State)) {
-        return 10
+        $capRules += [pscustomobject]@{
+            Cap         = 10
+            ZeroNote    = 'Healing is capped at 10 END restored per book in this mode.'
+            PartialNote = 'Healing is capped in this mode: {0} END can be restored now ({1} remaining this book).'
+        }
+    }
+
+    if ($null -ne $State -and $null -ne $State.Character -and [int]$State.Character.BookNumber -eq 6 -and (Test-LWStateIsMagnakaiRuleset -State $State)) {
+        switch (Get-LWBookSixDECuringOption -State $State) {
+            1 {
+                $capRules += [pscustomobject]@{
+                    Cap         = 15
+                    ZeroNote    = 'Book 6 DE Play Option 1 caps Curing and Healing at 15 END restored this book.'
+                    PartialNote = 'Book 6 DE Play Option 1 caps Curing/Healing: {0} END can be restored now ({1} remaining this book).'
+                }
+            }
+            2 {
+                $capRules += [pscustomobject]@{
+                    Cap         = 10
+                    ZeroNote    = 'Book 6 DE Play Option 2 caps Healing at 10 END restored this book.'
+                    PartialNote = 'Book 6 DE Play Option 2 caps Healing: {0} END can be restored now ({1} remaining this book).'
+                }
+            }
+        }
+    }
+
+    if ($capRules.Count -eq 0) {
+        return $null
+    }
+
+    $minCap = [int](($capRules | Measure-Object -Property Cap -Minimum).Minimum)
+    return @($capRules | Where-Object { [int]$_.Cap -eq $minCap } | Select-Object -First 1)[0]
+}
+
+function Test-LWStateHasSectionHealing {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Character) {
+        return $false
+    }
+
+    $isBookSixMagnakai = ((Test-LWStateIsMagnakaiRuleset -State $State) -and [int]$State.Character.BookNumber -eq 6)
+    if (-not $isBookSixMagnakai) {
+        return (Test-LWStateHasDiscipline -State $State -Name 'Healing')
+    }
+
+    if (Test-LWStateHasDiscipline -State $State -Name 'Curing') {
+        return $true
+    }
+
+    return ((Get-LWBookSixDECuringOption -State $State) -eq 2 -and (Test-LWStateHasDiscipline -State $State -Name 'Healing'))
+}
+
+function Get-LWSectionHealingSourceLabel {
+    param([object]$State = $script:GameState)
+
+    if ($null -ne $State -and $null -ne $State.Character -and [int]$State.Character.BookNumber -eq 6 -and (Test-LWStateIsMagnakaiRuleset -State $State) -and (Test-LWStateHasDiscipline -State $State -Name 'Curing')) {
+        return 'Curing'
+    }
+
+    return 'Healing'
+}
+
+function Test-LWCombatHerbPouchOptionActive {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and
+        $null -ne $State.Character -and
+        (Test-LWStateIsMagnakaiRuleset -State $State) -and
+        [int]$State.Character.BookNumber -ge 6 -and
+        (Get-LWBookSixDECuringOption -State $State) -eq 3 -and
+        (Test-LWStateHasHerbPouch -State $State))
+}
+
+function Get-LWPreferredHealingPotionChoice {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State) {
+        return $null
+    }
+
+    $potionCandidates = @(
+        [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8 },
+        [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5 },
+        [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4 }
+    )
+    $backpackOnlyCandidates = @(
+        [pscustomobject]@{ Names = (Get-LWLaumspurHerbItemNames); RestoreAmount = 3 },
+        [pscustomobject]@{ Names = (Get-LWMealOfLaumspurItemNames); RestoreAmount = 3 },
+        [pscustomobject]@{ Names = (Get-LWOedeHerbItemNames); RestoreAmount = 10 },
+        [pscustomobject]@{ Names = (Get-LWLarnumaOilItemNames); RestoreAmount = 2 },
+        [pscustomobject]@{ Names = (Get-LWRendalimsElixirItemNames); RestoreAmount = 6 },
+        [pscustomobject]@{ Names = (Get-LWBottleOfKourshahItemNames); RestoreAmount = 4 },
+        [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6 }
+    )
+
+    foreach ($candidate in $potionCandidates) {
+        foreach ($type in @('herbpouch', 'backpack')) {
+            $potionName = Get-LWMatchingStateInventoryItem -State $State -Names @($candidate.Names) -Type $type
+            if (-not [string]::IsNullOrWhiteSpace($potionName)) {
+                return [pscustomobject]@{
+                    Name          = [string]$potionName
+                    RestoreAmount = [int]$candidate.RestoreAmount
+                    Type          = [string]$type
+                }
+            }
+        }
+    }
+
+    foreach ($candidate in $backpackOnlyCandidates) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $State -Names @($candidate.Names) -Type 'backpack'
+        if (-not [string]::IsNullOrWhiteSpace($potionName)) {
+            return [pscustomobject]@{
+                Name          = [string]$potionName
+                RestoreAmount = [int]$candidate.RestoreAmount
+                Type          = 'backpack'
+            }
+        }
     }
 
     return $null
+}
+
+function Get-LWPreferredHerbPouchCombatPotionChoice {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or -not (Test-LWStateHasHerbPouch -State $State)) {
+        return $null
+    }
+
+    foreach ($candidate in @(
+            [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8 },
+            [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5 },
+            [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4 }
+        )) {
+        $potionName = Get-LWMatchingStateInventoryItem -State $State -Names @($candidate.Names) -Type 'herbpouch'
+        if (-not [string]::IsNullOrWhiteSpace($potionName)) {
+            return [pscustomobject]@{
+                Name          = [string]$potionName
+                RestoreAmount = [int]$candidate.RestoreAmount
+                Type          = 'herbpouch'
+            }
+        }
+    }
+
+    return $null
+}
+
+function Use-LWResolvedHealingPotion {
+    param(
+        [Parameter(Mandatory = $true)][string]$PotionName,
+        [Parameter(Mandatory = $true)][int]$RestoreAmount,
+        [string]$InventoryType = '',
+        [switch]$SkipAutosave
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PotionName)) {
+        Write-LWWarn 'No usable healing item found in Herb Pouch or Backpack.'
+        return $null
+    }
+
+    $removeType = if (@('backpack', 'herbpouch') -contains $InventoryType) {
+        [string]$InventoryType
+    }
+    else {
+        $location = Find-LWStateInventoryItemLocation -State $script:GameState -Names @($PotionName) -Types @('herbpouch', 'backpack')
+        if ($null -ne $location) { [string]$location.Type } else { 'backpack' }
+    }
+
+    [void](Remove-LWInventoryItemSilently -Type $removeType -Name $PotionName -Quantity 1)
+    $before = [int]$script:GameState.Character.EnduranceCurrent
+    $script:GameState.Character.EnduranceCurrent += [int]$RestoreAmount
+    if ($script:GameState.Character.EnduranceCurrent -gt $script:GameState.Character.EnduranceMax) {
+        $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
+    }
+    $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
+
+    $conditionMessages = @()
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHealingPotionItemNames) -Target $PotionName)) -or
+        -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWLaumspurHerbItemNames) -Target $PotionName))) {
+        if (Test-LWBookFiveBloodPoisoningActive -State $script:GameState) {
+            $script:GameState.Conditions.BookFiveBloodPoisoning = $false
+            $conditionMessages += 'Blood poisoning cured.'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWOedeHerbItemNames) -Target $PotionName))) {
+        if (Test-LWBookFiveLimbdeathActive -State $script:GameState) {
+            $script:GameState.Conditions.BookFiveLimbdeath = $false
+            Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
+            $conditionMessages += 'Limbdeath cured.'
+        }
+    }
+
+    Add-LWBookEnduranceDelta -Delta $restored
+    Register-LWPotionUsed -PotionName $PotionName -EnduranceRestored $restored
+    $message = "$PotionName restores $RestoreAmount Endurance. Current Endurance: $($script:GameState.Character.EnduranceCurrent)."
+    if ($conditionMessages.Count -gt 0) {
+        $message += " $($conditionMessages -join ' ')"
+    }
+    Write-LWInfo $message
+    if (-not $SkipAutosave) {
+        Invoke-LWMaybeAutosave
+    }
+
+    return [pscustomobject]@{
+        PotionName    = $PotionName
+        RestoreAmount = [int]$RestoreAmount
+        AppliedAmount = $restored
+    }
 }
 
 function Get-LWRemainingHealingRestoration {
@@ -9095,12 +9530,18 @@ function Resolve-LWHealingRestoreAmount {
 
     $applied = [Math]::Min($requested, [int]$remaining)
     $note = $null
+    $capInfo = Get-LWHealingRestorationCapInfo -State $State
     if ($applied -lt $requested) {
         if ($remaining -le 0) {
-            $note = 'Healing is capped at 10 END restored per book in this mode.'
+            $note = if ($null -ne $capInfo -and -not [string]::IsNullOrWhiteSpace([string]$capInfo.ZeroNote)) { [string]$capInfo.ZeroNote } else { 'Healing is capped this book.' }
         }
         else {
-            $note = "Healing is capped in this mode: $applied END can be restored now ($remaining remaining this book)."
+            $note = if ($null -ne $capInfo -and -not [string]::IsNullOrWhiteSpace([string]$capInfo.PartialNote)) {
+                [string]::Format([string]$capInfo.PartialNote, $applied, $remaining)
+            }
+            else {
+                "Healing is capped this book: $applied END can be restored now ($remaining remaining this book)."
+            }
         }
     }
 
@@ -9515,21 +9956,23 @@ function Get-LWPreferredCombatWeapon {
         return $sommerswerd
     }
 
-    $weaponskillWeapon = Get-LWMatchingValue -Values $weapons -Target ([string]$State.Character.WeaponskillWeapon)
-    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Warhammer') {
-        $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$_) } | Select-Object -First 1)
-    }
-    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Broadsword') {
-        $weaponskillWeapon = [string]($weapons | Where-Object { (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$_)) -or (Test-LWWeaponIsSolnaris -Weapon ([string]$_)) } | Select-Object -First 1)
-    }
-    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Sword') {
-        $weaponskillWeapon = [string]($weapons | Where-Object { (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$_)) -or (Test-LWWeaponIsSolnaris -Weapon ([string]$_)) } | Select-Object -First 1)
-    }
-    if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Spear') {
-        $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsMagicSpear -Weapon ([string]$_) } | Select-Object -First 1)
-    }
-    if (-not [string]::IsNullOrWhiteSpace($weaponskillWeapon)) {
-        return $weaponskillWeapon
+    if (Test-LWStateHasActiveWeaponskill -State $State) {
+        $weaponskillWeapon = Get-LWMatchingValue -Values $weapons -Target ([string]$State.Character.WeaponskillWeapon)
+        if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Warhammer') {
+            $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$_) } | Select-Object -First 1)
+        }
+        if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Broadsword') {
+            $weaponskillWeapon = [string]($weapons | Where-Object { (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$_)) -or (Test-LWWeaponIsSolnaris -Weapon ([string]$_)) } | Select-Object -First 1)
+        }
+        if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Sword') {
+            $weaponskillWeapon = [string]($weapons | Where-Object { (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$_)) -or (Test-LWWeaponIsSolnaris -Weapon ([string]$_)) } | Select-Object -First 1)
+        }
+        if ([string]::IsNullOrWhiteSpace($weaponskillWeapon) -and [string]$State.Character.WeaponskillWeapon -ieq 'Spear') {
+            $weaponskillWeapon = [string]($weapons | Where-Object { Test-LWWeaponIsMagicSpear -Weapon ([string]$_) } | Select-Object -First 1)
+        }
+        if (-not [string]::IsNullOrWhiteSpace($weaponskillWeapon)) {
+            return $weaponskillWeapon
+        }
     }
 
     if ((Test-LWStateIsMagnakaiRuleset -State $State) -and @($State.Character.WeaponmasteryWeapons).Count -gt 0) {
@@ -9890,7 +10333,19 @@ function Show-LWDisciplines {
         return
     }
 
-    $leftColumnWidth = [Math]::Max(22, [Math]::Min(34, ((($displayDisciplines | Measure-Object -Property Length -Maximum).Maximum) + 4)))
+    $leftColumnLabels = @()
+    for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
+        $leftColumnLabels += [string]$displayDisciplines[$i]
+    }
+
+    $leftColumnMaxLength = if ($leftColumnLabels.Count -gt 0) {
+        [int](($leftColumnLabels | Measure-Object -Property Length -Maximum).Maximum)
+    }
+    else {
+        0
+    }
+
+    $leftColumnWidth = [Math]::Max(16, [Math]::Min(30, ($leftColumnMaxLength + 2)))
     for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
         $leftLabel = [string]$displayDisciplines[$i]
         $rightLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
@@ -11536,6 +11991,9 @@ function Resolve-LWInventoryType {
         'backpackitem' { return 'backpack' }
         'backpackitems' { return 'backpack' }
         'pack' { return 'backpack' }
+        'herb' { return 'herbpouch' }
+        'herbpouch' { return 'herbpouch' }
+        'pouch' { return 'herbpouch' }
         'special' { return 'special' }
         'specialitem' { return 'special' }
         'specialitems' { return 'special' }
@@ -11544,31 +12002,34 @@ function Resolve-LWInventoryType {
 }
 
 function Get-LWInventoryTypeLabel {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     switch ($Type) {
         'weapon' { return 'Weapons' }
         'backpack' { return 'Backpack' }
+        'herbpouch' { return 'Herb Pouch' }
         'special' { return 'Special Items' }
     }
 }
 
 function Get-LWInventoryTypeColor {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     switch ($Type) {
         'weapon' { return 'Green' }
         'backpack' { return 'Yellow' }
+        'herbpouch' { return 'DarkGreen' }
         'special' { return 'DarkCyan' }
     }
 }
 
 function Get-LWInventoryTypeCapacity {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     switch ($Type) {
         'weapon' { return 2 }
         'backpack' { return 8 }
+        'herbpouch' { return 6 }
         'special' { return 12 }
     }
 }
@@ -11613,7 +12074,7 @@ function Get-LWBackpackOccupiedSlotCount {
 
 function Get-LWInventoryUsedCapacity {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [object[]]$Items = $null
     )
 
@@ -11661,18 +12122,19 @@ function Get-LWBackpackSlotMap {
 }
 
 function Get-LWInventoryItems {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     switch ($Type) {
         'weapon' { return @($script:GameState.Inventory.Weapons) }
         'backpack' { return @($script:GameState.Inventory.BackpackItems) }
+        'herbpouch' { return @($script:GameState.Inventory.HerbPouchItems) }
         'special' { return @($script:GameState.Inventory.SpecialItems) }
     }
 }
 
 function Set-LWInventoryItems {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
     )
 
@@ -11681,6 +12143,7 @@ function Set-LWInventoryItems {
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = @($normalizedItems) }
         'backpack' { $script:GameState.Inventory.BackpackItems = @($normalizedItems) }
+        'herbpouch' { $script:GameState.Inventory.HerbPouchItems = @($normalizedItems) }
         'special' { $script:GameState.Inventory.SpecialItems = @($normalizedItems) }
     }
 
@@ -11689,7 +12152,7 @@ function Set-LWInventoryItems {
 
 function Normalize-LWInventoryItemCollection {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
     )
 
@@ -11726,6 +12189,211 @@ function Normalize-LWInventoryItemCollection {
     }
 
     return @($deduped)
+}
+
+function Move-LWHerbPouchPotionItemsFromBackpack {
+    param(
+        [object]$State = $script:GameState,
+        [switch]$WriteMessages
+    )
+
+    if ($null -eq $State -or -not (Test-LWStateHasHerbPouch -State $State)) {
+        return 0
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HerbPouchItems') -or $null -eq $State.Inventory.HerbPouchItems) {
+        $State.Inventory | Add-Member -Force -NotePropertyName HerbPouchItems -NotePropertyValue @()
+    }
+
+    $freeSlots = [Math]::Max(0, (6 - @($State.Inventory.HerbPouchItems).Count))
+    if ($freeSlots -le 0) {
+        return 0
+    }
+
+    $remainingBackpack = @()
+    $moved = @()
+    foreach ($item in @($State.Inventory.BackpackItems)) {
+        if ($freeSlots -gt 0 -and (Test-LWHerbPouchPotionItemName -Name ([string]$item))) {
+            $State.Inventory.HerbPouchItems = @($State.Inventory.HerbPouchItems) + @([string]$item)
+            $moved += [string]$item
+            $freeSlots--
+        }
+        else {
+            $remainingBackpack += $item
+        }
+    }
+
+    $State.Inventory.HerbPouchItems = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items @($State.Inventory.HerbPouchItems))
+    $State.Inventory.BackpackItems = @(Normalize-LWInventoryItemCollection -Type 'backpack' -Items @($remainingBackpack))
+
+    if ($WriteMessages -and $moved.Count -gt 0) {
+        Write-LWInfo ("Moved to Herb Pouch: {0}." -f (Format-LWCompactInventorySummary -Items $moved -MaxGroups 4))
+    }
+
+    return $moved.Count
+}
+
+function Grant-LWHerbPouch {
+    param([switch]$WriteMessages)
+
+    if (-not (Test-LWHasState)) {
+        return $false
+    }
+
+    if (-not (Test-LWHerbPouchFeatureAvailable -State $script:GameState)) {
+        if ($WriteMessages) {
+            Write-LWWarn 'Herb Pouch is only available from Book 6 onward when DE Curing Option 3 is active.'
+        }
+        return $false
+    }
+
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        if ($WriteMessages) {
+            Write-LWWarn 'Herb Pouch is already carried.'
+        }
+        return $false
+    }
+
+    $script:GameState.Inventory.HasHerbPouch = $true
+    if ($null -eq $script:GameState.Inventory.HerbPouchItems) {
+        $script:GameState.Inventory.HerbPouchItems = @()
+    }
+    [void](Move-LWHerbPouchPotionItemsFromBackpack -State $script:GameState -WriteMessages:$WriteMessages)
+    [void](Sync-LWAchievements -Context 'inventory')
+    if ($WriteMessages) {
+        Write-LWInfo 'Herb Pouch added as a separate carried container.'
+    }
+    return $true
+}
+
+function TryAdd-LWPreferredPotionStorageSilently {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [int]$Quantity = 1
+    )
+
+    if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name) -or $Quantity -lt 1) {
+        return $false
+    }
+
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+    $herbPouchFree = 0
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        $herbPouchFree = [Math]::Max(0, (6 - (Get-LWInventoryUsedCapacity -Type 'herbpouch' -Items @(Get-LWInventoryItems -Type 'herbpouch'))))
+    }
+
+    $backpackFree = 0
+    if (Test-LWStateHasBackpack -State $script:GameState) {
+        $backpackFree = [Math]::Max(0, (8 - (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack'))))
+    }
+
+    if (($herbPouchFree + $backpackFree) -lt $Quantity) {
+        if (-not (Test-LWStateHasBackpack -State $script:GameState) -and $herbPouchFree -le 0) {
+            Write-LWWarn 'You do not currently have a Backpack, and Herb Pouch has no free slots.'
+        }
+        else {
+            Write-LWWarn ("{0} needs {1} total carried potion slot{2}, but only {3} are free across Herb Pouch and Backpack." -f $resolvedName, $Quantity, $(if ($Quantity -eq 1) { '' } else { 's' }), ($herbPouchFree + $backpackFree))
+        }
+        return $false
+    }
+
+    $herbToAdd = [Math]::Min($Quantity, $herbPouchFree)
+    $backpackToAdd = $Quantity - $herbToAdd
+
+    if ($herbToAdd -gt 0) {
+        $script:GameState.Inventory.HerbPouchItems = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items (@($script:GameState.Inventory.HerbPouchItems) + @((1..$herbToAdd | ForEach-Object { $resolvedName }))))
+    }
+    if ($backpackToAdd -gt 0) {
+        $script:GameState.Inventory.BackpackItems = @(Normalize-LWInventoryItemCollection -Type 'backpack' -Items (@($script:GameState.Inventory.BackpackItems) + @((1..$backpackToAdd | ForEach-Object { $resolvedName }))))
+    }
+
+    Register-LWStoryInventoryAchievementTriggers -Type $(if ($herbToAdd -gt 0 -and $backpackToAdd -eq 0) { 'herbpouch' } else { 'backpack' }) -Name $resolvedName
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+    [void](Sync-LWAchievements -Context 'inventory')
+    return $true
+}
+
+function Sync-LWHerbPouchState {
+    param([object]$State)
+
+    if ($null -eq $State -or $null -eq $State.Inventory) {
+        return $State
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HasHerbPouch') -or $null -eq $State.Inventory.HasHerbPouch) {
+        $State.Inventory | Add-Member -Force -NotePropertyName HasHerbPouch -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HerbPouchItems') -or $null -eq $State.Inventory.HerbPouchItems) {
+        $State.Inventory | Add-Member -Force -NotePropertyName HerbPouchItems -NotePropertyValue @()
+    }
+    else {
+        $State.Inventory.HerbPouchItems = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items @($State.Inventory.HerbPouchItems))
+    }
+
+    if ($null -ne $State.Storage -and $null -ne $State.Storage.Confiscated) {
+        if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'HerbPouchItems') -or $null -eq $State.Storage.Confiscated.HerbPouchItems) {
+            $State.Storage.Confiscated | Add-Member -Force -NotePropertyName HerbPouchItems -NotePropertyValue @()
+        }
+        else {
+            $State.Storage.Confiscated.HerbPouchItems = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items @($State.Storage.Confiscated.HerbPouchItems))
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'HasHerbPouch') -or $null -eq $State.Storage.Confiscated.HasHerbPouch) {
+            $State.Storage.Confiscated | Add-Member -Force -NotePropertyName HasHerbPouch -NotePropertyValue $false
+        }
+    }
+
+    if ($null -ne $State.RecoveryStash) {
+        if (-not (Test-LWPropertyExists -Object $State.RecoveryStash -Name 'HerbPouch') -or $null -eq $State.RecoveryStash.HerbPouch) {
+            $State.RecoveryStash | Add-Member -Force -NotePropertyName HerbPouch -NotePropertyValue (New-LWInventoryRecoveryEntry)
+        }
+        elseif (-not (Test-LWPropertyExists -Object $State.RecoveryStash.HerbPouch -Name 'Items') -or $null -eq $State.RecoveryStash.HerbPouch.Items) {
+            $State.RecoveryStash.HerbPouch | Add-Member -Force -NotePropertyName Items -NotePropertyValue @()
+        }
+        else {
+            $State.RecoveryStash.HerbPouch.Items = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items @($State.RecoveryStash.HerbPouch.Items))
+        }
+        foreach ($propertyName in @('BookNumber', 'Section', 'SavedOn')) {
+            if (-not (Test-LWPropertyExists -Object $State.RecoveryStash.HerbPouch -Name $propertyName)) {
+                $State.RecoveryStash.HerbPouch | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $null
+            }
+        }
+    }
+
+    $migratedLegacyHerbPouch = $false
+    if ($null -ne $State.Inventory.SpecialItems) {
+        $remainingSpecialItems = @()
+        foreach ($item in @($State.Inventory.SpecialItems)) {
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHerbPouchItemNames) -Target ([string]$item)))) {
+                $migratedLegacyHerbPouch = $true
+                $State.Inventory.HasHerbPouch = $true
+                continue
+            }
+            $remainingSpecialItems += $item
+        }
+        $State.Inventory.SpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items @($remainingSpecialItems))
+    }
+
+    if (@($State.Inventory.HerbPouchItems).Count -gt 0) {
+        $State.Inventory.HasHerbPouch = $true
+    }
+
+    if ($migratedLegacyHerbPouch -and $null -ne $State.Inventory.BackpackItems -and @($State.Inventory.HerbPouchItems).Count -lt 6) {
+        $freeSlots = 6 - @($State.Inventory.HerbPouchItems).Count
+        $remainingBackpack = @()
+        foreach ($item in @($State.Inventory.BackpackItems)) {
+            if ($freeSlots -gt 0 -and (Test-LWHerbPouchPotionItemName -Name ([string]$item))) {
+                $State.Inventory.HerbPouchItems += [string]$item
+                $freeSlots--
+            }
+            else {
+                $remainingBackpack += $item
+            }
+        }
+        $State.Inventory.HerbPouchItems = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items @($State.Inventory.HerbPouchItems))
+        $State.Inventory.BackpackItems = @(Normalize-LWInventoryItemCollection -Type 'backpack' -Items @($remainingBackpack))
+    }
+
+    return $State
 }
 
 function Set-LWBackpackState {
@@ -11801,6 +12469,7 @@ function Get-LWConfiscatedInventorySummaryText {
     $parts = @()
     $weapons = @($State.Storage.Confiscated.Weapons)
     $backpack = @($State.Storage.Confiscated.BackpackItems)
+    $herbPouch = @($State.Storage.Confiscated.HerbPouchItems)
     $special = @($State.Storage.Confiscated.SpecialItems)
     $gold = if ($null -ne $State.Storage.Confiscated.GoldCrowns) { [int]$State.Storage.Confiscated.GoldCrowns } else { 0 }
 
@@ -11809,6 +12478,10 @@ function Get-LWConfiscatedInventorySummaryText {
     }
     if ($backpack.Count -gt 0) {
         $parts += ('Backpack: {0}' -f (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3))
+    }
+    if ([bool]$State.Storage.Confiscated.HasHerbPouch -or $herbPouch.Count -gt 0) {
+        $pouchValue = if ($herbPouch.Count -gt 0) { Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3 } else { '(empty)' }
+        $parts += ('Herb Pouch: {0}' -f $pouchValue)
     }
     if ($special.Count -gt 0) {
         $parts += ('Special: {0}' -f (Format-LWCompactInventorySummary -Items $special -MaxGroups 3))
@@ -11834,6 +12507,8 @@ function Test-LWStateHasConfiscatedEquipment {
     return (
         @($State.Storage.Confiscated.Weapons).Count -gt 0 -or
         @($State.Storage.Confiscated.BackpackItems).Count -gt 0 -or
+        @($State.Storage.Confiscated.HerbPouchItems).Count -gt 0 -or
+        [bool]$State.Storage.Confiscated.HasHerbPouch -or
         @($State.Storage.Confiscated.SpecialItems).Count -gt 0 -or
         [int]$State.Storage.Confiscated.GoldCrowns -gt 0
     )
@@ -11851,6 +12526,8 @@ function Save-LWConfiscatedEquipment {
 
     $script:GameState.Storage.Confiscated.Weapons = @($script:GameState.Inventory.Weapons)
     $script:GameState.Storage.Confiscated.BackpackItems = @($script:GameState.Inventory.BackpackItems)
+    $script:GameState.Storage.Confiscated.HerbPouchItems = @($script:GameState.Inventory.HerbPouchItems)
+    $script:GameState.Storage.Confiscated.HasHerbPouch = [bool]$script:GameState.Inventory.HasHerbPouch
     $script:GameState.Storage.Confiscated.SpecialItems = @($script:GameState.Inventory.SpecialItems)
     $script:GameState.Storage.Confiscated.GoldCrowns = [int]$script:GameState.Inventory.GoldCrowns
     $script:GameState.Storage.Confiscated.BookNumber = [int]$script:GameState.Character.BookNumber
@@ -11858,6 +12535,8 @@ function Save-LWConfiscatedEquipment {
     $script:GameState.Storage.Confiscated.SavedOn = (Get-Date).ToString('o')
 
     $script:GameState.Inventory.Weapons = @()
+    $script:GameState.Inventory.HerbPouchItems = @()
+    $script:GameState.Inventory.HasHerbPouch = $false
     $script:GameState.Inventory.SpecialItems = @()
     $script:GameState.Inventory.GoldCrowns = 0
     Set-LWBackpackState -HasBackpack:$false -ClearContents
@@ -11878,16 +12557,21 @@ function Restore-LWConfiscatedEquipment {
 
     $currentWeapons = @($script:GameState.Inventory.Weapons)
     $currentBackpackItems = @($script:GameState.Inventory.BackpackItems)
+    $currentHerbPouchItems = @($script:GameState.Inventory.HerbPouchItems)
     $currentSpecialItems = @($script:GameState.Inventory.SpecialItems)
     $currentGoldCrowns = [int]$script:GameState.Inventory.GoldCrowns
 
     $restoredWeapons = @($script:GameState.Storage.Confiscated.Weapons)
     $restoredBackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems)
+    $restoredHerbPouchItems = @($script:GameState.Storage.Confiscated.HerbPouchItems)
+    $restoredHasHerbPouch = [bool]$script:GameState.Storage.Confiscated.HasHerbPouch
     $restoredSpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems)
     $restoredGoldCrowns = [int]$script:GameState.Storage.Confiscated.GoldCrowns
 
     Set-LWInventoryItems -Type 'weapon' -Items @($currentWeapons + $restoredWeapons)
     Set-LWInventoryItems -Type 'backpack' -Items @($currentBackpackItems + $restoredBackpackItems)
+    $script:GameState.Inventory.HasHerbPouch = ([bool]$script:GameState.Inventory.HasHerbPouch -or $restoredHasHerbPouch -or @($currentHerbPouchItems + $restoredHerbPouchItems).Count -gt 0)
+    Set-LWInventoryItems -Type 'herbpouch' -Items @($currentHerbPouchItems + $restoredHerbPouchItems)
     Set-LWInventoryItems -Type 'special' -Items @($currentSpecialItems + $restoredSpecialItems)
     $totalGoldCrowns = $currentGoldCrowns + $restoredGoldCrowns
     $script:GameState.Inventory.GoldCrowns = [Math]::Min(50, $totalGoldCrowns)
@@ -11895,6 +12579,8 @@ function Restore-LWConfiscatedEquipment {
 
     $script:GameState.Storage.Confiscated.Weapons = @()
     $script:GameState.Storage.Confiscated.BackpackItems = @()
+    $script:GameState.Storage.Confiscated.HerbPouchItems = @()
+    $script:GameState.Storage.Confiscated.HasHerbPouch = $false
     $script:GameState.Storage.Confiscated.SpecialItems = @()
     $script:GameState.Storage.Confiscated.GoldCrowns = 0
     $script:GameState.Storage.Confiscated.BookNumber = $null
@@ -11910,6 +12596,7 @@ function Restore-LWConfiscatedEquipment {
 
         $weaponCount = @($script:GameState.Inventory.Weapons).Count
         $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items @($script:GameState.Inventory.BackpackItems)
+        $herbPouchUsedCapacity = Get-LWInventoryUsedCapacity -Type 'herbpouch' -Items @($script:GameState.Inventory.HerbPouchItems)
         $specialCount = @($script:GameState.Inventory.SpecialItems).Count
         $overLimitWarnings = @()
         if ($weaponCount -gt 2) {
@@ -11917,6 +12604,9 @@ function Restore-LWConfiscatedEquipment {
         }
         if ($backpackUsedCapacity -gt 8) {
             $overLimitWarnings += ("Backpack {0}/8" -f $backpackUsedCapacity)
+        }
+        if ($script:GameState.Inventory.HasHerbPouch -and $herbPouchUsedCapacity -gt 6) {
+            $overLimitWarnings += ("Herb Pouch {0}/6" -f $herbPouchUsedCapacity)
         }
         if ($specialCount -gt 12) {
             $overLimitWarnings += ("Special Items {0}/12" -f $specialCount)
@@ -12174,8 +12864,20 @@ function Invoke-LWBookTransitionSafekeepingPrompt {
                 $promptComplete = $true
                 break
             }
+            '0' {
+                $promptComplete = $true
+                break
+            }
+            'done' {
+                $promptComplete = $true
+                break
+            }
+            'continue' {
+                $promptComplete = $true
+                break
+            }
             default {
-                Write-LWWarn 'Choose Y to safekeep items, R to reclaim items, I to review inventory, or N to continue.'
+                Write-LWWarn 'Choose Y to safekeep items, R to reclaim items, I to review inventory, or N/0 to continue.'
             }
         }
     }
@@ -12334,17 +13036,18 @@ function Add-LWWeaponWithOptionalReplace {
 }
 
 function Get-LWRecoveryStashPropertyName {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     switch ($Type) {
         'weapon' { return 'Weapon' }
         'backpack' { return 'Backpack' }
+        'herbpouch' { return 'HerbPouch' }
         'special' { return 'Special' }
     }
 }
 
 function Get-LWRecoveryStashEntry {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     $propertyName = Get-LWRecoveryStashPropertyName -Type $Type
     return $script:GameState.RecoveryStash.$propertyName
@@ -12352,7 +13055,7 @@ function Get-LWRecoveryStashEntry {
 
 function Save-LWInventoryRecoveryEntry {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][object[]]$Items
     )
 
@@ -12364,7 +13067,7 @@ function Save-LWInventoryRecoveryEntry {
 }
 
 function Clear-LWInventoryRecoveryEntry {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     $entry = Get-LWRecoveryStashEntry -Type $Type
     $entry.Items = @()
@@ -12374,13 +13077,13 @@ function Clear-LWInventoryRecoveryEntry {
 }
 
 function Get-LWInventoryRecoveryItems {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     return @((Get-LWRecoveryStashEntry -Type $Type).Items)
 }
 
 function Show-LWInventorySlotsSection {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     $items = @(Get-LWInventoryItems -Type $Type)
     $label = Get-LWInventoryTypeLabel -Type $Type
@@ -12394,6 +13097,10 @@ function Show-LWInventorySlotsSection {
             Write-Host ("    {0,2}. " -f $i) -NoNewline -ForegroundColor DarkGray
             Write-Host '(unavailable)' -ForegroundColor DarkGray
         }
+        return
+    }
+
+    if ($Type -eq 'herbpouch' -and -not (Test-LWStateHasHerbPouch -State $script:GameState)) {
         return
     }
 
@@ -12436,6 +13143,7 @@ function Show-LWInventorySlotsSection {
 function Show-LWInventorySummary {
     $weapons = @($script:GameState.Inventory.Weapons)
     $backpack = @($script:GameState.Inventory.BackpackItems)
+    $herbPouch = @($script:GameState.Inventory.HerbPouchItems)
     $special = @($script:GameState.Inventory.SpecialItems)
     $safekeeping = @($script:GameState.Storage.SafekeepingSpecialItems)
     $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
@@ -12448,6 +13156,9 @@ function Show-LWInventorySummary {
     }
     else {
         Write-LWKeyValue -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
+    }
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        Write-LWKeyValue -Label 'Herb Pouch' -Value ("{0}/6  {1}" -f $herbPouch.Count, (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3)) -ValueColor 'DarkGreen'
     }
     Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
     if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
@@ -12475,6 +13186,10 @@ function Show-LWInventory {
     Write-Host ''
     Show-LWInventorySlotsSection -Type 'backpack'
     Write-Host ''
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        Show-LWInventorySlotsSection -Type 'herbpouch'
+        Write-Host ''
+    }
     Show-LWInventorySlotsSection -Type 'special'
     Write-Host ''
     if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
@@ -12545,6 +13260,10 @@ function Show-LWInventory {
     }
     if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'))) {
         Write-LWSubtle '  Meal of Laumspur: satisfies a Meal and restores 3 Endurance, or restores 3 Endurance when consumed normally.'
+        Write-Host ''
+    }
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        Write-LWSubtle '  Herb Pouch: carries up to 6 potion items separately from Backpack and Special Items.'
         Write-Host ''
     }
     if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPotentHealingPotionItemNames) -Type 'backpack'))) {
@@ -12654,6 +13373,10 @@ function Show-LWSheet {
     if ((Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and @($script:GameState.Character.ImprovedDisciplines).Count -gt 0) {
         Write-LWKeyValue -Label 'Improved Disciplines' -Value (@($script:GameState.Character.ImprovedDisciplines) -join ', ') -ValueColor 'Gray'
     }
+    $bookSixDERules = @(Get-LWBookSixDEAdventureRuleSummary -State $script:GameState)
+    if ($bookSixDERules.Count -gt 0) {
+        Write-LWKeyValue -Label 'Book 6 DE Rules' -Value ($bookSixDERules -join '; ') -ValueColor 'Gray'
+    }
     Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
     Write-LWKeyValue -Label 'Current Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
     Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f (Get-LWAchievementEligibleUnlockedCount), (Get-LWAchievementAvailableCount)) -ValueColor 'Magenta'
@@ -12672,7 +13395,7 @@ function Resolve-LWSectionExit {
         return
     }
 
-    if ((Test-LWDiscipline -Name 'Healing') -and -not $script:GameState.SectionHadCombat) {
+    if ((Test-LWStateHasSectionHealing -State $script:GameState) -and -not $script:GameState.SectionHadCombat) {
         if ($script:GameState.Character.EnduranceCurrent -lt $script:GameState.Character.EnduranceMax) {
             $before = [int]$script:GameState.Character.EnduranceCurrent
             $healingResolution = Resolve-LWHealingRestoreAmount -RequestedAmount 1
@@ -12684,7 +13407,7 @@ function Resolve-LWSectionExit {
             Add-LWBookEnduranceDelta -Delta $restored
             if ($restored -gt 0) {
                 Register-LWHealingRestore -Amount $restored
-                Write-LWInfo 'Healing restores 1 Endurance for a non-combat section.'
+                Write-LWInfo ("{0} restores 1 Endurance for a non-combat section." -f (Get-LWSectionHealingSourceLabel -State $script:GameState))
             }
             elseif (-not [string]::IsNullOrWhiteSpace([string]$healingResolution.Note)) {
                 Write-LWWarn ([string]$healingResolution.Note)
@@ -12826,7 +13549,7 @@ function Remove-LWNoteInteractive {
 
 function Add-LWInventoryItem {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][string]$Name,
         [int]$Quantity = 1
     )
@@ -12843,12 +13566,37 @@ function Add-LWInventoryItem {
         Write-LWWarn 'Special Items cannot be stacked. Add them one at a time.'
         return
     }
+
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+
+    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHerbPouchItemNames) -Target $resolvedName))) {
+        if (Grant-LWHerbPouch -WriteMessages) {
+            Invoke-LWMaybeAutosave
+        }
+        return
+    }
+
+    if (($Type -eq 'herbpouch' -or ($Type -eq 'backpack' -and (Test-LWHerbPouchPotionItemName -Name $resolvedName) -and (Test-LWStateHasHerbPouch -State $script:GameState)))) {
+        if (-not (Test-LWStateHasHerbPouch -State $script:GameState)) {
+            Write-LWWarn 'You are not carrying a Herb Pouch.'
+            return
+        }
+        if (-not (Test-LWHerbPouchPotionItemName -Name $resolvedName)) {
+            Write-LWWarn 'Only potion items can be stored in the Herb Pouch.'
+            return
+        }
+        if (-not (TryAdd-LWPreferredPotionStorageSilently -Name $resolvedName -Quantity $Quantity)) {
+            return
+        }
+        Write-LWInfo "Added $Quantity x $resolvedName to carried potion storage."
+        Invoke-LWMaybeAutosave
+        return
+    }
+
     if ($Type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
         Write-LWWarn 'You do not currently have a Backpack. Recover one before adding Backpack items.'
         return
     }
-
-    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
 
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $label = Get-LWInventoryTypeLabel -Type $Type
@@ -12880,6 +13628,7 @@ function Add-LWInventoryItem {
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = $current }
         'backpack' { $script:GameState.Inventory.BackpackItems = $current }
+        'herbpouch' { $script:GameState.Inventory.HerbPouchItems = $current }
         'special' { $script:GameState.Inventory.SpecialItems = $current }
     }
 
@@ -12896,7 +13645,7 @@ function Add-LWInventoryItem {
 
 function TryAdd-LWInventoryItemSilently {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][string]$Name,
         [int]$Quantity = 1
     )
@@ -12908,12 +13657,29 @@ function TryAdd-LWInventoryItemSilently {
         Write-LWWarn 'Special Items cannot be stacked. Add them one at a time.'
         return $false
     }
+
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+
+    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHerbPouchItemNames) -Target $resolvedName))) {
+        return (Grant-LWHerbPouch)
+    }
+
+    if (($Type -eq 'herbpouch' -or ($Type -eq 'backpack' -and (Test-LWHerbPouchPotionItemName -Name $resolvedName) -and (Test-LWStateHasHerbPouch -State $script:GameState)))) {
+        if (-not (Test-LWStateHasHerbPouch -State $script:GameState)) {
+            Write-LWWarn 'You are not carrying a Herb Pouch.'
+            return $false
+        }
+        if (-not (Test-LWHerbPouchPotionItemName -Name $resolvedName)) {
+            Write-LWWarn 'Only potion items can be stored in the Herb Pouch.'
+            return $false
+        }
+        return (TryAdd-LWPreferredPotionStorageSilently -Name $resolvedName -Quantity $Quantity)
+    }
+
     if ($Type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
         Write-LWWarn 'You do not currently have a Backpack. Recover one before adding Backpack items.'
         return $false
     }
-
-    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
 
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $current = @(Get-LWInventoryItems -Type $Type)
@@ -12944,6 +13710,7 @@ function TryAdd-LWInventoryItemSilently {
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = @($current) }
         'backpack' { $script:GameState.Inventory.BackpackItems = @($current) }
+        'herbpouch' { $script:GameState.Inventory.HerbPouchItems = @($current) }
         'special' { $script:GameState.Inventory.SpecialItems = @($current) }
     }
 
@@ -12959,7 +13726,7 @@ function TryAdd-LWInventoryItemSilently {
 
 function Remove-LWInventoryItemSilently {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][string]$Name,
         [int]$Quantity = 1
     )
@@ -12971,6 +13738,7 @@ function Remove-LWInventoryItemSilently {
     $source = switch ($Type) {
         'weapon' { @($script:GameState.Inventory.Weapons) }
         'backpack' { @($script:GameState.Inventory.BackpackItems) }
+        'herbpouch' { @($script:GameState.Inventory.HerbPouchItems) }
         'special' { @($script:GameState.Inventory.SpecialItems) }
     }
 
@@ -12991,6 +13759,7 @@ function Remove-LWInventoryItemSilently {
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = @($remaining) }
         'backpack' { $script:GameState.Inventory.BackpackItems = @($remaining) }
+        'herbpouch' { $script:GameState.Inventory.HerbPouchItems = @($remaining) }
         'special' { $script:GameState.Inventory.SpecialItems = @($remaining) }
     }
 
@@ -13023,15 +13792,15 @@ function Add-LWInventoryInteractive {
     if ($InputParts.Count -gt 1) {
         $type = Resolve-LWInventoryType -Value $InputParts[1]
         if ($null -eq $type) {
-            Write-LWWarn 'Type must be weapon, backpack, or special.'
+            Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
             return
         }
     }
 
     if ($null -eq $type) {
-        $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type (weapon/backpack/special)')
+        $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type (weapon/backpack/herbpouch/special)')
         if ($null -eq $type) {
-            Write-LWWarn 'Type must be weapon, backpack, or special.'
+            Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
             return
         }
     }
@@ -13061,7 +13830,7 @@ function Add-LWInventoryInteractive {
 
 function Remove-LWInventoryItem {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][string]$Name,
         [int]$Quantity = 1
     )
@@ -13074,6 +13843,7 @@ function Remove-LWInventoryItem {
     $source = switch ($Type) {
         'weapon'   { @($script:GameState.Inventory.Weapons) }
         'backpack' { @($script:GameState.Inventory.BackpackItems) }
+        'herbpouch' { @($script:GameState.Inventory.HerbPouchItems) }
         'special'  { @($script:GameState.Inventory.SpecialItems) }
     }
 
@@ -13095,6 +13865,7 @@ function Remove-LWInventoryItem {
     switch ($Type) {
         'weapon'   { $script:GameState.Inventory.Weapons = $remaining }
         'backpack' { $script:GameState.Inventory.BackpackItems = $remaining }
+        'herbpouch' { $script:GameState.Inventory.HerbPouchItems = $remaining }
         'special'  { $script:GameState.Inventory.SpecialItems = $remaining }
     }
 
@@ -13106,7 +13877,7 @@ function Remove-LWInventoryItem {
 
 function Remove-LWInventoryItemBySlot {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][int]$Slot
     )
 
@@ -13162,7 +13933,7 @@ function Remove-LWInventoryItemBySlot {
 
 function Remove-LWInventorySection {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type
     )
 
     $items = @(Get-LWInventoryItems -Type $Type)
@@ -13181,9 +13952,12 @@ function Remove-LWInventorySection {
 }
 
 function Test-LWInventoryRecoveryFits {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     if ($Type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
+        return $false
+    }
+    if ($Type -eq 'herbpouch' -and -not (Test-LWStateHasHerbPouch -State $script:GameState)) {
         return $false
     }
 
@@ -13204,10 +13978,14 @@ function Test-LWInventoryRecoveryFits {
 }
 
 function Restore-LWInventorySection {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
 
     if ($Type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $script:GameState)) {
         Write-LWWarn 'You do not currently have a Backpack. Recover one before restoring Backpack items.'
+        return
+    }
+    if ($Type -eq 'herbpouch' -and -not (Test-LWStateHasHerbPouch -State $script:GameState)) {
+        Write-LWWarn 'You are not currently carrying a Herb Pouch. Recover one before restoring Herb Pouch items.'
         return
     }
 
@@ -13240,7 +14018,7 @@ function Restore-LWInventorySection {
 }
 
 function Restore-LWAllInventorySections {
-    $recoverableTypes = @('weapon', 'backpack', 'special') | Where-Object { @(Get-LWInventoryRecoveryItems -Type $_).Count -gt 0 }
+    $recoverableTypes = @('weapon', 'backpack', 'herbpouch', 'special') | Where-Object { @(Get-LWInventoryRecoveryItems -Type $_).Count -gt 0 }
     if (@($recoverableTypes).Count -eq 0) {
         Write-LWWarn 'No saved inventory stash is available.'
         return
@@ -13286,15 +14064,15 @@ function Remove-LWInventoryInteractive {
     if ($InputParts.Count -gt 1) {
         $type = Resolve-LWInventoryType -Value $InputParts[1]
         if ($null -eq $type) {
-            Write-LWWarn 'Type must be weapon, backpack, or special.'
+            Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
             return
         }
     }
 
     if ($null -eq $type) {
-        $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type to remove (weapon/backpack/special)')
+        $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type to remove (weapon/backpack/herbpouch/special)')
         if ($null -eq $type) {
-            Write-LWWarn 'Type must be weapon, backpack, or special.'
+            Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
             return
         }
     }
@@ -13365,11 +14143,11 @@ function Restore-LWInventoryInteractive {
         $selection = [string]$InputParts[1]
     }
     else {
-        $selection = Read-LWText -Prompt 'Recover which section? (weapon/backpack/special/all)'
+        $selection = Read-LWText -Prompt 'Recover which section? (weapon/backpack/herbpouch/special/all)'
     }
 
     if ([string]::IsNullOrWhiteSpace($selection)) {
-        Write-LWWarn 'Type must be weapon, backpack, special, or all.'
+        Write-LWWarn 'Type must be weapon, backpack, herbpouch, special, or all.'
         return
     }
 
@@ -13380,7 +14158,7 @@ function Restore-LWInventoryInteractive {
 
     $type = Resolve-LWInventoryType -Value $selection
     if ($null -eq $type) {
-        Write-LWWarn 'Type must be weapon, backpack, special, or all.'
+        Write-LWWarn 'Type must be weapon, backpack, herbpouch, special, or all.'
         return
     }
 
@@ -13591,97 +14369,37 @@ function Use-LWHealingPotion {
     }
 
     if ($script:GameState.Combat.Active) {
+        if (Test-LWCombatHerbPouchOptionActive -State $script:GameState) {
+            Invoke-LWCombatPotionRound
+            return
+        }
         Write-LWWarn 'Healing Potions cannot be used during combat.'
         return
     }
 
-    if (-not (Test-LWStateHasBackpack -State $script:GameState)) {
-        Write-LWWarn 'You do not currently have a Backpack, so you cannot use stored healing items right now.'
+    if (-not (Test-LWStateHasBackpack -State $script:GameState) -and -not (Test-LWStateHasHerbPouch -State $script:GameState)) {
+        Write-LWWarn 'You do not currently have a Backpack or a usable Herb Pouch, so you cannot use stored healing items right now.'
         return
     }
 
-    $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWConcentratedHealingPotionItemNames) -Type 'backpack'
-    $restoreAmount = 8
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPotentHealingPotionItemNames) -Type 'backpack'
-        $restoreAmount = 5
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWHealingPotionItemNames) -Type 'backpack'
-        $restoreAmount = 4
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLaumspurHerbItemNames) -Type 'backpack'
-        $restoreAmount = 3
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'
-        $restoreAmount = 3
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWOedeHerbItemNames) -Type 'backpack'
-        $restoreAmount = 10
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLarnumaOilItemNames) -Type 'backpack'
-        $restoreAmount = 2
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWRendalimsElixirItemNames) -Type 'backpack'
-        $restoreAmount = 6
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWBottleOfKourshahItemNames) -Type 'backpack'
-        $restoreAmount = 4
-    }
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Type 'backpack'
-        $restoreAmount = 6
-    }
-
-    if ([string]::IsNullOrWhiteSpace($potionName)) {
-        Write-LWWarn 'No usable healing item found in backpack items.'
+    $choice = Get-LWPreferredHealingPotionChoice -State $script:GameState
+    if ($null -eq $choice) {
+        Write-LWWarn 'No usable healing item found in Herb Pouch or Backpack.'
         return
     }
 
-    [void](Remove-LWInventoryItemSilently -Type 'backpack' -Name $potionName -Quantity 1)
-    $before = [int]$script:GameState.Character.EnduranceCurrent
-    $script:GameState.Character.EnduranceCurrent += $restoreAmount
-    if ($script:GameState.Character.EnduranceCurrent -gt $script:GameState.Character.EnduranceMax) {
-        $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
-    }
-    $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
-
-    $conditionMessages = @()
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHealingPotionItemNames) -Target $potionName)) -or
-        -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWLaumspurHerbItemNames) -Target $potionName))) {
-        if (Test-LWBookFiveBloodPoisoningActive -State $script:GameState) {
-            $script:GameState.Conditions.BookFiveBloodPoisoning = $false
-            $conditionMessages += 'Blood poisoning cured.'
-        }
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWOedeHerbItemNames) -Target $potionName))) {
-        if (Test-LWBookFiveLimbdeathActive -State $script:GameState) {
-            $script:GameState.Conditions.BookFiveLimbdeath = $false
-            Set-LWStoryAchievementFlag -Name 'Book5LimbdeathCured'
-            $conditionMessages += 'Limbdeath cured.'
-        }
-    }
-
-    Add-LWBookEnduranceDelta -Delta $restored
-    Register-LWPotionUsed -PotionName $potionName -EnduranceRestored $restored
-    $message = "$potionName restores $restoreAmount Endurance. Current Endurance: $($script:GameState.Character.EnduranceCurrent)."
-    if ($conditionMessages.Count -gt 0) {
-        $message += " $($conditionMessages -join ' ')"
-    }
-    Write-LWInfo $message
-    Invoke-LWMaybeAutosave
+    [void](Use-LWResolvedHealingPotion -PotionName ([string]$choice.Name) -RestoreAmount ([int]$choice.RestoreAmount) -InventoryType ([string]$choice.Type))
 }
 
 function Get-LWStateAletherPotionName {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    return (Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWAletherPotionItemNames) -Type 'backpack')
+    $location = Find-LWStateInventoryItemLocation -State $State -Names (Get-LWAletherPotionItemNames) -Types @('herbpouch', 'backpack')
+    if ($null -eq $location) {
+        return $null
+    }
+
+    return [string]$location.Name
 }
 
 function Get-LWStateAletherCombatSkillBonus {
@@ -13854,7 +14572,7 @@ function Get-LWCombatBreakdownFromState {
             $notes += "Weaponmastery +$weaponmasteryBonus"
         }
 
-        if ((Test-LWStateHasDiscipline -State $State -Name 'Weaponskill') -and -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
+        if ((Test-LWStateHasActiveWeaponskill -State $State) -and (Test-LWWeaponMatchesWeaponskill -Weapon ([string]$State.Combat.EquippedWeapon) -WeaponskillWeapon ([string]$State.Character.WeaponskillWeapon))) {
             $playerCombatSkill += 2
             $weaponskillLabel = if (Test-LWWeaponIsDrodarinWarHammer -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Warhammer' } elseif (Test-LWWeaponIsBroadswordPlusOne -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Broadsword' } elseif (Test-LWWeaponIsCaptainDValSword -Weapon ([string]$State.Combat.EquippedWeapon)) { 'Sword' } elseif (Test-LWWeaponIsSolnaris -Weapon ([string]$State.Combat.EquippedWeapon)) { [string]$State.Character.WeaponskillWeapon } else { [string]$State.Combat.EquippedWeapon }
             $notes += "Weaponskill +2 ($weaponskillLabel)"
@@ -14467,6 +15185,7 @@ function Resolve-LWCombatRound {
         [Parameter(Mandatory = $true)][int]$Roll,
         [Nullable[int]]$EnemyLoss = $null,
         [Nullable[int]]$PlayerLoss = $null,
+        [switch]$IgnoreEnemyLossThisRound,
         [switch]$UseCRT
     )
 
@@ -14570,6 +15289,16 @@ function Resolve-LWCombatRound {
         $messages += ("Special rule: ignore all enemy ENDURANCE loss in round {0}." -f $roundNumber)
         $enemyLossApplied = 0
         $specialNotes += 'Enemy loss ignored'
+    }
+    if ($IgnoreEnemyLossThisRound) {
+        if ($enemyLossApplied -gt 0) {
+            $messages += 'Herb Pouch action: you drink a potion instead of attacking, so enemy ENDURANCE loss is ignored this round.'
+        }
+        else {
+            $messages += 'Herb Pouch action: you drink a potion instead of attacking this round.'
+        }
+        $enemyLossApplied = 0
+        $specialNotes += 'Potion round'
     }
     if (-not [string]::IsNullOrWhiteSpace([string]$playerLossResolution.Note)) {
         $messages += [string]$playerLossResolution.Note
@@ -15785,7 +16514,9 @@ function Stop-LWCombat {
 function Invoke-LWCombatRound {
     param(
         [switch]$Quiet,
-        [switch]$SkipAutosave
+        [switch]$SkipAutosave,
+        [switch]$IgnoreEnemyLossThisRound,
+        [object]$PotionChoice = $null
     )
 
     if (-not $script:GameState.Combat.Active) {
@@ -15795,7 +16526,7 @@ function Invoke-LWCombatRound {
 
     $roll = Get-LWRandomDigit
     $useCRT = ($script:GameState.Settings.CombatMode -eq 'DataFile')
-    $resolution = Resolve-LWCombatRound -State $script:GameState -Roll $roll -UseCRT:$useCRT
+    $resolution = Resolve-LWCombatRound -State $script:GameState -Roll $roll -IgnoreEnemyLossThisRound:$IgnoreEnemyLossThisRound -UseCRT:$useCRT
     $needsManualEntry = $resolution.RequiresManualEntry
 
     if (-not $Quiet -or $needsManualEntry) {
@@ -15837,10 +16568,42 @@ function Invoke-LWCombatRound {
 
         $enemyLoss = Read-LWInt -Prompt 'Enemy END loss this round' -Default 0 -Min 0
         $playerLoss = Read-LWInt -Prompt 'Lone Wolf END loss this round' -Default 0 -Min 0
-        $resolution = Resolve-LWCombatRound -State $script:GameState -Roll $roll -EnemyLoss $enemyLoss -PlayerLoss $playerLoss
+        $resolution = Resolve-LWCombatRound -State $script:GameState -Roll $roll -EnemyLoss $enemyLoss -PlayerLoss $playerLoss -IgnoreEnemyLossThisRound:$IgnoreEnemyLossThisRound
     }
 
     Apply-LWCombatRoundResolution -Resolution $resolution
+
+    if ($null -ne $PotionChoice) {
+        $potionResult = Use-LWResolvedHealingPotion -PotionName ([string]$PotionChoice.Name) -RestoreAmount ([int]$PotionChoice.RestoreAmount) -InventoryType ([string]$PotionChoice.Type) -SkipAutosave
+        if ($null -ne $potionResult) {
+            $historyLog = @($script:GameState.Combat.Log)
+            if ($historyLog.Count -gt 0) {
+                $lastEntry = $historyLog[-1]
+                $lastEntry.PlayerEnd = [int]$script:GameState.Character.EnduranceCurrent
+                $potionNote = ("Potion: {0}" -f [string]$potionResult.PotionName)
+                if ([string]::IsNullOrWhiteSpace([string]$lastEntry.SpecialNote)) {
+                    $lastEntry.SpecialNote = $potionNote
+                }
+                else {
+                    $lastEntry.SpecialNote = ("{0}, {1}" -f [string]$lastEntry.SpecialNote, $potionNote)
+                }
+            }
+            if ($resolution.Outcome -eq 'Defeat' -and [int]$script:GameState.Character.EnduranceCurrent -gt 0) {
+                $resolution.Outcome = 'Continue'
+                $resolution.NewPlayerEnd = [int]$script:GameState.Character.EnduranceCurrent
+                $resolution.LogEntry.PlayerEnd = [int]$script:GameState.Character.EnduranceCurrent
+                Write-LWInfo ("{0} keeps Lone Wolf in the fight." -f [string]$potionResult.PotionName)
+            }
+            elseif ($resolution.Outcome -eq 'Special' -and [int]$resolution.NewPlayerEnd -le 0 -and [int]$script:GameState.Character.EnduranceCurrent -gt 0) {
+                $resolution.Outcome = 'Continue'
+                $resolution.NewPlayerEnd = [int]$script:GameState.Character.EnduranceCurrent
+                $resolution.LogEntry.PlayerEnd = [int]$script:GameState.Character.EnduranceCurrent
+                $resolution.SpecialResolutionSection = $null
+                $resolution.SpecialResolutionNote = $null
+                Write-LWInfo ("{0} keeps Lone Wolf in the fight." -f [string]$potionResult.PotionName)
+            }
+        }
+    }
 
     if (-not $Quiet -or $needsManualEntry) {
         Write-LWInfo ("Round {0}: enemy loses {1}, Lone Wolf loses {2}." -f $resolution.LogEntry.Round, $resolution.EnemyLoss, $resolution.PlayerLoss)
@@ -16327,6 +17090,27 @@ function Complete-LWBook {
     }
 
     Invoke-LWMaybeAutosave
+}
+
+function Invoke-LWCombatPotionRound {
+    if (-not $script:GameState.Combat.Active) {
+        Write-LWWarn 'No active combat. Use combat start first.'
+        return $null
+    }
+
+    if (-not (Test-LWCombatHerbPouchOptionActive -State $script:GameState)) {
+        Write-LWWarn 'Combat potion use is only available in Book 6 with DE Curing Option 3 and a carried Herb Pouch.'
+        return $null
+    }
+
+    $choice = Get-LWPreferredHerbPouchCombatPotionChoice -State $script:GameState
+    if ($null -eq $choice) {
+        Write-LWWarn 'No usable healing potion is currently stored in the Herb Pouch.'
+        return $null
+    }
+
+    Write-LWInfo ("Herb Pouch action: using {0} instead of attacking this round." -f [string]$choice.Name)
+    return (Invoke-LWCombatRound -IgnoreEnemyLossThisRound -PotionChoice $choice)
 }
 
 function Get-LWMagnakaiWeaponmasteryOptions {
@@ -17103,6 +17887,7 @@ function Invoke-LWCombatCommand {
         }
         'round'  { [void](Invoke-LWCombatRound) }
         'next'   { [void](Invoke-LWCombatRound) }
+        'potion' { [void](Invoke-LWCombatPotionRound) }
         'auto'   { Resolve-LWCombatToOutcome }
         'status' {
             if ($script:GameState.Combat.Active) {
@@ -17187,7 +17972,7 @@ function Invoke-LWCombatCommand {
         }
         'evade'  { Invoke-LWEvade }
         'stop'   { [void](Stop-LWCombat) }
-        default  { Write-LWWarn 'Unknown combat subcommand. Use start, round, next, auto, status, log, evade, or stop.' }
+        default  { Write-LWWarn 'Unknown combat subcommand. Use start, round, next, potion, auto, status, log, evade, or stop.' }
     }
 }
 
@@ -17581,6 +18366,7 @@ function Initialize-LWData {
 
 function New-LWDefaultState {
     $state = Invoke-LWCoreNewDefaultState -Context (Get-LWModuleContext)
+    $state = Sync-LWHerbPouchState -State $state
     return (Sync-LWStateRefactorMetadata -State $state)
 }
 
@@ -17588,6 +18374,7 @@ function Normalize-LWState {
     param([Parameter(Mandatory = $true)][object]$State)
 
     $normalized = Invoke-LWCoreNormalizeState -Context (Get-LWModuleContext) -State $State
+    $normalized = Sync-LWHerbPouchState -State $normalized
     return (Sync-LWStateRefactorMetadata -State $normalized)
 }
 

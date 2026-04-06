@@ -130,9 +130,11 @@ function Invoke-LWCoreNewDefaultState {
             Inventory         = [pscustomobject]@{
                 Weapons       = @()
                 BackpackItems = @()
+                HerbPouchItems = @()
                 SpecialItems  = @()
                 GoldCrowns    = 0
                 HasBackpack   = $true
+                HasHerbPouch  = $false
                 QuiverArrows  = 0
             }
             Combat            = (New-LWCombatState)
@@ -228,7 +230,7 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Storage -Name 'Confiscated') -or $null -eq $State.Storage.Confiscated) {
             $State.Storage | Add-Member -Force -NotePropertyName Confiscated -NotePropertyValue (New-LWStorageState).Confiscated
         }
-        foreach ($entryName in @('Weapons', 'BackpackItems', 'SpecialItems')) {
+        foreach ($entryName in @('Weapons', 'BackpackItems', 'HerbPouchItems', 'SpecialItems')) {
             if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $entryName) -or $null -eq $State.Storage.Confiscated.$entryName) {
                 $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue @()
             }
@@ -236,14 +238,15 @@ function Invoke-LWCoreNormalizeState {
                 $normalizedType = switch ($entryName) {
                     'SpecialItems' { 'special' }
                     'Weapons' { 'weapon' }
+                    'HerbPouchItems' { 'herbpouch' }
                     default { 'backpack' }
                 }
                 $State.Storage.Confiscated.$entryName = @(Resolve-LWCoreInventoryItemList -Items @($State.Storage.Confiscated.$entryName) -Type $normalizedType)
             }
         }
-        foreach ($propertyName in @('GoldCrowns', 'BookNumber', 'Section', 'SavedOn')) {
+        foreach ($propertyName in @('GoldCrowns', 'BookNumber', 'Section', 'SavedOn', 'HasHerbPouch')) {
             if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $propertyName)) {
-                $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $null
+                $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $(if ($propertyName -eq 'HasHerbPouch') { $false } else { $null })
             }
         }
 
@@ -260,7 +263,7 @@ function Invoke-LWCoreNormalizeState {
             $State | Add-Member -Force -NotePropertyName RecoveryStash -NotePropertyValue (New-LWInventoryRecoveryState)
         }
 
-        foreach ($entryName in @('Weapon', 'Backpack', 'Special')) {
+        foreach ($entryName in @('Weapon', 'Backpack', 'HerbPouch', 'Special')) {
             if (-not (Test-LWPropertyExists -Object $State.RecoveryStash -Name $entryName) -or $null -eq $State.RecoveryStash.$entryName) {
                 $State.RecoveryStash | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue (New-LWInventoryRecoveryEntry)
             }
@@ -271,6 +274,7 @@ function Invoke-LWCoreNormalizeState {
                 $normalizedType = switch ($entryName) {
                     'Special' { 'special' }
                     'Weapon' { 'weapon' }
+                    'HerbPouch' { 'herbpouch' }
                     default { 'backpack' }
                 }
                 $State.RecoveryStash.$entryName.Items = @(Resolve-LWCoreInventoryItemList -Items @($State.RecoveryStash.$entryName.Items) -Type $normalizedType)
@@ -370,8 +374,17 @@ function Invoke-LWCoreNormalizeState {
         else {
             $State.Inventory.BackpackItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.BackpackItems) -Type 'backpack')
         }
+        if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HerbPouchItems') -or $null -eq $State.Inventory.HerbPouchItems) {
+            $State.Inventory | Add-Member -Force -NotePropertyName HerbPouchItems -NotePropertyValue @()
+        }
+        else {
+            $State.Inventory.HerbPouchItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.HerbPouchItems) -Type 'herbpouch')
+        }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HasBackpack') -or $null -eq $State.Inventory.HasBackpack) {
             $State.Inventory | Add-Member -Force -NotePropertyName HasBackpack -NotePropertyValue $true
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'HasHerbPouch') -or $null -eq $State.Inventory.HasHerbPouch) {
+            $State.Inventory | Add-Member -Force -NotePropertyName HasHerbPouch -NotePropertyValue $false
         }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'QuiverArrows') -or $null -eq $State.Inventory.QuiverArrows) {
             $State.Inventory | Add-Member -Force -NotePropertyName QuiverArrows -NotePropertyValue 0

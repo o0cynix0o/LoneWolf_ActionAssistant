@@ -9,20 +9,36 @@ function Set-LWModuleContext {
 }
 
 function Get-LWMagnakaiBookSixStartingChoices {
-    return @(
+    $choices = @(
         [pscustomobject]@{ Id = 'sword'; Type = 'weapon'; Name = 'Sword'; DisplayName = 'Sword'; Description = 'Sword' },
         [pscustomobject]@{ Id = 'laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; DisplayName = 'Potion of Laumspur'; Description = 'Potion of Laumspur' },
         [pscustomobject]@{ Id = 'warhammer'; Type = 'weapon'; Name = 'Warhammer'; DisplayName = 'Warhammer'; Description = 'Warhammer' },
-        [pscustomobject]@{ Id = 'bow'; Type = 'weapon'; Name = 'Bow'; DisplayName = 'Bow'; Description = 'Bow' },
         [pscustomobject]@{ Id = 'quiver'; Type = 'special'; Name = 'Quiver'; DisplayName = 'Quiver'; Description = 'Quiver with 6 Arrows' },
-        [pscustomobject]@{ Id = 'rations'; Type = 'backpack'; Name = 'Special Rations'; Quantity = 4; DisplayName = '4 Special Rations'; Description = '4 Special Rations' },
+        [pscustomobject]@{ Id = 'bow'; Type = 'weapon'; Name = 'Bow'; DisplayName = 'Bow'; Description = 'Bow' },
+        [pscustomobject]@{ Id = 'rations'; Type = 'backpack'; Name = 'Special Rations'; Quantity = 5; DisplayName = '5 Special Rations [DE]'; Description = '5 Special Rations' },
         [pscustomobject]@{ Id = 'quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; DisplayName = 'Quarterstaff'; Description = 'Quarterstaff' },
         [pscustomobject]@{ Id = 'padded'; Type = 'special'; Name = 'Padded Leather Waistcoat'; DisplayName = 'Padded Leather Waistcoat'; Description = 'Padded Leather Waistcoat' },
-        [pscustomobject]@{ Id = 'rope'; Type = 'backpack'; Name = 'Rope'; Quantity = 1; DisplayName = 'Rope'; Description = 'Rope' },
+        [pscustomobject]@{ Id = 'axe'; Type = 'weapon'; Name = 'Axe'; DisplayName = 'Axe'; Description = 'Axe' },
         [pscustomobject]@{ Id = 'dagger'; Type = 'weapon'; Name = 'Dagger'; DisplayName = 'Dagger'; Description = 'Dagger' },
         [pscustomobject]@{ Id = 'tinderbox'; Type = 'backpack'; Name = 'Tinderbox'; Quantity = 1; DisplayName = 'Tinderbox'; Description = 'Tinderbox' },
-        [pscustomobject]@{ Id = 'axe'; Type = 'weapon'; Name = 'Axe'; DisplayName = 'Axe'; Description = 'Axe' }
+        [pscustomobject]@{ Id = 'rope'; Type = 'backpack'; Name = 'Rope'; Quantity = 1; DisplayName = 'Rope'; Description = 'Rope' },
+        [pscustomobject]@{ Id = 'kai_shield'; Type = 'special'; Name = 'Kai Shield'; DisplayName = 'Kai Shield [DE]'; Description = 'Kai Shield' },
+        [pscustomobject]@{ Id = 'helmet'; Type = 'special'; Name = 'Helmet'; DisplayName = 'Helmet [DE]'; Description = 'Helmet' },
+        [pscustomobject]@{ Id = 'torch'; Type = 'backpack'; Name = 'Torch'; Quantity = 1; DisplayName = 'Torch [DE]'; Description = 'Torch' },
+        [pscustomobject]@{ Id = 'blanket'; Type = 'backpack'; Name = 'Blanket'; Quantity = 1; DisplayName = 'Blanket [DE]'; Description = 'Blanket' }
     )
+
+    if ((Get-LWBookSixDECuringOption -State $script:GameState) -eq 3) {
+        $choices += [pscustomobject]@{
+            Id = 'herb_pouch'
+            Type = 'special'
+            Name = 'Herb Pouch'
+            DisplayName = 'Herb Pouch [DE Option 3]'
+            Description = 'Herb Pouch'
+        }
+    }
+
+    return @($choices)
 }
 
 function Grant-LWMagnakaiBookSixStartingChoice {
@@ -50,6 +66,155 @@ function Grant-LWMagnakaiBookSixStartingChoice {
 
     Write-LWWarn ("Could not add the Book 6 starting item '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
     return $false
+}
+
+function Select-LWMagnakaiBookSixDECuringOption {
+    $hasCuring = Test-LWStateHasDiscipline -State $script:GameState -Name 'Curing'
+    $hasHealing = Test-LWStateHasDiscipline -State $script:GameState -Name 'Healing'
+    if (-not $hasCuring -and -not $hasHealing) {
+        Set-LWBookSixDECuringOption -State $script:GameState -Option 0
+        return 0
+    }
+
+    $options = @()
+    if ($hasCuring) {
+        $options += [pscustomobject]@{
+            Value       = 0
+            Label       = 'Standard Curing'
+            Description = @('Use the normal Curing rules only.')
+        }
+        $options += [pscustomobject]@{
+            Value       = 1
+            Label       = 'Curing Cap'
+            Description = @('Cap total END restored by Curing/Healing at 15 this book.')
+        }
+        $options += [pscustomobject]@{
+            Value       = 3
+            Label       = 'Herb Pouch'
+            Description = @(
+                'Unlock Herb Pouch in the starter equipment list.',
+                'In combat, you may drink a potion instead of attacking.',
+                'Enemy END loss that round is ignored.'
+            )
+        }
+    }
+    elseif ($hasHealing) {
+        $options += [pscustomobject]@{
+            Value       = 0
+            Label       = 'Standard Magnakai'
+            Description = @('Do not use a Book 6 DE Curing option.')
+        }
+        $options += [pscustomobject]@{
+            Value       = 2
+            Label       = 'Healing Instead'
+            Description = @('Use legacy Healing this book without Curing.', 'Healing restoration is capped at 10 this book.')
+        }
+    }
+
+    $currentOption = Get-LWBookSixDECuringOption -State $script:GameState
+    if (@($options.Value) -contains [int]$currentOption) {
+        return [int]$currentOption
+    }
+
+    while ($true) {
+        Write-LWPanelHeader -Title 'Book 6 DE Adventure Options' -AccentColor 'DarkYellow'
+        if ($hasCuring) {
+            Write-Host '  Curing is selected. Choose one DE play option:' -ForegroundColor Gray
+        }
+        else {
+            Write-Host '  Curing is not selected. Choose whether to use the DE Healing option:' -ForegroundColor Gray
+        }
+        Write-Host ''
+
+        foreach ($option in $options) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f [int]$option.Value, [string]$option.Label) -TextColor 'Gray' -BulletColor 'Yellow'
+            foreach ($line in @($option.Description)) {
+                Write-Host ("      {0}" -f [string]$line) -ForegroundColor DarkGray
+            }
+        }
+
+        $rawChoice = Read-Host 'Book 6 DE option [0]'
+        if ([string]::IsNullOrWhiteSpace($rawChoice)) {
+            $rawChoice = '0'
+        }
+
+        $selectedOption = 0
+        if (-not [int]::TryParse([string]$rawChoice, [ref]$selectedOption)) {
+            Write-LWInlineWarn 'Choose one of the displayed Book 6 DE options.'
+            continue
+        }
+
+        $selected = @($options | Where-Object { [int]$_.Value -eq $selectedOption } | Select-Object -First 1)
+        if ($selected.Count -eq 0) {
+            Write-LWInlineWarn 'Choose one of the displayed Book 6 DE options.'
+            continue
+        }
+
+        Set-LWBookSixDECuringOption -State $script:GameState -Option $selectedOption
+        Write-LWInfo ("Book 6 DE option selected: {0}." -f [string]$selected[0].Label)
+        if ([int]$selectedOption -eq 3) {
+            Write-LWInfo 'Herb Pouch is now available in the Book 6 starting equipment list.'
+        }
+        return [int]$selectedOption
+    }
+}
+
+function Select-LWMagnakaiBookSixDEWeaponskillOption {
+    $currentOption = Get-LWBookSixDEWeaponskillOption -State $script:GameState
+    if ($currentOption -eq 1 -and [string]::IsNullOrWhiteSpace([string]$script:GameState.Character.WeaponskillWeapon)) {
+        $weaponRoll = Get-LWRandomDigit
+        $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
+        if (-not [string]::IsNullOrWhiteSpace($weaponName)) {
+            $script:GameState.Character.WeaponskillWeapon = $weaponName
+            Write-LWInfo ("Weaponskill roll: {0} -> {1}" -f $weaponRoll, $weaponName)
+        }
+    }
+    if ($currentOption -ge 0) {
+        return $currentOption
+    }
+
+    $knownWeapon = [string]$script:GameState.Character.WeaponskillWeapon
+    Write-LWPanelHeader -Title 'Book 6 DE Weaponskill' -AccentColor 'DarkYellow'
+    if (-not [string]::IsNullOrWhiteSpace($knownWeapon)) {
+        Write-Host ("  Your proven Kai weapon is: {0}" -f $knownWeapon) -ForegroundColor Gray
+        Write-Host '  If enabled, you gain +2 Combat Skill in combat when using this weapon.' -ForegroundColor DarkGray
+        Write-Host '  This bonus can stack with Weaponmastery.' -ForegroundColor DarkGray
+        Write-Host ''
+        $enable = Read-LWYesNo -Prompt ("Use the Book 6 DE Weaponskill option with {0}?" -f $knownWeapon) -Default $true
+    }
+    else {
+        Write-Host '  You do not have a carried Weaponskill weapon recorded from Books 1-5.' -ForegroundColor Gray
+        Write-Host '  If enabled, the app will roll a proven Kai weapon now using the old Weaponskill table.' -ForegroundColor DarkGray
+        Write-Host '  Bow is not a valid result on that table.' -ForegroundColor DarkGray
+        Write-Host '  A matching weapon grants +2 Combat Skill in combat during Book 6.' -ForegroundColor DarkGray
+        Write-Host ''
+        $enable = Read-LWYesNo -Prompt 'Use the Book 6 DE Weaponskill option?' -Default $false
+    }
+
+    if (-not $enable) {
+        Set-LWBookSixDEWeaponskillOption -State $script:GameState -Option 0
+        Write-LWInfo 'Book 6 DE Weaponskill is disabled for this adventure.'
+        return 0
+    }
+
+    if ([string]::IsNullOrWhiteSpace([string]$script:GameState.Character.WeaponskillWeapon)) {
+        $weaponRoll = Get-LWRandomDigit
+        $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
+        if (-not [string]::IsNullOrWhiteSpace($weaponName)) {
+            $script:GameState.Character.WeaponskillWeapon = $weaponName
+            Write-LWInfo ("Weaponskill roll: {0} -> {1}" -f $weaponRoll, $weaponName)
+        }
+    }
+
+    Set-LWBookSixDEWeaponskillOption -State $script:GameState -Option 1
+    if (-not [string]::IsNullOrWhiteSpace([string]$script:GameState.Character.WeaponskillWeapon)) {
+        Write-LWInfo ("Book 6 DE Weaponskill is active with {0} for +2 Combat Skill in combat." -f [string]$script:GameState.Character.WeaponskillWeapon)
+    }
+    else {
+        Write-LWInfo 'Book 6 DE Weaponskill is active for +2 Combat Skill in combat.'
+    }
+
+    return 1
 }
 
 function Get-LWMagnakaiBookSixSection040ChoiceDefinitions {
@@ -664,22 +829,18 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
         Write-LWInfo ("Weaponmastery selection: {0}" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
     }
 
+    [void](Select-LWMagnakaiBookSixDECuringOption)
+    [void](Select-LWMagnakaiBookSixDEWeaponskillOption)
+
     Sync-LWMagnakaiLoreCircleBonuses -State $script:GameState -WriteMessages
 
     if ($CarryExistingGear -and ((@($script:GameState.Inventory.SpecialItems).Count -gt 0) -or (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0))) {
         Invoke-LWBookTransitionSafekeepingPrompt -BookNumber 6
     }
 
+    Restore-LWBackpackState
     if ($CarryExistingGear) {
-        $carriedBackpackItems = @($script:GameState.Inventory.BackpackItems)
-        if ($carriedBackpackItems.Count -gt 0) {
-            $script:GameState.Inventory.BackpackItems = @()
-            Restore-LWBackpackState
-            Write-LWInfo 'Book 6 baseline carry-over preserves Weapons and Special Items. Backpack items do not carry forward automatically.'
-        }
-    }
-    else {
-        Restore-LWBackpackState
+        Write-LWInfo 'Book 6 DE carry-over preserves your current Weapons, Backpack Items, and Special Items.'
     }
 
     if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfStornlandsItemNames) -Type 'special')) {
@@ -701,17 +862,17 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
         Write-LWWarn 'Gold Crowns are capped at 50. Excess Book 6 starting gold is lost.'
     }
 
-    Write-LWInfo $(if ($CarryExistingGear) { 'Choose up to five Book 6 starting items now. You may exchange carried weapons if needed.' } else { 'Choose up to five Book 6 starting items now.' })
+    Write-LWInfo $(if ($CarryExistingGear) { 'Choose up to seven Book 6 starting items now. You may exchange carried weapons if needed.' } else { 'Choose up to seven Book 6 starting items now.' })
 
     $selectedIds = @()
-    while ($selectedIds.Count -lt 5) {
+    while ($selectedIds.Count -lt 7) {
         $availableChoices = @(Get-LWMagnakaiBookSixStartingChoices | Where-Object { $selectedIds -notcontains [string]$_.Id })
         if ($availableChoices.Count -eq 0) {
             break
         }
 
         Write-LWPanelHeader -Title 'Book 6 Starting Gear' -AccentColor 'DarkYellow'
-        Write-LWKeyValue -Label 'Choices Made' -Value ("{0}/5" -f $selectedIds.Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Choices Made' -Value ("{0}/7" -f $selectedIds.Count) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'

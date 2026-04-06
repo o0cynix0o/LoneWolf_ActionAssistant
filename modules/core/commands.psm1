@@ -44,7 +44,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWKeyValue -Label 'roll' -Value 'Roll the random number table (0-9)' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'section [n]' -Value 'Move to a new section' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'healcheck' -Value 'Apply Healing for a non-combat section' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'add [type name [qty]]' -Value 'Add inventory item' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'add [type name [qty]]' -Value 'Add inventory item (weapon/backpack/herbpouch/special)' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'drop [type slot|all]' -Value 'Remove inventory item by slot or clear a section' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'recover [type|all]' -Value 'Restore stashed gear from a bulk drop' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'gold [delta]' -Value 'Gain or spend Gold Crowns' -ValueColor 'Gray'
@@ -57,6 +57,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWKeyValue -Label 'combat start' -Value 'Start combat' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'combat round' -Value 'Resolve one combat round' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'combat next' -Value 'Alias for combat round' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'combat potion' -Value 'Book 6 Herb Pouch: drink a potion instead of attacking' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'combat auto' -Value 'Resolve combat until it ends' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'combat status' -Value 'Show combat status' -ValueColor 'Gray'
         Write-LWKeyValue -Label 'combat log [n|all|book n]' -Value 'Show the current, last, or archived combat log' -ValueColor 'Gray'
@@ -73,7 +74,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWKeyValue -Label 'quit' -Value 'Exit the terminal' -ValueColor 'Gray'
         Write-LWPanelHeader -Title 'Aliases' -AccentColor 'Magenta'
         Write-LWBulletItem -Text 'fight is a quick combat alias: it starts combat and auto-resolves it in one command.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'fight status/log/auto/round/next/evade/stop mirror the matching combat subcommands.' -TextColor 'Gray'
+        Write-LWBulletItem -Text 'fight status/log/auto/round/next/potion/evade/stop mirror the matching combat subcommands.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'inventory is the same as inv.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'combat next is the same as combat round.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'mode manual maps to ManualCRT, and mode data maps to DataFile.' -TextColor 'Gray'
@@ -81,8 +82,8 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWPanelHeader -Title 'Tips' -AccentColor 'DarkYellow'
         Write-LWBulletItem -Text 'While combat is active, pressing Enter advances one round.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Quick start syntax: combat start Giak 12 10' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use inv to see exact weapon, backpack, and special-item slots, including empty spaces.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use drop backpack 2 or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
+        Write-LWBulletItem -Text 'Use inv to see exact weapon, backpack, Herb Pouch, and special-item slots, including empty spaces.' -TextColor 'Gray'
+        Write-LWBulletItem -Text 'Use drop backpack 2, drop herbpouch 1, or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Use discipline add to open the current ruleset discipline picker, or discipline add <name> to grant one directly.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
@@ -93,6 +94,7 @@ function Invoke-LWCoreShowHelpScreen {
         Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'In Book 3 and later, combat can attempt a knockout: edged weapons take -2 CS, while unarmed, Warhammer, Quarterstaff, and Mace do not.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'potion works with Healing Potion, Laumspur Potion, and Book 1 Laumspur Herb item names.' -TextColor 'Gray'
+        Write-LWBulletItem -Text 'From Book 6 onward, if DE Curing Option 3 was chosen and Herb Pouch is carried, potion can also be used during combat and enemy END loss is ignored for that round.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'potion now prefers Concentrated Laumspur first and restores 8 END when one is available.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'From Book 3 onward, if Alether is in your backpack, combat start can consume it before the fight to grant +4 Combat Skill for that combat only.' -TextColor 'Gray'
         Write-LWBulletItem -Text 'New Book 1 runs now seed the starting Axe, Meal, Map of Sommerlund, random Gold, and random monastery item automatically.' -TextColor 'Gray'
@@ -347,7 +349,7 @@ function Invoke-LWCoreCommand {
             'fight'       {
                 if ($parts.Count -gt 1) {
                     $fightSubcommand = $parts[1].ToLowerInvariant()
-                    if (@('round', 'next', 'auto', 'status', 'log', 'evade', 'stop') -contains $fightSubcommand) {
+                    if (@('round', 'next', 'potion', 'auto', 'status', 'log', 'evade', 'stop') -contains $fightSubcommand) {
                         Invoke-LWCombatCommand -Parts @('combat') + @($parts[1..($parts.Count - 1)])
                         return $null
                     }
