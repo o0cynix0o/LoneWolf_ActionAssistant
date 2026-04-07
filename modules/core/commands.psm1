@@ -91,7 +91,7 @@ function Invoke-LWCoreShowHelpScreen {
                 [pscustomobject]@{ Label = 'section 194'; Value = 'Move to section 194' }
                 [pscustomobject]@{ Label = 'combat Altan 28 50'; Value = 'Start a tracked fight against Altan' }
                 [pscustomobject]@{ Label = 'arrows -1'; Value = 'Spend one arrow from the quiver' }
-                [pscustomobject]@{ Label = 'load Cynix-book1.json'; Value = 'Load a save by name' }
+                [pscustomobject]@{ Label = 'load sample-save.json'; Value = 'Load a save by name' }
             )
         }
     )

@@ -401,7 +401,7 @@ function Show-LWLoadScreen {
 
     Write-LWRetroPanelHeader -Title 'Load Help' -AccentColor 'DarkYellow'
     Write-LWRetroPanelTwoColumnRow -LeftText 'load' -RightText 'load 2' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'load <path>' -RightText 'load Cynix-book1.json' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'load <path>' -RightText 'load sample-save.json' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
     Write-LWRetroPanelFooter
 }
 
