@@ -13875,6 +13875,9 @@ function Get-LWInventorySlotDisplayText {
     )
 
     $items = if ($null -eq $Items) { @(Get-LWInventoryItems -Type $Type) } else { @($Items) }
+    $items = @($items | Where-Object {
+            $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_)
+        })
     $capacity = Get-LWInventoryTypeCapacity -Type $Type
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
 
