@@ -141,14 +141,20 @@ function Write-LWRetroPanelTwoColumnRow {
         [string]$LeftColor = 'Gray',
         [string]$RightColor = 'Gray',
         [int]$Width = 64,
-        [int]$Gap = 3
+        [int]$Gap = 3,
+        [int]$LeftWidth = 0
     )
 
     $contentWidth = [Math]::Max(10, ($Width - 4))
-    $leftMinimum = 16
-    $rightMinimum = 12
-    $maxLeftWidth = [Math]::Max($leftMinimum, ($contentWidth - $Gap - $rightMinimum))
-    $leftWidth = [Math]::Max($leftMinimum, [Math]::Min(($LeftText.Length + 2), $maxLeftWidth))
+    if ($LeftWidth -gt 0) {
+        $leftWidth = [Math]::Min([Math]::Max(1, $LeftWidth), [Math]::Max(1, ($contentWidth - $Gap - 1)))
+    }
+    else {
+        $leftMinimum = 16
+        $rightMinimum = 12
+        $maxLeftWidth = [Math]::Max($leftMinimum, ($contentWidth - $Gap - $rightMinimum))
+        $leftWidth = [Math]::Max($leftMinimum, [Math]::Min(($LeftText.Length + 2), $maxLeftWidth))
+    }
     $rightWidth = $contentWidth - $Gap - $leftWidth
 
     $leftDisplay = Format-LWRetroPanelCellText -Text $LeftText -Width $leftWidth

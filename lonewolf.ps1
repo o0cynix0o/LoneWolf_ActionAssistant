@@ -10454,7 +10454,8 @@ function Show-LWDisciplines {
                     -LeftText ([string]$left.Text) `
                     -RightText $(if ($null -ne $right) { [string]$right.Text } else { '' }) `
                     -LeftColor ([string]$left.Color) `
-                    -RightColor $(if ($null -ne $right) { [string]$right.Color } else { 'Gray' })
+                    -RightColor $(if ($null -ne $right) { [string]$right.Color } else { 'Gray' }) `
+                    -LeftWidth 27
             }
             Write-LWRetroPanelFooter
         }
