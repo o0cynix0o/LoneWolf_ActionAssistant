@@ -254,11 +254,25 @@ Exit criteria:
 - Book `5` -> `6` carry-over flow works
 - existing Kai saves still load cleanly
 - validation passes in PowerShell 7 and Windows PowerShell 5.1
-- user-approved reduced validation checkpoint recorded on `2026-04-03`:
-  - targeted Book `6` validation passed in both shells
-  - direct Book `6` start and command-surface smoke passed
-  - `44` full PowerShell `7` Books `1-6` campaigns completed before the long rerun was stopped
-  - the larger long-run regression sweep can be resumed later if desired
+- validation meets the route-and-mode coverage standard in `docs/VALIDATION_POLICY.md`
+
+Completion note:
+
+- Magnakai / Book `6` implementation completed on `dev`
+- M2.7 closeout completed on `2026-04-07`
+- final closeout validation included:
+  - fresh-character full Books `1-6` campaigns in both shells on:
+    - `Story`
+    - `Easy`
+    - `Normal`
+    - `Hard`
+    - `Veteran`
+    - `Hard + Permadeath`
+  - synthetic `Cynix` Book `5` -> `6` route matrix:
+    - `20/20` pass in PowerShell `7`
+    - `20/20` pass in Windows PowerShell `5.1`
+  - current `Cynix` save/load/`-Load`/command-surface smoke in both shells
+  - explicit non-permadeath and permadeath failure coverage in both shells
 
 Reference:
 
@@ -375,7 +389,7 @@ Deliverables:
 
 Status:
 
-- `planned`
+- `completed`
 
 Goal:
 
@@ -386,10 +400,22 @@ Deliverables:
 - command-surface smoke
 - cross-shell validation
 - standalone Book `6` validation
-- user-approved reduced validation checkpoint with:
-  - targeted Book `6` validation in both shells
-  - direct Book `6` smoke
-  - `44` full PowerShell `7` Books `1-6` campaigns from the interrupted long sweep
+- full fresh-character campaign coverage through Books `1-6`
+- synthetic `Cynix` transition route matrix coverage
+- save/load/`-Load` and failure/permadeath smoke in both shells
+
+Checkpoint:
+
+- completed on `2026-04-07`
+- summary report:
+  - `testing/logs/M2_7_COMPLETION_SUMMARY_20260407.md`
+- supporting reports:
+  - `testing/logs/MODE_CAMPAIGN_VALIDATION_PS7.md`
+  - `testing/logs/MODE_CAMPAIGN_VALIDATION_PS51.md`
+  - `testing/logs/BOOK6_CYNIX_ROUTE_MATRIX_PS7.md`
+  - `testing/logs/BOOK6_CYNIX_ROUTE_MATRIX_PS51.md`
+  - `testing/logs/M2_7_FAILURE_AND_SMOKE_PS7.md`
+  - `testing/logs/M2_7_FAILURE_AND_SMOKE_PS51.md`
 
 ### M4 - Portable Distribution Packaging
 

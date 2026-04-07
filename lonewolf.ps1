@@ -11891,7 +11891,7 @@ function Test-LWAchievementSatisfied {
     $flags = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'Flags') -and $null -ne $EvaluationContext.Flags) { $EvaluationContext.Flags } else { $script:GameState.Achievements.ProgressFlags }
 
     switch ([string]$Definition.Id) {
-        'first_blood' { return ($runVictories.Count -ge 1) }
+        'first_blood' { return (@($runVictories).Count -ge 1) }
         'swift_blade' { return (@($runVictories | Where-Object { [int]$_.RoundCount -eq 1 }).Count -ge 1) }
         'untouchable' { return ([int]$flags.PerfectVictories -ge 1) }
         'against_the_odds' { return ([int]$flags.AgainstOddsVictories -ge 1) }
@@ -11899,7 +11899,7 @@ function Test-LWAchievementSatisfied {
         'giant_slayer' { return (@($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'EnemyCombatSkill') -and $null -ne $_.EnemyCombatSkill -and [int]$_.EnemyCombatSkill -ge 18 }).Count -ge 1) }
         'monster_hunter' { return (@($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'EnemyEnduranceMax') -and $null -ne $_.EnemyEnduranceMax -and [int]$_.EnemyEnduranceMax -ge 30 }).Count -ge 1) }
         'back_from_the_brink' { return ([int]$flags.BrinkVictories -ge 1) }
-        'kai_veteran' { return ($runVictories.Count -ge 10) }
+        'kai_veteran' { return (@($runVictories).Count -ge 10) }
         'weapon_master' { return ((Get-LWMaxWeaponVictoryCount) -ge 10) }
         'seasoned_fighter' { return ((Get-LWRunTotalRounds) -ge 25) }
         'endurance_duelist' { return (@($runEntries | Where-Object { [int]$_.RoundCount -ge 5 }).Count -ge 1) }
@@ -11927,7 +11927,7 @@ function Test-LWAchievementSatisfied {
         'wolf_of_sommerlund' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Defeats') -and [int]$_.Defeats -eq 0 }).Count -ge 1) }
         'iron_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 -and (Test-LWPropertyExists -Object $_ -Name 'RewindsUsed') -and [int]$_.RewindsUsed -eq 0 -and (Test-LWPropertyExists -Object $_ -Name 'ManualRecoveryShortcuts') -and [int]$_.ManualRecoveryShortcuts -eq 0 }).Count -ge 1) }
         'gentle_path' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Story' }).Count -ge 1) }
-        'all_too_easy' { return ((Get-LWCurrentDifficulty) -eq 'Story' -and $runVictories.Count -ge 1) }
+        'all_too_easy' { return ((Get-LWCurrentDifficulty) -eq 'Story' -and @($runVictories).Count -ge 1) }
         'bedtime_tale' { return (@($completedBookSummaries | Where-Object { [int]$_.BookNumber -eq 1 -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Story' }).Count -ge 1) }
         'hard_road' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' }).Count -ge 1) }
         'lean_healing' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' -and (Test-LWPropertyExists -Object $_ -Name 'HealingEnduranceRestored') -and [int]$_.HealingEnduranceRestored -ge 10 }).Count -ge 1) }
@@ -12018,7 +12018,7 @@ function Get-LWAchievementProgressText {
     $runVictories = @(Get-LWRunVictoryEntries)
 
     switch ([string]$Definition.Id) {
-        'kai_veteran' { return ("{0}/10 wins" -f $runVictories.Count) }
+        'kai_veteran' { return ("{0}/10 wins" -f @($runVictories).Count) }
         'weapon_master' { return ("{0}/10 wins with one weapon" -f (Get-LWMaxWeaponVictoryCount)) }
         'seasoned_fighter' { return ("{0}/25 rounds" -f (Get-LWRunTotalRounds)) }
         'giant_slayer' { return ("best defeated CS {0}/18" -f $(if ($null -ne $currentSummary) { [int]$currentSummary.HighestEnemyCombatSkillDefeated } else { 0 })) }

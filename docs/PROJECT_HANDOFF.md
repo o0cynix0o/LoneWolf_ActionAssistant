@@ -40,6 +40,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
 - M1 modular refactor is complete and pushed
 - M2 Magnakai / Book `6` support is complete on `dev`
+- M2.7 validation closeout is complete on `dev` under the route-and-mode validation bar
 
 ## Main Repo Files
 
@@ -292,6 +293,7 @@ Local reports:
 - `testing/logs/BOOK6_BUILD_VALIDATION.md`
 - `testing/logs/BOOK6_ROUTE_STRATEGY_REPORT.md`
 - `testing/logs/M2_7_COMPLETION_SUMMARY_20260403.md`
+- `testing/logs/M2_7_COMPLETION_SUMMARY_20260407.md`
 
 ## Existing Playtest Coverage
 
@@ -303,6 +305,9 @@ Local reports already exist for:
 - Book 3 sandbox and route sweeps
 - Book 5 targeted validation and Books 1-5 campaign smoke
 - Book 6 targeted validation and Magnakai transition smoke on `dev`
+- fresh-character Books `1-6` full-campaign mode coverage
+- synthetic `Cynix` Book `5` -> `6` route-matrix coverage
+- current `Cynix` save/load/failure/permadeath smoke
 
 Key files:
 
@@ -322,7 +327,24 @@ Latest large-scale validation:
 - no campaign failures in the March 27 full validation sweep
 - additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
 - Book 6 targeted validation passed in both shells on `dev`
-- an interrupted long-run PowerShell 7 Books `1-6` validator completed `44` full campaigns before the user approved moving on
+- fresh-character Books `1-6` campaigns now pass in both shells on:
+  - `Story`
+  - `Easy`
+  - `Normal`
+  - `Hard`
+  - `Veteran`
+  - `Hard + Permadeath`
+- synthetic `Cynix` Book `5` -> `6` route matrix now passes in both shells:
+  - `20/20` in PowerShell `7`
+  - `20/20` in Windows PowerShell `5.1`
+- current live-style `Cynix` smoke now passes in both shells:
+  - manual load
+  - startup `-Load`
+  - command-surface smoke
+  - non-permadeath failure
+  - permadeath failure
+- startup `-Load` under the redirected harness still does not exit cleanly on its own, but load/render succeeds, no stderr is emitted, and the harness forces cleanup after verification
+- the earlier interrupted long-run PowerShell `7` validator that completed `44` full campaigns remains a useful historical note, but is no longer the main M2.7 closeout evidence
 
 ## Validation Standard
 
