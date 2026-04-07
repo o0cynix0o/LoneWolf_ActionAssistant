@@ -13,7 +13,7 @@ Status values:
 
 Current top milestone focus:
 
-- `in_progress` `M4` Portable Distribution Packaging
+- `completed` `M4` Portable Distribution Packaging
 
 ## Milestone List
 
@@ -421,7 +421,7 @@ Checkpoint:
 
 Status:
 
-- `in_progress`
+- `completed`
 
 Goal:
 
@@ -430,6 +430,7 @@ Goal:
 Deliverables:
 
 - repo-tracked release builder
+- repo-tracked package validator
 - generated launcher files in the portable package
 - package manifest
 - packaging workflow doc
@@ -444,11 +445,15 @@ Exit criteria:
 
 Local checkpoint:
 
-- repo-tracked builder planned at `build-release.ps1`
+- repo-tracked builder active at `build-release.ps1`
+- repo-tracked validator active at `validate-release.ps1`
 - packaging workflow tracked in `docs/DISTRIBUTION_PACKAGING_PLAN.md`
 - keep generated packages local in `testing/releases/`
-- local package build + package smoke validation passed on 2026-03-27
-- see `testing/logs/PACKAGING_PREP_VALIDATION_20260327.md`
+- initial package build + smoke validation passed on `2026-03-27`
+- final M4 closeout validation passed on `2026-04-07`
+- closeout reports:
+  - `testing/logs/PACKAGING_PREP_VALIDATION_20260327.md`
+  - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
 
 ### M3 - UX Polish Pass
 

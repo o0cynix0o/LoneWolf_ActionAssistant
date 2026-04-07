@@ -112,9 +112,13 @@ foreach ($dir in $directories) {
 
 Copy-LWRequiredFile -Source (Join-Path $repoRoot 'lonewolf.ps1') -Destination (Join-Path $stagingRoot 'lonewolf.ps1')
 Copy-LWRequiredFile -Source (Join-Path $repoRoot 'README.md') -Destination (Join-Path $stagingRoot 'README.md')
+Copy-LWRequiredFile -Source (Join-Path $repoRoot 'CHANGELOG.md') -Destination (Join-Path $stagingRoot 'CHANGELOG.md')
 
 foreach ($relativePath in @(
         'data\kai-disciplines.json',
+        'data\magnakai-disciplines.json',
+        'data\magnakai-ranks.json',
+        'data\magnakai-lore-circles.json',
         'data\weaponskill-map.json',
         'data\crt.template.json'
     )) {
@@ -164,6 +168,7 @@ Quick start:
 2. Or run .\lonewolf.ps1 from PowerShell
 
 Notes:
+- This package supports Kai Books 1-5 and Magnakai Book 6.
 - This portable package keeps saves in the local saves folder beside the app.
 - DataFile combat mode requires data\crt.json. Included: $includedCrt
 "@
@@ -175,8 +180,8 @@ $manifest = [pscustomobject]@{
     BuiltOn            = (Get-Date).ToString('o')
     GitHead            = $gitHead
     IncludedCrtData    = $includedCrt
-    RequiredRootFiles  = @('lonewolf.ps1', 'README.md', 'Start-LoneWolf.cmd', 'Start-LoneWolf.ps1', 'PACKAGE_README.txt')
-    RequiredDataFiles  = @('kai-disciplines.json', 'weaponskill-map.json', 'crt.template.json') + $(if ($includedCrt) { @('crt.json') } else { @() })
+    RequiredRootFiles  = @('lonewolf.ps1', 'README.md', 'CHANGELOG.md', 'Start-LoneWolf.cmd', 'Start-LoneWolf.ps1', 'PACKAGE_README.txt')
+    RequiredDataFiles  = @('kai-disciplines.json', 'magnakai-disciplines.json', 'magnakai-ranks.json', 'magnakai-lore-circles.json', 'weaponskill-map.json', 'crt.template.json') + $(if ($includedCrt) { @('crt.json') } else { @() })
     RequiredDirs       = @('data', 'modules', 'saves')
 }
 $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stagingRoot 'release-manifest.json') -Encoding UTF8

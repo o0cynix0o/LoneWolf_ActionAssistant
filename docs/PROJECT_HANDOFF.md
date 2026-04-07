@@ -42,6 +42,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M2 Magnakai / Book `6` support is complete on `dev`
 - M2.7 validation closeout is complete on `dev` under the route-and-mode validation bar
 - M3 UX polish is complete on `dev`
+- M4 portable packaging workflow is complete on `dev`
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
@@ -83,6 +84,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Portable-release packaging plan and workflow
 - `build-release.ps1`
   Local portable release builder that assembles a clean distributable package under `testing/releases/`
+- `validate-release.ps1`
+  Local portable package validator that rebuilds, extracts, and smoke-tests a disposable package copy in both shells
 - `modules/core/`
   Core-engine modules, including state/save/command/combat/ruleset slices
 - `modules/rulesets/kai/`
@@ -424,8 +427,11 @@ Local packaging prep:
 
 - portable packaging workflow is now tracked in `docs/DISTRIBUTION_PACKAGING_PLAN.md`
 - local release builder lives at `build-release.ps1`
+- local release validator lives at `validate-release.ps1`
 - release artifacts should stay local under `testing/releases/` until intentionally published
-- local packaging validation is recorded in `testing/logs/PACKAGING_PREP_VALIDATION_20260327.md`
+- local packaging validation is recorded in:
+  - `testing/logs/PACKAGING_PREP_VALIDATION_20260327.md`
+  - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
 
 ## Standard Named Workflows
 

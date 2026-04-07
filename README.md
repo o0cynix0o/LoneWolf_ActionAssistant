@@ -122,6 +122,10 @@ This project is built to act like a digital Action Chart and play aid, not a rep
   Template CRT schema
 - `data/last-save.txt`
   Last-used save path cache created by the app
+- `build-release.ps1`
+  Portable release builder
+- `validate-release.ps1`
+  Portable package validator that rebuilds, extracts, and smoke-tests a disposable copy
 - `saves/`
   JSON save files created during play
 
@@ -150,6 +154,12 @@ Build a local portable package from the repo root with:
 
 ```powershell
 .\build-release.ps1
+```
+
+Validate the portable package with a disposable extracted-copy smoke pass:
+
+```powershell
+.\validate-release.ps1 -Rebuild
 ```
 
 Default output:

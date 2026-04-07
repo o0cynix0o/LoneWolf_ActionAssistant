@@ -24,10 +24,14 @@ Ship:
 - `lonewolf.ps1`
 - `modules/`
 - `data/kai-disciplines.json`
+- `data/magnakai-disciplines.json`
+- `data/magnakai-ranks.json`
+- `data/magnakai-lore-circles.json`
 - `data/weaponskill-map.json`
 - `data/crt.template.json`
 - `data/crt.json` when available
 - `README.md`
+- `CHANGELOG.md`
 - generated launchers:
   - `Start-LoneWolf.cmd`
   - `Start-LoneWolf.ps1`
@@ -47,6 +51,10 @@ Do not ship:
 The repo-tracked release builder is:
 
 - `build-release.ps1`
+
+The repo-tracked package validator is:
+
+- `validate-release.ps1`
 
 Default output:
 
@@ -80,13 +88,27 @@ That should:
 
 Before any push/release:
 
-1. build the portable package locally
-2. validate that the staged copy can:
+1. rebuild the portable package locally
+2. validate the zip on a disposable extracted copy so the real staging folder stays clean
+3. confirm that the real staging folder still does not contain:
+   - `data/last-save.txt`
+   - `data/error.log`
+4. validate that the extracted copy can:
    - initialize data
    - load modules
+   - load a save
    - render `help`
-   - start the app cleanly
-3. keep validation notes in `testing/logs/`
+   - render the main Book `6` screens
+   - start cleanly through:
+     - `Start-LoneWolf.ps1`
+     - `Start-LoneWolf.cmd`
+5. keep validation notes in `testing/logs/`
+
+Preferred command:
+
+```powershell
+.\validate-release.ps1 -Rebuild
+```
 
 ## Packaging Milestone
 
