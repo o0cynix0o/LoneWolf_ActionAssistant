@@ -41,17 +41,31 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M1 modular refactor is complete and pushed
 - M2 Magnakai / Book `6` support is complete on `dev`
 - M2.7 validation closeout is complete on `dev` under the route-and-mode validation bar
-- M3 UX polish is now active on `dev`
+- M3 UX polish is complete on `dev`
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
   - `docs/M3_UI_STYLE_GUIDE.md`
-- first M3 implementation slice is now live on `dev`:
-  - main banner
+- M3 retro screen refresh is now live across the app on `dev`:
+  - welcome
+  - load
+  - help
+  - modes
   - main character sheet
-  - disciplines panel
-  - lore circles panel
-  - inventory summary panel
+  - inventory
+  - disciplines
+  - stats
+  - campaign
+  - achievements
+  - notes
+  - history
+  - combat
+  - combat log
+  - death
+  - book complete
+- M3 validation passed in both shells:
+  - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
+  - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
 
 ## Main Repo Files
 

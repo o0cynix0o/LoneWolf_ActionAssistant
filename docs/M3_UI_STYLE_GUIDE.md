@@ -129,6 +129,8 @@ Rules:
 
 - do not force two columns when one side becomes much longer than the other
 - if a row becomes awkward, fall back to wrapped single-column text
+- when a panel uses slot-style `x2` rows, the left and right columns must start at fixed positions for every row
+- do not let the second column drift based on the content length of the first column
 
 ### 5. Main Sheet Density
 
@@ -139,8 +141,10 @@ Keep on the main sheet:
 - name
 - ruleset
 - current book
+- current section
 - rank
 - core stats
+- run integrity
 - current disciplines
 - current containers/inventory summary
 - active Book `6+` systems like Lore Circles or Herb Pouch when relevant
@@ -153,6 +157,8 @@ Move off the main sheet:
 - route recap
 
 `Completed Books` belongs on the `Campaign` screen, not the main sheet.
+
+`Run Integrity` stays on the main sheet at all times.
 
 ### 6. Information Priority
 
@@ -268,3 +274,33 @@ M3 should only be marked complete when:
 - main sheet readability is improved
 - no major wrapping regressions appear in PowerShell `7` or Windows PowerShell `5.1`
 - performance is not meaningfully worse
+
+## Completion Note
+
+M3 completed on:
+
+- `2026-04-07`
+
+Completion validation:
+
+- `testing/logs/M3_SCREEN_RENDER_PW7.txt`
+- `testing/logs/M3_SCREEN_RENDER_PS51.txt`
+
+The approved retro restyle now covers:
+
+- welcome
+- load
+- help
+- modes
+- main character sheet
+- inventory
+- disciplines
+- stats
+- campaign
+- achievements
+- notes
+- history
+- combat
+- combat log
+- death
+- book complete

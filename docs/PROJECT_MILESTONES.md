@@ -11,9 +11,9 @@ Status values:
 
 ## Current Milestone Focus
 
-Current top architectural milestone:
+Current top milestone focus:
 
-- `completed` `M1` Modular Engine Refactor
+- `in_progress` `M4` Portable Distribution Packaging
 
 ## Milestone List
 
@@ -454,7 +454,7 @@ Local checkpoint:
 
 Status:
 
-- `in_progress`
+- `completed`
 
 Goal:
 
@@ -476,18 +476,31 @@ Deliverables:
 - refreshed inventory/combat/campaign/achievement screens
 - consistent panel and border language across the app
 
-Current checkpoint:
+Completion checkpoint:
 
-- Phase 1 style selection completed on `2026-04-07`
-- Phase 2 shared style rules documented on `2026-04-07`
-- Slice 1 implemented on `2026-04-07`:
-  - main banner
-  - character sheet
-  - disciplines panel
-  - lore circles panel
-  - inventory summary panel
-- local validation note:
-  - `testing/logs/M3_SLICE1_MAIN_SHEET_VALIDATION_20260407.md`
+- completed on `2026-04-07`
+- approved visual standards locked into:
+  - `docs/M3_UI_STYLE_GUIDE.md`
+- shared retro screen refresh now covers:
+  - welcome
+  - load
+  - help
+  - modes
+  - main character sheet
+  - inventory
+  - disciplines
+  - stats
+  - campaign
+  - achievements
+  - notes
+  - history
+  - combat
+  - combat log
+  - death
+  - book complete
+- validation passed in PowerShell `7` and Windows PowerShell `5.1`:
+  - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
+  - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
 
 ## Tracking Rules
 

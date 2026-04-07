@@ -24,91 +24,27 @@ function Invoke-LWCoreShowHelpScreen {
 
     Set-LWModuleContext -Context $Context
 
-    Write-LWPanelHeader -Title 'Commands' -AccentColor 'Cyan'
-        Write-LWKeyValue -Label 'new' -Value 'Create a new Lone Wolf character' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'newrun' -Value 'Start a fresh run on the same profile and keep achievements' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'sheet' -Value 'Show character sheet' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'modes' -Value 'Show run mode rules and locked settings' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'difficulty [name]' -Value 'Show the locked run difficulty' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'permadeath [on|off]' -Value 'Show the locked permadeath setting' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'inv' -Value 'Show inventory slots' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'disciplines' -Value 'Show disciplines' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'discipline add [name]' -Value 'Add a missed discipline reward for the active ruleset' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'notes' -Value 'Show notes' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'note [text]' -Value 'Add a note' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'note remove [n]' -Value 'Remove a note by number' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'history' -Value 'Show combat history grouped by book' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'stats [combat|survival]' -Value 'Show live current-book stats' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'campaign [view]' -Value 'Show whole-run overview, books, combat, survival, or milestones' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'achievements [view]' -Value 'Show unlocked, locked, recent, progress, or planned achievements' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'roll' -Value 'Roll the random number table (0-9)' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'section [n]' -Value 'Move to a new section' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'healcheck' -Value 'Apply Healing for a non-combat section' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'add [type name [qty]]' -Value 'Add inventory item (weapon/backpack/herbpouch/special)' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'drop [type slot|all]' -Value 'Remove inventory item by slot or clear a section' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'recover [type|all]' -Value 'Restore stashed gear from a bulk drop' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'gold [delta]' -Value 'Gain or spend Gold Crowns' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'meal' -Value 'Resolve an eat instruction' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'potion' -Value 'Use a Healing or Laumspur Potion outside combat' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'end [delta]' -Value 'Adjust current Endurance only' -ValueColor 'Gray'
-            Write-LWKeyValue -Label 'die [cause]' -Value 'Record an instant death and open rewind options' -ValueColor 'Gray'
-            Write-LWKeyValue -Label 'fail [cause]' -Value 'Record a failed mission and open rewind options' -ValueColor 'Gray'
-            Write-LWKeyValue -Label 'rewind [n]' -Value 'After death or failure, return to an earlier safe section' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat start' -Value 'Start combat' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat round' -Value 'Resolve one combat round' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat next' -Value 'Alias for combat round' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat potion' -Value 'Book 6 Herb Pouch: drink a potion instead of attacking' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat auto' -Value 'Resolve combat until it ends' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat status' -Value 'Show combat status' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat log [n|all|book n]' -Value 'Show the current, last, or archived combat log' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat evade' -Value 'Evade if allowed' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'combat stop' -Value 'Stop and archive current combat' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'fight [enemy cs end]' -Value 'Start combat, then auto-resolve it' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'mode [manual|data]' -Value 'Switch combat mode' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'complete' -Value 'Mark current book complete and advance to the next supported book' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'setcs' -Value 'Manually set base Combat Skill' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'setend [current]' -Value 'Manually set current Endurance only' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'setmaxend [max]' -Value 'Manually set maximum Endurance' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'save' -Value 'Save to JSON' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'load [n|path]' -Value 'Load from JSON' -ValueColor 'Gray'
-        Write-LWKeyValue -Label 'quit' -Value 'Exit the terminal' -ValueColor 'Gray'
-        Write-LWPanelHeader -Title 'Aliases' -AccentColor 'Magenta'
-        Write-LWBulletItem -Text 'fight is a quick combat alias: it starts combat and auto-resolves it in one command.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'fight status/log/auto/round/next/potion/evade/stop mirror the matching combat subcommands.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'inventory is the same as inv.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'combat next is the same as combat round.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'mode manual maps to ManualCRT, and mode data maps to DataFile.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'exit is the same as quit.' -TextColor 'Gray'
-        Write-LWPanelHeader -Title 'Tips' -AccentColor 'DarkYellow'
-        Write-LWBulletItem -Text 'While combat is active, pressing Enter advances one round.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Quick start syntax: combat start Giak 12 10' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use inv to see exact weapon, backpack, Herb Pouch, and special-item slots, including empty spaces.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use drop backpack 2, drop herbpouch 1, or drop weapon 1 to remove by slot number, or drop backpack all to clear a section.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Bulk drop stashes that section''s contents, so recover backpack or recover all can restore them later.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use discipline add to open the current ruleset discipline picker, or discipline add <name> to grant one directly.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use end -1 for section damage and end +1 for simple recovery without touching max END.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Shield and Silver Helm each add +2 Combat Skill automatically; Chainmail Waistcoat adds +4 END, Padded Leather Waistcoat adds +2 END, and Helmet adds +2 END unless Silver Helm is also carried.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Bone Sword is treated as a weapon and adds +1 Combat Skill in Book 3 / Kalte only; Broadsword +1 adds +1 Combat Skill and still counts as a Broadsword; Drodarin War Hammer adds +1 Combat Skill and counts as a Warhammer; Captain D''Val''s Sword adds +1 Combat Skill and counts as a Sword; Solnaris adds +2 Combat Skill and counts as a Sword or Broadsword for Weaponskill.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'From Book 2 onward, Sommerswerd is a weapon-like Special Item: +8 Combat Skill in combat, or +10 total with Sword, Short Sword, or Broadsword Weaponskill.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'When Sommerswerd is active against undead foes, their END loss is doubled automatically.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'If an enemy is using Mindforce, the app can apply its extra END loss each round and Mindshield blocks it automatically.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'In Book 3 and later, combat can attempt a knockout: edged weapons take -2 CS, while unarmed, Warhammer, Quarterstaff, and Mace do not.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'potion works with Healing Potion, Laumspur Potion, and Book 1 Laumspur Herb item names.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'From Book 6 onward, if DE Curing Option 3 was chosen and Herb Pouch is carried, potion can also be used during combat and enemy END loss is ignored for that round.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'potion now prefers Concentrated Laumspur first and restores 8 END when one is available.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'From Book 3 onward, if Alether is in your backpack, combat start can consume it before the fight to grant +4 Combat Skill for that combat only.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'New Book 1 runs now seed the starting Axe, Meal, Map of Sommerlund, random Gold, and random monastery item automatically.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Book 1 section 170 now handles the Burrowcrawler''s torch darkness rule and Mindblast immunity automatically.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use die for instant-death sections and fail for dead-end story failures. Then use rewind or rewind 2 to go back to earlier safe sections.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'history and combat log all now group archived fights by book for easier browsing.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use combat log book 2 to review archived fights from one book only.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use campaign to review the whole run, or campaign books/combat/survival/milestones for focused views.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use achievements, achievements progress, or achievements planned to browse the new achievement system.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Book 3 now has hidden story achievements tied to specific sections and discoveries, including the Diamond from section 218.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Use modes to review Story, Easy, Normal, Hard, Veteran, and Permadeath before starting a run.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'Difficulty is locked for the whole run, and Permadeath can only be chosen at run start.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'ManualCRT gives you the ratio and roll, then asks for losses from your own CRT.' -TextColor 'Gray'
-        Write-LWBulletItem -Text 'DataFile reads those losses from data/crt.json when the file is populated.' -TextColor 'Gray'
+    Write-LWRetroPanelHeader -Title 'Core Commands' -AccentColor 'Cyan'
+    Write-LWRetroPanelTwoColumnRow -LeftText 'sheet' -RightText 'inv' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'disciplines' -RightText 'stats' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'campaign' -RightText 'achievements' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'history' -RightText 'notes' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'save' -RightText 'load' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'help' -RightText 'quit' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Play Commands' -AccentColor 'DarkYellow'
+    Write-LWRetroPanelTwoColumnRow -LeftText 'section <n>' -RightText 'combat' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'potion' -RightText 'eat / meal' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'note <text>' -RightText 'roll' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'add / drop / recover' -RightText 'gold / end' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Run Commands' -AccentColor 'Magenta'
+    Write-LWRetroPanelTwoColumnRow -LeftText 'new' -RightText 'newrun' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'modes' -RightText 'rewind' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'fail / die' -RightText 'complete' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelFooter
 }
 
 function Invoke-LWCoreCommand {
