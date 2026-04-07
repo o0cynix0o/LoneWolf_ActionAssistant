@@ -178,7 +178,7 @@ Then inspect:
 For one-shot non-interactive startup capture, redirect all output instead:
 
 ```powershell
-.\lonewolf.ps1 -Load 'C:\Scripts\Lone Wolf\saves\Cynix-book1.json' *> 'C:\Scripts\Lone Wolf\testing\logs\live-run.txt'
+.\lonewolf.ps1 -Load 'C:\Scripts\Lone Wolf\saves\sample-save.json' *> 'C:\Scripts\Lone Wolf\testing\logs\live-run.txt'
 ```
 
 ## GitHub Tracking
@@ -333,8 +333,8 @@ Local reports already exist for:
 - Book 5 targeted validation and Books 1-5 campaign smoke
 - Book 6 targeted validation and Magnakai transition smoke on `dev`
 - fresh-character Books `1-6` full-campaign mode coverage
-- synthetic `Cynix` Book `5` -> `6` route-matrix coverage
-- current `Cynix` save/load/failure/permadeath smoke
+- synthetic sample Book `5` -> `6` route-matrix coverage
+- current sample save/load/failure/permadeath smoke
 
 Key files:
 
@@ -361,10 +361,10 @@ Latest large-scale validation:
   - `Hard`
   - `Veteran`
   - `Hard + Permadeath`
-- synthetic `Cynix` Book `5` -> `6` route matrix now passes in both shells:
+- synthetic sample Book `5` -> `6` route matrix now passes in both shells:
   - `20/20` in PowerShell `7`
   - `20/20` in Windows PowerShell `5.1`
-- current live-style `Cynix` smoke now passes in both shells:
+- current live-style sample save smoke now passes in both shells:
   - manual load
   - startup `-Load`
   - command-surface smoke

@@ -268,10 +268,10 @@ Completion note:
     - `Hard`
     - `Veteran`
     - `Hard + Permadeath`
-  - synthetic `Cynix` Book `5` -> `6` route matrix:
+  - synthetic sample Book `5` -> `6` route matrix:
     - `20/20` pass in PowerShell `7`
     - `20/20` pass in Windows PowerShell `5.1`
-  - current `Cynix` save/load/`-Load`/command-surface smoke in both shells
+  - current sample save/load/`-Load`/command-surface smoke in both shells
   - explicit non-permadeath and permadeath failure coverage in both shells
 
 Reference:
@@ -401,7 +401,7 @@ Deliverables:
 - cross-shell validation
 - standalone Book `6` validation
 - full fresh-character campaign coverage through Books `1-6`
-- synthetic `Cynix` transition route matrix coverage
+- synthetic sample transition route matrix coverage
 - save/load/`-Load` and failure/permadeath smoke in both shells
 
 Checkpoint:

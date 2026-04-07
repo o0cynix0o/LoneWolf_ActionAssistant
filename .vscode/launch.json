@@ -26,7 +26,7 @@
       "id": "lwSavePath",
       "type": "promptString",
       "description": "Absolute path to the save file to auto-load",
-      "default": "C:\\Scripts\\Lone Wolf\\saves\\Cynix-book1.json"
+      "default": "C:\\Scripts\\Lone Wolf\\saves\\sample-save.json"
     }
   ]
 }

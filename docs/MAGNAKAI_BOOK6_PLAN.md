@@ -261,10 +261,10 @@ Current completion note:
   - `Hard`
   - `Veteran`
   - `Hard + Permadeath`
-- synthetic `Cynix` Book `5` -> `6` route matrix passed:
+- synthetic sample Book `5` -> `6` route matrix passed:
   - `20/20` in PowerShell `7`
   - `20/20` in Windows PowerShell `5.1`
-- current `Cynix` save/load/`-Load`/command-surface smoke passed in both shells
+- current sample save/load/`-Load`/command-surface smoke passed in both shells
 - explicit non-permadeath and permadeath failure coverage passed in both shells
 - summary:
   - `testing/logs/M2_7_COMPLETION_SUMMARY_20260407.md`
@@ -375,7 +375,7 @@ Sheet design goals:
 - PowerShell `5.1`
 - PowerShell `7`
 - Books `1-6` fresh-character campaign testing
-- synthetic `Cynix` Book `5` -> `6` route matrix testing
+- synthetic sample Book `5` -> `6` route matrix testing
 - route-and-mode validation coverage defined in `docs/VALIDATION_POLICY.md`
 - summary:
   - `testing/logs/M2_7_COMPLETION_SUMMARY_20260407.md`
