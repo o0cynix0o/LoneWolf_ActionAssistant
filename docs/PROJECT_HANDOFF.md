@@ -162,7 +162,7 @@ When a user sees a fast-scrolling VS Code or terminal error that is hard to past
 Recommended pattern:
 
 ```powershell
-Start-Transcript -Path 'C:\Scripts\Lone Wolf\testing\logs\live-terminal.txt' -Force
+Start-Transcript -Path '.\testing\logs\live-terminal.txt' -Force
 ```
 
 Reproduce the issue, then stop capture:
@@ -178,7 +178,7 @@ Then inspect:
 For one-shot non-interactive startup capture, redirect all output instead:
 
 ```powershell
-.\lonewolf.ps1 -Load 'C:\Scripts\Lone Wolf\saves\sample-save.json' *> 'C:\Scripts\Lone Wolf\testing\logs\live-run.txt'
+.\lonewolf.ps1 -Load '.\saves\sample-save.json' *> '.\testing\logs\live-run.txt'
 ```
 
 ## GitHub Tracking

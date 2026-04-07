@@ -22,7 +22,7 @@ Keep the player's real run untouched unless the user explicitly asks for a save 
 For live terminal debugging, prefer transcript capture when output scrolls too fast to read:
 
 ```powershell
-Start-Transcript -Path 'C:\Scripts\Lone Wolf\testing\logs\live-terminal.txt' -Force
+Start-Transcript -Path '.\testing\logs\live-terminal.txt' -Force
 ```
 
 Reproduce the issue, then stop capture:
