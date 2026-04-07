@@ -24,28 +24,85 @@ function Invoke-LWCoreShowHelpScreen {
 
     Set-LWModuleContext -Context $Context
 
-    Write-LWRetroPanelHeader -Title 'Core Commands' -AccentColor 'Cyan'
-    Write-LWRetroPanelTwoColumnRow -LeftText 'sheet' -RightText 'inv' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'disciplines' -RightText 'stats' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'campaign' -RightText 'achievements' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'history' -RightText 'notes' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'save' -RightText 'load' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'help' -RightText 'quit' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelFooter
+    $panelWidth = 74
+    $labelWidth = 22
+    $panels = @(
+        [pscustomobject]@{
+            Title = 'Navigation'
+            Color = 'Cyan'
+            Rows  = @(
+                [pscustomobject]@{ Label = 'sheet'; Value = 'Main character sheet and live state' }
+                [pscustomobject]@{ Label = 'inv'; Value = 'Inventory, slots, containers, and storage' }
+                [pscustomobject]@{ Label = 'disciplines'; Value = 'Kai or Magnakai discipline view' }
+                [pscustomobject]@{ Label = 'stats'; Value = 'Run stats and current-book numbers' }
+                [pscustomobject]@{ Label = 'campaign'; Value = 'Book progress and whole-run overview' }
+                [pscustomobject]@{ Label = 'achievements'; Value = 'Unlocked, locked, recent, and progress views' }
+                [pscustomobject]@{ Label = 'history'; Value = 'Recent events and archived fights' }
+                [pscustomobject]@{ Label = 'notes'; Value = 'Your saved reminders for the run' }
+            )
+        }
+        [pscustomobject]@{
+            Title = 'Play And Inventory'
+            Color = 'DarkYellow'
+            Rows  = @(
+                [pscustomobject]@{ Label = 'section <n>'; Value = 'Move to the section you are reading' }
+                [pscustomobject]@{ Label = 'roll'; Value = 'Run the current section random helper' }
+                [pscustomobject]@{ Label = 'note <text>'; Value = 'Add a short reminder' }
+                [pscustomobject]@{ Label = 'potion'; Value = 'Use a healing item outside combat' }
+                [pscustomobject]@{ Label = 'meal / eat'; Value = 'Consume a meal when required' }
+                [pscustomobject]@{ Label = 'add / drop'; Value = 'Add or remove carried items' }
+                [pscustomobject]@{ Label = 'recover'; Value = 'Restore stashed gear from bulk drop' }
+                [pscustomobject]@{ Label = 'gold / end'; Value = 'Adjust Gold Crowns or current END' }
+                [pscustomobject]@{ Label = 'arrows +/-n'; Value = 'Spend or refill quiver arrows' }
+            )
+        }
+        [pscustomobject]@{
+            Title = 'Combat'
+            Color = 'DarkRed'
+            Rows  = @(
+                [pscustomobject]@{ Label = 'combat <enemy cs end>'; Value = 'Start a tracked combat quickly' }
+                [pscustomobject]@{ Label = 'combat'; Value = 'Show the active combat screen or setup' }
+                [pscustomobject]@{ Label = 'combat round'; Value = 'Resolve one combat round' }
+                [pscustomobject]@{ Label = 'combat auto'; Value = 'Run combat until it ends' }
+                [pscustomobject]@{ Label = 'combat evade'; Value = 'Attempt to evade if allowed' }
+                [pscustomobject]@{ Label = 'combat log'; Value = 'Review current or archived fight details' }
+                [pscustomobject]@{ Label = 'fight <enemy cs end>'; Value = 'Quick-start combat and auto-resolve it' }
+                [pscustomobject]@{ Label = 'mode manual|data'; Value = 'Switch combat between CRT and data modes' }
+            )
+        }
+        [pscustomobject]@{
+            Title = 'Run And Recovery'
+            Color = 'Magenta'
+            Rows  = @(
+                [pscustomobject]@{ Label = 'new'; Value = 'Create a new character and run' }
+                [pscustomobject]@{ Label = 'newrun'; Value = 'Restart the run, keep character progress' }
+                [pscustomobject]@{ Label = 'save / load'; Value = 'Write or open a save file' }
+                [pscustomobject]@{ Label = 'modes'; Value = 'Review difficulty and permadeath rules' }
+                [pscustomobject]@{ Label = 'rewind [n]'; Value = 'Go back after death or failure' }
+                [pscustomobject]@{ Label = 'fail / die'; Value = 'Record a terminal result and open rewind' }
+                [pscustomobject]@{ Label = 'complete'; Value = 'Finish the current book and transition' }
+                [pscustomobject]@{ Label = 'quit'; Value = 'Leave the app' }
+            )
+        }
+        [pscustomobject]@{
+            Title = 'Quick Examples'
+            Color = 'Green'
+            Rows  = @(
+                [pscustomobject]@{ Label = 'section 194'; Value = 'Move to section 194' }
+                [pscustomobject]@{ Label = 'combat Altan 28 50'; Value = 'Start a tracked fight against Altan' }
+                [pscustomobject]@{ Label = 'arrows -1'; Value = 'Spend one arrow from the quiver' }
+                [pscustomobject]@{ Label = 'load Cynix-book1.json'; Value = 'Load a save by name' }
+            )
+        }
+    )
 
-    Write-LWRetroPanelHeader -Title 'Play Commands' -AccentColor 'DarkYellow'
-    Write-LWRetroPanelTwoColumnRow -LeftText 'section <n>' -RightText 'combat' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'potion' -RightText 'eat / meal' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'note <text>' -RightText 'roll' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'add / drop / recover' -RightText 'gold / end' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'arrows +/-n' -RightText '' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelFooter
-
-    Write-LWRetroPanelHeader -Title 'Run Commands' -AccentColor 'Magenta'
-    Write-LWRetroPanelTwoColumnRow -LeftText 'new' -RightText 'newrun' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'modes' -RightText 'rewind' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'fail / die' -RightText 'complete' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelFooter
+    foreach ($panel in $panels) {
+        Write-LWRetroPanelHeader -Title ([string]$panel.Title) -AccentColor ([string]$panel.Color) -Width $panelWidth
+        foreach ($row in @($panel.Rows)) {
+            Write-LWRetroPanelKeyValueRow -Label ([string]$row.Label) -Value ([string]$row.Value) -ValueColor 'Gray' -LabelWidth $labelWidth -Width $panelWidth
+        }
+        Write-LWRetroPanelFooter -Width $panelWidth
+    }
 }
 
 function Invoke-LWCoreCommand {
