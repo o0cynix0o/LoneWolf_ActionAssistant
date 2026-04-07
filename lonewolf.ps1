@@ -76,6 +76,8 @@ $script:LWErrorLogFile = $script:LWBootstrap.ErrorLogFile
 $script:GameState = $null
 $script:GameData = $null
 $script:LWAchievementDefinitionsCache = $null
+$script:LWAchievementContextDefinitionsCache = @{}
+$script:LWAchievementDisplayCountsCache = $null
 $script:LWUi = $script:LWBootstrap.UiState
 
 function Write-LWInfo {
@@ -214,6 +216,25 @@ function Clear-LWNotifications {
     Request-LWRender
 }
 
+function Clear-LWAchievementDisplayCountsCache {
+    $script:LWAchievementDisplayCountsCache = $null
+}
+
+function Warm-LWRuntimeCaches {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    try {
+        [void](Get-LWAchievementDisplayCounts)
+        [void](Get-LWAchievementDefinitionsForContext -Context 'section' -State $script:GameState)
+        [void](Get-LWAchievementDefinitionsForContext -Context 'healing' -State $script:GameState)
+        [void](Get-LWAchievementDefinitionsForContext -Context 'sectionmove' -State $script:GameState)
+    }
+    catch {
+    }
+}
+
 function Request-LWRender {
     if ($null -eq $script:LWUi) {
         return
@@ -225,6 +246,41 @@ function Request-LWRender {
     }
 
     $script:LWUi.NeedsRender = $true
+}
+
+function Clear-LWScreenHost {
+    $supportsAnsi = $false
+
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+        try {
+            if ($null -ne $PSStyle -and $null -ne $PSStyle.OutputRendering -and [string]$PSStyle.OutputRendering -ne 'PlainText') {
+                $supportsAnsi = $true
+            }
+        }
+        catch {
+        }
+    }
+
+    if (-not $supportsAnsi) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$env:WT_SESSION) -or [string]$env:TERM_PROGRAM -eq 'vscode' -or [string]$env:ConEmuANSI -eq 'ON') {
+            $supportsAnsi = $true
+        }
+    }
+
+    if ($supportsAnsi) {
+        try {
+            Write-Host "`e[2J`e[H" -NoNewline
+            return
+        }
+        catch {
+        }
+    }
+
+    try {
+        Clear-Host
+    }
+    catch {
+    }
 }
 
 function Get-LWDefaultScreen {
@@ -617,11 +673,7 @@ function Refresh-LWScreen {
         return
     }
 
-    try {
-        Clear-Host
-    }
-    catch {
-    }
+    Clear-LWScreenHost
 
     $script:LWUi.IsRendering = $true
     try {
@@ -1746,6 +1798,21 @@ function Set-LWStoryAchievementFlag {
     }
 
     $script:GameState.Achievements.StoryFlags.$Name = [bool]$Value
+}
+
+function Test-LWAchievementStoryFlag {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [object]$EvaluationContext = $null
+    )
+
+    if ($null -ne $EvaluationContext -and
+        (Test-LWPropertyExists -Object $EvaluationContext -Name 'StoryFlags') -and
+        $EvaluationContext.StoryFlags -is [System.Collections.IDictionary]) {
+        return [bool]$EvaluationContext.StoryFlags[$Name]
+    }
+
+    return (Test-LWStoryAchievementFlag -Name $Name)
 }
 
 function Register-LWStorySectionAchievementTriggers {
@@ -4628,6 +4695,8 @@ function Normalize-LWSectionCheckpoints {
 function Get-LWCheckpointSnapshotObject {
     param([Parameter(Mandatory = $true)][object]$State)
 
+    # Rewind restores the current tactical state, then preserves the live run history,
+    # book history, book stats, achievements, and notes from the active state.
     return [pscustomobject]@{
         Version                = $State.Version
         RuleSet                = $State.RuleSet
@@ -4637,9 +4706,6 @@ function Get-LWCheckpointSnapshotObject {
         Character              = $State.Character
         Inventory              = $State.Inventory
         Combat                 = $State.Combat
-        History                = $State.History
-        BookHistory            = $State.BookHistory
-        CurrentBookStats       = $State.CurrentBookStats
         EquipmentBonuses       = $State.EquipmentBonuses
     }
 }
@@ -8893,7 +8959,9 @@ function Add-LWBookSectionVisit {
     }
 
     Register-LWStorySectionAchievementTriggers -Section $Section
-    [void](Sync-LWAchievements -Context 'section')
+    if (-not (Test-LWAchievementSyncSuppressed -Context 'section')) {
+        [void](Sync-LWAchievements -Context 'section')
+    }
 }
 
 function Add-LWBookEnduranceDelta {
@@ -9058,7 +9126,9 @@ function Register-LWHealingRestore {
 
     $stats.HealingTriggers = [int]$stats.HealingTriggers + 1
     $stats.HealingEnduranceRestored = [int]$stats.HealingEnduranceRestored + $Amount
-    [void](Sync-LWAchievements -Context 'healing')
+    if (-not (Test-LWAchievementSyncSuppressed -Context 'healing')) {
+        [void](Sync-LWAchievements -Context 'healing')
+    }
 }
 
 function Get-LWModeAchievementPools {
@@ -11255,7 +11325,7 @@ function Get-LWAchievementEligibleCount {
         return 0
     }
 
-    return @((Get-LWAchievementDefinitions) | Where-Object { Test-LWAchievementAvailableInCurrentMode -Definition $_ }).Count
+    return (Get-LWAchievementDisplayCounts).EligibleCount
 }
 
 function Get-LWAchievementEligibleUnlockedCount {
@@ -11263,17 +11333,51 @@ function Get-LWAchievementEligibleUnlockedCount {
         return 0
     }
 
-    $count = 0
+    return (Get-LWAchievementDisplayCounts).EligibleUnlockedCount
+}
+
+function Get-LWAchievementDisplayCounts {
+    if (-not (Test-LWHasState)) {
+        return [pscustomobject]@{
+            EligibleCount         = 0
+            EligibleUnlockedCount = 0
+        }
+    }
+
+    Ensure-LWAchievementState -State $script:GameState
+    $runId = if ($null -ne $script:GameState.Run -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.Id)) { [string]$script:GameState.Run.Id } else { 'no-run' }
+    $difficulty = Get-LWCurrentDifficulty
+    $permadeath = if (Test-LWPermadeathEnabled) { '1' } else { '0' }
+    $integrity = if ($null -ne $script:GameState.Run -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityState)) { [string]$script:GameState.Run.IntegrityState } else { 'unknown' }
+    $unlockedCount = @($script:GameState.Achievements.Unlocked).Count
+    $cacheKey = '{0}|{1}|{2}|{3}|{4}' -f $runId, $difficulty, $permadeath, $integrity, $unlockedCount
+
+    if ($null -ne $script:LWAchievementDisplayCountsCache -and
+        (Test-LWPropertyExists -Object $script:LWAchievementDisplayCountsCache -Name 'Key') -and
+        [string]$script:LWAchievementDisplayCountsCache.Key -eq $cacheKey) {
+        return $script:LWAchievementDisplayCountsCache
+    }
+
+    $eligibleCount = 0
+    $eligibleUnlockedCount = 0
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
         if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
             continue
         }
+
+        $eligibleCount++
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
-            $count++
+            $eligibleUnlockedCount++
         }
     }
 
-    return $count
+    $script:LWAchievementDisplayCountsCache = [pscustomobject]@{
+        Key                   = $cacheKey
+        EligibleCount         = $eligibleCount
+        EligibleUnlockedCount = $eligibleUnlockedCount
+    }
+
+    return $script:LWAchievementDisplayCountsCache
 }
 
 function Get-LWRunCombatEntries {
@@ -11382,11 +11486,14 @@ function Update-LWAchievementProgressFlagsFromSummary {
 }
 
 function New-LWAchievementEvaluationContext {
+    param([string]$Context = 'general')
+
     if (-not (Test-LWHasState)) {
         return $null
     }
 
     Ensure-LWAchievementState -State $script:GameState
+    $contextName = if ([string]::IsNullOrWhiteSpace($Context)) { 'general' } else { $Context.Trim().ToLowerInvariant() }
 
     $unlockedById = @{}
     foreach ($entry in @($script:GameState.Achievements.Unlocked)) {
@@ -11395,15 +11502,86 @@ function New-LWAchievementEvaluationContext {
         }
     }
 
-    return [pscustomobject]@{
-        RunEntries              = @(Get-LWRunCombatEntries)
-        RunVictories            = @(Get-LWRunVictoryEntries)
-        BookSummaries           = @(Get-LWAllAchievementBookSummaries)
-        CompletedBookSummaries  = @(Get-LWCompletedAchievementBookSummaries)
-        CurrentSummary          = Get-LWLiveBookStatsSummary
-        Flags                   = $script:GameState.Achievements.ProgressFlags
-        UnlockedById            = $unlockedById
+    $storyFlags = @{}
+    if ($null -ne $script:GameState.Achievements.StoryFlags) {
+        foreach ($property in @($script:GameState.Achievements.StoryFlags.PSObject.Properties)) {
+            $storyFlags[[string]$property.Name] = [bool]$property.Value
+        }
     }
+
+    $contextData = [ordered]@{
+        Flags        = $script:GameState.Achievements.ProgressFlags
+        StoryFlags   = $storyFlags
+        UnlockedById = $unlockedById
+    }
+
+    switch ($contextName) {
+        'section' {
+            $contextData.BookSummaries = @(Get-LWAllAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'sectionmove' {
+            $contextData.BookSummaries = @(Get-LWAllAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'healing' {
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'inventory' { }
+        'gold' { }
+        'meal' {
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'hunting' {
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'starvation' {
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'potion' {
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'rewind' {
+            $contextData.CompletedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'recovery' {
+            $contextData.CompletedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        'death' { }
+        'combat' {
+            $contextData.RunEntries = @(Get-LWRunCombatEntries)
+            $contextData.RunVictories = @(Get-LWRunVictoryEntries)
+            $contextData.BookSummaries = @(Get-LWAllAchievementBookSummaries)
+            $contextData.CompletedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+        default {
+            $contextData.RunEntries = @(Get-LWRunCombatEntries)
+            $contextData.RunVictories = @(Get-LWRunVictoryEntries)
+            $contextData.BookSummaries = @(Get-LWAllAchievementBookSummaries)
+            $contextData.CompletedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
+    }
+
+    return [pscustomobject]$contextData
+}
+
+function Test-LWAchievementSyncSuppressed {
+    param([string]$Context = '')
+
+    if ([string]::IsNullOrWhiteSpace($Context)) {
+        return $false
+    }
+
+    if (-not (Test-Path Variable:\script:LWAchievementSyncSuppression) -or $null -eq $script:LWAchievementSyncSuppression) {
+        return $false
+    }
+
+    $contextName = $Context.Trim().ToLowerInvariant()
+    return ($script:LWAchievementSyncSuppression.ContainsKey($contextName) -and [bool]$script:LWAchievementSyncSuppression[$contextName])
 }
 
 function Get-LWBookSectionContextAchievementIds {
@@ -11505,6 +11683,15 @@ function Get-LWAchievementDefinitionsForContext {
 
     $definitions = @(Get-LWAchievementDefinitions)
     $contextName = if ([string]::IsNullOrWhiteSpace($Context)) { 'general' } else { $Context.Trim().ToLowerInvariant() }
+    $bookNumber = if ($null -ne $State -and $null -ne $State.Character -and $null -ne $State.Character.BookNumber) { [int]$State.Character.BookNumber } else { 0 }
+    $ruleSet = if ($null -ne $State -and -not [string]::IsNullOrWhiteSpace([string]$State.RuleSet)) { [string]$State.RuleSet } else { 'none' }
+    $cacheKey = '{0}|{1}|{2}' -f $contextName, $ruleSet, $bookNumber
+
+    if ($script:LWAchievementContextDefinitionsCache.ContainsKey($cacheKey)) {
+        return @($script:LWAchievementContextDefinitionsCache[$cacheKey])
+    }
+
+    $result = @()
 
     switch ($contextName) {
         'section' {
@@ -11512,77 +11699,102 @@ function Get-LWAchievementDefinitionsForContext {
                 'pathfinder',
                 'long_road'
             )
-            $bookNumber = if ($null -ne $State -and $null -ne $State.Character -and $null -ne $State.Character.BookNumber) { [int]$State.Character.BookNumber } else { 0 }
             $sectionIds = @($globalSectionIds + (Get-LWBookSectionContextAchievementIds -BookNumber $bookNumber))
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { $sectionIds -contains [string]$_.Id }
             )
+            break
+        }
+        'sectionmove' {
+            $combinedIds = @(
+                ((Get-LWAchievementDefinitionsForContext -Context 'section' -State $State) | ForEach-Object { [string]$_.Id })
+                ((Get-LWAchievementDefinitionsForContext -Context 'healing' -State $State) | ForEach-Object { [string]$_.Id })
+            ) | Sort-Object -Unique
+            $result = @(
+                $definitions |
+                Where-Object { $combinedIds -contains [string]$_.Id }
+            )
+            break
         }
         'healing' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('second_wind', 'lean_healing') -contains [string]$_.Id }
             )
+            break
         }
         'inventory' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('sun_sword', 'loaded_purse', 'fully_armed', 'relic_hunter') -contains [string]$_.Id }
             )
+            break
         }
         'gold' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('loaded_purse') -contains [string]$_.Id }
             )
+            break
         }
         'meal' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('trail_survivor') -contains [string]$_.Id }
             )
+            break
         }
         'hunting' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('hunters_instinct') -contains [string]$_.Id }
             )
+            break
         }
         'starvation' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('hard_lessons') -contains [string]$_.Id }
             )
+            break
         }
         'potion' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('herbal_relief', 'deep_draught') -contains [string]$_.Id }
             )
+            break
         }
         'rewind' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('true_path', 'iron_wolf') -contains [string]$_.Id }
             )
+            break
         }
         'recovery' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('iron_wolf') -contains [string]$_.Id }
             )
+            break
         }
         'death' {
-            return @(
+            $result = @(
                 $definitions |
                 Where-Object { @('still_standing', 'unbroken', 'iron_wolf') -contains [string]$_.Id }
             )
+            break
         }
         default {
-            return @($definitions)
+            $result = @($definitions)
+            break
         }
     }
+
+    $script:LWAchievementContextDefinitionsCache[$cacheKey] = @($result)
+    return @($result)
 }
 
 function Test-LWAchievementUnlocked {
@@ -11630,6 +11842,7 @@ function Unlock-LWAchievement {
     if (@($script:GameState.Achievements.SeenNotifications) -notcontains [string]$Definition.Id) {
         $script:GameState.Achievements.SeenNotifications = @($script:GameState.Achievements.SeenNotifications) + [string]$Definition.Id
     }
+    Clear-LWAchievementDisplayCountsCache
 
     if (-not $Silent) {
         Write-LWInfo ("Achievement unlocked: {0} - {1}" -f (Get-LWAchievementDisplayNameById -Id ([string]$Definition.Id) -DefaultName ([string]$Definition.Name)), [string]$Definition.Description)
@@ -11722,73 +11935,73 @@ function Test-LWAchievementSatisfied {
         'by_the_text' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
         'only_one_life' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath }).Count -ge 1) }
         'mortal_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and @('Hard', 'Veteran') -contains [string]$_.Difficulty }).Count -ge 1) }
-        'aim_for_the_bushes' { return (Test-LWStoryAchievementFlag -Name 'Book1AimForTheBushesVisited') }
-        'found_the_clubhouse' { return (Test-LWStoryAchievementFlag -Name 'Book1ClubhouseFound') }
+        'aim_for_the_bushes' { return (Test-LWAchievementStoryFlag -Name 'Book1AimForTheBushesVisited' -EvaluationContext $EvaluationContext) }
+        'found_the_clubhouse' { return (Test-LWAchievementStoryFlag -Name 'Book1ClubhouseFound' -EvaluationContext $EvaluationContext) }
         'kill_the_mad_butcher' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 1 -and [string]$_.EnemyName -ieq 'Mad Butcher' }).Count -ge 1) }
-        'whats_in_the_box_book1' { return (Test-LWStoryAchievementFlag -Name 'Book1SilverKeyClaimed') }
-        'use_the_force' { return (Test-LWStoryAchievementFlag -Name 'Book1UseTheForcePath') }
-        'straight_to_the_throne' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWStoryAchievementFlag -Name 'Book1StraightToTheThrone')) }
-        'royal_recovery' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWStoryAchievementFlag -Name 'Book1RoyalRecovery')) }
-        'the_back_way_in' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWStoryAchievementFlag -Name 'Book1BackWayIn')) }
-        'open_sesame' { return (Test-LWStoryAchievementFlag -Name 'Book1OpenSesameRoute') }
-        'hot_hands' { return (Test-LWStoryAchievementFlag -Name 'Book1HotHandsClaimed') }
-        'star_of_toran' { return (Test-LWStoryAchievementFlag -Name 'Book1StarOfToranClaimed') }
-        'field_medic' { return (Test-LWStoryAchievementFlag -Name 'Book1FieldMedicPath') }
-        'found_the_sommerswerd' { return (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') }
+        'whats_in_the_box_book1' { return (Test-LWAchievementStoryFlag -Name 'Book1SilverKeyClaimed' -EvaluationContext $EvaluationContext) }
+        'use_the_force' { return (Test-LWAchievementStoryFlag -Name 'Book1UseTheForcePath' -EvaluationContext $EvaluationContext) }
+        'straight_to_the_throne' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWAchievementStoryFlag -Name 'Book1StraightToTheThrone' -EvaluationContext $EvaluationContext)) }
+        'royal_recovery' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWAchievementStoryFlag -Name 'Book1RoyalRecovery' -EvaluationContext $EvaluationContext)) }
+        'the_back_way_in' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWAchievementStoryFlag -Name 'Book1BackWayIn' -EvaluationContext $EvaluationContext)) }
+        'open_sesame' { return (Test-LWAchievementStoryFlag -Name 'Book1OpenSesameRoute' -EvaluationContext $EvaluationContext) }
+        'hot_hands' { return (Test-LWAchievementStoryFlag -Name 'Book1HotHandsClaimed' -EvaluationContext $EvaluationContext) }
+        'star_of_toran' { return (Test-LWAchievementStoryFlag -Name 'Book1StarOfToranClaimed' -EvaluationContext $EvaluationContext) }
+        'field_medic' { return (Test-LWAchievementStoryFlag -Name 'Book1FieldMedicPath' -EvaluationContext $EvaluationContext) }
+        'found_the_sommerswerd' { return (Test-LWAchievementStoryFlag -Name 'Book2SommerswerdClaimed' -EvaluationContext $EvaluationContext) }
         'you_have_chosen_wisely' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 158 -and [string]$_.EnemyName -ieq 'Priest' }).Count -ge 1) }
         'neo_link' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains [string]$_.EnemyName }).Count -ge 1) }
-        'by_a_thread' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2ByAThreadRoute')) }
-        'skyfall' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2SkyfallRoute')) }
-        'fight_through_the_smoke' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2FightThroughTheSmokeRoute')) }
-        'storm_tossed' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWStoryAchievementFlag -Name 'Book2StormTossedSeen')) }
-        'seal_of_approval' { return ((Test-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute') -and (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed')) }
-        'papers_please' { return (Test-LWStoryAchievementFlag -Name 'Book2PapersPleasePath') }
-        'snakes_why' { return (Test-LWStoryAchievementFlag -Name 'Book3SnakePitVisited') }
-        'cliffhanger' { return (Test-LWStoryAchievementFlag -Name 'Book3CliffhangerSeen') }
-        'whats_in_the_box' { return (Test-LWStoryAchievementFlag -Name 'Book3DiamondClaimed') }
-        'snowblind' { return (Test-LWStoryAchievementFlag -Name 'Book3SnowblindSeen') }
-        'you_touched_it_with_your_hands' { return (Test-LWStoryAchievementFlag -Name 'Book3GrossKeyClaimed') }
-        'lucky_button_theory' { return (Test-LWStoryAchievementFlag -Name 'Book3LuckyButtonTheorySeen') }
-        'well_it_worked_once' { return (Test-LWStoryAchievementFlag -Name 'Book3WellItWorkedOnceSeen') }
-        'cellfish' { return (Test-LWStoryAchievementFlag -Name 'Book3CellfishPathTaken') }
-        'loi_kymar_lives' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3LoiKymarRescued')) }
-        'puppet_master' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3EffigyEndgameReached')) }
-        'sun_on_the_ice' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3SommerswerdEndgameUsed')) }
-        'lucky_break' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWStoryAchievementFlag -Name 'Book3LuckyEndgameUsed')) }
-        'too_slow' { return (Test-LWStoryAchievementFlag -Name 'Book3TooSlowFailureSeen') }
+        'by_a_thread' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2ByAThreadRoute' -EvaluationContext $EvaluationContext)) }
+        'skyfall' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2SkyfallRoute' -EvaluationContext $EvaluationContext)) }
+        'fight_through_the_smoke' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2FightThroughTheSmokeRoute' -EvaluationContext $EvaluationContext)) }
+        'storm_tossed' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2StormTossedSeen' -EvaluationContext $EvaluationContext)) }
+        'seal_of_approval' { return ((Test-LWAchievementStoryFlag -Name 'Book2SealOfApprovalRoute' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book2SommerswerdClaimed' -EvaluationContext $EvaluationContext)) }
+        'papers_please' { return (Test-LWAchievementStoryFlag -Name 'Book2PapersPleasePath' -EvaluationContext $EvaluationContext) }
+        'snakes_why' { return (Test-LWAchievementStoryFlag -Name 'Book3SnakePitVisited' -EvaluationContext $EvaluationContext) }
+        'cliffhanger' { return (Test-LWAchievementStoryFlag -Name 'Book3CliffhangerSeen' -EvaluationContext $EvaluationContext) }
+        'whats_in_the_box' { return (Test-LWAchievementStoryFlag -Name 'Book3DiamondClaimed' -EvaluationContext $EvaluationContext) }
+        'snowblind' { return (Test-LWAchievementStoryFlag -Name 'Book3SnowblindSeen' -EvaluationContext $EvaluationContext) }
+        'you_touched_it_with_your_hands' { return (Test-LWAchievementStoryFlag -Name 'Book3GrossKeyClaimed' -EvaluationContext $EvaluationContext) }
+        'lucky_button_theory' { return (Test-LWAchievementStoryFlag -Name 'Book3LuckyButtonTheorySeen' -EvaluationContext $EvaluationContext) }
+        'well_it_worked_once' { return (Test-LWAchievementStoryFlag -Name 'Book3WellItWorkedOnceSeen' -EvaluationContext $EvaluationContext) }
+        'cellfish' { return (Test-LWAchievementStoryFlag -Name 'Book3CellfishPathTaken' -EvaluationContext $EvaluationContext) }
+        'loi_kymar_lives' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWAchievementStoryFlag -Name 'Book3LoiKymarRescued' -EvaluationContext $EvaluationContext)) }
+        'puppet_master' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWAchievementStoryFlag -Name 'Book3EffigyEndgameReached' -EvaluationContext $EvaluationContext)) }
+        'sun_on_the_ice' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWAchievementStoryFlag -Name 'Book3SommerswerdEndgameUsed' -EvaluationContext $EvaluationContext)) }
+        'lucky_break' { return ((@($script:GameState.Character.CompletedBooks) -contains 3) -and (Test-LWAchievementStoryFlag -Name 'Book3LuckyEndgameUsed' -EvaluationContext $EvaluationContext)) }
+        'too_slow' { return (Test-LWAchievementStoryFlag -Name 'Book3TooSlowFailureSeen' -EvaluationContext $EvaluationContext) }
         'book_four_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 4) }
-        'sun_below_the_earth' { return ((@($script:GameState.Character.CompletedBooks) -contains 4) -and (Test-LWStoryAchievementFlag -Name 'Book4SunBelowTheEarthRoute')) }
-        'blessed_be_the_throw' { return ((@($script:GameState.Character.CompletedBooks) -contains 4) -and (Test-LWStoryAchievementFlag -Name 'Book4BlessedBeTheThrowRoute')) }
-        'steel_against_shadow' { return ((@($script:GameState.Character.CompletedBooks) -contains 4) -and (Test-LWStoryAchievementFlag -Name 'Book4SteelAgainstShadowRoute')) }
-        'badge_of_office' { return (Test-LWStoryAchievementFlag -Name 'Book4BadgeOfOfficePath') }
-        'wearing_the_enemys_colors' { return ((Test-LWStoryAchievementFlag -Name 'Book4OnyxMedallionClaimed') -and (Test-LWStoryAchievementFlag -Name 'Book4OnyxBluffRoute')) }
-        'read_the_signs' { return ((Test-LWStoryAchievementFlag -Name 'Book4ScrollClaimed') -and (Test-LWStoryAchievementFlag -Name 'Book4ScrollRoute')) }
-        'return_to_sender' { return ((Test-LWStoryAchievementFlag -Name 'Book4CaptainSwordClaimed') -and (Test-LWStoryAchievementFlag -Name 'Book4ReturnToSenderPath')) }
-        'deep_pockets_poor_timing' { return (Test-LWStoryAchievementFlag -Name 'Book4BackpackLost') }
-        'bagless_but_breathing' { return ((Test-LWStoryAchievementFlag -Name 'Book4BackpackLost') -and (Test-LWStoryAchievementFlag -Name 'Book4BackpackRecovered')) }
-        'shovel_ready' { return (Test-LWStoryAchievementFlag -Name 'Book4ShovelReadyClaimed') }
-        'light_in_the_depths' { return (Test-LWStoryAchievementFlag -Name 'Book4LightInTheDepths') }
-        'chasm_of_doom' { return (Test-LWStoryAchievementFlag -Name 'Book4ChasmOfDoomSeen') }
-        'washed_away' { return (Test-LWStoryAchievementFlag -Name 'Book4WashedAway') }
+        'sun_below_the_earth' { return ((@($script:GameState.Character.CompletedBooks) -contains 4) -and (Test-LWAchievementStoryFlag -Name 'Book4SunBelowTheEarthRoute' -EvaluationContext $EvaluationContext)) }
+        'blessed_be_the_throw' { return ((@($script:GameState.Character.CompletedBooks) -contains 4) -and (Test-LWAchievementStoryFlag -Name 'Book4BlessedBeTheThrowRoute' -EvaluationContext $EvaluationContext)) }
+        'steel_against_shadow' { return ((@($script:GameState.Character.CompletedBooks) -contains 4) -and (Test-LWAchievementStoryFlag -Name 'Book4SteelAgainstShadowRoute' -EvaluationContext $EvaluationContext)) }
+        'badge_of_office' { return (Test-LWAchievementStoryFlag -Name 'Book4BadgeOfOfficePath' -EvaluationContext $EvaluationContext) }
+        'wearing_the_enemys_colors' { return ((Test-LWAchievementStoryFlag -Name 'Book4OnyxMedallionClaimed' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book4OnyxBluffRoute' -EvaluationContext $EvaluationContext)) }
+        'read_the_signs' { return ((Test-LWAchievementStoryFlag -Name 'Book4ScrollClaimed' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book4ScrollRoute' -EvaluationContext $EvaluationContext)) }
+        'return_to_sender' { return ((Test-LWAchievementStoryFlag -Name 'Book4CaptainSwordClaimed' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book4ReturnToSenderPath' -EvaluationContext $EvaluationContext)) }
+        'deep_pockets_poor_timing' { return (Test-LWAchievementStoryFlag -Name 'Book4BackpackLost' -EvaluationContext $EvaluationContext) }
+        'bagless_but_breathing' { return ((Test-LWAchievementStoryFlag -Name 'Book4BackpackLost' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book4BackpackRecovered' -EvaluationContext $EvaluationContext)) }
+        'shovel_ready' { return (Test-LWAchievementStoryFlag -Name 'Book4ShovelReadyClaimed' -EvaluationContext $EvaluationContext) }
+        'light_in_the_depths' { return (Test-LWAchievementStoryFlag -Name 'Book4LightInTheDepths' -EvaluationContext $EvaluationContext) }
+        'chasm_of_doom' { return (Test-LWAchievementStoryFlag -Name 'Book4ChasmOfDoomSeen' -EvaluationContext $EvaluationContext) }
+        'washed_away' { return (Test-LWAchievementStoryFlag -Name 'Book4WashedAway' -EvaluationContext $EvaluationContext) }
         'book_five_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 5) }
         'kai_master' { return ((@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5 })).Count -ge 5) }
-        'apothecarys_answer' { return ((Test-LWStoryAchievementFlag -Name 'Book5OedeClaimed') -and (Test-LWStoryAchievementFlag -Name 'Book5LimbdeathCured')) }
-        'prison_break' { return (Test-LWStoryAchievementFlag -Name 'Book5PrisonBreak') }
-        'talons_tamed' { return (Test-LWStoryAchievementFlag -Name 'Book5TalonsTamed') }
-        'star_guided' { return (Test-LWStoryAchievementFlag -Name 'Book5CrystalPendantRoute') }
-        'name_the_lost' { return ((Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') -and (Test-LWStoryAchievementFlag -Name 'Book5SoushillaAsked')) }
-        'shadow_on_the_sand' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWStoryAchievementFlag -Name 'Book5BanishmentRoute')) }
-        'face_to_face_with_haakon' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWStoryAchievementFlag -Name 'Book5HaakonDuelRoute')) }
+        'apothecarys_answer' { return ((Test-LWAchievementStoryFlag -Name 'Book5OedeClaimed' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book5LimbdeathCured' -EvaluationContext $EvaluationContext)) }
+        'prison_break' { return (Test-LWAchievementStoryFlag -Name 'Book5PrisonBreak' -EvaluationContext $EvaluationContext) }
+        'talons_tamed' { return (Test-LWAchievementStoryFlag -Name 'Book5TalonsTamed' -EvaluationContext $EvaluationContext) }
+        'star_guided' { return (Test-LWAchievementStoryFlag -Name 'Book5CrystalPendantRoute' -EvaluationContext $EvaluationContext) }
+        'name_the_lost' { return ((Test-LWAchievementStoryFlag -Name 'Book5SoushillaNameHeard' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book5SoushillaAsked' -EvaluationContext $EvaluationContext)) }
+        'shadow_on_the_sand' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWAchievementStoryFlag -Name 'Book5BanishmentRoute' -EvaluationContext $EvaluationContext)) }
+        'face_to_face_with_haakon' { return ((@($script:GameState.Character.CompletedBooks) -contains 5) -and (Test-LWAchievementStoryFlag -Name 'Book5HaakonDuelRoute' -EvaluationContext $EvaluationContext)) }
         'book_six_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 6) }
         'magnakai_rising' { return ((@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6 })).Count -ge 6) }
-        'jump_the_wagons' { return (Test-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute') }
-        'water_bearer' { return (Test-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored') }
-        'tekaro_cartographer' { return (Test-LWStoryAchievementFlag -Name 'Book6MapOfTekaroClaimed') }
-        'key_to_varetta' { return (Test-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed') }
-        'silver_oak_prize' { return (Test-LWStoryAchievementFlag -Name 'Book6SilverBowClaimed') }
-        'cess_to_enter' { return (Test-LWStoryAchievementFlag -Name 'Book6CessClaimed') }
-        'cold_comfort' { return (Test-LWStoryAchievementFlag -Name 'Book6Section306NexusProtected') }
-        'mind_over_malice_book6' { return (Test-LWStoryAchievementFlag -Name 'Book6Section315MindforceBlocked') }
+        'jump_the_wagons' { return (Test-LWAchievementStoryFlag -Name 'Book6JumpTheWagonsRoute' -EvaluationContext $EvaluationContext) }
+        'water_bearer' { return (Test-LWAchievementStoryFlag -Name 'Book6TaunorWaterStored' -EvaluationContext $EvaluationContext) }
+        'tekaro_cartographer' { return (Test-LWAchievementStoryFlag -Name 'Book6MapOfTekaroClaimed' -EvaluationContext $EvaluationContext) }
+        'key_to_varetta' { return (Test-LWAchievementStoryFlag -Name 'Book6SmallSilverKeyClaimed' -EvaluationContext $EvaluationContext) }
+        'silver_oak_prize' { return (Test-LWAchievementStoryFlag -Name 'Book6SilverBowClaimed' -EvaluationContext $EvaluationContext) }
+        'cess_to_enter' { return (Test-LWAchievementStoryFlag -Name 'Book6CessClaimed' -EvaluationContext $EvaluationContext) }
+        'cold_comfort' { return (Test-LWAchievementStoryFlag -Name 'Book6Section306NexusProtected' -EvaluationContext $EvaluationContext) }
+        'mind_over_malice_book6' { return (Test-LWAchievementStoryFlag -Name 'Book6Section315MindforceBlocked' -EvaluationContext $EvaluationContext) }
         default { return $false }
     }
 }
@@ -11935,7 +12148,7 @@ function Sync-LWAchievements {
         Update-LWAchievementProgressFlagsFromSummary -Summary $Data
     }
 
-    $evaluationContext = New-LWAchievementEvaluationContext
+    $evaluationContext = New-LWAchievementEvaluationContext -Context $Context
     $newUnlocks = @()
     foreach ($definition in @(Get-LWAchievementDefinitionsForContext -Context $Context -State $script:GameState)) {
         if ([string]$Context -eq 'load' -and -not [bool]$definition.Backfill) {
@@ -11976,7 +12189,7 @@ function Get-LWAchievementAvailableCount {
         return @(Get-LWAchievementDefinitions).Count
     }
 
-    return Get-LWAchievementEligibleCount
+    return (Get-LWAchievementDisplayCounts).EligibleCount
 }
 
 function Get-LWAchievementRecentUnlocks {
@@ -13646,22 +13859,30 @@ function Set-LWSection {
 
     $previousSection = [int]$script:GameState.CurrentSection
     Save-LWCurrentSectionCheckpoint
-    Resolve-LWSectionExit
-    Register-LWStorySectionTransitionAchievementTriggers -FromSection $previousSection -ToSection $newSection
-    $script:GameState.CurrentSection = $newSection
-    $script:GameState.SectionHadCombat = $false
-    $script:GameState.SectionHealingResolved = $false
-    Add-LWBookSectionVisit -Section $newSection
-    if ([int]$script:GameState.Character.BookNumber -eq 5) {
-        if (-not (Invoke-LWBookFiveBloodPoisoningSectionDamage -Section $newSection)) {
-            Write-LWInfo "Moved to section $newSection."
-            Invoke-LWMaybeAutosave
-            return
+    $previousSuppression = if (Test-Path Variable:\script:LWAchievementSyncSuppression) { $script:LWAchievementSyncSuppression } else { $null }
+    $script:LWAchievementSyncSuppression = @{ section = $true; healing = $true }
+    try {
+        Resolve-LWSectionExit
+        Register-LWStorySectionTransitionAchievementTriggers -FromSection $previousSection -ToSection $newSection
+        $script:GameState.CurrentSection = $newSection
+        $script:GameState.SectionHadCombat = $false
+        $script:GameState.SectionHealingResolved = $false
+        Add-LWBookSectionVisit -Section $newSection
+        [void](Sync-LWAchievements -Context 'sectionmove')
+        if ([int]$script:GameState.Character.BookNumber -eq 5) {
+            if (-not (Invoke-LWBookFiveBloodPoisoningSectionDamage -Section $newSection)) {
+                Write-LWInfo "Moved to section $newSection."
+                Invoke-LWMaybeAutosave
+                return
+            }
         }
+        Invoke-LWSectionEntryRules
+        Write-LWInfo "Moved to section $newSection."
+        Invoke-LWMaybeAutosave
     }
-    Invoke-LWSectionEntryRules
-    Write-LWInfo "Moved to section $newSection."
-    Invoke-LWMaybeAutosave
+    finally {
+        $script:LWAchievementSyncSuppression = $previousSuppression
+    }
 }
 
 function Invoke-LWHealingCheck {
@@ -17775,6 +17996,7 @@ function Load-LWGame {
 
     $state = $raw | ConvertFrom-Json
     $script:GameState = Normalize-LWState -State $state
+    Clear-LWAchievementDisplayCountsCache
     $script:GameState.Settings.SavePath = $Path
     Ensure-LWCurrentSectionCheckpoint
     Set-LWLastUsedSavePath -Path $Path
@@ -17787,6 +18009,7 @@ function Load-LWGame {
     if ($backfilled.Count -gt 0) {
         Write-LWInfo ("Backfilled {0} achievement{1} from save history." -f $backfilled.Count, $(if ($backfilled.Count -eq 1) { '' } else { 's' }))
     }
+    Warm-LWRuntimeCaches
     Write-LWInfo "Loaded game from $Path"
 }
 
