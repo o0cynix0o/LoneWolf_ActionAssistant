@@ -324,6 +324,27 @@ Latest large-scale validation:
 - Book 6 targeted validation passed in both shells on `dev`
 - an interrupted long-run PowerShell 7 Books `1-6` validator completed `44` full campaigns before the user approved moving on
 
+## Validation Standard
+
+The older `100+ sandbox runs` rule is now considered historical, not the preferred future bar.
+
+Use:
+
+- `docs/VALIDATION_POLICY.md`
+
+for future milestone validation planning.
+
+Current preferred validation philosophy:
+
+- route coverage
+- difficulty coverage
+- failure coverage
+- permadeath coverage
+- transition/save/load coverage
+- command-surface smoke in both shells
+
+This scales better than a flat raw run-count target as the app grows.
+
 M1 refactor status:
 
 - modular wrappers are active in the shipped build

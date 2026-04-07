@@ -244,7 +244,7 @@ Book `6` should not ship until all of these are true:
 - existing Kai saves still load without drift
 - commands and sheet are ruleset-aware
 - validation passes in PowerShell `5.1` and PowerShell `7`
-- `100+` sandbox tests of the command surface and actual app pass across the full Books `1-6` campaign
+- validation meets the route-and-mode coverage standard in `docs/VALIDATION_POLICY.md`
 
 ## Planned Sheet Mockup
 
@@ -351,4 +351,4 @@ Sheet design goals:
 - PowerShell `5.1`
 - PowerShell `7`
 - Books `1-6` campaign testing
-- `100+` sandbox runs across command surface and actual app flow
+- route-and-mode validation coverage defined in `docs/VALIDATION_POLICY.md`

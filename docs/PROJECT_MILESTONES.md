@@ -41,7 +41,7 @@ Exit criteria:
 - existing saves load cleanly
 - command surface remains stable
 - validation passes in PowerShell 7 and Windows PowerShell 5.1
-- `100+` sandbox tests of the command surface and actual app pass across the full Kai campaign
+- validation meets the route-and-mode coverage standard in `docs/VALIDATION_POLICY.md`
 
 Completion note:
 
@@ -208,7 +208,7 @@ Deliverables:
 - command-surface smoke
 - Books `1-5` campaign smoke
 - cross-shell validation
-- `100+` sandbox tests of the command surface and actual app across the full Kai campaign
+- route-and-mode validation coverage as defined in `docs/VALIDATION_POLICY.md`
 - updated handoff and validation notes
 
 Checkpoint:
@@ -446,3 +446,13 @@ When milestone work begins:
 2. mention it in `docs/PROJECT_HANDOFF.md`
 3. keep validation artifacts in `testing/`
 4. only mark a milestone complete after the matching validation pass succeeds
+
+## Validation Standard
+
+Future milestone planning should use:
+
+- `docs/VALIDATION_POLICY.md`
+
+instead of the older flat `100+ sandbox runs` rule.
+
+Historical milestone notes that mention `100+` runs are still accurate as records of what happened at the time.
