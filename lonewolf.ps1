@@ -7813,6 +7813,9 @@ function Test-LWWeaponMatchesWeaponmastery {
             return $true
         }
 
+        if ((-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWJakanBowWeaponNames) -Target $Weapon))) -and [string]$masteredWeapon -ieq 'Bow') {
+            return $true
+        }
         if ((Test-LWWeaponIsDrodarinWarHammer -Weapon $Weapon) -and [string]$masteredWeapon -ieq 'Warhammer') {
             return $true
         }

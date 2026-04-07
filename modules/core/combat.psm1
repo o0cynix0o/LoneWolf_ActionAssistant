@@ -179,7 +179,8 @@ function Invoke-LWCoreStartCombat {
             }
         }
 
-        if (Test-LWCombatKnockoutAvailable -State $script:GameState) {
+        $bookSixSection26Altan = ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 26 -and [string]$enemyName -ieq 'Altan')
+        if ((-not $bookSixSection26Altan) -and (Test-LWCombatKnockoutAvailable -State $script:GameState)) {
             $attemptKnockout = Read-LWYesNo -Prompt 'Try to knock this foe unconscious?' -Default $false
             if ($attemptKnockout) {
                 $knockoutPenalty = Get-LWCombatKnockoutCombatSkillPenalty -State ([pscustomobject]@{
@@ -795,11 +796,32 @@ function Invoke-LWCoreStartCombat {
             $usePlayerTargetEndurance = $true
             $playerTargetEnduranceCurrent = 50
             $playerTargetEnduranceMax = 50
-            $equippedWeapon = 'Bow'
+            $selectedBowWeapon = [string](Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon))
+            if (-not [string]::IsNullOrWhiteSpace($selectedBowWeapon)) {
+                $equippedWeapon = $selectedBowWeapon
+            }
+            else {
+                $fallbackBowWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackBowWeapon)) {
+                    $equippedWeapon = $fallbackBowWeapon
+                }
+                else {
+                    $equippedWeapon = 'Bow'
+                }
+            }
+            $attemptKnockout = $false
             $victoryResolutionSection = 252
             $victoryResolutionNote = 'Section 26 result: if Altan loses all 50 TARGET points, turn to 252.'
             $defeatResolutionSection = 183
             $defeatResolutionNote = 'Section 26 result: if you lose all 50 TARGET points, turn to 183.'
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWJakanBowWeaponNames) -Target ([string]$equippedWeapon)))) {
+                $fallOnRollValue = 0
+                $fallOnRollResolutionSection = 335
+                $fallOnRollResolutionNote = 'Section 26 result: while using the Jakan, a roll of 0 sends you immediately to 335.'
+                Write-LWInfo 'Book 6 section 26: while using the Jakan, a roll of 0 sends you immediately to section 335.'
+            }
             Write-LWInfo 'Book 6 section 26: the final is fought with Bow shots only, Shield bonuses are suppressed, and both archers use 50 TARGET points instead of normal ENDURANCE.'
         }
         elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 71 -and [string]$enemyName -ieq 'Redbeard') {
