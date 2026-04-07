@@ -46,6 +46,12 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
   - `docs/M3_UI_STYLE_GUIDE.md`
+- first M3 implementation slice is now live on `dev`:
+  - main banner
+  - main character sheet
+  - disciplines panel
+  - lore circles panel
+  - inventory summary panel
 
 ## Main Repo Files
 

@@ -480,7 +480,14 @@ Current checkpoint:
 
 - Phase 1 style selection completed on `2026-04-07`
 - Phase 2 shared style rules documented on `2026-04-07`
-- implementation slices still pending screen-by-screen approval
+- Slice 1 implemented on `2026-04-07`:
+  - main banner
+  - character sheet
+  - disciplines panel
+  - lore circles panel
+  - inventory summary panel
+- local validation note:
+  - `testing/logs/M3_SLICE1_MAIN_SHEET_VALIDATION_20260407.md`
 
 ## Tracking Rules
 

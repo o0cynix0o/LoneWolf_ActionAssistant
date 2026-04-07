@@ -10349,21 +10349,33 @@ function Get-LWSafeFileName {
 }
 
 function Write-LWBanner {
-    $titleLines = @(
-        ' _                    __        __    _  __      _      _  ',
-        '| |    ___  _ __   ___\ \      / /__ | |/ _|    / \    / \ ',
-        '| |   / _ \| ''_ \ / _ \\ \ /\ / / _ \| | |_    / _ \  / _ \\',
-        '| |__| (_) | | | |  __/\ V  V / (_) | |  _|   / ___ \/ ___ \\',
-        '|_____\___/|_| |_|\___| \_/\_/ \___/|_|_|   /_/   \_/_/   \_\\'
-    )
+    $width = 64
+    $contentWidth = $width - 4
+    $border = '+' + ('=' * ($width - 2)) + '+'
+    $title = 'LONE WOLF ACTION ASSISTANT'.PadRight($contentWidth)
+
+    if (Test-LWHasState) {
+        $status = ("{0} MODE :: BOOK {1} :: v{2}" -f ([string]$script:GameState.RuleSet).ToUpperInvariant(), [int]$script:GameState.Character.BookNumber, $script:LWAppVersion)
+    }
+    else {
+        $status = ("CAMPAIGN READY :: v{0}" -f $script:LWAppVersion)
+    }
+    if ($status.Length -gt $contentWidth) {
+        $status = $status.Substring(0, $contentWidth)
+    }
+    $status = $status.PadRight($contentWidth)
 
     Write-Host ''
-    for ($i = 0; $i -lt $titleLines.Count; $i++) {
-        $titleColor = if ($i -in @(0, 1, 4)) { 'Cyan' } else { 'White' }
-        Write-Host ("  {0}" -f $titleLines[$i]) -ForegroundColor $titleColor
-    }
-    Write-Host ("               {0}" -f $script:LWAppName) -ForegroundColor DarkYellow
-    Write-LWBannerFooter -VersionOnly -ShowHelpLine
+    Write-Host $border -ForegroundColor DarkGray
+    Write-Host '| ' -NoNewline -ForegroundColor DarkGray
+    Write-Host $title -NoNewline -ForegroundColor 'Cyan'
+    Write-Host ' |' -ForegroundColor DarkGray
+    Write-Host '| ' -NoNewline -ForegroundColor DarkGray
+    Write-Host $status -NoNewline -ForegroundColor 'White'
+    Write-Host ' |' -ForegroundColor DarkGray
+    Write-Host $border -ForegroundColor DarkGray
+    Write-LWSubtle '  Type help for commands.'
+    Write-Host ''
 }
 
 function Show-LWDisciplines {
@@ -10374,7 +10386,7 @@ function Show-LWDisciplines {
 
     $isMagnakai = Test-LWStateIsMagnakaiRuleset -State $script:GameState
     $panelTitle = if ($isMagnakai) { 'Magnakai Disciplines' } else { 'Kai Disciplines' }
-    Write-LWPanelHeader -Title $panelTitle -AccentColor 'DarkYellow'
+    Write-LWRetroPanelHeader -Title $panelTitle -AccentColor 'DarkYellow'
 
     $displayDisciplines = @()
     if ($isMagnakai) {
@@ -10399,60 +10411,52 @@ function Show-LWDisciplines {
     }
 
     if ($displayDisciplines.Count -eq 0) {
-        Write-LWSubtle '  (none)'
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
         return
     }
-
-    $leftColumnLabels = @()
-    for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
-        $leftColumnLabels += [string]$displayDisciplines[$i]
-    }
-
-    $leftColumnMaxLength = if ($leftColumnLabels.Count -gt 0) {
-        [int](($leftColumnLabels | Measure-Object -Property Length -Maximum).Maximum)
-    }
-    else {
-        0
-    }
-
-    $leftColumnWidth = [Math]::Max(16, [Math]::Min(30, ($leftColumnMaxLength + 2)))
     for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
         $leftLabel = [string]$displayDisciplines[$i]
         $rightLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
-
-        Write-Host '  - ' -NoNewline -ForegroundColor DarkGray
-        Write-Host $leftLabel.PadRight($leftColumnWidth) -NoNewline -ForegroundColor Green
-
-        if (-not [string]::IsNullOrWhiteSpace($rightLabel)) {
-            Write-Host '  - ' -NoNewline -ForegroundColor DarkGray
-            Write-Host $rightLabel -ForegroundColor Green
+        if (-not [string]::IsNullOrWhiteSpace($rightLabel) -and (($leftLabel.Length + $rightLabel.Length + 3) -le 60)) {
+            Write-LWRetroPanelTwoColumnRow -LeftText $leftLabel -RightText $rightLabel -LeftColor 'Green' -RightColor 'Green'
         }
         else {
-            Write-Host ''
+            Write-LWRetroPanelTextRow -Text $leftLabel -TextColor 'Green'
+            if (-not [string]::IsNullOrWhiteSpace($rightLabel)) {
+                Write-LWRetroPanelTextRow -Text $rightLabel -TextColor 'Green'
+            }
         }
     }
+    Write-LWRetroPanelFooter
 
     if ($isMagnakai) {
         $circleDefinitions = @($script:GameData.MagnakaiLoreCircles)
         if ($circleDefinitions.Count -gt 0) {
-            Write-Host ''
-            Write-LWPanelHeader -Title 'Lore-circles' -AccentColor 'Magenta'
+            Write-LWRetroPanelHeader -Title 'Lore Circles' -AccentColor 'Magenta'
             $owned = @($script:GameState.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+            $circleRows = @()
             foreach ($definition in $circleDefinitions) {
                 $required = @($definition.Disciplines | ForEach-Object { [string]$_ })
                 $ownedCount = @($required | Where-Object { $owned -contains $_ }).Count
                 $status = if ($ownedCount -ge $required.Count) { 'complete' } elseif ($ownedCount -gt 0) { 'partial' } else { 'empty' }
-                $bonusParts = @()
-                if ([int]$definition.CombatSkillBonus -gt 0) {
-                    $bonusParts += ("+{0} CS" -f [int]$definition.CombatSkillBonus)
+                $circleName = ([string]$definition.Name) -replace '^Circle of the ', '' -replace '^Circle of ', ''
+                $circleRows += [pscustomobject]@{
+                    Text  = ("{0,-7}: {1}" -f $circleName, $status)
+                    Color = $(if ($status -eq 'complete') { 'Green' } elseif ($status -eq 'partial') { 'Yellow' } else { 'DarkGray' })
                 }
-                if ([int]$definition.EnduranceBonus -gt 0) {
-                    $bonusParts += ("+{0} END" -f [int]$definition.EnduranceBonus)
-                }
-                $label = "{0} ({1})" -f [string]$definition.Name, ($required -join ', ')
-                $value = "{0}; {1}" -f $status, ($(if ($bonusParts.Count -gt 0) { $bonusParts -join ', ' } else { 'no bonus' }))
-                Write-LWKeyValue -Label $label -Value $value -ValueColor $(if ($status -eq 'complete') { 'Green' } elseif ($status -eq 'partial') { 'Yellow' } else { 'DarkGray' })
             }
+
+            for ($i = 0; $i -lt $circleRows.Count; $i += 2) {
+                $left = $circleRows[$i]
+                $right = if (($i + 1) -lt $circleRows.Count) { $circleRows[$i + 1] } else { $null }
+                Write-LWRetroPanelTwoColumnRow `
+                    -LeftText ([string]$left.Text) `
+                    -RightText $(if ($null -ne $right) { [string]$right.Text } else { '' }) `
+                    -LeftColor ([string]$left.Color) `
+                    -RightColor $(if ($null -ne $right) { [string]$right.Color } else { 'Gray' })
+            }
+            Write-LWRetroPanelFooter
         }
     }
 }
@@ -13574,28 +13578,29 @@ function Show-LWInventorySummary {
     $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
 
-    Write-LWPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
-    Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2)) -ValueColor 'Gray'
+    Write-LWRetroPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
+    Write-LWRetroPanelKeyValueRow -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2)) -ValueColor 'Gray'
     if ($hasBackpack) {
-        Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpackUsedCapacity, (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3)) -ValueColor 'Gray'
+        Write-LWRetroPanelKeyValueRow -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpackUsedCapacity, (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3)) -ValueColor 'Gray'
     }
     else {
-        Write-LWKeyValue -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
+        Write-LWRetroPanelKeyValueRow -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
     }
     if (Test-LWStateHasHerbPouch -State $script:GameState) {
-        Write-LWKeyValue -Label 'Herb Pouch' -Value ("{0}/6  {1}" -f $herbPouch.Count, (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3)) -ValueColor 'DarkGreen'
+        Write-LWRetroPanelKeyValueRow -Label 'Herb Pouch' -Value ("{0}/6  {1}" -f $herbPouch.Count, (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3)) -ValueColor 'DarkGreen'
     }
-    Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
     if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
-        Write-LWKeyValue -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
+        Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
     }
     if ($safekeeping.Count -gt 0) {
-        Write-LWKeyValue -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) -ValueColor 'DarkGray'
+        Write-LWRetroPanelKeyValueRow -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) -ValueColor 'DarkGray'
     }
     if (Test-LWStateHasConfiscatedEquipment) {
-        Write-LWKeyValue -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray'
+        Write-LWRetroPanelKeyValueRow -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray'
     }
-    Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+    Write-LWRetroPanelKeyValueRow -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+    Write-LWRetroPanelFooter
 }
 
 function Show-LWInventory {
@@ -13728,22 +13733,9 @@ function Show-LWSheet {
     $silverHelmBonus = Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState
     $displayCombatSkill = [int]$script:GameState.Character.CombatSkillBase + $shieldBonus + $silverHelmBonus
     $combatSkillText = [string]$displayCombatSkill
-    $combatSkillNotes = @()
-    if ($shieldBonus -gt 0) {
-        $combatSkillNotes += "Shield +$shieldBonus"
-    }
-    if ($silverHelmBonus -gt 0) {
-        $combatSkillNotes += "Silver Helm +$silverHelmBonus"
-    }
     if (Test-LWBookFiveLimbdeathActive -State $script:GameState) {
         $displayCombatSkill -= 3
-        $combatSkillNotes += 'Limbdeath -3'
-        if ($shieldBonus -gt 0) {
-            $combatSkillNotes += 'Shield unusable'
-        }
-    }
-    if ($combatSkillNotes.Count -gt 0) {
-        $combatSkillText = "{0} ({1})" -f $displayCombatSkill, ($combatSkillNotes -join ', ')
+        $combatSkillText = [string]$displayCombatSkill
     }
 
     $chainmailBonus = Get-LWStateChainmailEnduranceBonus -State $script:GameState
@@ -13751,64 +13743,23 @@ function Show-LWSheet {
     $helmetBonus = Get-LWStateHelmetEnduranceBonus -State $script:GameState
     $daggerPenalty = Get-LWStateDaggerOfVashnaEndurancePenalty -State $script:GameState
     $enduranceText = "{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax
-    $enduranceNotes = @()
-    if ($chainmailBonus -gt 0) {
-        $enduranceNotes += "Chainmail +$chainmailBonus"
-    }
-    if ($paddedLeatherBonus -gt 0) {
-        $enduranceNotes += "Padded Leather +$paddedLeatherBonus"
-    }
-    if ($helmetBonus -gt 0) {
-        $enduranceNotes += "Helmet +$helmetBonus"
-    }
-    if ($daggerPenalty -lt 0) {
-        $enduranceNotes += "Dagger of Vashna $daggerPenalty"
-    }
-    if ($enduranceNotes.Count -gt 0) {
-        $enduranceText += " ({0})" -f ($enduranceNotes -join ', ')
-    }
 
-    Write-LWPanelHeader -Title 'Character Sheet' -AccentColor 'Cyan'
-    Write-LWKeyValue -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
-    Write-LWKeyValue -Label 'Rule Set' -Value $script:GameState.RuleSet -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Book' -Value (Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber)) -ValueColor 'White'
-    Write-LWKeyValue -Label 'Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
-    Write-LWKeyValue -Label 'Permadeath' -Value $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
-    Write-LWKeyValue -Label 'Run Integrity' -Value ([string]$script:GameState.Run.IntegrityState) -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState))
-    Write-LWKeyValue -Label $(if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) { 'Magnakai Rank' } else { 'Kai Rank' }) -Value (Get-LWCurrentRankLabel -State $script:GameState) -ValueColor 'DarkYellow'
-    if ((Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and [bool]$script:GameState.Character.LegacyKaiComplete) {
-        Write-LWKeyValue -Label 'Legacy Kai' -Value 'Mastered' -ValueColor 'Gray'
+    Write-LWRetroPanelHeader -Title 'Character Sheet' -AccentColor 'Cyan'
+    Write-LWRetroPanelKeyValueRow -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
+    Write-LWRetroPanelKeyValueRow -Label 'Rule Set' -Value $script:GameState.RuleSet -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Book' -Value (Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber)) -ValueColor 'White'
+    Write-LWRetroPanelKeyValueRow -Label 'Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
+    $rankText = [string](Get-LWCurrentRankLabel -State $script:GameState)
+    if ($rankText -match '^\d+\s*-\s*(.+)$') {
+        $rankText = [string]$Matches[1]
     }
-    Write-LWKeyValue -Label 'Combat Skill' -Value $combatSkillText -ValueColor 'Cyan'
-    Write-LWKeyValue -Label 'Endurance' -Value $enduranceText -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
-    if (Test-LWStateHasSommerswerd -State $script:GameState) {
-        $sommerswerdBonus = Get-LWStateSommerswerdCombatSkillBonus -State $script:GameState
-        Write-LWKeyValue -Label 'Sommerswerd' -Value ("+{0} in combat; undead x2" -f $sommerswerdBonus) -ValueColor 'DarkYellow'
-    }
-    if (Test-LWStateHasBoneSword -State $script:GameState) {
-        Write-LWKeyValue -Label 'Bone Sword' -Value $(if (Test-LWStateIsInKalte -State $script:GameState) { '+1 in Book 3 / Kalte combat' } else { 'No bonus outside Book 3 / Kalte' }) -ValueColor 'DarkYellow'
-    }
-    if (Test-LWStateHasMagicSpear -State $script:GameState) {
-        Write-LWKeyValue -Label 'Magic Spear' -Value 'Weapon-like Special Item; counts as a Spear in combat.' -ValueColor 'DarkYellow'
-    }
-    if ($silverHelmBonus -gt 0) {
-        Write-LWKeyValue -Label 'Silver Helm' -Value ("+{0} Combat Skill" -f $silverHelmBonus) -ValueColor 'DarkYellow'
-    }
-    Write-LWKeyValue -Label 'Combat Mode' -Value $script:GameState.Settings.CombatMode -ValueColor (Get-LWModeColor -Mode $script:GameState.Settings.CombatMode)
-    if ((Test-LWStateIsMagnakaiRuleset -State $script:GameState) -and @($script:GameState.Character.ImprovedDisciplines).Count -gt 0) {
-        Write-LWKeyValue -Label 'Improved Disciplines' -Value (@($script:GameState.Character.ImprovedDisciplines) -join ', ') -ValueColor 'Gray'
-    }
-    $bookSixDERules = @(Get-LWBookSixDEAdventureRuleSummary -State $script:GameState)
-    if ($bookSixDERules.Count -gt 0) {
-        Write-LWKeyValue -Label 'Book 6 DE Rules' -Value ($bookSixDERules -join '; ') -ValueColor 'Gray'
-    }
-    Write-LWKeyValue -Label 'Completed Books' -Value (Format-LWCompletedBooks -Books @($script:GameState.Character.CompletedBooks)) -ValueColor 'Gray'
-    Write-LWKeyValue -Label 'Current Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
-    Write-LWKeyValue -Label 'Achievements' -Value ("{0}/{1}" -f (Get-LWAchievementEligibleUnlockedCount), (Get-LWAchievementAvailableCount)) -ValueColor 'Magenta'
+    Write-LWRetroPanelKeyValueRow -Label 'Rank' -Value $rankText -ValueColor 'DarkYellow'
+    Write-LWRetroPanelKeyValueRow -Label 'Combat Skill' -Value $combatSkillText -ValueColor 'Cyan'
+    Write-LWRetroPanelKeyValueRow -Label 'Endurance' -Value $enduranceText -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
+    Write-LWRetroPanelKeyValueRow -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+    Write-LWRetroPanelFooter
     Show-LWDisciplines
     Show-LWInventorySummary
-    Write-LWPanelHeader -Title 'Quick Notes' -AccentColor 'DarkCyan'
-    Write-LWKeyValue -Label 'Note Count' -Value ([string]@($script:GameState.Character.Notes).Count) -ValueColor 'Gray'
 }
 
 function Resolve-LWSectionExit {
