@@ -461,6 +461,7 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
     $bypassed = $false
     $bypassReason = $null
     $zeroCountsAsTen = $false
+    $rollCount = 1
 
     switch ($section) {
         72 {
@@ -527,6 +528,7 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
         }
         340 {
             $description = 'Archery tournament total check (3 picks added together).'
+            $rollCount = 3
             if (@($State.Character.WeaponmasteryWeapons) -contains 'Bow') {
                 $modifier += 3
                 $modifierNotes += 'Weaponmastery with Bow'
@@ -540,6 +542,7 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
         Description     = $description
         Modifier        = $modifier
         ModifierNotes   = @($modifierNotes)
+        RollCount       = $rollCount
         ZeroCountsAsTen = $zeroCountsAsTen
         Bypassed        = $bypassed
         BypassReason    = $bypassReason

@@ -3099,6 +3099,74 @@ function Write-LWCurrentSectionRandomNumberRoll {
     Write-LWInfo ("Book {0} section {1} adjusted total: {2}. {3}" -f $bookNumber, [int]$context.Section, $adjusted, [string]$context.Description)
 }
 
+function Write-LWCurrentSectionRandomNumberRollSequence {
+    param(
+        [Parameter(Mandatory = $true)][int[]]$Rolls,
+        [object]$State = $script:GameState
+    )
+
+    $context = Get-LWSectionRandomNumberContext -State $State
+    if ($null -eq $context) {
+        Write-LWInfo ("Random Number Table rolls: {0}" -f ((@($Rolls) | ForEach-Object { [int]$_ }) -join ', '))
+        return
+    }
+
+    $bookNumber = if ($null -ne $State -and $null -ne $State.Character) { [int]$State.Character.BookNumber } else { 0 }
+
+    if ([bool]$context.Bypassed) {
+        Write-LWInfo ("Random Number Table rolls: {0}" -f ((@($Rolls) | ForEach-Object { [int]$_ }) -join ', '))
+        Write-LWInfo ("Book {0} section {1}: {2}" -f $bookNumber, [int]$context.Section, [string]$context.BypassReason)
+        return
+    }
+
+    $effectiveRolls = @()
+    foreach ($roll in @($Rolls)) {
+        $effectiveRoll = [int]$roll
+        if ([bool]$context.ZeroCountsAsTen -and $effectiveRoll -eq 0) {
+            $effectiveRoll = 10
+        }
+        $effectiveRolls += $effectiveRoll
+    }
+
+    $subtotal = ((@($effectiveRolls) | Measure-Object -Sum).Sum)
+    $adjusted = [int]$subtotal + [int]$context.Modifier
+
+    Write-LWInfo ("Random Number Table rolls: {0}" -f ((@($Rolls) | ForEach-Object { [int]$_ }) -join ', '))
+    if ([bool]$context.ZeroCountsAsTen -and (@($Rolls) | Where-Object { [int]$_ -eq 0 }).Count -gt 0) {
+        Write-LWInfo ("Book {0} section {1}: this check treats any 0 roll as 10." -f $bookNumber, [int]$context.Section)
+    }
+
+    Write-LWInfo ("Book {0} section {1} subtotal from {2} pick(s): {3}." -f $bookNumber, [int]$context.Section, @($Rolls).Count, $subtotal)
+    if ([int]$context.Modifier -ne 0) {
+        Write-LWInfo ("Book {0} section {1} modifier {2} applies once to the combined total: {3}." -f $bookNumber, [int]$context.Section, (Format-LWSigned -Value ([int]$context.Modifier)), ($(if (@($context.ModifierNotes).Count -gt 0) { (@($context.ModifierNotes) -join '; ') } else { 'context rule' })))
+    }
+    else {
+        Write-LWInfo ("Book {0} section {1}: no automatic modifier applies." -f $bookNumber, [int]$context.Section)
+    }
+    Write-LWInfo ("Book {0} section {1} adjusted total: {2}. {3}" -f $bookNumber, [int]$context.Section, $adjusted, [string]$context.Description)
+}
+
+function Invoke-LWCurrentSectionRandomNumberCheck {
+    param([object]$State = $script:GameState)
+
+    $context = Get-LWSectionRandomNumberContext -State $State
+    $rollCount = 1
+    if ($null -ne $context -and (Test-LWPropertyExists -Object $context -Name 'RollCount') -and $null -ne $context.RollCount) {
+        $rollCount = [Math]::Max(1, [int]$context.RollCount)
+    }
+
+    if ($rollCount -le 1) {
+        Write-LWCurrentSectionRandomNumberRoll -Roll (Get-LWRandomDigit) -State $State
+        return
+    }
+
+    $rolls = @()
+    for ($index = 0; $index -lt $rollCount; $index++) {
+        $rolls += (Get-LWRandomDigit)
+    }
+    Write-LWCurrentSectionRandomNumberRollSequence -Rolls $rolls -State $State
+}
+
 function Invoke-LWSectionEntryRules {
     if (-not (Test-LWHasState)) {
         return
@@ -18887,7 +18955,7 @@ function Invoke-LWCommand {
             return $null
         }
         'roll'        {
-            Write-LWCurrentSectionRandomNumberRoll -Roll (Get-LWRandomDigit)
+            Invoke-LWCurrentSectionRandomNumberCheck
             return $null
         }
         'section'     {

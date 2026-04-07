@@ -210,7 +210,7 @@ function Invoke-LWCoreCommand {
                 return $null
             }
             'roll'        {
-                Write-LWCurrentSectionRandomNumberRoll -Roll (Get-LWRandomDigit)
+                Invoke-LWCurrentSectionRandomNumberCheck
                 return $null
             }
             'section'     {
