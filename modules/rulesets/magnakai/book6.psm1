@@ -699,6 +699,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 }
             }
         }
+        278 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section278DamageApplied' -Delta -3 -MessagePrefix 'Section 278: the creature''s surprise attack tears a gaping wound in your arm.' -FatalCause 'The surprise attack at section 278 reduced your Endurance to zero.')
+        }
         282 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section282DamageApplied' -Delta -1 -MessagePrefix 'Section 282: the thrown dagger grazes your side before the fight begins.' -FatalCause 'The ambush at section 282 reduced your Endurance to zero.')
         }
