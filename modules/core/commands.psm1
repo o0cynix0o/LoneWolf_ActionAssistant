@@ -38,6 +38,7 @@ function Invoke-LWCoreShowHelpScreen {
     Write-LWRetroPanelTwoColumnRow -LeftText 'potion' -RightText 'eat / meal' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
     Write-LWRetroPanelTwoColumnRow -LeftText 'note <text>' -RightText 'roll' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
     Write-LWRetroPanelTwoColumnRow -LeftText 'add / drop / recover' -RightText 'gold / end' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText 'arrows +/-n' -RightText '' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Run Commands' -AccentColor 'Magenta'
@@ -266,11 +267,11 @@ function Invoke-LWCoreCommand {
                 }
                 return $null
             }
-            'endurance'   {
-                if ($parts.Count -gt 1) {
-                    $delta = 0
-                    if ([int]::TryParse($parts[1], [ref]$delta)) {
-                        Update-LWEndurance -Delta $delta
+        'endurance'   {
+            if ($parts.Count -gt 1) {
+                $delta = 0
+                if ([int]::TryParse($parts[1], [ref]$delta)) {
+                    Update-LWEndurance -Delta $delta
                     }
                     else {
                         Write-LWWarn 'Endurance change must be a whole number, like endurance -1 or endurance +2.'
@@ -278,10 +279,40 @@ function Invoke-LWCoreCommand {
                 }
                 else {
                     Update-LWEndurance
-                }
-                return $null
             }
-            'combat'      { Invoke-LWCombatCommand -Parts $parts; return $null }
+            return $null
+        }
+        'arrow'       {
+            if ($parts.Count -gt 1) {
+                $delta = 0
+                if ([int]::TryParse($parts[1], [ref]$delta)) {
+                    Update-LWQuiverArrows -Delta $delta
+                }
+                else {
+                    Write-LWWarn 'Arrow change must be a whole number, like arrows -1 or arrows +2.'
+                }
+            }
+            else {
+                Update-LWQuiverArrows
+            }
+            return $null
+        }
+        'arrows'      {
+            if ($parts.Count -gt 1) {
+                $delta = 0
+                if ([int]::TryParse($parts[1], [ref]$delta)) {
+                    Update-LWQuiverArrows -Delta $delta
+                }
+                else {
+                    Write-LWWarn 'Arrow change must be a whole number, like arrows -1 or arrows +2.'
+                }
+            }
+            else {
+                Update-LWQuiverArrows
+            }
+            return $null
+        }
+        'combat'      { Invoke-LWCombatCommand -Parts $parts; return $null }
             'fight'       {
                 if ($parts.Count -gt 1) {
                     $fightSubcommand = $parts[1].ToLowerInvariant()

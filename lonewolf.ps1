@@ -2770,17 +2770,6 @@ function Get-LWBookFiveSectionRandomNumberContext {
                 }
             }
         }
-        301 {
-            $description = 'Gate-spike climb check.'
-            if ($disciplineCount -ge 7) {
-                $modifier -= 2
-                $modifierNotes += 'Kai rank Guardian+'
-            }
-            if (Test-LWStateHasDiscipline -State $State -Name 'Hunting') {
-                $modifier -= 1
-                $modifierNotes += 'Hunting'
-            }
-        }
         305 { $description = 'Falling-rope landing check.' }
         312 {
             if ((Test-LWStateHasDiscipline -State $State -Name 'Hunting') -or (Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense')) {
@@ -6550,6 +6539,69 @@ function Get-LWQuiverItemNames {
 
 function Get-LWArrowItemNames {
     return @('Arrow', 'Arrows')
+}
+
+function Get-LWQuiverArrowCapacity {
+    return 6
+}
+
+function Test-LWStateHasQuiver {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State) {
+        return $false
+    }
+
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWQuiverItemNames) -Type 'special')))
+}
+
+function Get-LWQuiverArrowCount {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Inventory) {
+        return 0
+    }
+
+    $rawValue = 0
+    if ((Test-LWPropertyExists -Object $State.Inventory -Name 'QuiverArrows') -and $null -ne $State.Inventory.QuiverArrows) {
+        $rawValue = [int]$State.Inventory.QuiverArrows
+    }
+
+    if (-not (Test-LWStateHasQuiver -State $State)) {
+        return 0
+    }
+
+    $capacity = Get-LWQuiverArrowCapacity
+    return [Math]::Max(0, [Math]::Min($rawValue, $capacity))
+}
+
+function Sync-LWQuiverArrowState {
+    param([object]$State = $script:GameState)
+
+    if ($null -eq $State -or $null -eq $State.Inventory) {
+        return 0
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'QuiverArrows') -or $null -eq $State.Inventory.QuiverArrows) {
+        $State.Inventory | Add-Member -Force -NotePropertyName QuiverArrows -NotePropertyValue 0
+    }
+
+    $normalized = if (Test-LWStateHasQuiver -State $State) {
+        [Math]::Max(0, [Math]::Min([int]$State.Inventory.QuiverArrows, (Get-LWQuiverArrowCapacity)))
+    }
+    else {
+        0
+    }
+
+    $State.Inventory.QuiverArrows = $normalized
+    return $normalized
+}
+
+function Format-LWQuiverArrowCounter {
+    param([object]$State = $script:GameState)
+
+    $current = Sync-LWQuiverArrowState -State $State
+    return ("{0}/{1}" -f $current, (Get-LWQuiverArrowCapacity))
 }
 
 function Get-LWTowelItemNames {
@@ -13836,8 +13888,8 @@ function Show-LWInventorySummary {
         Write-LWRetroPanelKeyValueRow -Label 'Herb Pouch' -Value ("{0}/6  {1}" -f $herbPouch.Count, (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3)) -ValueColor 'DarkGreen'
     }
     Write-LWRetroPanelKeyValueRow -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
-    if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
-        Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
+    if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+        Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
     }
     if ($safekeeping.Count -gt 0) {
         Write-LWRetroPanelKeyValueRow -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) -ValueColor 'DarkGray'
@@ -13870,7 +13922,9 @@ function Show-LWInventory {
         Write-LWRetroPanelKeyValueRow -Label 'Herb Pouch' -Value ("{0}/6" -f $herbPouch.Count) -ValueColor 'DarkGreen'
     }
     Write-LWRetroPanelKeyValueRow -Label 'Special Items' -Value ("{0}/12" -f $special.Count) -ValueColor 'DarkCyan'
-    Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
+    if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+        Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
+    }
     Write-LWRetroPanelFooter
 
     Show-LWInventorySlotsGridSection -Type 'weapon'
@@ -13955,13 +14009,17 @@ function Show-LWInventory {
         Write-LWSubtle '  Long Rope: occupies 2 backpack slots.'
         Write-Host ''
     }
-    if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
-        Write-LWSubtle ("  Quiver: {0} arrow{1} ready for use with a Bow." -f [int]$script:GameState.Inventory.QuiverArrows, $(if ([int]$script:GameState.Inventory.QuiverArrows -eq 1) { '' } else { 's' }))
+    if (Test-LWStateHasQuiver -State $script:GameState) {
+        $arrowCount = Get-LWQuiverArrowCount -State $script:GameState
+        Write-LWSubtle ("  Quiver: {0} arrow{1} available for use with a Bow." -f (Format-LWQuiverArrowCounter -State $script:GameState), $(if ($arrowCount -eq 1) { '' } else { 's' }))
         Write-Host ''
     }
     Write-LWSubtle '  Use add <type> <name> [qty] to add items quickly.'
     Write-LWSubtle '  Use drop <type> <slot> to remove by slot number, or drop <type> all to clear a section.'
     Write-LWSubtle '  Use recover <type> or recover all to restore stashed gear from a bulk drop.'
+    if (Test-LWStateHasQuiver -State $script:GameState) {
+        Write-LWSubtle '  Use arrows <delta> to adjust arrows spent or recovered from the Quiver.'
+    }
     $recoveryNotes = @()
     foreach ($type in @('weapon', 'backpack', 'special')) {
         $recoveryItems = @(Get-LWInventoryRecoveryItems -Type $type)
@@ -14269,7 +14327,7 @@ function Add-LWInventoryItem {
     }
 
     if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWQuiverItemNames) -Target $resolvedName))) {
-        $script:GameState.Inventory.QuiverArrows = 6
+        $script:GameState.Inventory.QuiverArrows = Get-LWQuiverArrowCapacity
     }
 
     Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $resolvedName
@@ -14351,7 +14409,7 @@ function TryAdd-LWInventoryItemSilently {
     }
 
     if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWQuiverItemNames) -Target $resolvedName))) {
-        $script:GameState.Inventory.QuiverArrows = 6
+        $script:GameState.Inventory.QuiverArrows = Get-LWQuiverArrowCapacity
     }
 
     Register-LWStoryInventoryAchievementTriggers -Type $Type -Name $resolvedName
@@ -14876,6 +14934,39 @@ function Update-LWGoldInteractive {
         return
     }
     Update-LWGold -Delta $delta
+}
+
+function Update-LWQuiverArrows {
+    param([Nullable[int]]$Delta = $null)
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    if (-not (Test-LWStateHasQuiver -State $script:GameState)) {
+        Write-LWWarn 'You are not carrying a Quiver.'
+        return
+    }
+
+    if ($null -eq $Delta) {
+        $Delta = Read-LWInt -Prompt 'Arrow change (+/-)' -Default 0
+    }
+
+    $requestedDelta = [int]$Delta
+    $current = Sync-LWQuiverArrowState -State $script:GameState
+    $capacity = Get-LWQuiverArrowCapacity
+    $newValue = [Math]::Max(0, [Math]::Min(($current + $requestedDelta), $capacity))
+    $actualDelta = $newValue - $current
+    $script:GameState.Inventory.QuiverArrows = $newValue
+
+    $message = "Quiver arrows changed by $(Format-LWSigned -Value $actualDelta). Now $(Format-LWQuiverArrowCounter -State $script:GameState)."
+    if ($actualDelta -ne $requestedDelta) {
+        $message += ' Adjustment was capped by 0 or quiver capacity.'
+    }
+
+    Write-LWInfo $message
+    Invoke-LWMaybeAutosave
 }
 
 function Get-LWBackpackItemCount {

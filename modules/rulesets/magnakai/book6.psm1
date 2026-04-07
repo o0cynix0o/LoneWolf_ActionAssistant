@@ -710,6 +710,23 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 }
             }
         }
+        301 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section301ArrowSpent')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section301ArrowSpent'
+                if (Test-LWStateHasQuiver -State $script:GameState) {
+                    if ((Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+                        Update-LWQuiverArrows -Delta -1
+                        Write-LWInfo 'Section 301: 1 Arrow spent to wound Roark.'
+                    }
+                    else {
+                        Write-LWWarn 'Section 301: this route assumes you fire 1 Arrow, but your Quiver is empty.'
+                    }
+                }
+                else {
+                    Write-LWWarn 'Section 301: this route assumes you fire 1 Arrow, but no Quiver is currently recorded.'
+                }
+            }
+        }
         304 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section304CessClaimed')) {
                 if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Cess') {
@@ -876,8 +893,8 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
         Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
-        if ([int]$script:GameState.Inventory.QuiverArrows -gt 0) {
-            Write-LWKeyValue -Label 'Arrows' -Value ([string]$script:GameState.Inventory.QuiverArrows) -ValueColor 'DarkYellow'
+        if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+            Write-LWKeyValue -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
         }
         Write-Host ''
         for ($i = 0; $i -lt $availableChoices.Count; $i++) {
