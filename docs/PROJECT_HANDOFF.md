@@ -41,6 +41,11 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M1 modular refactor is complete and pushed
 - M2 Magnakai / Book `6` support is complete on `dev`
 - M2.7 validation closeout is complete on `dev` under the route-and-mode validation bar
+- M3 UX polish is now active on `dev`
+- approved M3 visual direction:
+  - `Arcade / GameFAQs Retro`
+- shared M3 style rules are now tracked in:
+  - `docs/M3_UI_STYLE_GUIDE.md`
 
 ## Main Repo Files
 
@@ -82,6 +87,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   GitHub labels, milestones, issue forms, and project-board notes
 - `docs/MAGNAKAI_BOOK6_PLAN.md`
   Magnakai ruleset transition design and implementation notes for Book `6`
+- `docs/M3_UI_STYLE_GUIDE.md`
+  Shared UI rules for the M3 screen refresh
 
 ## Local-Only Working Material
 

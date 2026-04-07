@@ -454,7 +454,7 @@ Local checkpoint:
 
 Status:
 
-- `planned`
+- `in_progress`
 
 Goal:
 
@@ -463,6 +463,24 @@ Goal:
 Notes:
 
 - this stays behind the refactor because UI cleanup is safer after module boundaries exist
+- approved visual direction for M3:
+  - `Arcade / GameFAQs Retro`
+- shared UI rules now tracked in:
+  - `docs/M3_UI_STYLE_GUIDE.md`
+
+Deliverables:
+
+- shared UI style spec
+- refreshed main banner
+- refreshed character sheet
+- refreshed inventory/combat/campaign/achievement screens
+- consistent panel and border language across the app
+
+Current checkpoint:
+
+- Phase 1 style selection completed on `2026-04-07`
+- Phase 2 shared style rules documented on `2026-04-07`
+- implementation slices still pending screen-by-screen approval
 
 ## Tracking Rules
 
