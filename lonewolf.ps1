@@ -11764,8 +11764,8 @@ function Show-LWCampaignOverview {
 
     Write-LWRetroPanelHeader -Title 'Campaign Status' -AccentColor 'DarkCyan'
     Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $Summary.CharacterName -RightLabel 'Difficulty' -RightValue ([string]$Summary.Difficulty) -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty ([string]$Summary.Difficulty))
-    Write-LWRetroPanelKeyValueRow -Label 'Current Book' -Value $Summary.CurrentBookLabel -ValueColor 'White'
     Write-LWRetroPanelPairRow -LeftLabel 'Current Sect.' -LeftValue ([string]$Summary.CurrentSection) -RightLabel 'Permadeath' -RightValue $(if ($Summary.PermadeathEnabled) { 'On' } else { 'Off' }) -LeftColor 'White' -RightColor $(if ($Summary.PermadeathEnabled) { 'Red' } else { 'Gray' })
+    Write-LWRetroPanelKeyValueRow -Label 'Current Book' -Value $Summary.CurrentBookLabel -ValueColor 'White' -LabelWidth 12
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Completed Books' -AccentColor 'Cyan'
