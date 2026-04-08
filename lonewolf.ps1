@@ -10850,7 +10850,7 @@ function Get-LWHelpfulCommandRows {
                 'locked' {
                     return @(
                         (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
-                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show book-by-book totals'),
+                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show tracked milestone progress'),
                         (New-LWHelpfulCommandRow -Label 'achievements recent' -Value 'show the latest unlocks'),
                         (New-LWHelpfulCommandRow -Label 'campaign' -Value 'compare against run progress')
                     )
@@ -10874,7 +10874,7 @@ function Get-LWHelpfulCommandRows {
                 'planned' {
                     return @(
                         (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
-                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show book-by-book totals'),
+                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show tracked milestone progress'),
                         (New-LWHelpfulCommandRow -Label 'campaign milestones' -Value 'compare run milestones'),
                         (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
                     )
@@ -10882,9 +10882,10 @@ function Get-LWHelpfulCommandRows {
                 default {
                     return @(
                         (New-LWHelpfulCommandRow -Label 'achievements unlocked' -Value 'show unlocked achievements'),
+                        (New-LWHelpfulCommandRow -Label 'achievements locked' -Value 'show locked achievement slots'),
                         (New-LWHelpfulCommandRow -Label 'achievements recent' -Value 'show the latest unlocks'),
-                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show book-by-book totals'),
-                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'compare against run progress')
+                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show tracked milestone progress'),
+                        (New-LWHelpfulCommandRow -Label 'campaign milestones' -Value 'compare run milestones')
                     )
                 }
             }
@@ -13036,12 +13037,15 @@ function Show-LWAchievementOverview {
         }
     ).Count
     $currentBook = [int]$script:GameState.Character.BookNumber
+    $currentBookDefinitions = @(Get-LWAchievementBookDisplayDefinitions -BookNumber $currentBook)
+    $currentBookUnlocked = @($currentBookDefinitions | Where-Object { Test-LWAchievementUnlocked -Id ([string]$_.Id) }).Count
+    $currentBookLocked = @($currentBookDefinitions | Where-Object { -not (Test-LWAchievementUnlocked -Id ([string]$_.Id)) }).Count
 
     Write-LWRetroPanelHeader -Title 'Achievement Status' -AccentColor 'Magenta'
     Write-LWRetroPanelKeyValueRow -Label 'Unlocked' -Value ("{0} / {1}" -f $eligibleUnlockedCount, $eligibleCount) -ValueColor 'White'
     Write-LWRetroPanelKeyValueRow -Label 'Profile Total' -Value ("{0} / {1}" -f $profileUnlockedCount, $profileTotalCount) -ValueColor 'Magenta'
     Write-LWRetroPanelKeyValueRow -Label 'Hidden' -Value ([string]$hiddenLockedCount) -ValueColor 'DarkYellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Current Book' -Value (Format-LWBookLabel -BookNumber $currentBook) -ValueColor 'White'
+    Write-LWRetroPanelKeyValueRow -Label 'Book Progress' -Value ("Book {0}: {1} / {2}" -f $currentBook, $currentBookUnlocked, $currentBookDefinitions.Count) -ValueColor 'White'
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Book Totals' -AccentColor 'Cyan'
@@ -13083,8 +13087,6 @@ function Show-LWAchievementOverview {
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Current Book Hints' -AccentColor 'Cyan'
-    $currentBookDefinitions = @(Get-LWAchievementBookDisplayDefinitions -BookNumber $currentBook)
-    $currentBookLocked = @($currentBookDefinitions | Where-Object { -not (Test-LWAchievementUnlocked -Id ([string]$_.Id)) }).Count
     if ($currentBookLocked -gt 0) {
         Write-LWRetroPanelTextRow -Text ("Hidden achievement slots remain in Book {0}." -f $currentBook) -TextColor 'Gray'
         Write-LWRetroPanelTextRow -Text 'Route and DE option choices can affect unlock coverage.' -TextColor 'Gray'
@@ -13092,11 +13094,6 @@ function Show-LWAchievementOverview {
     else {
         Write-LWRetroPanelTextRow -Text ("Book {0} story achievements are fully cleared." -f $currentBook) -TextColor 'Green'
     }
-    Write-LWRetroPanelFooter
-
-    Write-LWRetroPanelHeader -Title 'View Commands' -AccentColor 'DarkYellow'
-    Write-LWRetroPanelTwoColumnRow -LeftText 'achievements' -RightText 'achievements progress' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-    Write-LWRetroPanelTwoColumnRow -LeftText 'achievements locked' -RightText 'achievements recent' -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
     Write-LWRetroPanelFooter
 }
 
