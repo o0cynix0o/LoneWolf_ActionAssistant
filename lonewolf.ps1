@@ -14546,14 +14546,14 @@ function Show-LWSheet {
     $enduranceText = "{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax
 
     Write-LWRetroPanelHeader -Title 'Character Sheet' -AccentColor 'Cyan'
-    Write-LWRetroPanelPairRow -LeftLabel 'Name' -LeftValue $script:GameState.Character.Name -RightLabel 'Section' -RightValue ([string]$script:GameState.CurrentSection) -LeftColor 'White' -RightColor 'White' -LeftWidth 30
+    Write-LWRetroPanelKeyValueRow -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White' -LabelWidth 12
     $rankText = [string](Get-LWCurrentRankLabel -State $script:GameState)
     if ($rankText -match '^\d+\s*-\s*(.+)$') {
         $rankText = [string]$Matches[1]
     }
-    Write-LWRetroPanelKeyValueRow -Label 'Rank' -Value $rankText -ValueColor 'DarkYellow'
-    Write-LWRetroPanelPairRow -LeftLabel 'Combat Skill' -LeftValue $combatSkillText -RightLabel 'Endurance' -RightValue $enduranceText -LeftColor 'Cyan' -RightColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax) -LeftWidth 27
-    Write-LWRetroPanelPairRow -LeftLabel 'Gold Crowns' -LeftValue ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -RightLabel 'Run Integrity' -RightValue ([string]$script:GameState.Run.IntegrityState) -LeftColor 'Yellow' -RightColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState)) -LeftWidth 27
+    Write-LWRetroPanelPairRow -LeftLabel 'Section' -LeftValue ([string]$script:GameState.CurrentSection) -RightLabel 'Rank' -RightValue $rankText -LeftColor 'White' -RightColor 'DarkYellow' -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Skill' -LeftValue $combatSkillText -RightLabel 'Endurance' -RightValue $enduranceText -LeftColor 'Cyan' -RightColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax) -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Crowns' -LeftValue ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -RightLabel 'Run Integrity' -RightValue ([string]$script:GameState.Run.IntegrityState) -LeftColor 'Yellow' -RightColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState)) -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
     Write-LWRetroPanelFooter
     Show-LWDisciplines
     Show-LWInventorySummary
