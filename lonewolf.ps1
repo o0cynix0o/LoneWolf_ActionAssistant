@@ -14474,17 +14474,36 @@ function Show-LWInventory {
     $herbPouch = @($script:GameState.Inventory.HerbPouchItems)
     $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
+    $summaryEntries = @(
+        [pscustomobject]@{ Label = 'Gold Crowns'; Value = ("{0}/50" -f $script:GameState.Inventory.GoldCrowns); Color = 'Yellow' }
+        [pscustomobject]@{ Label = 'Weapons'; Value = ("{0}/2" -f $weapons.Count); Color = 'Green' }
+        [pscustomobject]@{ Label = 'Backpack'; Value = $(if ($hasBackpack) { "{0}/8" -f $backpackUsedCapacity } else { 'lost' }); Color = $(if ($hasBackpack) { 'Yellow' } else { 'DarkGray' }) }
+    )
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        $summaryEntries += [pscustomobject]@{ Label = 'Herb Pouch'; Value = ("{0}/6" -f $herbPouch.Count); Color = 'DarkGreen' }
+    }
+    $summaryEntries += [pscustomobject]@{ Label = 'Special Items'; Value = ("{0}/12" -f $special.Count); Color = 'DarkCyan' }
+    if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+        $summaryEntries += [pscustomobject]@{ Label = 'Arrows'; Value = (Format-LWQuiverArrowCounter -State $script:GameState); Color = 'DarkYellow' }
+    }
 
     Write-LWRetroPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Weapons' -Value ("{0}/2" -f $weapons.Count) -ValueColor 'Green'
-    Write-LWRetroPanelKeyValueRow -Label 'Backpack' -Value $(if ($hasBackpack) { "{0}/8" -f $backpackUsedCapacity } else { 'lost' }) -ValueColor $(if ($hasBackpack) { 'Yellow' } else { 'DarkGray' })
-    if (Test-LWStateHasHerbPouch -State $script:GameState) {
-        Write-LWRetroPanelKeyValueRow -Label 'Herb Pouch' -Value ("{0}/6" -f $herbPouch.Count) -ValueColor 'DarkGreen'
-    }
-    Write-LWRetroPanelKeyValueRow -Label 'Special Items' -Value ("{0}/12" -f $special.Count) -ValueColor 'DarkCyan'
-    if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
-        Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
+    for ($i = 0; $i -lt $summaryEntries.Count; $i += 2) {
+        $leftEntry = $summaryEntries[$i]
+        $rightEntry = if (($i + 1) -lt $summaryEntries.Count) { $summaryEntries[$i + 1] } else { $null }
+
+        if ($null -ne $rightEntry) {
+            Write-LWRetroPanelPairRow `
+                -LeftLabel ([string]$leftEntry.Label) `
+                -LeftValue ([string]$leftEntry.Value) `
+                -RightLabel ([string]$rightEntry.Label) `
+                -RightValue ([string]$rightEntry.Value) `
+                -LeftColor ([string]$leftEntry.Color) `
+                -RightColor ([string]$rightEntry.Color)
+        }
+        else {
+            Write-LWRetroPanelKeyValueRow -Label ([string]$leftEntry.Label) -Value ([string]$leftEntry.Value) -ValueColor ([string]$leftEntry.Color)
+        }
     }
     Write-LWRetroPanelFooter
 
