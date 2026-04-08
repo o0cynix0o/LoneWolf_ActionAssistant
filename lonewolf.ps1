@@ -11418,11 +11418,34 @@ function Get-LWCombatArchiveOutcomeLabel {
         'Victory' { return 'Win' }
         'Defeat' { return 'Loss' }
         'Knockout' { return 'KO' }
+        'Special' { return 'Spec' }
         'Evaded' { return 'Evade' }
         'In Progress' { return 'Live' }
         'Stopped' { return 'Stop' }
         default { return ([string]$Outcome) }
     }
+}
+
+function Format-LWCombatArchiveCellText {
+    param(
+        [string]$Text,
+        [int]$Width
+    )
+
+    $value = if ($null -eq $Text) { '' } else { [string]$Text }
+    if ($Width -le 0) {
+        return ''
+    }
+
+    if ($value.Length -gt $Width) {
+        if ($Width -le 3) {
+            return $value.Substring(0, $Width)
+        }
+
+        return ($value.Substring(0, ($Width - 3)) + '...')
+    }
+
+    return $value.PadRight($Width)
 }
 
 function Get-LWCombatArchiveEntryText {
@@ -11437,8 +11460,17 @@ function Get-LWCombatArchiveEntryText {
     $roundText = if ((Test-LWPropertyExists -Object $Entry -Name 'RoundCount') -and $null -ne $Entry.RoundCount) { ("R{0}" -f [int]$Entry.RoundCount) } else { 'R?' }
     $ratioText = if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) { (Format-LWSigned -Value ([int]$Entry.CombatRatio)) } else { '?' }
     $weaponText = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { 'Unknown' }
+    $entryFieldText = ("{0} {1}" -f $Prefix, $sectionText).Trim()
+    $fields = @(
+        (Format-LWCombatArchiveCellText -Text $entryFieldText -Width 8),
+        (Format-LWCombatArchiveCellText -Text $enemyName -Width 15),
+        (Format-LWCombatArchiveCellText -Text $outcomeLabel -Width 5),
+        (Format-LWCombatArchiveCellText -Text $roundText -Width 3),
+        (Format-LWCombatArchiveCellText -Text $ratioText -Width 3),
+        (Format-LWCombatArchiveCellText -Text $weaponText -Width 11)
+    )
 
-    return ("{0} {1} | {2} | {3} | {4} | {5} | {6}" -f $Prefix, $sectionText, $enemyName, $outcomeLabel, $roundText, $ratioText, $weaponText)
+    return ([string]::Join(' | ', $fields))
 }
 
 function Show-LWCombatArchiveEntriesPanel {
