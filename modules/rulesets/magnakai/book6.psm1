@@ -506,8 +506,21 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
     $bypassReason = $null
     $zeroCountsAsTen = $false
     $rollCount = 1
+    $visitedSections = if ($null -ne $State -and $null -ne $State.CurrentBookStats -and (Test-LWPropertyExists -Object $State.CurrentBookStats -Name 'VisitedSections') -and $null -ne $State.CurrentBookStats.VisitedSections) {
+        @($State.CurrentBookStats.VisitedSections | ForEach-Object { [int]$_ })
+    }
+    else {
+        @()
+    }
 
     switch ($section) {
+        24 {
+            $description = 'Return-to-Cyrilus chance check.'
+            if (@(340, 26, 103, 183, 252, 335) | Where-Object { $visitedSections -contains $_ }) {
+                $modifier -= 2
+                $modifierNotes += 'Earlier archery contest participation'
+            }
+        }
         72 {
             $description = 'Jump-the-wagon mounted leap check.'
             if (Test-LWStateHasDiscipline -State $State -Name 'Animal Control') {
