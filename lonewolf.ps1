@@ -13042,10 +13042,8 @@ function Show-LWAchievementOverview {
     $currentBookLocked = @($currentBookDefinitions | Where-Object { -not (Test-LWAchievementUnlocked -Id ([string]$_.Id)) }).Count
 
     Write-LWRetroPanelHeader -Title 'Achievement Status' -AccentColor 'Magenta'
-    Write-LWRetroPanelKeyValueRow -Label 'Unlocked' -Value ("{0} / {1}" -f $eligibleUnlockedCount, $eligibleCount) -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Profile Total' -Value ("{0} / {1}" -f $profileUnlockedCount, $profileTotalCount) -ValueColor 'Magenta'
-    Write-LWRetroPanelKeyValueRow -Label 'Hidden' -Value ([string]$hiddenLockedCount) -ValueColor 'DarkYellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Book Progress' -Value ("Book {0}: {1} / {2}" -f $currentBook, $currentBookUnlocked, $currentBookDefinitions.Count) -ValueColor 'White'
+    Write-LWRetroPanelPairRow -LeftLabel 'Unlocked' -LeftValue ("{0} / {1}" -f $eligibleUnlockedCount, $eligibleCount) -RightLabel 'Profile Total' -RightValue ("{0} / {1}" -f $profileUnlockedCount, $profileTotalCount) -LeftColor 'White' -RightColor 'Magenta' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Hidden' -LeftValue ([string]$hiddenLockedCount) -RightLabel 'Book Progress' -RightValue ("Book {0}: {1} / {2}" -f $currentBook, $currentBookUnlocked, $currentBookDefinitions.Count) -LeftColor 'DarkYellow' -RightColor 'White' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Book Totals' -AccentColor 'Cyan'
