@@ -18010,6 +18010,7 @@ function Stop-LWCombat {
     $summary = [pscustomobject]@{
         BookNumber        = [int]$script:GameState.Character.BookNumber
         BookTitle         = Get-LWBookTitle -BookNumber ([int]$script:GameState.Character.BookNumber)
+        Section           = if ($null -ne $script:GameState.CurrentSection) { [int]$script:GameState.CurrentSection } else { $null }
         EnemyName         = $script:GameState.Combat.EnemyName
         Outcome           = $Outcome
         RoundCount        = @($script:GameState.Combat.Log).Count
