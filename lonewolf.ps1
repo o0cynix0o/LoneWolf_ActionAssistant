@@ -8114,6 +8114,57 @@ function Sync-LWMagnakaiLoreCircleBonuses {
     }
 }
 
+function Get-LWLoreCircleDisplayName {
+    param([string]$Name)
+
+    return (([string]$Name) -replace '^Circle of the ', '' -replace '^Circle of ', '')
+}
+
+function Get-LWLoreCircleDisplayOrder {
+    param([string]$Name)
+
+    switch (Get-LWLoreCircleDisplayName -Name $Name) {
+        'Spirit' { return 0 }
+        'Fire' { return 1 }
+        'Solaris' { return 2 }
+        'Light' { return 3 }
+        default { return 99 }
+    }
+}
+
+function Format-LWLoreCirclePanelRow {
+    param(
+        [Parameter(Mandatory = $true)][object]$Definition,
+        [string[]]$OwnedDisciplines = @()
+    )
+
+    $required = @($Definition.Disciplines | ForEach-Object { [string]$_ })
+    $ownedCount = @($required | Where-Object { $OwnedDisciplines -contains $_ }).Count
+    $status = if ($ownedCount -ge $required.Count) { 'done' } elseif ($ownedCount -gt 0) { 'partial' } else { 'empty' }
+    $circleName = Get-LWLoreCircleDisplayName -Name ([string]$Definition.Name)
+    $statusText = $status
+
+    if ($status -eq 'done') {
+        $bonusParts = @()
+        if ([int]$Definition.CombatSkillBonus -gt 0) {
+            $bonusParts += ("+{0} CS" -f [int]$Definition.CombatSkillBonus)
+        }
+        if ([int]$Definition.EnduranceBonus -gt 0) {
+            $bonusParts += ("+{0} E" -f [int]$Definition.EnduranceBonus)
+        }
+        if ($bonusParts.Count -gt 0) {
+            $statusText = ("done ({0})" -f ($bonusParts -join ', '))
+        }
+    }
+
+    return [pscustomobject]@{
+        Name  = $circleName
+        Text  = ("{0,-7}: {1}" -f $circleName, $statusText)
+        Color = $(if ($status -eq 'done') { 'Green' } elseif ($status -eq 'partial') { 'Yellow' } else { 'DarkGray' })
+        Order = Get-LWLoreCircleDisplayOrder -Name ([string]$Definition.Name)
+    }
+}
+
 function Get-LWCombatMindforceLossPerRound {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -11025,15 +11076,8 @@ function Show-LWDisciplines {
         Write-LWRetroPanelHeader -Title 'Lore Circles' -AccentColor 'Magenta'
         $owned = @($magnakaiDisciplines)
         $circleRows = @()
-        foreach ($definition in @($script:GameData.MagnakaiLoreCircles)) {
-            $required = @($definition.Disciplines | ForEach-Object { [string]$_ })
-            $ownedCount = @($required | Where-Object { $owned -contains $_ }).Count
-            $status = if ($ownedCount -ge $required.Count) { 'complete' } elseif ($ownedCount -gt 0) { 'partial' } else { 'empty' }
-            $circleName = ([string]$definition.Name) -replace '^Circle of the ', '' -replace '^Circle of ', ''
-            $circleRows += [pscustomobject]@{
-                Text  = ("{0,-7}: {1}" -f $circleName, $status)
-                Color = $(if ($status -eq 'complete') { 'Green' } elseif ($status -eq 'partial') { 'Yellow' } else { 'DarkGray' })
-            }
+        foreach ($definition in @($script:GameData.MagnakaiLoreCircles | Sort-Object @{ Expression = { Get-LWLoreCircleDisplayOrder -Name ([string]$_.Name) } }, @{ Expression = { [string]$_.Name } })) {
+            $circleRows += (Format-LWLoreCirclePanelRow -Definition $definition -OwnedDisciplines $owned)
         }
 
         for ($i = 0; $i -lt $circleRows.Count; $i += 2) {
