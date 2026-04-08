@@ -14320,6 +14320,148 @@ function Show-LWInventorySummary {
     Write-LWRetroPanelFooter
 }
 
+function Get-LWInventoryNoteRows {
+    if (-not (Test-LWHasState)) {
+        return @()
+    }
+
+    $rows = @()
+
+    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+        $sommerswerdBonus = Get-LWStateSommerswerdCombatSkillBonus -State $script:GameState
+        $rows += [pscustomobject]@{
+            Label = 'Sommerswerd'
+            Value = ("+{0} CS in combat; undead x2" -f $sommerswerdBonus)
+        }
+    }
+    if (Test-LWStateHasBoneSword -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Bone Sword'
+            Value = '+1 CS in Book 3 only'
+        }
+    }
+    if (Test-LWStateHasBroadswordPlusOne -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Broadsword +1'
+            Value = '+1 CS; counts as Broadsword'
+        }
+    }
+    if (Test-LWStateHasMagicSpear -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Magic Spear'
+            Value = 'Counts as Spear; special Book 2 use'
+        }
+    }
+    if (Test-LWStateHasDrodarinWarHammer -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'War Hammer'
+            Value = '+1 CS; counts as Warhammer'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCaptainDValSwordWeaponNames) -Type 'weapon'))) {
+        $rows += [pscustomobject]@{
+            Label = 'Captain Sword'
+            Value = '+1 CS; counts as Sword'
+        }
+    }
+    if (Test-LWStateHasSolnaris -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Solnaris'
+            Value = '+2 CS; counts as Sword/Broadsword'
+        }
+    }
+    if ((Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
+        $rows += [pscustomobject]@{
+            Label = 'Silver Helm'
+            Value = '+2 CS carried'
+        }
+    }
+    if ((Get-LWStateHelmetEnduranceBonus -State $script:GameState) -gt 0) {
+        $rows += [pscustomobject]@{
+            Label = 'Helmet'
+            Value = '+2 END carried'
+        }
+    }
+    elseif ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWHelmetItemNames) -Type 'special') -and (Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
+        $rows += [pscustomobject]@{
+            Label = 'Helmet'
+            Value = 'No END bonus while Silver Helm is carried'
+        }
+    }
+    if ((Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState) -gt 0) {
+        $rows += [pscustomobject]@{
+            Label = 'Padded Waistcoat'
+            Value = '+2 END carried'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWVordakGemItemNames) -Type 'backpack'))) {
+        $rows += [pscustomobject]@{
+            Label = 'Vordak Gem'
+            Value = 'Cursed item; some routes punish it'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCrystalStarPendantItemNames) -Type 'special'))) {
+        $rows += [pscustomobject]@{
+            Label = 'Crystal Pendant'
+            Value = 'Carry-forward story item'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'))) {
+        $rows += [pscustomobject]@{
+            Label = 'Meal of Laumspur'
+            Value = 'Meal or restore 3 END'
+        }
+    }
+    if (Test-LWStateHasHerbPouch -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Herb Pouch'
+            Value = '6 potion slots'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPotentHealingPotionItemNames) -Type 'backpack'))) {
+        $rows += [pscustomobject]@{
+            Label = 'Potent Laumspur'
+            Value = 'Restores 5 END'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLongRopeItemNames) -Type 'backpack'))) {
+        $rows += [pscustomobject]@{
+            Label = 'Long Rope'
+            Value = 'Uses 2 backpack slots'
+        }
+    }
+    if (Test-LWStateHasQuiver -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Quiver'
+            Value = ("{0} arrows for Bow" -f (Format-LWQuiverArrowCounter -State $script:GameState))
+        }
+    }
+
+    return @($rows)
+}
+
+function Show-LWInventoryNotesPanel {
+    $rows = @(Get-LWInventoryNoteRows)
+    if ($rows.Count -eq 0) {
+        return
+    }
+
+    $labelWidth = 16
+    foreach ($row in $rows) {
+        $labelText = if ($null -eq $row.Label) { '' } else { [string]$row.Label }
+        if ($labelText.Length -gt $labelWidth) {
+            $labelWidth = $labelText.Length
+        }
+    }
+    $labelWidth = [Math]::Min(18, [Math]::Max(12, $labelWidth))
+
+    Write-LWRetroPanelHeader -Title 'Inventory Notes' -AccentColor 'DarkYellow'
+    foreach ($row in $rows) {
+        Write-LWRetroPanelKeyValueRow -Label ([string]$row.Label) -Value ([string]$row.Value) -LabelColor 'DarkYellow' -ValueColor 'Gray' -LabelWidth $labelWidth
+    }
+    Write-LWRetroPanelFooter
+}
+
 function Show-LWInventory {
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
@@ -14358,91 +14500,7 @@ function Show-LWInventory {
     Write-LWRetroPanelKeyValueRow -Label 'Confiscated' -Value $(if (Test-LWStateHasConfiscatedEquipment) { Get-LWConfiscatedInventorySummaryText } else { '(none)' }) -ValueColor 'DarkGray'
     Write-LWRetroPanelFooter
 
-    if (Test-LWStateHasSommerswerd -State $script:GameState) {
-        $sommerswerdBonus = Get-LWStateSommerswerdCombatSkillBonus -State $script:GameState
-        Write-LWSubtle ("  Sommerswerd: +{0} Combat Skill in combat; undead damage x2." -f $sommerswerdBonus)
-        Write-LWSubtle '  Hostile magic absorption remains story-driven and should be resolved from the book text.'
-        Write-Host ''
-    }
-    if (Test-LWStateHasBoneSword -State $script:GameState) {
-        Write-LWSubtle ('  Bone Sword: +1 Combat Skill in Book 3 / Kalte, no bonus elsewhere.')
-        Write-Host ''
-    }
-    if (Test-LWStateHasBroadswordPlusOne -State $script:GameState) {
-        Write-LWSubtle '  Broadsword +1: +1 Combat Skill in combat and still counts as a Broadsword.'
-        Write-Host ''
-    }
-    if (Test-LWStateHasMagicSpear -State $script:GameState) {
-        Write-LWSubtle '  Magic Spear: weapon-like Special Item that counts as a Spear and matters in specific Book 2 Helghast fights.'
-        Write-Host ''
-    }
-    if (Test-LWStateHasDrodarinWarHammer -State $script:GameState) {
-        Write-LWSubtle '  Drodarin War Hammer: +1 Combat Skill in combat and counts as a Warhammer.'
-        Write-Host ''
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCaptainDValSwordWeaponNames) -Type 'weapon'))) {
-        Write-LWSubtle '  Captain D''Val''s Sword: +1 Combat Skill in combat and counts as a Sword.'
-        Write-Host ''
-    }
-    if (Test-LWStateHasSolnaris -State $script:GameState) {
-        Write-LWSubtle '  Solnaris: +2 Combat Skill in combat and counts as a Sword or Broadsword for Weaponskill.'
-        Write-Host ''
-    }
-    if ((Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
-        Write-LWSubtle '  Silver Helm: +2 Combat Skill while carried as a Special Item.'
-        Write-Host ''
-    }
-    if ((Get-LWStateHelmetEnduranceBonus -State $script:GameState) -gt 0) {
-        Write-LWSubtle '  Helmet: +2 Endurance while carried as a Special Item.'
-        Write-Host ''
-    }
-    elseif ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWHelmetItemNames) -Type 'special') -and (Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState) -gt 0) {
-        Write-LWSubtle '  Helmet: no Endurance bonus while Silver Helm is carried.'
-        Write-Host ''
-    }
-    if ((Get-LWStatePaddedLeatherEnduranceBonus -State $script:GameState) -gt 0) {
-        Write-LWSubtle '  Padded Leather Waistcoat: +2 Endurance while carried as a Special Item.'
-        Write-Host ''
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWVordakGemItemNames) -Type 'backpack'))) {
-        Write-LWSubtle '  Vordak Gem: cursed Book 1 loot; some routes punish carrying it.'
-        Write-Host ''
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCrystalStarPendantItemNames) -Type 'special'))) {
-        Write-LWSubtle '  Crystal Star Pendant: carry-forward Special Item that later books may reference.'
-        Write-Host ''
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMealOfLaumspurItemNames) -Type 'backpack'))) {
-        Write-LWSubtle '  Meal of Laumspur: satisfies a Meal and restores 3 Endurance, or restores 3 Endurance when consumed normally.'
-        Write-Host ''
-    }
-    if (Test-LWStateHasHerbPouch -State $script:GameState) {
-        Write-LWSubtle '  Herb Pouch: carries up to 6 potion items separately from Backpack and Special Items.'
-        Write-Host ''
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPotentHealingPotionItemNames) -Type 'backpack'))) {
-        Write-LWSubtle '  Potent Laumspur Potion: restores 5 Endurance.'
-        Write-Host ''
-    }
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWLongRopeItemNames) -Type 'backpack'))) {
-        Write-LWSubtle '  Long Rope: occupies 2 backpack slots.'
-        Write-Host ''
-    }
-    if (Test-LWStateHasQuiver -State $script:GameState) {
-        $arrowCount = Get-LWQuiverArrowCount -State $script:GameState
-        Write-LWSubtle ("  Quiver: {0} arrow{1} available for use with a Bow." -f (Format-LWQuiverArrowCounter -State $script:GameState), $(if ($arrowCount -eq 1) { '' } else { 's' }))
-        Write-Host ''
-    }
-    $recoveryNotes = @()
-    foreach ($type in @('weapon', 'backpack', 'special')) {
-        $recoveryItems = @(Get-LWInventoryRecoveryItems -Type $type)
-        if ($recoveryItems.Count -gt 0) {
-            $recoveryNotes += ("{0} {1}" -f (Get-LWInventoryTypeLabel -Type $type), $recoveryItems.Count)
-        }
-    }
-    if ($recoveryNotes.Count -gt 0) {
-        Write-LWSubtle ("  Recovery stash: {0}" -f ($recoveryNotes -join ' | '))
-    }
+    Show-LWInventoryNotesPanel
 
     Show-LWHelpfulCommandsPanel -ScreenName 'inventory'
 }
