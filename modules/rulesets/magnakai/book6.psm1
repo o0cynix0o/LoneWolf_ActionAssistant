@@ -535,6 +535,34 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
                 $modifierNotes += 'Weaponmastery with Bow'
             }
         }
+        101 {
+            $description = 'Warhammer retrieval check.'
+            $hasHuntmastery = Test-LWStateHasDiscipline -State $State -Name 'Huntmastery'
+            $hasWeaponmastery = Test-LWStateHasDiscipline -State $State -Name 'Weaponmastery'
+            $hasLongRope = -not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWLongRopeItemNames) -Type 'backpack'))
+            $ropeCount = @((Get-LWInventoryItems -Type 'backpack') | Where-Object { [string]$_ -ieq 'Rope' }).Count
+
+            if ($hasHuntmastery) {
+                if ($hasWeaponmastery) {
+                    $modifier += 3
+                    $modifierNotes += 'Lore-circle of Fire (Weaponmastery and Huntmastery)'
+                }
+                else {
+                    $modifier += 2
+                    $modifierNotes += 'Huntmastery'
+                }
+            }
+
+            if ($hasLongRope -or $ropeCount -ge 2) {
+                $modifier += 2
+                if ($hasLongRope) {
+                    $modifierNotes += 'Long Rope'
+                }
+                else {
+                    $modifierNotes += 'Two or more Ropes'
+                }
+            }
+        }
         170 {
             $description = 'Long-range bow-shot from the roadside.'
             if (@($State.Character.WeaponmasteryWeapons) -contains 'Bow') {
