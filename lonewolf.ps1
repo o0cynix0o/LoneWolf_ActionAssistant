@@ -11303,6 +11303,56 @@ function Write-LWCombatArchiveBookHeader {
     Write-LWSubtle '  ------------------------------------------------------------'
 }
 
+function Get-LWCombatArchiveOutcomeLabel {
+    param([string]$Outcome = '')
+
+    switch ([string]$Outcome) {
+        'Victory' { return 'Win' }
+        'Defeat' { return 'Loss' }
+        'Knockout' { return 'KO' }
+        'Evaded' { return 'Evade' }
+        'In Progress' { return 'Live' }
+        'Stopped' { return 'Stop' }
+        default { return ([string]$Outcome) }
+    }
+}
+
+function Get-LWCombatArchiveEntryText {
+    param(
+        [Parameter(Mandatory = $true)][object]$Entry,
+        [Parameter(Mandatory = $true)][string]$Prefix
+    )
+
+    $sectionText = if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [string]$Entry.Section } else { '?' }
+    $enemyName = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyName') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.EnemyName)) { [string]$Entry.EnemyName } else { 'Unknown' }
+    $outcomeLabel = Get-LWCombatArchiveOutcomeLabel -Outcome $(if (Test-LWPropertyExists -Object $Entry -Name 'Outcome') { [string]$Entry.Outcome } else { '' })
+    $roundText = if ((Test-LWPropertyExists -Object $Entry -Name 'RoundCount') -and $null -ne $Entry.RoundCount) { ("R{0}" -f [int]$Entry.RoundCount) } else { 'R?' }
+    $ratioText = if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) { (Format-LWSigned -Value ([int]$Entry.CombatRatio)) } else { '?' }
+    $weaponText = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { 'Unknown' }
+
+    return ("{0} {1} | {2} | {3} | {4} | {5} | {6}" -f $Prefix, $sectionText, $enemyName, $outcomeLabel, $roundText, $ratioText, $weaponText)
+}
+
+function Show-LWCombatArchiveEntriesPanel {
+    param(
+        [Parameter(Mandatory = $true)][object[]]$Items,
+        [string]$Title = 'Combat Archive'
+    )
+
+    Write-LWRetroPanelHeader -Title $Title -AccentColor 'DarkRed'
+    foreach ($item in @($Items)) {
+        if ($null -eq $item) {
+            continue
+        }
+
+        $entry = if (Test-LWPropertyExists -Object $item -Name 'Entry') { $item.Entry } else { $item }
+        $prefix = if (Test-LWPropertyExists -Object $item -Name 'Prefix') { [string]$item.Prefix } else { '#' }
+        $textColor = if (Test-LWPropertyExists -Object $item -Name 'Color') { [string]$item.Color } else { 'Gray' }
+        Write-LWRetroPanelTextRow -Text (Get-LWCombatArchiveEntryText -Entry $entry -Prefix $prefix) -TextColor $textColor
+    }
+    Write-LWRetroPanelFooter
+}
+
 function Show-LWHistory {
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
@@ -16471,7 +16521,11 @@ function Write-LWCombatLogEntry {
 
     $displayWeapon = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { '' }
 
-    Write-LWRetroPanelHeader -Title 'Combat Record' -AccentColor 'DarkRed'
+    $recordTitle = 'Combat Record'
+    if (-not [string]::IsNullOrWhiteSpace($TitleSuffix)) {
+        $recordTitle = ("Combat Record {0}" -f $TitleSuffix)
+    }
+    Write-LWRetroPanelHeader -Title $recordTitle -AccentColor 'DarkRed'
     if (-not [string]::IsNullOrWhiteSpace($displayWeapon)) {
         Write-LWRetroPanelPairRow -LeftLabel 'Enemy' -LeftValue ([string]$Entry.EnemyName) -RightLabel 'Weapon' -RightValue $displayWeapon -LeftColor 'White' -RightColor 'Gray' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     }
@@ -16517,6 +16571,22 @@ function Show-LWCombatLog {
         $activeEntry = Get-LWCurrentCombatLogEntry
         $renderedCount = 0
         $currentBookKey = $null
+        $currentBookEntry = $null
+        $bookItems = @()
+
+        $flushArchiveGroup = {
+            param(
+                [object]$BookEntry,
+                [object[]]$Items
+            )
+
+            if ($null -eq $BookEntry -or @($Items).Count -eq 0) {
+                return
+            }
+
+            Write-LWCombatArchiveBookHeader -Entry $BookEntry
+            Show-LWCombatArchiveEntriesPanel -Items @($Items)
+        }
 
         if ($null -ne $BookNumber -and $null -ne $activeEntry -and (Get-LWCombatEntryBookNumber -Entry $activeEntry) -ne [int]$BookNumber) {
             $activeEntry = $null
@@ -16534,20 +16604,37 @@ function Show-LWCombatLog {
 
             $bookKey = Get-LWCombatEntryBookKey -Entry $history[$i]
             if ($bookKey -ne $currentBookKey) {
-                Write-LWCombatArchiveBookHeader -Entry $history[$i]
+                & $flushArchiveGroup -BookEntry $currentBookEntry -Items @($bookItems)
                 $currentBookKey = $bookKey
+                $currentBookEntry = $history[$i]
+                $bookItems = @()
             }
-            Write-LWCombatLogEntry -Entry $history[$i] -TitleSuffix ("#{0}" -f ($i + 1))
+            $bookItems += [pscustomobject]@{
+                Entry  = $history[$i]
+                Prefix = ("#{0}" -f ($i + 1))
+                Color  = (Get-LWOutcomeColor -Outcome ([string]$history[$i].Outcome))
+            }
             $renderedCount++
         }
 
         if ($null -ne $activeEntry) {
             $activeBookKey = Get-LWCombatEntryBookKey -Entry $activeEntry
             if ($activeBookKey -ne $currentBookKey) {
-                Write-LWCombatArchiveBookHeader -Entry $activeEntry
+                & $flushArchiveGroup -BookEntry $currentBookEntry -Items @($bookItems)
+                $bookItems = @()
+                $currentBookKey = $activeBookKey
+                $currentBookEntry = $activeEntry
             }
-            Write-LWCombatLogEntry -Entry $activeEntry -TitleSuffix '(Current)'
+            $bookItems += [pscustomobject]@{
+                Entry  = $activeEntry
+                Prefix = 'Current'
+                Color  = 'Cyan'
+            }
             $renderedCount++
+        }
+
+        if ($renderedCount -gt 0) {
+            & $flushArchiveGroup -BookEntry $currentBookEntry -Items @($bookItems)
         }
 
         if ($renderedCount -eq 0) {
