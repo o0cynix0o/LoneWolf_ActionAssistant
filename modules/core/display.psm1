@@ -168,6 +168,66 @@ function Write-LWRetroPanelTwoColumnRow {
     Write-Host ' |' -ForegroundColor DarkGray
 }
 
+function Write-LWRetroPanelThreeColumnRow {
+    param(
+        [string]$LeftText = '',
+        [string]$MiddleText = '',
+        [string]$RightText = '',
+        [string]$LeftColor = 'Gray',
+        [string]$MiddleColor = 'Gray',
+        [string]$RightColor = 'Gray',
+        [int]$Width = 64,
+        [int]$Gap = 2,
+        [int]$LeftWidth = 0,
+        [int]$MiddleWidth = 0
+    )
+
+    $contentWidth = [Math]::Max(10, ($Width - 4))
+    $gapWidth = [Math]::Max(0, [int]$Gap)
+    $availableWidth = $contentWidth - ($gapWidth * 2)
+    if ($availableWidth -lt 3) {
+        $availableWidth = 3
+    }
+
+    if ($LeftWidth -gt 0 -and $MiddleWidth -gt 0) {
+        $leftWidth = [Math]::Max(1, [int]$LeftWidth)
+        $middleWidth = [Math]::Max(1, [int]$MiddleWidth)
+    }
+    else {
+        $baseWidth = [Math]::Floor($availableWidth / 3)
+        $leftWidth = [Math]::Max(1, $baseWidth)
+        $middleWidth = [Math]::Max(1, $baseWidth)
+    }
+
+    $minimumRightWidth = 1
+    $maxFixedWidth = [Math]::Max(1, ($availableWidth - $minimumRightWidth))
+    if (($leftWidth + $middleWidth) -gt $maxFixedWidth) {
+        $leftWidth = [Math]::Max(1, [Math]::Floor($maxFixedWidth / 2))
+        $middleWidth = [Math]::Max(1, ($maxFixedWidth - $leftWidth))
+    }
+
+    $rightWidth = $availableWidth - $leftWidth - $middleWidth
+    if ($rightWidth -lt $minimumRightWidth) {
+        $rightWidth = $minimumRightWidth
+        if (($leftWidth + $middleWidth + $rightWidth) -gt $availableWidth) {
+            $middleWidth = [Math]::Max(1, ($availableWidth - $leftWidth - $rightWidth))
+        }
+    }
+
+    $leftDisplay = Format-LWRetroPanelCellText -Text $LeftText -Width $leftWidth
+    $middleDisplay = Format-LWRetroPanelCellText -Text $MiddleText -Width $middleWidth
+    $rightDisplay = Format-LWRetroPanelCellText -Text $RightText -Width $rightWidth
+
+    Write-Host '|' -NoNewline -ForegroundColor DarkGray
+    Write-Host ' ' -NoNewline
+    Write-Host $leftDisplay -NoNewline -ForegroundColor $LeftColor
+    Write-Host (' ' * $gapWidth) -NoNewline
+    Write-Host $middleDisplay -NoNewline -ForegroundColor $MiddleColor
+    Write-Host (' ' * $gapWidth) -NoNewline
+    Write-Host $rightDisplay -NoNewline -ForegroundColor $RightColor
+    Write-Host ' |' -ForegroundColor DarkGray
+}
+
 function Get-LWEnduranceColor {
     param(
         [int]$Current,
@@ -260,6 +320,7 @@ Export-ModuleMember -Function `
     Write-LWRetroPanelKeyValueRow, `
     Write-LWRetroPanelTextRow, `
     Write-LWRetroPanelTwoColumnRow, `
+    Write-LWRetroPanelThreeColumnRow, `
     Get-LWEnduranceColor, `
     Get-LWOutcomeColor, `
     Get-LWCombatRatioColor, `

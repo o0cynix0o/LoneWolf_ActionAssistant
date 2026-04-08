@@ -11053,10 +11053,29 @@ function Show-LWDisciplines {
         Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
     }
     else {
-        for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
-            $leftLabel = [string]$displayDisciplines[$i]
-            $rightLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
-            Write-LWRetroPanelTwoColumnRow -LeftText $leftLabel -RightText $rightLabel -LeftColor 'Green' -RightColor 'Green' -LeftWidth 28 -Gap 2
+        if ($isMagnakai) {
+            for ($i = 0; $i -lt $displayDisciplines.Count; $i += 3) {
+                $leftLabel = [string]$displayDisciplines[$i]
+                $middleLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
+                $rightLabel = if (($i + 2) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 2] } else { '' }
+                Write-LWRetroPanelThreeColumnRow `
+                    -LeftText $leftLabel `
+                    -MiddleText $middleLabel `
+                    -RightText $rightLabel `
+                    -LeftColor 'Green' `
+                    -MiddleColor 'Green' `
+                    -RightColor 'Green' `
+                    -LeftWidth 18 `
+                    -MiddleWidth 18 `
+                    -Gap 2
+            }
+        }
+        else {
+            for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
+                $leftLabel = [string]$displayDisciplines[$i]
+                $rightLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
+                Write-LWRetroPanelTwoColumnRow -LeftText $leftLabel -RightText $rightLabel -LeftColor 'Green' -RightColor 'Green' -LeftWidth 28 -Gap 2
+            }
         }
     }
     Write-LWRetroPanelFooter
@@ -11064,10 +11083,20 @@ function Show-LWDisciplines {
     if ($isMagnakai -and @($script:GameState.Character.WeaponmasteryWeapons).Count -gt 0) {
         Write-LWRetroPanelHeader -Title 'Weaponmastery' -AccentColor 'DarkYellow'
         $weapons = @($script:GameState.Character.WeaponmasteryWeapons | ForEach-Object { [string]$_ })
-        for ($i = 0; $i -lt $weapons.Count; $i += 2) {
+        for ($i = 0; $i -lt $weapons.Count; $i += 3) {
             $leftText = [string]$weapons[$i]
-            $rightText = if (($i + 1) -lt $weapons.Count) { [string]$weapons[$i + 1] } else { '' }
-            Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+            $middleText = if (($i + 1) -lt $weapons.Count) { [string]$weapons[$i + 1] } else { '' }
+            $rightText = if (($i + 2) -lt $weapons.Count) { [string]$weapons[$i + 2] } else { '' }
+            Write-LWRetroPanelThreeColumnRow `
+                -LeftText $leftText `
+                -MiddleText $middleText `
+                -RightText $rightText `
+                -LeftColor 'Gray' `
+                -MiddleColor 'Gray' `
+                -RightColor 'Gray' `
+                -LeftWidth 18 `
+                -MiddleWidth 18 `
+                -Gap 2
         }
         Write-LWRetroPanelFooter
     }
