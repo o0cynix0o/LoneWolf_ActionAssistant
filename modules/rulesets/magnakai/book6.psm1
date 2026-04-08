@@ -491,6 +491,12 @@ function Invoke-LWMagnakaiBookSixSection004WeaponLoss {
     Write-LWInfo 'Section 4: the corrosive strands lash out, but you have no carried Weapon to lose.'
 }
 
+function Test-LWMagnakaiBookSixArcheryContestVisited {
+    param([int[]]$VisitedSections = @())
+
+    return (@(@(340, 26, 103, 183, 252, 335) | Where-Object { @($VisitedSections) -contains [int]$_ }).Count -gt 0)
+}
+
 function Get-LWMagnakaiBookSixSectionRandomNumberContext {
     param([object]$State = $null)
 
@@ -516,7 +522,7 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
     switch ($section) {
         24 {
             $description = 'Return-to-Cyrilus chance check.'
-            if (@(340, 26, 103, 183, 252, 335) | Where-Object { $visitedSections -contains $_ }) {
+            if (Test-LWMagnakaiBookSixArcheryContestVisited -VisitedSections @($visitedSections)) {
                 $modifier -= 2
                 $modifierNotes += 'Earlier archery contest participation'
             }
@@ -576,6 +582,13 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
             if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWSilverBowOfDuadonItemNames) -Type 'special'))) {
                 $modifier += 3
                 $modifierNotes += 'Silver Bow of Duadon'
+            }
+        }
+        207 {
+            $description = 'Return-to-Cyrilus chance check after recovering the Bronin Warhammer.'
+            if (Test-LWMagnakaiBookSixArcheryContestVisited -VisitedSections @($visitedSections)) {
+                $modifier -= 2
+                $modifierNotes += 'Earlier archery contest participation'
             }
         }
         178 {
@@ -749,6 +762,23 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         190 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section190TaunorWaterResolved' -SectionLabel 'Section 190'
         }
+        207 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section207Handled')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section207Handled'
+                $keepBroninWarhammer = Read-LWInlineYesNo -Prompt 'Section 207: keep the Bronin Warhammer as a weapon-like Special Item?' -Default $true
+                if ($keepBroninWarhammer) {
+                    if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Bronin Warhammer') {
+                        Write-LWInfo 'Section 207: Bronin Warhammer added to Special Items.'
+                    }
+                    else {
+                        Write-LWWarn 'No room to add the Bronin Warhammer automatically. Make room and add it manually if you want to keep it.'
+                    }
+                }
+                else {
+                    Write-LWInfo 'Section 207: Bronin Warhammer left behind.'
+                }
+            }
+        }
         232 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section232RoomPaid')) {
                 if ([int]$script:GameState.Inventory.GoldCrowns -ge 3) {
@@ -894,12 +924,7 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         348 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section348WarhammerLost')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section348WarhammerLost'
-                if (Remove-LWInventoryItemSilently -Type 'weapon' -Name 'Warhammer' -Quantity 1) {
-                    Write-LWInfo 'Section 348: the Warhammer slips into the black puddle and is lost.'
-                }
-                else {
-                    Write-LWInfo 'Section 348: the Warhammer is lost to the black puddle.'
-                }
+                Write-LWInfo 'Section 348: the chapel Warhammer slips back into the black puddle and is lost.'
             }
         }
     }
