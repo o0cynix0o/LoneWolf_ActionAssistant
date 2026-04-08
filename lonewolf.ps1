@@ -11050,17 +11050,12 @@ function Show-LWDisciplines {
         Write-LWRetroPanelFooter
     }
 
-    if ($isMagnakai) {
+    if ($isMagnakai -and @($script:GameState.Character.ImprovedDisciplines).Count -gt 0) {
         Write-LWRetroPanelHeader -Title 'Improved Disciplines' -AccentColor 'DarkCyan'
-        if (@($script:GameState.Character.ImprovedDisciplines).Count -eq 0) {
-            Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
-        }
-        else {
-            for ($i = 0; $i -lt @($script:GameState.Character.ImprovedDisciplines).Count; $i += 2) {
-                $leftText = [string]$script:GameState.Character.ImprovedDisciplines[$i]
-                $rightText = if (($i + 1) -lt @($script:GameState.Character.ImprovedDisciplines).Count) { [string]$script:GameState.Character.ImprovedDisciplines[$i + 1] } else { '' }
-                Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
-            }
+        for ($i = 0; $i -lt @($script:GameState.Character.ImprovedDisciplines).Count; $i += 2) {
+            $leftText = [string]$script:GameState.Character.ImprovedDisciplines[$i]
+            $rightText = if (($i + 1) -lt @($script:GameState.Character.ImprovedDisciplines).Count) { [string]$script:GameState.Character.ImprovedDisciplines[$i + 1] } else { '' }
+            Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
         }
         Write-LWRetroPanelFooter
     }
