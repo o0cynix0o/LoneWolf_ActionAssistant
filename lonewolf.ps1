@@ -14546,19 +14546,15 @@ function Show-LWSheet {
     $enduranceText = "{0} / {1}" -f $script:GameState.Character.EnduranceCurrent, $script:GameState.Character.EnduranceMax
 
     Write-LWRetroPanelHeader -Title 'Character Sheet' -AccentColor 'Cyan'
-    Write-LWRetroPanelKeyValueRow -Label 'Name' -Value $script:GameState.Character.Name -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Rule Set' -Value $script:GameState.RuleSet -ValueColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'Name' -LeftValue $script:GameState.Character.Name -RightLabel 'Rule Set' -RightValue $script:GameState.RuleSet -LeftColor 'White' -RightColor 'Gray' -LeftWidth 27
     Write-LWRetroPanelKeyValueRow -Label 'Book' -Value (Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber)) -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
     $rankText = [string](Get-LWCurrentRankLabel -State $script:GameState)
     if ($rankText -match '^\d+\s*-\s*(.+)$') {
         $rankText = [string]$Matches[1]
     }
-    Write-LWRetroPanelKeyValueRow -Label 'Rank' -Value $rankText -ValueColor 'DarkYellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Combat Skill' -Value $combatSkillText -ValueColor 'Cyan'
-    Write-LWRetroPanelKeyValueRow -Label 'Endurance' -Value $enduranceText -ValueColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax)
-    Write-LWRetroPanelKeyValueRow -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Run Integrity' -Value ([string]$script:GameState.Run.IntegrityState) -ValueColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState))
+    Write-LWRetroPanelPairRow -LeftLabel 'Section' -LeftValue ([string]$script:GameState.CurrentSection) -RightLabel 'Rank' -RightValue $rankText -LeftColor 'White' -RightColor 'DarkYellow' -LeftWidth 18 -Gap 1
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Skill' -LeftValue $combatSkillText -RightLabel 'Endurance' -RightValue $enduranceText -LeftColor 'Cyan' -RightColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax) -LeftWidth 27
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Crowns' -LeftValue ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -RightLabel 'Run Integrity' -RightValue ([string]$script:GameState.Run.IntegrityState) -LeftColor 'Yellow' -RightColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState)) -LeftWidth 27
     Write-LWRetroPanelFooter
     Show-LWDisciplines
     Show-LWInventorySummary
