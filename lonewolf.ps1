@@ -11473,6 +11473,19 @@ function Get-LWCombatArchiveEntryText {
     return ([string]::Join(' | ', $fields))
 }
 
+function Get-LWCombatArchiveHeaderText {
+    $fields = @(
+        (Format-LWCombatArchiveCellText -Text '#/Sect' -Width 8),
+        (Format-LWCombatArchiveCellText -Text 'Enemy' -Width 15),
+        (Format-LWCombatArchiveCellText -Text 'Out' -Width 5),
+        (Format-LWCombatArchiveCellText -Text 'Rnd' -Width 3),
+        (Format-LWCombatArchiveCellText -Text 'CR' -Width 3),
+        (Format-LWCombatArchiveCellText -Text 'Weapon' -Width 11)
+    )
+
+    return ([string]::Join(' | ', $fields))
+}
+
 function Show-LWCombatArchiveEntriesPanel {
     param(
         [Parameter(Mandatory = $true)][object[]]$Items,
@@ -11480,6 +11493,7 @@ function Show-LWCombatArchiveEntriesPanel {
     )
 
     Write-LWRetroPanelHeader -Title $Title -AccentColor 'DarkRed'
+    Write-LWRetroPanelTextRow -Text (Get-LWCombatArchiveHeaderText) -TextColor 'DarkGray'
     foreach ($item in @($Items)) {
         if ($null -eq $item) {
             continue
