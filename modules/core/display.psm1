@@ -96,6 +96,13 @@ function Write-LWRetroPanelFooter {
     Write-Host $line -ForegroundColor DarkGray
 }
 
+function Write-LWRetroPanelDivider {
+    param([int]$Width = 64)
+
+    $line = '+' + ('-' * [Math]::Max(10, ($Width - 2))) + '+'
+    Write-Host $line -ForegroundColor DarkGray
+}
+
 function Write-LWRetroPanelKeyValueRow {
     param(
         [Parameter(Mandatory = $true)][string]$Label,
@@ -317,6 +324,7 @@ Export-ModuleMember -Function `
     Write-LWSubtle, `
     Write-LWRetroPanelHeader, `
     Write-LWRetroPanelFooter, `
+    Write-LWRetroPanelDivider, `
     Write-LWRetroPanelKeyValueRow, `
     Write-LWRetroPanelTextRow, `
     Write-LWRetroPanelTwoColumnRow, `

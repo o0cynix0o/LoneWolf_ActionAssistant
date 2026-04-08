@@ -14530,6 +14530,11 @@ function Show-LWInventorySummary {
         -LeftWidth 35 `
         -Gap 2
 
+    $showInventoryDetails = ($special.Count -gt 0) -or ($safekeeping.Count -gt 0) -or (Test-LWStateHasConfiscatedEquipment)
+    if ($showInventoryDetails) {
+        Write-LWRetroPanelDivider
+    }
+
     if ($special.Count -gt 0) {
         Write-LWRetroPanelKeyValueRow -Label 'Specials' -Value $specialSummary -ValueColor 'Gray' -LabelWidth 13
     }
