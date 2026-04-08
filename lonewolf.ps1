@@ -16409,10 +16409,9 @@ function Show-LWCombatTacticalPanel {
     }
 
     Write-LWRetroPanelHeader -Title 'Weapons / Rules' -AccentColor 'DarkYellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Weapon' -Value $Weapon -ValueColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'Weapon' -LeftValue $Weapon -RightLabel 'Mode' -RightValue $Mode -LeftColor 'Gray' -RightColor (Get-LWModeColor -Mode $Mode) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelKeyValueRow -Label 'Bonuses' -Value $(if ($bonusNotes.Count -gt 0) { $bonusNotes -join ' | ' } else { '(none)' }) -ValueColor 'Gray'
     Write-LWRetroPanelKeyValueRow -Label 'Active Rules' -Value $(if ($ruleNotes.Count -gt 0) { $ruleNotes -join ' | ' } else { '(none)' }) -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Mode' -Value $Mode -ValueColor (Get-LWModeColor -Mode $Mode)
     Write-LWRetroPanelFooter
 }
 
@@ -16470,17 +16469,21 @@ function Write-LWCombatLogEntry {
         @($script:GameState.BookHistory | Where-Object { [int]$_.BookNumber -eq [int](Get-LWCombatEntryBookNumber -Entry $Entry) } | Select-Object -Last 1)[0]
     }
 
+    $displayWeapon = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { '' }
+
     Write-LWRetroPanelHeader -Title 'Combat Record' -AccentColor 'DarkRed'
-    Write-LWRetroPanelKeyValueRow -Label 'Enemy' -Value ([string]$Entry.EnemyName) -ValueColor 'White'
+    if (-not [string]::IsNullOrWhiteSpace($displayWeapon)) {
+        Write-LWRetroPanelPairRow -LeftLabel 'Enemy' -LeftValue ([string]$Entry.EnemyName) -RightLabel 'Weapon' -RightValue $displayWeapon -LeftColor 'White' -RightColor 'Gray' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    }
+    else {
+        Write-LWRetroPanelKeyValueRow -Label 'Enemy' -Value ([string]$Entry.EnemyName) -ValueColor 'White'
+    }
     Write-LWRetroPanelPairRow -LeftLabel 'Book / Section' -LeftValue ("{0} / {1}" -f [int](Get-LWCombatEntryBookNumber -Entry $Entry), $(if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [string]$Entry.Section } else { '?' })) -RightLabel 'Outcome' -RightValue ([string]$Entry.Outcome) -LeftColor 'Gray' -RightColor (Get-LWOutcomeColor -Outcome ([string]$Entry.Outcome)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) {
         Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Entry.RoundCount) -RightLabel 'Combat Ratio' -RightValue (Format-LWSigned -Value ([int]$Entry.CombatRatio)) -LeftColor 'Gray' -RightColor (Get-LWCombatRatioColor -Ratio ([int]$Entry.CombatRatio)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     }
     else {
         Write-LWRetroPanelKeyValueRow -Label 'Rounds Fought' -Value ([string]$Entry.RoundCount) -ValueColor 'Gray'
-    }
-    if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) {
-        Write-LWRetroPanelKeyValueRow -Label 'Weapon Used' -Value (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) -ValueColor 'Gray'
     }
     Write-LWRetroPanelFooter
 
