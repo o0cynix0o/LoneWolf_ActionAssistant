@@ -11801,8 +11801,7 @@ function Show-LWCampaignOverview {
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Campaign Notes' -AccentColor 'Magenta'
-    Write-LWRetroPanelTextRow -Text ("Run Integrity: {0}" -f [string]$Summary.RunIntegrityState) -TextColor (Get-LWIntegrityColor -IntegrityState ([string]$Summary.RunIntegrityState))
-    Write-LWRetroPanelTextRow -Text ("Achievements: {0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -TextColor 'Magenta'
+    Write-LWRetroPanelPairRow -LeftLabel 'Run Integrity' -LeftValue ([string]$Summary.RunIntegrityState) -RightLabel 'Achievements' -RightValue ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -LeftColor (Get-LWIntegrityColor -IntegrityState ([string]$Summary.RunIntegrityState)) -RightColor 'Magenta' -LeftLabelWidth 13 -RightLabelWidth 12 -LeftWidth 29 -Gap 2
     if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) {
         Write-LWRetroPanelTextRow -Text 'Kai campaign has crossed into Magnakai rules.' -TextColor 'Gray'
         Write-LWRetroPanelTextRow -Text 'Transition safekeeping appears between later books.' -TextColor 'Gray'
