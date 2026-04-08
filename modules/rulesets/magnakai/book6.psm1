@@ -348,16 +348,25 @@ function Invoke-LWMagnakaiBookSixSection076SaleTable {
 function Invoke-LWMagnakaiBookSixTaunorWaterPrompt {
     param(
         [Parameter(Mandatory = $true)][string]$ResolvedFlagName,
-        [Parameter(Mandatory = $true)][string]$SectionLabel
+        [Parameter(Mandatory = $true)][string]$SectionLabel,
+        [switch]$AllowDrinkAndKeep,
+        [switch]$AllowHerbPouchStorage
     )
 
     if (Test-LWStoryAchievementFlag -Name $ResolvedFlagName) {
         return
     }
 
-    $drinkNow = Read-LWInlineYesNo -Prompt ("{0}: drink the Taunor Water now for 6 ENDURANCE?" -f $SectionLabel) -Default $false
+    $storageTypes = if ($AllowHerbPouchStorage) { @('herbpouch', 'backpack') } else { @('backpack') }
+    $drinkPrompt = if ($AllowDrinkAndKeep) {
+        "{0}: drink one jarful of Taunor Water now for 6 ENDURANCE?" -f $SectionLabel
+    }
+    else {
+        "{0}: drink the Taunor Water now for 6 ENDURANCE?" -f $SectionLabel
+    }
+
+    $drinkNow = Read-LWInlineYesNo -Prompt $drinkPrompt -Default $false
     if ($drinkNow) {
-        Set-LWStoryAchievementFlag -Name $ResolvedFlagName
         $before = [int]$script:GameState.Character.EnduranceCurrent
         $script:GameState.Character.EnduranceCurrent = [Math]::Min([int]$script:GameState.Character.EnduranceMax, ($before + 6))
         $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
@@ -365,21 +374,56 @@ function Invoke-LWMagnakaiBookSixTaunorWaterPrompt {
             Add-LWBookEnduranceDelta -Delta $restored
         }
         Write-LWInfo ("{0}: Taunor Water restores {1} ENDURANCE. Current Endurance: {2}." -f $SectionLabel, $restored, [int]$script:GameState.Character.EnduranceCurrent)
+        if (-not $AllowDrinkAndKeep) {
+            Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+            return
+        }
+    }
+
+    $keepForLater = $true
+    if ($AllowDrinkAndKeep) {
+        $keepForLater = Read-LWInlineYesNo -Prompt ("{0}: refill the glass jar and keep Taunor Water for later use?" -f $SectionLabel) -Default $true
+    }
+
+    if (-not $keepForLater) {
+        Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+        if ($drinkNow) {
+            Write-LWInfo ("{0}: no filled glass jar is kept for later use." -f $SectionLabel)
+        }
         return
     }
 
-    $existingWater = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Type 'backpack'
-    if (-not [string]::IsNullOrWhiteSpace($existingWater)) {
+    $existingWaterLocation = Find-LWStateInventoryItemLocation -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Types $storageTypes
+    if ($null -ne $existingWaterLocation) {
         Set-LWStoryAchievementFlag -Name $ResolvedFlagName
         Set-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored'
-        Write-LWInfo ("{0}: you keep the filled glass jar of Taunor Water for later use." -f $SectionLabel)
+        $storageLabel = if ([string]$existingWaterLocation.Type -eq 'herbpouch') { 'Herb Pouch' } else { 'Backpack' }
+        Write-LWInfo ("{0}: you keep a filled glass jar of Taunor Water for later use in your {1}." -f $SectionLabel, $storageLabel)
         return
     }
 
-    if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Taunor Water') {
+    if ($AllowDrinkAndKeep) {
+        Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+    }
+
+    $stored = if ($AllowHerbPouchStorage) {
+        TryAdd-LWPreferredPotionStorageSilently -Name 'Taunor Water'
+    }
+    else {
+        TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Taunor Water'
+    }
+
+    if ($stored) {
         Set-LWStoryAchievementFlag -Name $ResolvedFlagName
         Set-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored'
-        Write-LWInfo ("{0}: Taunor Water stored in your Backpack. It restores 6 ENDURANCE when used." -f $SectionLabel)
+        $storedLocation = Find-LWStateInventoryItemLocation -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Types $storageTypes
+        $storageLabel = if ($null -ne $storedLocation -and [string]$storedLocation.Type -eq 'herbpouch') { 'Herb Pouch' } else { 'Backpack' }
+        Write-LWInfo ("{0}: Taunor Water stored in your {1}. It restores 6 ENDURANCE when used." -f $SectionLabel, $storageLabel)
+        return
+    }
+
+    if ($AllowHerbPouchStorage) {
+        Write-LWWarn ("{0}: no room to store the Taunor Water automatically in your Herb Pouch or Backpack. Make room and add it manually if you want to keep it." -f $SectionLabel)
         return
     }
 
@@ -641,7 +685,7 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section106TaunorWaterResolved' -SectionLabel 'Section 106'
         }
         112 {
-            Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section112TaunorWaterResolved' -SectionLabel 'Section 112'
+            Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section112TaunorWaterResolved' -SectionLabel 'Section 112' -AllowDrinkAndKeep -AllowHerbPouchStorage
         }
         109 {
             if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfTekaroItemNames) -Type 'backpack')) {

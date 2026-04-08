@@ -1682,7 +1682,7 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         if ($visitedSections -contains 348) {
             Set-LWStoryAchievementFlag -Name 'Book6Section348WarhammerLost'
         }
-        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Type 'backpack'))) {
+        if ($null -ne (Find-LWStateInventoryItemLocation -State $script:GameState -Names (Get-LWTaunorWaterItemNames) -Types @('herbpouch', 'backpack'))) {
             Set-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored'
         }
         if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWMapOfTekaroItemNames) -Type 'backpack'))) {
@@ -6847,6 +6847,7 @@ function Get-LWHerbPouchPotionItemNames {
             (Get-LWHealingPotionItemNames),
             (Get-LWPotentHealingPotionItemNames),
             (Get-LWConcentratedHealingPotionItemNames),
+            (Get-LWTaunorWaterItemNames),
             (Get-LWAletherPotionItemNames),
             (Get-LWGallowbrushItemNames),
             (Get-LWCalacenaItemNames),
@@ -9505,6 +9506,7 @@ function Get-LWPreferredHealingPotionChoice {
 
     $potionCandidates = @(
         [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8 },
+        [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6 },
         [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5 },
         [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4 }
     )
@@ -9514,8 +9516,7 @@ function Get-LWPreferredHealingPotionChoice {
         [pscustomobject]@{ Names = (Get-LWOedeHerbItemNames); RestoreAmount = 10 },
         [pscustomobject]@{ Names = (Get-LWLarnumaOilItemNames); RestoreAmount = 2 },
         [pscustomobject]@{ Names = (Get-LWRendalimsElixirItemNames); RestoreAmount = 6 },
-        [pscustomobject]@{ Names = (Get-LWBottleOfKourshahItemNames); RestoreAmount = 4 },
-        [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6 }
+        [pscustomobject]@{ Names = (Get-LWBottleOfKourshahItemNames); RestoreAmount = 4 }
     )
 
     foreach ($candidate in $potionCandidates) {
@@ -9554,6 +9555,7 @@ function Get-LWPreferredHerbPouchCombatPotionChoice {
 
     foreach ($candidate in @(
             [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8 },
+            [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6 },
             [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5 },
             [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4 }
         )) {
