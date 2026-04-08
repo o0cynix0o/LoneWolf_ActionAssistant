@@ -11139,32 +11139,32 @@ function Show-LWDisciplines {
         Write-LWRetroPanelFooter
     }
 
-    Write-LWRetroPanelHeader -Title 'Discipline Notes' -AccentColor 'Cyan'
-    if ($displayDisciplines.Count -eq 0) {
-        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
-    }
-    else {
-        $noteNames = if ($isMagnakai) {
-            @($magnakaiDisciplines)
+    if ([string]$script:LWUi.CurrentScreen -eq 'disciplines') {
+        Write-LWRetroPanelHeader -Title 'Discipline Notes' -AccentColor 'Cyan'
+        if ($displayDisciplines.Count -eq 0) {
+            Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
         }
         else {
-            @($script:GameState.Character.Disciplines | ForEach-Object { [string]$_ })
-        }
-
-        foreach ($disciplineName in $noteNames) {
-            $effect = if ($definitionsByName.ContainsKey([string]$disciplineName) -and -not [string]::IsNullOrWhiteSpace([string]$definitionsByName[[string]$disciplineName].Effect)) {
-                [string]$definitionsByName[[string]$disciplineName].Effect
+            $noteNames = if ($isMagnakai) {
+                @($magnakaiDisciplines)
             }
             else {
-                'No note available.'
+                @($script:GameState.Character.Disciplines | ForEach-Object { [string]$_ })
             }
 
-            Write-LWRetroPanelTextRow -Text ("{0}: {1}" -f [string]$disciplineName, $effect) -TextColor 'Gray'
-        }
-    }
-    Write-LWRetroPanelFooter
+            foreach ($disciplineName in $noteNames) {
+                $effect = if ($definitionsByName.ContainsKey([string]$disciplineName) -and -not [string]::IsNullOrWhiteSpace([string]$definitionsByName[[string]$disciplineName].Effect)) {
+                    [string]$definitionsByName[[string]$disciplineName].Effect
+                }
+                else {
+                    'No note available.'
+                }
 
-    if ([string]$script:LWUi.CurrentScreen -eq 'disciplines') {
+                Write-LWRetroPanelTextRow -Text ("{0}: {1}" -f [string]$disciplineName, $effect) -TextColor 'Gray'
+            }
+        }
+        Write-LWRetroPanelFooter
+
         Show-LWHelpfulCommandsPanel -ScreenName 'disciplines'
     }
 }
