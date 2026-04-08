@@ -10998,6 +10998,13 @@ function Write-LWCommandPromptHint {
     Write-LWSubtle 'Type help for commands.'
 }
 
+function Write-LWScreenFooterNote {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    Write-Host ''
+    Write-LWSubtle ("Note: {0}" -f $Message)
+}
+
 function Show-LWDisciplines {
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
@@ -11411,12 +11418,11 @@ function Show-LWStatsScreen {
         default { Show-LWStatsOverview -Summary $summary }
     }
 
-    if ($summary.PartialTracking) {
-        Write-Host ''
-        Write-LWMessageLine -Level 'Warn' -Message 'Some current-book totals began from an older save, so they may be partial.'
-    }
-
     Show-LWHelpfulCommandsPanel -ScreenName 'stats' -View $view
+
+    if ($summary.PartialTracking) {
+        Write-LWScreenFooterNote -Message 'current-book totals may be partial.'
+    }
 }
 
 function Merge-LWNamedCountEntries {
@@ -11915,12 +11921,11 @@ function Show-LWCampaignScreen {
         default { Show-LWCampaignOverview -Summary $summary }
     }
 
-    if ($summary.PartialTracking) {
-        Write-Host ''
-        Write-LWMessageLine -Level 'Warn' -Message 'Some run totals include older save data and may be partial for the earliest books.'
-    }
-
     Show-LWHelpfulCommandsPanel -ScreenName 'campaign' -View $view
+
+    if ($summary.PartialTracking) {
+        Write-LWScreenFooterNote -Message 'older run totals may be partial.'
+    }
 }
 
 function Get-LWAchievementDefinitionById {
