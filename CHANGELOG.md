@@ -9,6 +9,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
 - Dev branch currently carries the Book `6` / Magnakai implementation work that is not part of the `v0.7.40` public release yet.
 - Portable packaging now includes the Magnakai data files needed for Book `6` and ships `CHANGELOG.md` in the portable bundle.
 - Portable packaging now has a repo-tracked validator at `validate-release.ps1` that smoke-tests a disposable extracted package copy in both shells.
+- Main screens now include compact screen-specific `Helpful Commands` panels so the most relevant commands stay visible in context.
 
 ## v0.8.0-dev - 2026-04-03
 

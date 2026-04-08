@@ -64,6 +64,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - combat log
   - death
   - book complete
+- screen-specific `Helpful Commands` panels now appear across the main screen families on `dev`
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`

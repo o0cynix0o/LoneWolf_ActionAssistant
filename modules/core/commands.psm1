@@ -103,6 +103,17 @@ function Invoke-LWCoreShowHelpScreen {
         }
         Write-LWRetroPanelFooter -Width $panelWidth
     }
+
+    Write-LWRetroPanelHeader -Title 'Helpful Commands' -AccentColor 'DarkYellow' -Width $panelWidth
+    foreach ($row in @(
+            [pscustomobject]@{ Label = 'sheet'; Value = 'return to the main character sheet' }
+            [pscustomobject]@{ Label = 'section <n>'; Value = 'move to the section you are reading' }
+            [pscustomobject]@{ Label = 'load'; Value = 'open the save picker' }
+            [pscustomobject]@{ Label = 'quit'; Value = 'leave the app' }
+        )) {
+        Write-LWRetroPanelKeyValueRow -Label ([string]$row.Label) -Value ([string]$row.Value) -LabelColor 'DarkYellow' -ValueColor 'Gray' -LabelWidth $labelWidth -Width $panelWidth
+    }
+    Write-LWRetroPanelFooter -Width $panelWidth
 }
 
 function Invoke-LWCoreCommand {
