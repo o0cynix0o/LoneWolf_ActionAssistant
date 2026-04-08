@@ -14553,7 +14553,7 @@ function Show-LWSheet {
     }
     Write-LWRetroPanelPairRow -LeftLabel 'Section' -LeftValue ([string]$script:GameState.CurrentSection) -RightLabel 'Rank' -RightValue $rankText -LeftColor 'White' -RightColor 'DarkYellow' -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
     Write-LWRetroPanelPairRow -LeftLabel 'Combat Skill' -LeftValue $combatSkillText -RightLabel 'Endurance' -RightValue $enduranceText -LeftColor 'Cyan' -RightColor (Get-LWEnduranceColor -Current $script:GameState.Character.EnduranceCurrent -Max $script:GameState.Character.EnduranceMax) -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
-    Write-LWRetroPanelPairRow -LeftLabel 'Gold Crowns' -LeftValue ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -RightLabel 'Run Integrity' -RightValue ([string]$script:GameState.Run.IntegrityState) -LeftColor 'Yellow' -RightColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState)) -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Difficulty' -LeftValue (Get-LWCurrentDifficulty) -RightLabel 'Run Integrity' -RightValue ([string]$script:GameState.Run.IntegrityState) -LeftColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -RightColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState)) -LeftLabelWidth 12 -RightLabelWidth 12 -LeftWidth 24 -Gap 2
     Write-LWRetroPanelFooter
     Show-LWDisciplines
     Show-LWInventorySummary
