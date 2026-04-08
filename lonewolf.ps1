@@ -14427,29 +14427,60 @@ function Show-LWInventorySummary {
     $safekeeping = @($script:GameState.Storage.SafekeepingSpecialItems)
     $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
+    $showHerbPouch = Test-LWStateHasHerbPouch -State $script:GameState
+    $showArrows = ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0)
+
+    $formatSummaryCell = {
+        param(
+            [Parameter(Mandatory = $true)][string]$Label,
+            [Parameter(Mandatory = $true)][string]$Value
+        )
+
+        return ("{0,-11}: {1}" -f $Label, $Value)
+    }
+
+    $weaponSummary = (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2)
+    $backpackSummary = if ($hasBackpack) { (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3) } else { 'unavailable (lost)' }
+    $herbPouchSummary = if ($showHerbPouch) { (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3) } else { '' }
+    $specialSummary = (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)
+    $safekeepingSummary = if ($safekeeping.Count -gt 0) { (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) } else { '' }
 
     Write-LWRetroPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Weapons' -Value ("{0}/2  {1}" -f $weapons.Count, (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2)) -ValueColor 'Gray'
-    if ($hasBackpack) {
-        Write-LWRetroPanelKeyValueRow -Label 'Backpack' -Value ("{0}/8  {1}" -f $backpackUsedCapacity, (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3)) -ValueColor 'Gray'
+    Write-LWRetroPanelTwoColumnRow `
+        -LeftText (& $formatSummaryCell 'Weapons' ("{0}/2  {1}" -f $weapons.Count, $weaponSummary)) `
+        -RightText (& $formatSummaryCell 'Backpack' ("{0}/8  {1}" -f $backpackUsedCapacity, $backpackSummary)) `
+        -LeftColor 'Gray' `
+        -RightColor $(if ($hasBackpack) { 'Gray' } else { 'DarkGray' }) `
+        -LeftWidth 35 `
+        -Gap 2
+
+    if ($showHerbPouch -or $showArrows) {
+        Write-LWRetroPanelTwoColumnRow `
+            -LeftText $(if ($showHerbPouch) { (& $formatSummaryCell 'Herb Pouch' ("{0}/6  {1}" -f $herbPouch.Count, $herbPouchSummary)) } else { '' }) `
+            -RightText $(if ($showArrows) { (& $formatSummaryCell 'Arrows' (Format-LWQuiverArrowCounter -State $script:GameState)) } else { '' }) `
+            -LeftColor $(if ($showHerbPouch) { 'DarkGreen' } else { 'DarkGray' }) `
+            -RightColor $(if ($showArrows) { 'DarkYellow' } else { 'DarkGray' }) `
+            -LeftWidth 35 `
+            -Gap 2
     }
-    else {
-        Write-LWRetroPanelKeyValueRow -Label 'Backpack' -Value 'unavailable (lost)' -ValueColor 'DarkGray'
-    }
-    if (Test-LWStateHasHerbPouch -State $script:GameState) {
-        Write-LWRetroPanelKeyValueRow -Label 'Herb Pouch' -Value ("{0}/6  {1}" -f $herbPouch.Count, (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3)) -ValueColor 'DarkGreen'
-    }
-    Write-LWRetroPanelKeyValueRow -Label 'Special Items' -Value ("{0}/12  {1}" -f $special.Count, (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)) -ValueColor 'Gray'
-    if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
-        Write-LWRetroPanelKeyValueRow -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
+
+    Write-LWRetroPanelTwoColumnRow `
+        -LeftText (& $formatSummaryCell 'Special Items' ("{0}/12" -f $special.Count)) `
+        -RightText (& $formatSummaryCell 'Gold Crowns' ("{0}/50" -f $script:GameState.Inventory.GoldCrowns)) `
+        -LeftColor 'Gray' `
+        -RightColor 'Yellow' `
+        -LeftWidth 35 `
+        -Gap 2
+
+    if ($special.Count -gt 0) {
+        Write-LWRetroPanelKeyValueRow -Label 'Specials' -Value $specialSummary -ValueColor 'Gray' -LabelWidth 13
     }
     if ($safekeeping.Count -gt 0) {
-        Write-LWRetroPanelKeyValueRow -Label 'Safekeeping' -Value (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) -ValueColor 'DarkGray'
+        Write-LWRetroPanelKeyValueRow -Label 'Safekeeping' -Value $safekeepingSummary -ValueColor 'DarkGray' -LabelWidth 13
     }
     if (Test-LWStateHasConfiscatedEquipment) {
-        Write-LWRetroPanelKeyValueRow -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray'
+        Write-LWRetroPanelKeyValueRow -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray' -LabelWidth 13
     }
-    Write-LWRetroPanelKeyValueRow -Label 'Gold Crowns' -Value ("{0}/50" -f $script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
     Write-LWRetroPanelFooter
 }
 
