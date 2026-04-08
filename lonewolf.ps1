@@ -9500,76 +9500,136 @@ function Test-LWCombatHerbPouchOptionActive {
 function Get-LWPreferredHealingPotionChoice {
     param([object]$State = $script:GameState)
 
-    if ($null -eq $State) {
-        return $null
-    }
-
-    $potionCandidates = @(
-        [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8 },
-        [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6 },
-        [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5 },
-        [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4 }
-    )
-    $backpackOnlyCandidates = @(
-        [pscustomobject]@{ Names = (Get-LWLaumspurHerbItemNames); RestoreAmount = 3 },
-        [pscustomobject]@{ Names = (Get-LWMealOfLaumspurItemNames); RestoreAmount = 3 },
-        [pscustomobject]@{ Names = (Get-LWOedeHerbItemNames); RestoreAmount = 10 },
-        [pscustomobject]@{ Names = (Get-LWLarnumaOilItemNames); RestoreAmount = 2 },
-        [pscustomobject]@{ Names = (Get-LWRendalimsElixirItemNames); RestoreAmount = 6 },
-        [pscustomobject]@{ Names = (Get-LWBottleOfKourshahItemNames); RestoreAmount = 4 }
-    )
-
-    foreach ($candidate in $potionCandidates) {
-        foreach ($type in @('herbpouch', 'backpack')) {
-            $potionName = Get-LWMatchingStateInventoryItem -State $State -Names @($candidate.Names) -Type $type
-            if (-not [string]::IsNullOrWhiteSpace($potionName)) {
-                return [pscustomobject]@{
-                    Name          = [string]$potionName
-                    RestoreAmount = [int]$candidate.RestoreAmount
-                    Type          = [string]$type
-                }
-            }
-        }
-    }
-
-    foreach ($candidate in $backpackOnlyCandidates) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $State -Names @($candidate.Names) -Type 'backpack'
-        if (-not [string]::IsNullOrWhiteSpace($potionName)) {
-            return [pscustomobject]@{
-                Name          = [string]$potionName
-                RestoreAmount = [int]$candidate.RestoreAmount
-                Type          = 'backpack'
-            }
-        }
-    }
-
-    return $null
+    return @((Get-LWAvailableHealingPotionChoices -State $State) | Select-Object -First 1)[0]
 }
 
 function Get-LWPreferredHerbPouchCombatPotionChoice {
     param([object]$State = $script:GameState)
 
-    if ($null -eq $State -or -not (Test-LWStateHasHerbPouch -State $State)) {
-        return $null
+    return @((Get-LWAvailableHealingPotionChoices -State $State -HerbPouchOnly) | Select-Object -First 1)[0]
+}
+
+function Get-LWAvailableHealingPotionChoices {
+    param(
+        [object]$State = $script:GameState,
+        [switch]$HerbPouchOnly
+    )
+
+    if ($null -eq $State) {
+        return @()
     }
 
-    foreach ($candidate in @(
-            [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8 },
-            [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6 },
-            [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5 },
-            [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4 }
-        )) {
-        $potionName = Get-LWMatchingStateInventoryItem -State $State -Names @($candidate.Names) -Type 'herbpouch'
-        if (-not [string]::IsNullOrWhiteSpace($potionName)) {
-            return [pscustomobject]@{
-                Name          = [string]$potionName
-                RestoreAmount = [int]$candidate.RestoreAmount
-                Type          = 'herbpouch'
+    $definitions = @(
+        [pscustomobject]@{ Names = (Get-LWConcentratedHealingPotionItemNames); RestoreAmount = 8; Types = @('herbpouch', 'backpack') },
+        [pscustomobject]@{ Names = (Get-LWOedeHerbItemNames); RestoreAmount = 10; Types = @('backpack') },
+        [pscustomobject]@{ Names = (Get-LWTaunorWaterItemNames); RestoreAmount = 6; Types = @('herbpouch', 'backpack') },
+        [pscustomobject]@{ Names = (Get-LWRendalimsElixirItemNames); RestoreAmount = 6; Types = @('backpack') },
+        [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5; Types = @('herbpouch', 'backpack') },
+        [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4; Types = @('herbpouch', 'backpack') },
+        [pscustomobject]@{ Names = (Get-LWBottleOfKourshahItemNames); RestoreAmount = 4; Types = @('backpack') },
+        [pscustomobject]@{ Names = (Get-LWLaumspurHerbItemNames); RestoreAmount = 3; Types = @('backpack') },
+        [pscustomobject]@{ Names = (Get-LWMealOfLaumspurItemNames); RestoreAmount = 3; Types = @('backpack') },
+        [pscustomobject]@{ Names = (Get-LWLarnumaOilItemNames); RestoreAmount = 2; Types = @('backpack') }
+    )
+
+    $choices = New-Object System.Collections.Generic.List[object]
+    foreach ($definition in $definitions) {
+        $types = if ($HerbPouchOnly) { @('herbpouch') } else { @($definition.Types) }
+        foreach ($type in $types) {
+            if (@($definition.Types) -notcontains $type) {
+                continue
+            }
+            if ($type -eq 'herbpouch' -and -not (Test-LWStateHasHerbPouch -State $State)) {
+                continue
+            }
+            if ($type -eq 'backpack' -and -not (Test-LWStateHasBackpack -State $State)) {
+                continue
+            }
+
+            $items = @(Get-LWStateInventoryItems -State $State -Type $type)
+            $matchedItems = @($items | Where-Object {
+                    -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @($definition.Names) -Target ([string]$_)))
+                })
+            if ($matchedItems.Count -eq 0) {
+                continue
+            }
+
+            foreach ($itemName in @($matchedItems | Select-Object -Unique)) {
+                $matchCount = @($matchedItems | Where-Object { [string]$_ -eq [string]$itemName }).Count
+                $choices.Add([pscustomobject]@{
+                        Name          = [string]$itemName
+                        RestoreAmount = [int]$definition.RestoreAmount
+                        Type          = [string]$type
+                        Quantity      = [int]$matchCount
+                        LocationLabel = $(if ($type -eq 'herbpouch') { 'Herb Pouch' } else { 'Backpack' })
+                    })
             }
         }
     }
 
-    return $null
+    return @($choices.ToArray())
+}
+
+function Format-LWHealingPotionChoiceText {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    $countSuffix = if ((Test-LWPropertyExists -Object $Choice -Name 'Quantity') -and [int]$Choice.Quantity -gt 1) {
+        " x$([int]$Choice.Quantity)"
+    }
+    else {
+        ''
+    }
+
+    $locationLabel = if ((Test-LWPropertyExists -Object $Choice -Name 'LocationLabel') -and -not [string]::IsNullOrWhiteSpace([string]$Choice.LocationLabel)) {
+        [string]$Choice.LocationLabel
+    }
+    elseif ((Test-LWPropertyExists -Object $Choice -Name 'Type') -and [string]$Choice.Type -eq 'herbpouch') {
+        'Herb Pouch'
+    }
+    else {
+        'Backpack'
+    }
+
+    return ("{0}{1} [{2}] +{3} END" -f [string]$Choice.Name, $countSuffix, $locationLabel, [int]$Choice.RestoreAmount)
+}
+
+function Select-LWHealingPotionChoice {
+    param(
+        [object]$State = $script:GameState,
+        [switch]$HerbPouchOnly
+    )
+
+    $choices = @(Get-LWAvailableHealingPotionChoices -State $State -HerbPouchOnly:$HerbPouchOnly)
+    if ($choices.Count -eq 0) {
+        if ($HerbPouchOnly) {
+            Write-LWWarn 'No usable healing potion is currently stored in the Herb Pouch.'
+        }
+        else {
+            Write-LWWarn 'No usable healing item found in Herb Pouch or Backpack.'
+        }
+        return $null
+    }
+
+    if ($choices.Count -eq 1) {
+        return $choices[0]
+    }
+
+    $title = if ($HerbPouchOnly) { 'Choose Combat Potion' } else { 'Choose Potion' }
+    $accent = if ($HerbPouchOnly) { 'Red' } else { 'DarkGreen' }
+    Write-LWRetroPanelHeader -Title $title -AccentColor $accent
+    for ($i = 0; $i -lt $choices.Count; $i++) {
+        Write-LWRetroPanelTextRow -Text ("{0,2}. {1}" -f ($i + 1), (Format-LWHealingPotionChoiceText -Choice $choices[$i])) -TextColor 'Gray'
+    }
+    Write-LWRetroPanelTextRow -Text ' 0. Cancel' -TextColor 'DarkGray'
+    Write-LWRetroPanelFooter
+
+    $choiceIndex = Read-LWInt -Prompt 'Potion number' -Default 0 -Min 0 -Max $choices.Count -NoRefresh
+    if ($choiceIndex -eq 0) {
+        Write-LWInfo 'Potion use cancelled.'
+        return $null
+    }
+
+    return $choices[$choiceIndex - 1]
 }
 
 function Use-LWResolvedHealingPotion {
@@ -15599,9 +15659,8 @@ function Use-LWHealingPotion {
         return
     }
 
-    $choice = Get-LWPreferredHealingPotionChoice -State $script:GameState
+    $choice = Select-LWHealingPotionChoice -State $script:GameState
     if ($null -eq $choice) {
-        Write-LWWarn 'No usable healing item found in Herb Pouch or Backpack.'
         return
     }
 
@@ -18353,9 +18412,8 @@ function Invoke-LWCombatPotionRound {
         return $null
     }
 
-    $choice = Get-LWPreferredHerbPouchCombatPotionChoice -State $script:GameState
+    $choice = Select-LWHealingPotionChoice -State $script:GameState -HerbPouchOnly
     if ($null -eq $choice) {
-        Write-LWWarn 'No usable healing potion is currently stored in the Herb Pouch.'
         return $null
     }
 
