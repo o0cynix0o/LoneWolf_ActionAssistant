@@ -373,10 +373,8 @@ function Show-LWWelcomeScreen {
         Write-LWBanner
     }
     Write-LWRetroPanelHeader -Title 'Welcome' -AccentColor 'Cyan'
-    Write-LWRetroPanelKeyValueRow -Label 'load' -Value 'open an existing save' -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'new' -Value 'create a fresh character' -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'newrun' -Value 'begin a new run on a profile' -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'help' -Value 'show the command list' -ValueColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'load' -LeftValue 'open a save' -RightLabel 'new' -RightValue 'create a character' -LeftColor 'Gray' -RightColor 'Gray' -LeftLabelWidth 8 -RightLabelWidth 7 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'newrun' -LeftValue 'begin a new run' -RightLabel 'help' -RightValue 'show commands' -LeftColor 'Gray' -RightColor 'Gray' -LeftLabelWidth 8 -RightLabelWidth 7 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Quick Start' -AccentColor 'DarkYellow'
@@ -560,11 +558,9 @@ function Show-LWDeathScreen {
     $causeText = if ([string]::IsNullOrWhiteSpace([string]$deathState.Cause)) { 'A fatal choice ended this path.' } else { [string]$deathState.Cause }
 
     Write-LWRetroPanelHeader -Title 'Death' -AccentColor 'Red'
-    Write-LWRetroPanelKeyValueRow -Label 'Character' -Value $script:GameState.Character.Name -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Book / Section' -Value ("{0} / {1}" -f $bookLabel, [string]$deathState.Section) -ValueColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $script:GameState.Character.Name -RightLabel 'Book / Section' -RightValue ("{0} / {1}" -f [int]$deathState.BookNumber, [string]$deathState.Section) -LeftColor 'White' -RightColor 'Gray' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Difficulty' -LeftValue (Get-LWCurrentDifficulty) -RightLabel 'Permadeath' -RightValue $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -LeftColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -RightColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' }) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelKeyValueRow -Label 'Cause' -Value $causeText -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
-    Write-LWRetroPanelKeyValueRow -Label 'Permadeath' -Value $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -ValueColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Final State' -AccentColor 'DarkYellow'
@@ -10069,11 +10065,9 @@ function Show-LWBookCompletionSummary {
     $bookAchievements = @($script:GameState.Achievements.Unlocked | Where-Object { [int]$_.BookNumber -eq [int]$Summary.BookNumber } | Select-Object -Last 4)
 
     Write-LWRetroPanelHeader -Title 'Adventure Complete' -AccentColor 'Green'
-    Write-LWRetroPanelKeyValueRow -Label 'Character' -Value $CharacterName -ValueColor 'White'
+    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $CharacterName -RightLabel 'Difficulty' -RightValue (Get-LWCurrentDifficulty) -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Rule Set' -LeftValue ([string]$script:GameState.RuleSet) -RightLabel 'Outcome' -RightValue 'Victory' -LeftColor 'Gray' -RightColor 'Green' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelKeyValueRow -Label 'Completed Book' -Value $completedBookLabel -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Rule Set' -Value ([string]$script:GameState.RuleSet) -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Difficulty' -Value (Get-LWCurrentDifficulty) -ValueColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty))
-    Write-LWRetroPanelKeyValueRow -Label 'Outcome' -Value 'Victory' -ValueColor 'Green'
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Book Summary' -AccentColor 'Cyan'
@@ -11249,7 +11243,6 @@ function Show-LWNotes {
 
     Write-LWRetroPanelHeader -Title 'Note Summary' -AccentColor 'Cyan'
     Write-LWRetroPanelKeyValueRow -Label 'Total Notes' -Value ([string]$notes.Count) -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Current Book' -Value (Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber)) -ValueColor 'White'
     Write-LWRetroPanelFooter
 
     Show-LWHelpfulCommandsPanel -ScreenName 'notes'
@@ -16479,11 +16472,12 @@ function Write-LWCombatLogEntry {
 
     Write-LWRetroPanelHeader -Title 'Combat Record' -AccentColor 'DarkRed'
     Write-LWRetroPanelKeyValueRow -Label 'Enemy' -Value ([string]$Entry.EnemyName) -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Book / Section' -Value ("{0} / {1}" -f $bookLabel, $(if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [string]$Entry.Section } else { '?' })) -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Outcome' -Value ([string]$Entry.Outcome) -ValueColor (Get-LWOutcomeColor -Outcome ([string]$Entry.Outcome))
-    Write-LWRetroPanelKeyValueRow -Label 'Rounds Fought' -Value ([string]$Entry.RoundCount) -ValueColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'Book / Section' -LeftValue ("{0} / {1}" -f [int](Get-LWCombatEntryBookNumber -Entry $Entry), $(if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [string]$Entry.Section } else { '?' })) -RightLabel 'Outcome' -RightValue ([string]$Entry.Outcome) -LeftColor 'Gray' -RightColor (Get-LWOutcomeColor -Outcome ([string]$Entry.Outcome)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) {
-        Write-LWRetroPanelKeyValueRow -Label 'Combat Ratio' -Value (Format-LWSigned -Value ([int]$Entry.CombatRatio)) -ValueColor (Get-LWCombatRatioColor -Ratio ([int]$Entry.CombatRatio))
+        Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Entry.RoundCount) -RightLabel 'Combat Ratio' -RightValue (Format-LWSigned -Value ([int]$Entry.CombatRatio)) -LeftColor 'Gray' -RightColor (Get-LWCombatRatioColor -Ratio ([int]$Entry.CombatRatio)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    }
+    else {
+        Write-LWRetroPanelKeyValueRow -Label 'Rounds Fought' -Value ([string]$Entry.RoundCount) -ValueColor 'Gray'
     }
     if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) {
         Write-LWRetroPanelKeyValueRow -Label 'Weapon Used' -Value (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) -ValueColor 'Gray'
@@ -16649,12 +16643,9 @@ function Show-LWCombatStatus {
 
     Write-LWRetroPanelHeader -Title 'Combat Status' -AccentColor 'Red'
     Write-LWRetroPanelKeyValueRow -Label 'Enemy' -Value ([string]$script:GameState.Combat.EnemyName) -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Section' -Value ([string]$script:GameState.CurrentSection) -ValueColor 'White'
-    Write-LWRetroPanelKeyValueRow -Label 'Combat Round' -Value ([string]@($script:GameState.Combat.Log).Count) -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Combat Ratio' -Value (Format-LWSigned -Value ([int]$breakdown.CombatRatio)) -ValueColor (Get-LWCombatRatioColor -Ratio ([int]$breakdown.CombatRatio))
-    Write-LWRetroPanelKeyValueRow -Label 'Combat Result' -Value 'In Progress' -ValueColor 'Cyan'
-    Write-LWRetroPanelKeyValueRow -Label 'Evade' -Value $evadeStatus -ValueColor $(if ($evadeStatus -eq 'No') { 'Gray' } else { 'Yellow' })
-    Write-LWRetroPanelKeyValueRow -Label 'Mindforce' -Value $mindforceStatus -ValueColor $(if ($mindforceStatus -like 'Active*') { 'Red' } elseif ($mindforceStatus -like 'Blocked*') { 'Cyan' } else { 'Gray' })
+    Write-LWRetroPanelPairRow -LeftLabel 'Section' -LeftValue ([string]$script:GameState.CurrentSection) -RightLabel 'Combat Round' -RightValue ([string]@($script:GameState.Combat.Log).Count) -LeftColor 'White' -RightColor 'Gray' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Ratio' -LeftValue (Format-LWSigned -Value ([int]$breakdown.CombatRatio)) -RightLabel 'Result' -RightValue 'In Progress' -LeftColor (Get-LWCombatRatioColor -Ratio ([int]$breakdown.CombatRatio)) -RightColor 'Cyan' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Evade' -LeftValue $evadeStatus -RightLabel 'Mindforce' -RightValue $(if ($mindforceStatus -like 'Blocked*') { 'Blocked' } elseif ($mindforceStatus -like 'Active*') { 'Active' } else { $mindforceStatus }) -LeftColor $(if ($evadeStatus -eq 'No') { 'Gray' } else { 'Yellow' }) -RightColor $(if ($mindforceStatus -like 'Active*') { 'Red' } elseif ($mindforceStatus -like 'Blocked*') { 'Cyan' } else { 'Gray' }) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelFooter
 
     Show-LWCombatDuelPanel -Title 'Player / Enemy' -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$playerPool.Current) -PlayerMax ([int]$playerPool.Max) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
