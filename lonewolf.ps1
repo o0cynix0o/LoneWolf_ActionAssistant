@@ -10979,24 +10979,23 @@ function Write-LWBanner {
     $width = 64
     $contentWidth = $width - 4
     $border = '+' + ('=' * ($width - 2)) + '+'
-    $title = 'LONE WOLF ACTION ASSISTANT'.PadRight($contentWidth)
-    $status = Get-LWScreenBannerStatusText
-    if ($status.Length -gt $contentWidth) {
-        $status = $status.Substring(0, $contentWidth)
+    $titleText = "LONE WOLF ACTION ASSISTANT :: v$($script:LWAppVersion)"
+    if ($titleText.Length -gt $contentWidth) {
+        $titleText = $titleText.Substring(0, $contentWidth)
     }
-    $status = $status.PadRight($contentWidth)
+    $title = $titleText.PadRight($contentWidth)
 
     Write-Host ''
     Write-Host $border -ForegroundColor (Get-LWScreenAccentColor)
     Write-Host '| ' -NoNewline -ForegroundColor DarkGray
     Write-Host $title -NoNewline -ForegroundColor 'Cyan'
     Write-Host ' |' -ForegroundColor DarkGray
-    Write-Host '| ' -NoNewline -ForegroundColor DarkGray
-    Write-Host $status -NoNewline -ForegroundColor (Get-LWScreenAccentColor)
-    Write-Host ' |' -ForegroundColor DarkGray
     Write-Host $border -ForegroundColor DarkGray
-    Write-LWSubtle '  Type help for commands.'
     Write-Host ''
+}
+
+function Write-LWCommandPromptHint {
+    Write-LWSubtle 'Type help for commands.'
 }
 
 function Show-LWDisciplines {
@@ -19664,6 +19663,7 @@ function Start-LWTerminal {
         $line = ''
         try {
             Refresh-LWScreen
+            Write-LWCommandPromptHint
             $line = Read-Host 'lw'
             $result = Invoke-LWCommand -InputLine $line
             if ($result -eq 'quit') {
