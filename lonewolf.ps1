@@ -5156,6 +5156,113 @@ function Normalize-LWCombatHistoryMetadata {
             Set-LWCombatEntryBookMetadata -Entry $entry -BookNumber $completedBooks[0] -BookTitle (Get-LWBookTitle -BookNumber $completedBooks[0])
         }
     }
+
+    Normalize-LWCombatHistorySections -State $State
+}
+
+function Get-LWCombatHistorySectionBackfillName {
+    param([string]$EnemyName = '')
+
+    $name = [string]$EnemyName
+    if ([string]::IsNullOrWhiteSpace($name)) {
+        return ''
+    }
+
+    switch -Regex ($name.Trim()) {
+        '^Winged Serpant$' { return 'Winged Serpent' }
+        '^Harbor Thugs$' { return 'Harbour Thugs' }
+        '^Palace Jailer$' { return 'Palace Gaoler' }
+        '^Dark Lord Haakon$' { return 'Darklord Haakon' }
+        '^Yawshsth$' { return 'Yawshath' }
+        '^Drakar$' { return 'Drakkar' }
+        default { return $name.Trim() }
+    }
+}
+
+function Get-LWCombatHistorySectionBackfill {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+
+    $bookNumber = if ((Test-LWPropertyExists -Object $Entry -Name 'BookNumber') -and $null -ne $Entry.BookNumber) { [int]$Entry.BookNumber } else { $null }
+    if ($null -eq $bookNumber) {
+        return $null
+    }
+
+    $enemyName = Get-LWCombatHistorySectionBackfillName -EnemyName $(if (Test-LWPropertyExists -Object $Entry -Name 'EnemyName') { [string]$Entry.EnemyName } else { '' })
+    $enemyCombatSkill = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyCombatSkill') -and $null -ne $Entry.EnemyCombatSkill) { [int]$Entry.EnemyCombatSkill } else { $null }
+    $enemyEndurance = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyEnduranceMax') -and $null -ne $Entry.EnemyEnduranceMax) { [int]$Entry.EnemyEnduranceMax } else { $null }
+    $notesText = ''
+    if ((Test-LWPropertyExists -Object $Entry -Name 'Notes') -and $null -ne $Entry.Notes) {
+        $notesText = (@($Entry.Notes | ForEach-Object { [string]$_ }) -join ' | ')
+    }
+
+    $signature = "{0}|{1}|{2}|{3}" -f $bookNumber, $enemyName, $(if ($null -ne $enemyCombatSkill) { [string]$enemyCombatSkill } else { '' }), $(if ($null -ne $enemyEndurance) { [string]$enemyEndurance } else { '' })
+    switch ($signature) {
+        '1|Winged Serpent|16|' { return 133 }
+        '2|Harbour Thugs|16|25' { return 268 }
+        '2|Town Guard Sergeant|13|22' { return 296 }
+        '2|Town Guard Corporal|12|20' { return 296 }
+        '2|Town Guard 1|11|19' { return 296 }
+        '2|Town Guard 2|11|19' { return 296 }
+        '2|Town Guard 3|10|18' { return 296 }
+        '2|Town Guard 4|10|17' { return 296 }
+        '2|Villager 1|10|16' { return 90 }
+        '2|Szall 1|6|9' { return 90 }
+        '2|Villager 2|11|14' { return 90 }
+        '2|Szall 2|5|8' { return 90 }
+        '2|Villager 3|11|17' { return 90 }
+        '2|Zombie Crew|13|16' { return 128 }
+        '2|Wounded Helghast|22|20' { return 5 }
+        '2|Drakkar 1|17|25' { return 185 }
+        '2|Drakkar 2|16|26' { return 185 }
+        '3|Kalkoth 1|11|35' { return 138 }
+        '3|Kalkoth 2|10|32' { return 138 }
+        '3|Crystal Frostwyrm|20|30' { return 265 }
+        '3|Ice Barbarian|14|25' { return 270 }
+        '4|Bridge Guard|14|23' { return 147 }
+        '4|Vassagonian Warhound|17|25' { return 36 }
+        '4|Vassagonian Horseman|20|28' { return 333 }
+        '4|Bandit Horseman|17|24' { return 90 }
+        '4|Wounded Bandit|13|16' { return 53 }
+        '5|Yas|14|28' { return 194 }
+        '5|Drakkarim|18|35' { return 273 }
+        '5|Drakkarim|17|35' { return 387 }
+        '5|Drakkarim|18|34' { return 231 }
+        '5|Sentry|15|23' { return 389 }
+        '5|Drakkar|18|26' { return 316 }
+        '5|Drakkar|18|23' { return 330 }
+        '5|Darklord Haakon|28|45' { return 353 }
+        '6|Altan|28|50' { return 26 }
+    }
+
+    if ($bookNumber -eq 1 -and $enemyName -eq 'Oghashez Giak Ambusher (wounded)' -and $enemyCombatSkill -eq 9 -and $notesText -match 'Player modifier \+4') {
+        return 55
+    }
+
+    if ($bookNumber -eq 1 -and $enemyName -eq 'Mad Butcher' -and $enemyCombatSkill -eq 11) {
+        return 63
+    }
+
+    return $null
+}
+
+function Normalize-LWCombatHistorySections {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'History') -or $null -eq $State.History) {
+        return
+    }
+
+    foreach ($entry in @($State.History)) {
+        $sectionMissing = (-not (Test-LWPropertyExists -Object $entry -Name 'Section')) -or $null -eq $entry.Section
+        if (-not $sectionMissing) {
+            continue
+        }
+
+        $backfilledSection = Get-LWCombatHistorySectionBackfill -Entry $entry
+        if ($null -ne $backfilledSection) {
+            $entry | Add-Member -NotePropertyName 'Section' -NotePropertyValue ([int]$backfilledSection) -Force
+        }
+    }
 }
 
 function Format-LWCompletedBooks {
@@ -9053,6 +9160,7 @@ function Normalize-LWState {
     }
 
     Normalize-LWCombatHistoryMetadata -State $State
+    Normalize-LWCombatHistorySections -State $State
     Ensure-LWEquipmentBonusState -State $State
     Sync-LWStateEquipmentBonuses -State $State
     Sync-LWRunIntegrityState -State $State
