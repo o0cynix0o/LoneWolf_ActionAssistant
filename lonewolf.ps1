@@ -1180,6 +1180,7 @@ function New-LWStoryAchievementFlags {
         Book6Section040MirrorClaimed = $false
         Book6Section048GoldClaimed  = $false
         Book6Section048MapClaimed   = $false
+        Book6Section049CessUsed     = $false
         Book6Section065TaunorWaterResolved = $false
         Book6Section106TaunorWaterResolved = $false
         Book6Section109MapClaimed   = $false
@@ -1421,7 +1422,7 @@ function Ensure-LWAchievementState {
         $State.Achievements | Add-Member -Force -NotePropertyName StoryFlags -NotePropertyValue (New-LWStoryAchievementFlags)
     }
 
-    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book1Section61NoteAdded', 'Book1Section255SolnarisClaimed', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied', 'Book6Section004LossApplied', 'Book6Section035MealsRuined', 'Book6Section040GoldClaimed', 'Book6Section040WineClaimed', 'Book6Section040MirrorClaimed', 'Book6Section048GoldClaimed', 'Book6Section048MapClaimed', 'Book6Section065TaunorWaterResolved', 'Book6Section106TaunorWaterResolved', 'Book6Section109MapClaimed', 'Book6Section112TaunorWaterResolved', 'Book6Section158SilverKeyClaimed', 'Book6Section158QuarterstaffClaimed', 'Book6Section158MealsClaimed', 'Book6Section158MaceClaimed', 'Book6Section158WhistleClaimed', 'Book6Section158RopeClaimed', 'Book6Section158ShortSwordClaimed', 'Book6Section190TaunorWaterResolved', 'Book6Section207Handled', 'Book6Section232RoomPaid', 'Book6Section232MealDeducted', 'Book6Section246TaunorWaterResolved', 'Book6Section252SilverBowClaimed', 'Book6Section278DamageApplied', 'Book6Section282DamageApplied', 'Book6Section293SilverKeyUsed', 'Book6Section304CessClaimed', 'Book6Section306ColdDamageApplied', 'Book6Section306NexusProtected', 'Book6Section307Handled', 'Book6Section307NoMealLossApplied', 'Book6Section310DamageApplied', 'Book6Section313DamageApplied', 'Book6Section315MindforceApplied', 'Book6Section315MindforceLossApplied', 'Book6Section315MindforceBlocked', 'Book6Section322TollPaid', 'Book6Section348WarhammerLost', 'Book6JumpTheWagonsRoute', 'Book6TaunorWaterStored', 'Book6MapOfTekaroClaimed', 'Book6SmallSilverKeyClaimed', 'Book6SilverBowClaimed', 'Book6CessClaimed')) {
+    foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book1Section61NoteAdded', 'Book1Section255SolnarisClaimed', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied', 'Book6Section004LossApplied', 'Book6Section035MealsRuined', 'Book6Section040GoldClaimed', 'Book6Section040WineClaimed', 'Book6Section040MirrorClaimed', 'Book6Section048GoldClaimed', 'Book6Section048MapClaimed', 'Book6Section049CessUsed', 'Book6Section065TaunorWaterResolved', 'Book6Section106TaunorWaterResolved', 'Book6Section109MapClaimed', 'Book6Section112TaunorWaterResolved', 'Book6Section158SilverKeyClaimed', 'Book6Section158QuarterstaffClaimed', 'Book6Section158MealsClaimed', 'Book6Section158MaceClaimed', 'Book6Section158WhistleClaimed', 'Book6Section158RopeClaimed', 'Book6Section158ShortSwordClaimed', 'Book6Section190TaunorWaterResolved', 'Book6Section207Handled', 'Book6Section232RoomPaid', 'Book6Section232MealDeducted', 'Book6Section246TaunorWaterResolved', 'Book6Section252SilverBowClaimed', 'Book6Section278DamageApplied', 'Book6Section282DamageApplied', 'Book6Section293SilverKeyUsed', 'Book6Section304CessClaimed', 'Book6Section306ColdDamageApplied', 'Book6Section306NexusProtected', 'Book6Section307Handled', 'Book6Section307NoMealLossApplied', 'Book6Section310DamageApplied', 'Book6Section313DamageApplied', 'Book6Section315MindforceApplied', 'Book6Section315MindforceLossApplied', 'Book6Section315MindforceBlocked', 'Book6Section322TollPaid', 'Book6Section348WarhammerLost', 'Book6JumpTheWagonsRoute', 'Book6TaunorWaterStored', 'Book6MapOfTekaroClaimed', 'Book6SmallSilverKeyClaimed', 'Book6SilverBowClaimed', 'Book6CessClaimed')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -1630,6 +1631,13 @@ function Rebuild-LWStoryAchievementFlagsFromState {
     }
 
     if ([int]$script:GameState.Character.BookNumber -ge 6) {
+        if ($visitedSections -contains 49) {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section049CessUsed')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section049CessUsed'
+            }
+
+            [void](Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWCessItemNames) -Types @('special'))
+        }
         if ($visitedSections -contains 4) { Set-LWStoryAchievementFlag -Name 'Book6Section004LossApplied' }
         if ($visitedSections -contains 35) { Set-LWStoryAchievementFlag -Name 'Book6Section035MealsRuined' }
         if ($visitedSections -contains 65) { Set-LWStoryAchievementFlag -Name 'Book6Section065TaunorWaterResolved' }
@@ -20185,6 +20193,43 @@ function Normalize-LWState {
 
     $normalized = Invoke-LWCoreNormalizeState -Context (Get-LWModuleContext) -State $State
     $normalized = Sync-LWHerbPouchState -State $normalized
+
+    Ensure-LWAchievementState -State $normalized
+    $currentBookNumber = if ($null -ne $normalized.Character -and $null -ne $normalized.Character.BookNumber) { [int]$normalized.Character.BookNumber } else { 1 }
+    if ($currentBookNumber -ge 6) {
+        $visitedSections = @()
+        if ($null -ne $normalized.CurrentBookStats -and (Test-LWPropertyExists -Object $normalized.CurrentBookStats -Name 'VisitedSections') -and $null -ne $normalized.CurrentBookStats.VisitedSections) {
+            $visitedSections = @($normalized.CurrentBookStats.VisitedSections | ForEach-Object { [int]$_ })
+        }
+        if ($null -ne $normalized.CurrentSection) {
+            $visitedSections += [int]$normalized.CurrentSection
+        }
+        $visitedSections = @($visitedSections | Sort-Object -Unique)
+
+        if ($visitedSections -contains 49) {
+            if (-not (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book6Section049CessUsed')) {
+                $normalized.Achievements.StoryFlags | Add-Member -Force -NotePropertyName 'Book6Section049CessUsed' -NotePropertyValue $true
+            }
+            else {
+                $normalized.Achievements.StoryFlags.Book6Section049CessUsed = $true
+            }
+
+            $specialItems = @()
+            if ($null -ne $normalized.Inventory -and $null -ne $normalized.Inventory.SpecialItems) {
+                $specialItems = @($normalized.Inventory.SpecialItems)
+            }
+            $normalized.Inventory.SpecialItems = @(
+                foreach ($item in $specialItems) {
+                    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWCessItemNames) -Target ([string]$item)))) {
+                        continue
+                    }
+
+                    [string]$item
+                }
+            )
+        }
+    }
+
     return (Sync-LWStateRefactorMetadata -State $normalized)
 }
 

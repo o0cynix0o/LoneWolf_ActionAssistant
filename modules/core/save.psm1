@@ -72,6 +72,7 @@ function Invoke-LWCoreLoadGame {
         Ensure-LWCurrentSectionCheckpoint
         Set-LWLastUsedSavePath -Path $Path
         Set-LWScreen -Name (Get-LWDefaultScreen)
+        Rebuild-LWStoryAchievementFlagsFromState
         if (Test-LWRunTampered) {
             $integrityNote = if (-not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityNote)) { [string]$script:GameState.Run.IntegrityNote } else { 'Locked run settings were changed outside the assistant.' }
             Write-LWWarn ("Run integrity warning: {0}" -f $integrityNote)

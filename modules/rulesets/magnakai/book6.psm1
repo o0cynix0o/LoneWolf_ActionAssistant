@@ -693,6 +693,17 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         4 {
             Invoke-LWMagnakaiBookSixSection004WeaponLoss
         }
+        49 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section049CessUsed')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section049CessUsed'
+                if ((Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWCessItemNames) -Types @('special')) -gt 0) {
+                    Write-LWInfo 'Section 49: the guard keeps the Cess to admit you through the gate.'
+                }
+                else {
+                    Write-LWInfo 'Section 49: the Cess should now be erased from your Action Chart.'
+                }
+            }
+        }
         35 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section035MealsRuined')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section035MealsRuined'
