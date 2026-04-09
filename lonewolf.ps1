@@ -16670,7 +16670,13 @@ function Write-LWCombatLogEntry {
         Get-LWLiveBookStatsSummary
     }
     else {
-        @($script:GameState.BookHistory | Where-Object { [int]$_.BookNumber -eq [int](Get-LWCombatEntryBookNumber -Entry $Entry) } | Select-Object -Last 1)[0]
+        $historicalSummary = @($script:GameState.BookHistory | Where-Object { [int]$_.BookNumber -eq [int](Get-LWCombatEntryBookNumber -Entry $Entry) } | Select-Object -Last 1)
+        if ($historicalSummary.Count -gt 0) {
+            $historicalSummary[0]
+        }
+        else {
+            $null
+        }
     }
 
     $displayWeapon = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { '' }
