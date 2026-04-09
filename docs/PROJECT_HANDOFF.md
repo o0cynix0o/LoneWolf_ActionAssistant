@@ -7,8 +7,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - App version: `0.8.0`
 - Main script: `lonewolf.ps1`
 - Latest public release on `main`: `v0.8.0`
-- `dev` and `main` are aligned at the `v0.8.0` release state
-- Active development branch for post-release work: `dev`
+- `main` is the active working branch
+- `dev` is retired from the day-to-day workflow
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Public docs hygiene:
   - sanitize `README.md` before push
@@ -48,7 +48,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
   - `docs/M3_UI_STYLE_GUIDE.md`
-- M3 retro screen refresh is now live across the app on `dev`:
+- M3 retro screen refresh is now live across the app on `main`:
   - welcome
   - load
   - help
@@ -65,7 +65,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - combat log
   - death
   - book complete
-- screen-specific `Helpful Commands` panels now appear across the main screen families on `dev`
+- screen-specific `Helpful Commands` panels now appear across the main screen families on `main`
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
@@ -292,7 +292,7 @@ Local reports:
 
 ### Book 6
 
-- Implemented on `dev`
+- Implemented on `main`
 - Book `6` is the first Magnakai book and is now treated as a real ruleset transition, not just the next Kai book
 - implemented support includes:
   - Magnakai ruleset shell
@@ -336,7 +336,7 @@ Local reports already exist for:
 - permadeath playtest
 - Book 3 sandbox and route sweeps
 - Book 5 targeted validation and Books 1-5 campaign smoke
-- Book 6 targeted validation and Magnakai transition smoke on `dev`
+- Book 6 targeted validation and Magnakai transition smoke on `main`
 - fresh-character Books `1-6` full-campaign mode coverage
 - synthetic sample Book `5` -> `6` route-matrix coverage
 - current sample save/load/failure/permadeath smoke
@@ -358,7 +358,7 @@ Latest large-scale validation:
 - command-surface smoke passed in both shells
 - no campaign failures in the March 27 full validation sweep
 - additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
-- Book 6 targeted validation passed in both shells on `dev`
+- Book 6 targeted validation passed in both shells on `main`
 - fresh-character Books `1-6` campaigns now pass in both shells on:
   - `Story`
   - `Easy`

@@ -258,7 +258,7 @@ Exit criteria:
 
 Completion note:
 
-- Magnakai / Book `6` implementation completed on `dev`
+- Magnakai / Book `6` implementation completed on `main`
 - M2.7 closeout completed on `2026-04-07`
 - final closeout validation included:
   - fresh-character full Books `1-6` campaigns in both shells on:

@@ -2,11 +2,11 @@
 
 This doc captures the transition from the Kai ruleset to the Magnakai ruleset beginning with Book `6` (`The Kingdoms of Terror`).
 
-It began as a planning document and now also records the completed M2 Book `6` implementation on `dev`.
+It began as a planning document and now also records the completed M2 Book `6` implementation on `main`.
 
 Current status:
 
-- Magnakai / Book `6` support is implemented on `dev`
+- Magnakai / Book `6` support is implemented on `main`
 - M2 is complete
 - M2.7 full validation closeout completed on `2026-04-07`
 

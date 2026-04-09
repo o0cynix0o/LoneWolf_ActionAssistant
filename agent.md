@@ -139,7 +139,7 @@ Meaning:
 
 ## Bottom Line
 
-This is now a real Books `1-6` assistant on `dev`, with the Kai run complete and the first Magnakai ruleset handoff working.
+This is now a real Books `1-6` assistant on `main`, with the Kai run complete and the first Magnakai ruleset handoff working.
 
 The main job is no longer “invent the app.”
 The main job is:
