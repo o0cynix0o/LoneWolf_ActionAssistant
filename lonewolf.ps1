@@ -13978,17 +13978,17 @@ function Get-LWConfiscatedInventorySummaryText {
     $gold = if ($null -ne $State.Storage.Confiscated.GoldCrowns) { [int]$State.Storage.Confiscated.GoldCrowns } else { 0 }
 
     if ($weapons.Count -gt 0) {
-        $parts += ('Weapons: {0}' -f (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2))
+        $parts += ('Weapons: {0}' -f (Format-LWList -Items $weapons))
     }
     if ($backpack.Count -gt 0) {
-        $parts += ('Backpack: {0}' -f (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3))
+        $parts += ('Backpack: {0}' -f (Format-LWList -Items $backpack))
     }
     if ([bool]$State.Storage.Confiscated.HasHerbPouch -or $herbPouch.Count -gt 0) {
-        $pouchValue = if ($herbPouch.Count -gt 0) { Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3 } else { '(empty)' }
+        $pouchValue = if ($herbPouch.Count -gt 0) { Format-LWList -Items $herbPouch } else { '(empty)' }
         $parts += ('Herb Pouch: {0}' -f $pouchValue)
     }
     if ($special.Count -gt 0) {
-        $parts += ('Special: {0}' -f (Format-LWCompactInventorySummary -Items $special -MaxGroups 3))
+        $parts += ('Special: {0}' -f (Format-LWList -Items $special))
     }
     if ($gold -gt 0) {
         $parts += ('Gold: {0}' -f $gold)
@@ -14975,8 +14975,8 @@ function Show-LWInventory {
     Show-LWInventorySlotsGridSection -Type 'special'
 
     Write-LWRetroPanelHeader -Title 'Stored / Stashed' -AccentColor 'DarkGray'
-    Write-LWRetroPanelKeyValueRow -Label 'Safekeeping' -Value $(if (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0) { Format-LWCompactInventorySummary -Items @($script:GameState.Storage.SafekeepingSpecialItems) -MaxGroups 4 } else { '(none)' }) -ValueColor 'DarkGray'
-    Write-LWRetroPanelKeyValueRow -Label 'Confiscated' -Value $(if (Test-LWStateHasConfiscatedEquipment) { Get-LWConfiscatedInventorySummaryText } else { '(none)' }) -ValueColor 'DarkGray'
+    Write-LWRetroPanelWrappedKeyValueRows -Label 'Safekeeping' -Value $(if (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0) { Format-LWList -Items @($script:GameState.Storage.SafekeepingSpecialItems) } else { '(none)' }) -ValueColor 'DarkGray'
+    Write-LWRetroPanelWrappedKeyValueRows -Label 'Confiscated' -Value $(if (Test-LWStateHasConfiscatedEquipment) { Get-LWConfiscatedInventorySummaryText } else { '(none)' }) -ValueColor 'DarkGray'
     Write-LWRetroPanelFooter
 
     Show-LWInventoryNotesPanel
