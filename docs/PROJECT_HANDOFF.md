@@ -10,6 +10,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - `main` is the active working branch
 - `dev` is retired from the day-to-day workflow
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
+- Confirmed defects should be tracked in GitHub as they are found, not cleaned up later in a batch
 - Public docs hygiene:
   - sanitize `README.md` before push
   - avoid personal save names, local machine notes, and private playthrough details in public docs

@@ -91,17 +91,17 @@ Current forms:
 
 Use the forms instead of freeform issues whenever practical.
 
-### Book 6 Tracking Baseline
+### Issue Tracking Baseline
 
-Book `6` / Magnakai playtesting now uses a stricter GitHub bug trail than the earlier build-out pass.
+Confirmed defects should be tracked consistently across all books and cross-book work.
 
 Baseline rule:
 
-- one confirmed Book `6` defect = one GitHub issue
+- one confirmed defect = one GitHub issue
 
 Expected labels:
 
-- `book-6`
+- one specific book label such as `book-1` through `book-6`, or `cross-book`
 - `magnakai` when ruleset-specific
 - one or two area labels such as `rules`, `combat`, `inventory`, `automation`, `ui-ux`, or `command-surface`
 - `de-diff` when the report came from a Definitive Edition difference
@@ -115,6 +115,8 @@ Expected closeout:
 Current umbrella tracker:
 
 - GitHub issue `#19` `Book 6 playtest stabilization tracker`
+
+Use that tracker for the active Book `6` stream, but keep the same one-defect-per-issue standard everywhere else too.
 
 ### Wiki
 

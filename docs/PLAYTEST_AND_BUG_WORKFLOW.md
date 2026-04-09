@@ -128,22 +128,22 @@ Recommended labels after confirmation:
 - one or two area labels such as `inventory`, `combat`, `rules`, `ui-ux`
 - an optional priority label when it helps triage
 
-### Book 6 Baseline
+### All-Book Tracking Baseline
 
-From this point forward, confirmed Book `6` / Magnakai findings should be tracked more strictly than the earlier ad hoc playtest pass.
+From this point forward, confirmed defects should be tracked consistently across all books and cross-book work.
 
-When a real Book `6` defect is confirmed:
+When a real defect is confirmed:
 
 - open one GitHub issue per confirmed defect before closing the work
 - use the matching issue form instead of a blank issue whenever possible
-- add `book-6`
-- add `magnakai` when the finding is ruleset-specific rather than just book-specific
+- add the most specific book label possible such as `book-3`, `book-6`, or `cross-book`
+- add `magnakai` when the finding is ruleset-specific
 - add one or two area labels such as `rules`, `combat`, `inventory`, `automation`, `ui-ux`, or `command-surface`
-- add `de-diff` when the trigger came from Definitive Edition text
+- add `de-diff` when the trigger came from a Definitive Edition difference
 - validate the fix in both shells when practical
 - close the issue with the fixing commit or validation reference
 
-Do not batch multiple unrelated Book `6` defects into one catch-all bug.
+Do not batch multiple unrelated defects into one catch-all bug just to save tracker space.
 
 ## Validation Expectations
 

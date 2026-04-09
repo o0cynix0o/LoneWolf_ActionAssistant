@@ -21,6 +21,10 @@ For deeper project state, workflow details, and local report locations, use:
 - Runtime target:
   - Windows PowerShell 5.1
   - PowerShell 7
+- GitHub bug hygiene is part of normal work:
+  - one confirmed defect should become one issue
+  - use book + area labels
+  - close issues when the fix lands
 - Kai ruleset support is complete through Books `1-5`
 - Magnakai support is live through Book `6`
 - M1 modular refactor is complete and pushed
