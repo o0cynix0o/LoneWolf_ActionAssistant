@@ -125,6 +125,63 @@ function Write-LWRetroPanelKeyValueRow {
     Write-Host ' |' -ForegroundColor DarkGray
 }
 
+function Write-LWRetroPanelWrappedKeyValueRows {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string]$Value,
+        [string]$ValueColor = 'Gray',
+        [string]$LabelColor = 'DarkGray',
+        [int]$Width = 64,
+        [int]$LabelWidth = 15
+    )
+
+    $contentWidth = [Math]::Max(10, ($Width - 4))
+    $prefix = ("{0,-$LabelWidth}: " -f $Label)
+    $continuationPrefix = (' ' * $prefix.Length)
+    $valueText = if ($null -eq $Value) { '' } else { [string]$Value }
+    $wrappedLines = @()
+
+    if ([string]::IsNullOrWhiteSpace($valueText)) {
+        $wrappedLines = @('')
+    }
+    else {
+        $remaining = $valueText.Trim()
+        $firstWidth = [Math]::Max(1, ($contentWidth - $prefix.Length))
+        $continuationWidth = [Math]::Max(1, ($contentWidth - $continuationPrefix.Length))
+
+        while ($remaining.Length -gt 0) {
+            $activePrefix = if ($wrappedLines.Count -eq 0) { $prefix } else { $continuationPrefix }
+            $activeWidth = if ($wrappedLines.Count -eq 0) { $firstWidth } else { $continuationWidth }
+
+            if ($remaining.Length -le $activeWidth) {
+                $wrappedLines += ($activePrefix + $remaining)
+                break
+            }
+
+            $slice = $remaining.Substring(0, $activeWidth)
+            $breakIndex = $slice.LastIndexOf(' ')
+            if ($breakIndex -lt 0) {
+                $breakIndex = $activeWidth
+            }
+
+            $segment = $remaining.Substring(0, $breakIndex).TrimEnd()
+            $wrappedLines += ($activePrefix + $segment)
+            $remaining = $remaining.Substring($breakIndex).TrimStart()
+        }
+    }
+
+    foreach ($line in $wrappedLines) {
+        $displayLine = $line.PadRight($contentWidth)
+        Write-Host '|' -NoNewline -ForegroundColor DarkGray
+        Write-Host ' ' -NoNewline
+        Write-Host $displayLine.Substring(0, [Math]::Min($prefix.Length, $displayLine.Length)) -NoNewline -ForegroundColor $LabelColor
+        if ($displayLine.Length -gt $prefix.Length) {
+            Write-Host $displayLine.Substring($prefix.Length) -NoNewline -ForegroundColor $ValueColor
+        }
+        Write-Host ' |' -ForegroundColor DarkGray
+    }
+}
+
 function Write-LWRetroPanelTextRow {
     param(
         [Parameter(Mandatory = $true)][string]$Text,
@@ -326,6 +383,7 @@ Export-ModuleMember -Function `
     Write-LWRetroPanelFooter, `
     Write-LWRetroPanelDivider, `
     Write-LWRetroPanelKeyValueRow, `
+    Write-LWRetroPanelWrappedKeyValueRows, `
     Write-LWRetroPanelTextRow, `
     Write-LWRetroPanelTwoColumnRow, `
     Write-LWRetroPanelThreeColumnRow, `

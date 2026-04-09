@@ -12073,6 +12073,35 @@ function Show-LWCampaignOverview {
     Write-LWRetroPanelFooter
 }
 
+function Format-LWCampaignFightHighlightWrappedText {
+    param(
+        [string]$Label,
+        [string]$EnemyName,
+        [object]$Value,
+        [string]$Suffix = '',
+        [string]$BookLabel = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($EnemyName) -or $null -eq $Value -or ([string]$Value) -eq '' -or ([int]$Value) -le 0) {
+        return ("{0}: (none)" -f $Label)
+    }
+
+    return ("{0}: {1} ({2}{3}) | {4}" -f $Label, $EnemyName, $Value, $Suffix, $BookLabel)
+}
+
+function Get-LWDisplayBookHighlightTitle {
+    param([string]$BookLabel)
+
+    $value = if ($null -eq $BookLabel) { '' } else { [string]$BookLabel }
+    $value = [regex]::Replace($value, '^\s*Book\s+\d+\s*-\s*', '')
+    $value = [regex]::Replace($value, '^\s*The\s+', '')
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return '(unknown)'
+    }
+
+    return $value.Trim()
+}
+
 function Show-LWCampaignBooks {
     param([Parameter(Mandatory = $true)][object]$Summary)
 
@@ -12098,22 +12127,32 @@ function Show-LWCampaignBooks {
 function Show-LWCampaignCombat {
     param([Parameter(Mandatory = $true)][object]$Summary)
 
-    $favoriteWeapon = if ($null -ne $Summary.FavoriteWeapon) { "{0} x{1}" -f $Summary.FavoriteWeapon.Name, [int]$Summary.FavoriteWeapon.Count } else { '(none)' }
-    $deadliestWeapon = if ($null -ne $Summary.DeadliestWeapon) { "{0} x{1}" -f $Summary.DeadliestWeapon.Name, [int]$Summary.DeadliestWeapon.Count } else { '(none)' }
-    $fastestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.FastestVictoryEnemyName -Value $Summary.FastestVictoryRounds -Suffix $(if ([int]$Summary.FastestVictoryRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.FastestVictoryBookLabel
-    $easiestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.EasiestVictoryEnemyName -Value $Summary.EasiestVictoryRatio -Suffix ' ratio' -BookLabel $Summary.EasiestVictoryBookLabel
-    $longestFight = Format-LWCampaignFightHighlight -EnemyName $Summary.LongestFightEnemyName -Value $Summary.LongestFightRounds -Suffix $(if ([int]$Summary.LongestFightRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.LongestFightBookLabel
+    $usageEntries = @(Merge-LWNamedCountEntries -Entries @($Summary.WeaponUsage) | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
+    $victoryEntries = @(Merge-LWNamedCountEntries -Entries @($Summary.WeaponVictories) | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
+    $favoriteWeapons = @($usageEntries | Select-Object -First 2 | ForEach-Object { "{0} x{1}" -f [string]$_.Name, [int]$_.Count })
+    $deadliestWeapons = @($victoryEntries | Select-Object -First 2 | ForEach-Object { "{0} x{1}" -f [string]$_.Name, [int]$_.Count })
+    $favoriteWeaponOne = if ($favoriteWeapons.Count -gt 0) { [string]$favoriteWeapons[0] } else { '(none)' }
+    $favoriteWeaponTwo = if ($favoriteWeapons.Count -gt 1) { [string]$favoriteWeapons[1] } else { '(none)' }
+    $deadliestWeaponOne = if ($deadliestWeapons.Count -gt 0) { [string]$deadliestWeapons[0] } else { '(none)' }
+    $deadliestWeaponTwo = if ($deadliestWeapons.Count -gt 1) { [string]$deadliestWeapons[1] } else { '(none)' }
+    $fastestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.FastestVictoryEnemyName) -or [int]$Summary.FastestVictoryRounds -le 0) { 'Fastest Victory: (none)' } else { "Fastest Victory: $([string]$Summary.FastestVictoryEnemyName) ($([int]$Summary.FastestVictoryRounds) round$(if ([int]$Summary.FastestVictoryRounds -eq 1) { '' } else { 's' }))" }
+    $fastestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.FastestVictoryBookLabel)
+    $easiestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.EasiestVictoryEnemyName) -or $null -eq $Summary.EasiestVictoryRatio) { 'Easiest Victory: (none)' } else { "Easiest Victory: $([string]$Summary.EasiestVictoryEnemyName) ($([int]$Summary.EasiestVictoryRatio) ratio)" }
+    $easiestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.EasiestVictoryBookLabel)
+    $longestFightLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.LongestFightEnemyName) -or [int]$Summary.LongestFightRounds -le 0) { 'Longest Fight  : (none)' } else { "Longest Fight  : $([string]$Summary.LongestFightEnemyName) ($([int]$Summary.LongestFightRounds) round$(if ([int]$Summary.LongestFightRounds -eq 1) { '' } else { 's' }))" }
+    $longestFightRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.LongestFightBookLabel)
 
     Write-LWRetroPanelHeader -Title 'Campaign Combat' -AccentColor 'Red'
     Write-LWRetroPanelPairRow -LeftLabel 'Fights' -LeftValue ([string]$Summary.TotalCombatCount) -RightLabel 'Victories' -RightValue ([string]$Summary.TotalVictories) -LeftColor 'Gray' -RightColor 'Green'
     Write-LWRetroPanelPairRow -LeftLabel 'Defeats' -LeftValue ([string]$Summary.TotalDefeats) -RightLabel 'Evades' -RightValue ([string]$Summary.TotalEvades) -LeftColor 'Red' -RightColor 'Yellow'
     Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Summary.TotalRoundsFought) -RightLabel 'Mindblast Wins' -RightValue ([string]$Summary.TotalMindblastVictories) -LeftColor 'Gray' -RightColor 'Cyan'
     Write-LWRetroPanelDivider
-    Write-LWRetroPanelKeyValueRow -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
-    Write-LWRetroPanelKeyValueRow -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
-    Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
-    Write-LWRetroPanelKeyValueRow -Label 'Favorite Weapon' -Value $favoriteWeapon -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Deadliest Weapon' -Value $deadliestWeapon -ValueColor 'Gray'
+    Write-LWRetroPanelTwoColumnRow -LeftText $fastestVictoryLeft -RightText $fastestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $easiestVictoryLeft -RightText $easiestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $longestFightLeft -RightText $longestFightRight -LeftColor 'Yellow' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelTwoColumnRow -LeftText ("Favorite Weapons : {0}" -f $favoriteWeaponOne) -RightText $favoriteWeaponTwo -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText ("Deadliest Weapons: {0}" -f $deadliestWeaponOne) -RightText $deadliestWeaponTwo -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 40 -Gap 2
     Write-LWRetroPanelFooter
 }
 
@@ -12133,17 +12172,20 @@ function Show-LWCampaignMilestones {
     param([Parameter(Mandatory = $true)][object]$Summary)
 
     $recentAchievements = @($Summary.RecentAchievements)
-    $fastestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.FastestVictoryEnemyName -Value $Summary.FastestVictoryRounds -Suffix $(if ([int]$Summary.FastestVictoryRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.FastestVictoryBookLabel
-    $easiestVictory = Format-LWCampaignFightHighlight -EnemyName $Summary.EasiestVictoryEnemyName -Value $Summary.EasiestVictoryRatio -Suffix ' ratio' -BookLabel $Summary.EasiestVictoryBookLabel
-    $longestFight = Format-LWCampaignFightHighlight -EnemyName $Summary.LongestFightEnemyName -Value $Summary.LongestFightRounds -Suffix $(if ([int]$Summary.LongestFightRounds -eq 1) { ' round' } else { ' rounds' }) -BookLabel $Summary.LongestFightBookLabel
+    $fastestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.FastestVictoryEnemyName) -or [int]$Summary.FastestVictoryRounds -le 0) { 'Fastest Victory: (none)' } else { "Fastest Victory: $([string]$Summary.FastestVictoryEnemyName) ($([int]$Summary.FastestVictoryRounds) round$(if ([int]$Summary.FastestVictoryRounds -eq 1) { '' } else { 's' }))" }
+    $fastestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.FastestVictoryBookLabel)
+    $easiestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.EasiestVictoryEnemyName) -or $null -eq $Summary.EasiestVictoryRatio) { 'Easiest Victory: (none)' } else { "Easiest Victory: $([string]$Summary.EasiestVictoryEnemyName) ($([int]$Summary.EasiestVictoryRatio) ratio)" }
+    $easiestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.EasiestVictoryBookLabel)
+    $longestFightLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.LongestFightEnemyName) -or [int]$Summary.LongestFightRounds -le 0) { 'Longest Fight  : (none)' } else { "Longest Fight  : $([string]$Summary.LongestFightEnemyName) ($([int]$Summary.LongestFightRounds) round$(if ([int]$Summary.LongestFightRounds -eq 1) { '' } else { 's' }))" }
+    $longestFightRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.LongestFightBookLabel)
 
     Write-LWRetroPanelHeader -Title 'Campaign Milestones' -AccentColor 'Magenta'
     Write-LWRetroPanelPairRow -LeftLabel 'Books Comp.' -LeftValue ([string]$Summary.BooksCompletedCount) -RightLabel 'Achievements' -RightValue ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -LeftColor 'Green' -RightColor 'Magenta'
     Write-LWRetroPanelPairRow -LeftLabel 'Profile Total' -LeftValue ("{0}/{1}" -f $Summary.ProfileAchievementsUnlocked, $Summary.ProfileAchievementsAvailable) -RightLabel 'Run Style' -RightValue $Summary.RunStyle -LeftColor 'DarkMagenta' -RightColor 'Cyan'
     Write-LWRetroPanelDivider
-    Write-LWRetroPanelKeyValueRow -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
-    Write-LWRetroPanelKeyValueRow -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
-    Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
+    Write-LWRetroPanelTwoColumnRow -LeftText $fastestVictoryLeft -RightText $fastestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $easiestVictoryLeft -RightText $easiestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $longestFightLeft -RightText $longestFightRight -LeftColor 'Yellow' -RightColor 'Gray' -LeftWidth 40 -Gap 2
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Recent Achievements' -AccentColor 'DarkYellow'
@@ -14699,8 +14741,8 @@ function Show-LWInventorySummary {
     $weaponSummary = (Format-LWCompactInventorySummary -Items $weapons -MaxGroups 2)
     $backpackSummary = if ($hasBackpack) { (Format-LWCompactInventorySummary -Items $backpack -MaxGroups 3) } else { 'unavailable (lost)' }
     $herbPouchSummary = if ($showHerbPouch) { (Format-LWCompactInventorySummary -Items $herbPouch -MaxGroups 3) } else { '' }
-    $specialSummary = (Format-LWCompactInventorySummary -Items $special -MaxGroups 3)
-    $safekeepingSummary = if ($safekeeping.Count -gt 0) { (Format-LWCompactInventorySummary -Items $safekeeping -MaxGroups 3) } else { '' }
+    $specialSummary = (Format-LWList -Items $special)
+    $safekeepingSummary = if ($safekeeping.Count -gt 0) { (Format-LWList -Items $safekeeping) } else { '' }
 
     Write-LWRetroPanelHeader -Title 'Inventory' -AccentColor 'Yellow'
     Write-LWRetroPanelTwoColumnRow `
@@ -14735,13 +14777,13 @@ function Show-LWInventorySummary {
     }
 
     if ($special.Count -gt 0) {
-        Write-LWRetroPanelKeyValueRow -Label 'Specials' -Value $specialSummary -ValueColor 'Gray' -LabelWidth 13
+        Write-LWRetroPanelWrappedKeyValueRows -Label 'Specials' -Value $specialSummary -ValueColor 'Gray' -LabelWidth 13
     }
     if ($safekeeping.Count -gt 0) {
-        Write-LWRetroPanelKeyValueRow -Label 'Safekeeping' -Value $safekeepingSummary -ValueColor 'DarkGray' -LabelWidth 13
+        Write-LWRetroPanelWrappedKeyValueRows -Label 'Safekeeping' -Value $safekeepingSummary -ValueColor 'DarkGray' -LabelWidth 13
     }
     if (Test-LWStateHasConfiscatedEquipment) {
-        Write-LWRetroPanelKeyValueRow -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray' -LabelWidth 13
+        Write-LWRetroPanelWrappedKeyValueRows -Label 'Confiscated' -Value (Get-LWConfiscatedInventorySummaryText) -ValueColor 'DarkGray' -LabelWidth 13
     }
     Write-LWRetroPanelFooter
 }
