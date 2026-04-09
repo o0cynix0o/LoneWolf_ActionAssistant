@@ -11627,6 +11627,7 @@ function Show-LWStatsCombat {
     Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Summary.RoundsFought) -RightLabel 'Mindblast Wins' -RightValue ([string]$Summary.MindblastVictories) -LeftColor 'Gray' -RightColor 'Cyan'
     Write-LWRetroPanelPairRow -LeftLabel 'Highest CS Faced' -LeftValue $highestCSFaced -RightLabel 'Highest END Faced' -RightValue $highestEndFaced -LeftColor 'Cyan' -RightColor 'Red'
     Write-LWRetroPanelPairRow -LeftLabel 'Highest CS Defeated' -LeftValue $highestCSDefeated -RightLabel 'Highest END Defeated' -RightValue $highestEndDefeated -LeftColor 'Cyan' -RightColor 'Red'
+    Write-LWRetroPanelDivider
     Write-LWRetroPanelKeyValueRow -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
     Write-LWRetroPanelKeyValueRow -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
     Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
@@ -12103,6 +12104,7 @@ function Show-LWCampaignCombat {
     Write-LWRetroPanelPairRow -LeftLabel 'Fights' -LeftValue ([string]$Summary.TotalCombatCount) -RightLabel 'Victories' -RightValue ([string]$Summary.TotalVictories) -LeftColor 'Gray' -RightColor 'Green'
     Write-LWRetroPanelPairRow -LeftLabel 'Defeats' -LeftValue ([string]$Summary.TotalDefeats) -RightLabel 'Evades' -RightValue ([string]$Summary.TotalEvades) -LeftColor 'Red' -RightColor 'Yellow'
     Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Summary.TotalRoundsFought) -RightLabel 'Mindblast Wins' -RightValue ([string]$Summary.TotalMindblastVictories) -LeftColor 'Gray' -RightColor 'Cyan'
+    Write-LWRetroPanelDivider
     Write-LWRetroPanelKeyValueRow -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
     Write-LWRetroPanelKeyValueRow -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
     Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
@@ -12134,6 +12136,7 @@ function Show-LWCampaignMilestones {
     Write-LWRetroPanelHeader -Title 'Campaign Milestones' -AccentColor 'Magenta'
     Write-LWRetroPanelPairRow -LeftLabel 'Books Comp.' -LeftValue ([string]$Summary.BooksCompletedCount) -RightLabel 'Achievements' -RightValue ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -LeftColor 'Green' -RightColor 'Magenta'
     Write-LWRetroPanelPairRow -LeftLabel 'Profile Total' -LeftValue ("{0}/{1}" -f $Summary.ProfileAchievementsUnlocked, $Summary.ProfileAchievementsAvailable) -RightLabel 'Run Style' -RightValue $Summary.RunStyle -LeftColor 'DarkMagenta' -RightColor 'Cyan'
+    Write-LWRetroPanelDivider
     Write-LWRetroPanelKeyValueRow -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
     Write-LWRetroPanelKeyValueRow -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
     Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
@@ -16614,6 +16617,7 @@ function Show-LWCombatTacticalPanel {
 
     Write-LWRetroPanelHeader -Title 'Weapons / Rules' -AccentColor 'DarkYellow'
     Write-LWRetroPanelPairRow -LeftLabel 'Weapon' -LeftValue $Weapon -RightLabel 'Mode' -RightValue $Mode -LeftColor 'Gray' -RightColor (Get-LWModeColor -Mode $Mode) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelDivider
     Write-LWRetroPanelKeyValueRow -Label 'Bonuses' -Value $(if ($bonusNotes.Count -gt 0) { $bonusNotes -join ' | ' } else { '(none)' }) -ValueColor 'Gray'
     Write-LWRetroPanelKeyValueRow -Label 'Active Rules' -Value $(if ($ruleNotes.Count -gt 0) { $ruleNotes -join ' | ' } else { '(none)' }) -ValueColor 'Gray'
     Write-LWRetroPanelFooter
