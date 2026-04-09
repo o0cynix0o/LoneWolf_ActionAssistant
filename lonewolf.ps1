@@ -15094,6 +15094,9 @@ function Set-LWSection {
             }
         }
         Invoke-LWSectionEntryRules
+        if (Test-LWDeathActive) {
+            return
+        }
         Write-LWInfo "Moved to section $newSection."
         Invoke-LWMaybeAutosave
     }
@@ -20249,6 +20252,9 @@ function Load-LWGame {
     $loadedState = Invoke-LWCoreLoadGame -Context (Get-LWModuleContext) -Path $Path
     if ($null -ne $loadedState) {
         $script:GameState = Sync-LWStateRefactorMetadata -State $loadedState
+        if ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 129 -and -not (Test-LWDeathActive)) {
+            Invoke-LWInstantDeath -Cause 'Section 129: you are condemned and executed by order of Lord Roark.'
+        }
     }
 }
 

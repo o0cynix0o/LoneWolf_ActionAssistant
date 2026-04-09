@@ -693,6 +693,10 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         4 {
             Invoke-LWMagnakaiBookSixSection004WeaponLoss
         }
+        129 {
+            Invoke-LWInstantDeath -Cause 'Section 129: you are condemned and executed by order of Lord Roark.'
+            return
+        }
         49 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section049CessUsed')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section049CessUsed'
