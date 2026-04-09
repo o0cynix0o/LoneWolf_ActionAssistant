@@ -897,6 +897,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         310 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section310DamageApplied' -Delta -2 -MessagePrefix 'Section 310: a severed Dakomyd hand claws into your leg.' -FatalCause 'The Dakomyd''s severed hand at section 310 reduced your Endurance to zero.')
         }
+        313 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section313DamageApplied' -Delta -8 -MessagePrefix 'Section 313: the bolt sinks deeply into your shoulder.' -FatalCause 'The bolt wound at section 313 reduced your Endurance to zero.')
+        }
         315 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section315MindforceApplied')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section315MindforceApplied'
