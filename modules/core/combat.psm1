@@ -38,6 +38,7 @@ function Invoke-LWCoreStartCombat {
 
         $bookTwoSection106Helghast = ([int]$script:GameState.Character.BookNumber -eq 2 -and [int]$script:GameState.CurrentSection -eq 106)
         $bookTwoSection332Helghast = ([int]$script:GameState.Character.BookNumber -eq 2 -and [int]$script:GameState.CurrentSection -eq 332)
+        $bookSixSection234Assassin = ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 234)
         $quickStart = Get-LWCombatStartArguments -Arguments $Arguments
         $useQuickDefaults = $false
         if ($null -ne $quickStart) {
@@ -58,6 +59,12 @@ function Invoke-LWCoreStartCombat {
             $enemyCombatSkill = 21
             $enemyEndurance = 30
             Write-LWInfo 'Book 2 section 332 combat detected: Helghast (CS 21, END 30).'
+        }
+        elseif ($bookSixSection234Assassin) {
+            $enemyName = 'Plate-Armored Assassin'
+            $enemyCombatSkill = 24
+            $enemyEndurance = 30
+            Write-LWInfo 'Book 6 DE section 234 combat detected: Plate-Armored Assassin (CS 24, END 30).'
         }
         else {
             $enemyName = Read-LWText -Prompt 'Enemy name'
@@ -126,11 +133,17 @@ function Invoke-LWCoreStartCombat {
         $playerTargetEnduranceCurrent = 0
         $playerTargetEnduranceMax = 0
         $suppressShieldCombatSkillBonus = $false
+        $combatPotionsAllowed = $true
+        $bowRestricted = $false
         if (-not $useQuickDefaults) {
             $enemyImmune = Read-LWYesNo -Prompt 'Is the enemy immune to Mindblast?' -Default $false
             $enemyUndead = Read-LWYesNo -Prompt 'Is the enemy undead?' -Default $false
             $enemyUsesMindforce = Read-LWYesNo -Prompt 'Is the enemy attacking with Mindforce each combat round?' -Default $false
             $canEvade = Read-LWYesNo -Prompt 'Can Lone Wolf evade this combat if desired?' -Default $false
+        }
+
+        if ($bookSixSection234Assassin) {
+            $allowAletherBeforeCombat = $false
         }
 
         if ($bookTwoSection106Helghast) {
@@ -904,7 +917,34 @@ function Invoke-LWCoreStartCombat {
             $victoryResolutionNote = 'Section 282 result: victory sends you to 88.'
             Write-LWInfo 'Book 6 section 282: this fight cannot be evaded.'
         }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 234 -and [string]$enemyName -match '^(?i)(Plate-)?Armou?red Assassin$') {
+            $bowRestricted = $true
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
+                $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+                    $equippedWeapon = $fallbackWeapon
+                    Write-LWWarn ("Book 6 DE section 234: a Bow cannot be used here, so you switch to {0}." -f $fallbackWeapon)
+                }
+                else {
+                    $equippedWeapon = $null
+                    Write-LWWarn 'Book 6 DE section 234: a Bow cannot be used here and no other weapon is ready, so you fight unarmed.'
+                }
+            }
+            if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Curing') -and (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control')) {
+                $playerMod += 3
+                Write-LWInfo 'Book 6 DE section 234: Lore-circle of Light grants +3 Combat Skill for this fight.'
+            }
+            $combatPotionsAllowed = $false
+            $canEvade = $false
+            $victoryResolutionSection = 28
+            $victoryResolutionNote = 'Section 234 result: victory sends you to 28.'
+            Write-LWWarn 'Book 6 DE section 234: no potion may be used before or during this combat.'
+            Write-LWInfo 'Book 6 DE section 234: this fight cannot be evaded and Bows are unusable.'
+        }
         elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 283 -and [string]$enemyName -ieq 'Armoured Assassin') {
+            $bowRestricted = $true
             if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
                 $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
                             [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
@@ -1028,6 +1068,8 @@ function Invoke-LWCoreStartCombat {
             UsePlayerTargetEndurance = $usePlayerTargetEndurance
             PlayerTargetEnduranceCurrent = $playerTargetEnduranceCurrent
             PlayerTargetEnduranceMax = $playerTargetEnduranceMax
+            CombatPotionsAllowed     = $combatPotionsAllowed
+            BowRestricted            = $bowRestricted
             SuppressShieldCombatSkillBonus = $suppressShieldCombatSkillBonus
             PlayerCombatSkillModifier = $playerMod
             PlayerCombatSkillModifierRounds = $playerModRounds

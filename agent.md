@@ -1,6 +1,6 @@
 # Lone Wolf Terminal - Agent Handoff
 
-Last updated: 2026-04-03
+Last updated: 2026-04-09
 
 ## What This File Is For
 
@@ -16,13 +16,13 @@ For deeper project state, workflow details, and local report locations, use:
 
 ## Current Reality
 
-- App version: `0.8.0-dev` on `dev`
+- App version: `0.8.0`
 - Main script: `lonewolf.ps1`
 - Runtime target:
   - Windows PowerShell 5.1
   - PowerShell 7
 - Kai ruleset support is complete through Books `1-5`
-- Magnakai support is live for Book `6` on `dev`
+- Magnakai support is live through Book `6`
 - M1 modular refactor is complete and pushed
 - Core modules live under:
   - `modules/core/`
@@ -38,8 +38,8 @@ That old framing is stale.
 
 The highest-value work now is:
 
-1. live playtesting across Books `1-6`
-2. fixing DE-specific rule differences found during play
+1. post-release stabilization across Books `1-6`
+2. fixing any remaining DE-specific rule differences found during live play
 3. keeping repo docs/workflow current
 4. preparing Book `7+` expansion cleanly
 

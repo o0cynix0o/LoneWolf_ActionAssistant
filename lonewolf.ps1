@@ -16617,6 +16617,25 @@ function Show-LWCombatDuelPanel {
     Write-LWRetroPanelFooter
 }
 
+function Write-LWCombatTacticalTwoColumnRows {
+    param(
+        [string[]]$Items = @(),
+        [string]$TextColor = 'Gray'
+    )
+
+    $rows = @($Items | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($rows.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+        return
+    }
+
+    for ($i = 0; $i -lt $rows.Count; $i += 2) {
+        $leftText = [string]$rows[$i]
+        $rightText = if (($i + 1) -lt $rows.Count) { [string]$rows[$i + 1] } else { '' }
+        Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor $TextColor -RightColor $TextColor -LeftWidth 29 -Gap 2
+    }
+}
+
 function Show-LWCombatTacticalPanel {
     param(
         [Parameter(Mandatory = $true)][string]$Weapon,
@@ -16628,30 +16647,50 @@ function Show-LWCombatTacticalPanel {
         [Parameter(Mandatory = $true)][string]$EvadeStatus,
         [Parameter(Mandatory = $true)][string]$Mode,
         [object[]]$Notes = @(),
+        [string]$BowStatus = '',
+        [string]$PotionStatus = '',
         [switch]$UsesSommerswerd,
         [switch]$SommerswerdSuppressed
     )
 
     $notes = @($Notes | ForEach-Object { [string]$_ })
-    $bonusNotes = @($notes | Where-Object { $_ -match '\+' })
-    $ruleNotes = @($notes | Where-Object { $_ -notmatch '\+' })
-    if ($UseMindblast) {
-        $bonusNotes += $PsychicAttackLabel
-    }
+    $bonusNotes = @($notes | Where-Object { $_ -match '\+' } | Select-Object -Unique)
+    $overflowRuleNotes = @(
+        $notes | Where-Object {
+            $_ -notmatch '\+' -and
+            $_ -notmatch '^Mindforce ' -and
+            $_ -notmatch '^Evade ' -and
+            $_ -notmatch '^Sommerswerd ' -and
+            $_ -notmatch '^Undead damage x2$'
+        } | Select-Object -Unique
+    )
+
+    $ruleStatusNotes = @(
+        ("Mindforce : {0}" -f $MindforceStatus),
+        ("Evade     : {0}" -f $EvadeStatus)
+    )
     if ($UsesSommerswerd) {
-        $ruleNotes += $(if ($SommerswerdSuppressed) { 'Sommerswerd suppressed' } elseif ($EnemyIsUndead) { 'Sommerswerd active (undead x2)' } else { 'Sommerswerd active' })
+        $ruleStatusNotes += ("Sommerswerd: {0}" -f $(if ($SommerswerdSuppressed) { 'Suppressed' } elseif ($EnemyIsUndead) { 'Active (undead x2)' } else { 'Active' }))
     }
-    $ruleNotes += ("Mindforce: {0}" -f $MindforceStatus)
-    $ruleNotes += ("Evade: {0}" -f $EvadeStatus)
     if ($KnockoutStatus -ne 'Off') {
-        $ruleNotes += ("Knockout: {0}" -f $KnockoutStatus)
+        $ruleStatusNotes += ("Knockout  : {0}" -f $KnockoutStatus)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($BowStatus)) {
+        $ruleStatusNotes += ("Bow       : {0}" -f $BowStatus)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($PotionStatus)) {
+        $ruleStatusNotes += ("Potions   : {0}" -f $PotionStatus)
     }
 
     Write-LWRetroPanelHeader -Title 'Weapons / Rules' -AccentColor 'DarkYellow'
     Write-LWRetroPanelPairRow -LeftLabel 'Weapon' -LeftValue $Weapon -RightLabel 'Mode' -RightValue $Mode -LeftColor 'Gray' -RightColor (Get-LWModeColor -Mode $Mode) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelDivider
-    Write-LWRetroPanelKeyValueRow -Label 'Bonuses' -Value $(if ($bonusNotes.Count -gt 0) { $bonusNotes -join ' | ' } else { '(none)' }) -ValueColor 'Gray'
-    Write-LWRetroPanelKeyValueRow -Label 'Active Rules' -Value $(if ($ruleNotes.Count -gt 0) { $ruleNotes -join ' | ' } else { '(none)' }) -ValueColor 'Gray'
+    Write-LWCombatTacticalTwoColumnRows -Items $bonusNotes -TextColor 'Gray'
+    Write-LWRetroPanelDivider
+    Write-LWCombatTacticalTwoColumnRows -Items $ruleStatusNotes -TextColor 'Gray'
+    if ($overflowRuleNotes.Count -gt 0) {
+        Write-LWRetroPanelWrappedKeyValueRows -Label 'Notes' -Value ($overflowRuleNotes -join ' | ') -ValueColor 'Gray' -LabelWidth 13
+    }
     Write-LWRetroPanelFooter
 }
 
@@ -16681,6 +16720,8 @@ function Get-LWCurrentCombatLogEntry {
         AttemptKnockout = [bool]$script:GameState.Combat.AttemptKnockout
         Weapon     = [string]$script:GameState.Combat.EquippedWeapon
         SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
+        BowRestricted = [bool]$script:GameState.Combat.BowRestricted
+        CombatPotionsAllowed = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'CombatPotionsAllowed') -and $null -ne $script:GameState.Combat.CombatPotionsAllowed) { [bool]$script:GameState.Combat.CombatPotionsAllowed } else { $true }
         Mindblast  = [bool]$script:GameState.Combat.UseMindblast
         CanEvade   = [bool]$script:GameState.Combat.CanEvade
         EvadeAvailableAfterRound = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EvadeAvailableAfterRound') -and $null -ne $script:GameState.Combat.EvadeAvailableAfterRound) { [int]$script:GameState.Combat.EvadeAvailableAfterRound } else { 0 }
@@ -16739,7 +16780,7 @@ function Write-LWCombatLogEntry {
 
     Show-LWCombatDuelPanel -Title 'Player / Enemy' -EnemyName ([string]$Entry.EnemyName) -PlayerCurrent ([int]$Entry.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Entry.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $(if ((Test-LWPropertyExists -Object $Entry -Name 'PlayerCombatSkill') -and $null -ne $Entry.PlayerCombatSkill) { [int]$Entry.PlayerCombatSkill } else { 0 }) -EnemyCombatSkill $(if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyCombatSkill') -and $null -ne $Entry.EnemyCombatSkill) { [int]$Entry.EnemyCombatSkill } else { 0 }) -CombatRatio $(if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) { [int]$Entry.CombatRatio } else { 0 })
 
-    Show-LWCombatTacticalPanel -Weapon $(if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon) } else { 'Unknown' }) -UseMindblast:([bool]((Test-LWPropertyExists -Object $Entry -Name 'Mindblast') -and [bool]$Entry.Mindblast)) -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:([bool]((Test-LWPropertyExists -Object $Entry -Name 'EnemyIsUndead') -and [bool]$Entry.EnemyIsUndead)) -MindforceStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyUsesMindforce') -and [bool]$Entry.EnemyUsesMindforce) { $(if ((Test-LWPropertyExists -Object $Entry -Name 'MindforceBlockedByMindshield') -and [bool]$Entry.MindforceBlockedByMindshield) { 'Blocked by Mindshield' } else { 'Active' }) } else { 'Off' }) -KnockoutStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'AttemptKnockout') -and [bool]$Entry.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }) -EvadeStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'CanEvade') -and [bool]$Entry.CanEvade) { 'Yes' } else { 'No' }) -Mode $(if ((Test-LWPropertyExists -Object $Entry -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Mode)) { [string]$Entry.Mode } else { [string]$script:GameState.Settings.CombatMode }) -Notes @($Entry.Notes) -UsesSommerswerd:(Test-LWWeaponIsSommerswerd -Weapon ([string]$Entry.Weapon)) -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Entry -Name 'SommerswerdSuppressed') -and [bool]$Entry.SommerswerdSuppressed))
+    Show-LWCombatTacticalPanel -Weapon $(if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon) } else { 'Unknown' }) -UseMindblast:([bool]((Test-LWPropertyExists -Object $Entry -Name 'Mindblast') -and [bool]$Entry.Mindblast)) -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:([bool]((Test-LWPropertyExists -Object $Entry -Name 'EnemyIsUndead') -and [bool]$Entry.EnemyIsUndead)) -MindforceStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyUsesMindforce') -and [bool]$Entry.EnemyUsesMindforce) { $(if ((Test-LWPropertyExists -Object $Entry -Name 'MindforceBlockedByMindshield') -and [bool]$Entry.MindforceBlockedByMindshield) { 'Blocked by Mindshield' } else { 'Active' }) } else { 'Off' }) -KnockoutStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'AttemptKnockout') -and [bool]$Entry.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }) -EvadeStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'CanEvade') -and [bool]$Entry.CanEvade) { 'Yes' } else { 'No' }) -Mode $(if ((Test-LWPropertyExists -Object $Entry -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Mode)) { [string]$Entry.Mode } else { [string]$script:GameState.Settings.CombatMode }) -Notes @($Entry.Notes) -BowStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'BowRestricted') -and [bool]$Entry.BowRestricted) { 'Locked' } else { '' }) -PotionStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'CombatPotionsAllowed') -and -not [bool]$Entry.CombatPotionsAllowed) { 'Locked' } else { '' }) -UsesSommerswerd:(Test-LWWeaponIsSommerswerd -Weapon ([string]$Entry.Weapon)) -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Entry -Name 'SommerswerdSuppressed') -and [bool]$Entry.SommerswerdSuppressed))
 
     Show-LWCombatRecentRounds -Rounds @($Entry.Log) -Count ([Math]::Max(1, @($Entry.Log).Count)) -Title 'Round Log'
 
@@ -16904,7 +16945,7 @@ function Show-LWCombatSummary {
     Write-LWRetroPanelFooter
 
     Show-LWCombatDuelPanel -Title 'Player / Enemy' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
-    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode $mode -Notes $notes -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
+    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode $mode -Notes $notes -BowStatus $(if ((Test-LWPropertyExists -Object $Summary -Name 'BowRestricted') -and [bool]$Summary.BowRestricted) { 'Locked' } else { '' }) -PotionStatus $(if ((Test-LWPropertyExists -Object $Summary -Name 'CombatPotionsAllowed') -and -not [bool]$Summary.CombatPotionsAllowed) { 'Locked' } else { '' }) -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
     Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round History'
     if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.SpecialResolutionNote)) {
         Write-LWRetroPanelHeader -Title 'Combat Note' -AccentColor 'DarkYellow'
@@ -16935,7 +16976,7 @@ function Show-LWCombatStatus {
     Write-LWRetroPanelFooter
 
     Show-LWCombatDuelPanel -Title 'Player / Enemy' -EnemyName ([string]$script:GameState.Combat.EnemyName) -PlayerCurrent ([int]$playerPool.Current) -PlayerMax ([int]$playerPool.Max) -EnemyCurrent ([int]$script:GameState.Combat.EnemyEnduranceCurrent) -EnemyMax ([int]$script:GameState.Combat.EnemyEnduranceMax) -PlayerCombatSkill ([int]$breakdown.PlayerCombatSkill) -EnemyCombatSkill ([int]$breakdown.EnemyCombatSkill) -CombatRatio ([int]$breakdown.CombatRatio) -RoundCount (@($script:GameState.Combat.Log).Count)
-    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
+    Show-LWCombatTacticalPanel -Weapon (Get-LWCombatDisplayWeapon -Weapon $script:GameState.Combat.EquippedWeapon) -UseMindblast:([bool]$script:GameState.Combat.UseMindblast) -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:([bool]$script:GameState.Combat.EnemyIsUndead) -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode ([string]$script:GameState.Settings.CombatMode) -Notes @($breakdown.Notes) -BowStatus $(if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'BowRestricted') -and [bool]$script:GameState.Combat.BowRestricted) { 'Locked' } else { '' }) -PotionStatus $(if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'CombatPotionsAllowed') -and -not [bool]$script:GameState.Combat.CombatPotionsAllowed) { 'Locked' } else { '' }) -UsesSommerswerd:(Test-LWCombatUsesSommerswerd -State $script:GameState) -SommerswerdSuppressed:([bool]$script:GameState.Combat.SommerswerdSuppressed)
     Show-LWCombatRecentRounds -Rounds @($script:GameState.Combat.Log) -Count 4 -Title 'Round History'
     Show-LWCombatPromptHint
 }
@@ -18224,6 +18265,8 @@ function Stop-LWCombat {
         AttemptKnockout   = [bool]$script:GameState.Combat.AttemptKnockout
         Weapon            = $script:GameState.Combat.EquippedWeapon
         SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
+        BowRestricted     = [bool]$script:GameState.Combat.BowRestricted
+        CombatPotionsAllowed = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'CombatPotionsAllowed') -and $null -ne $script:GameState.Combat.CombatPotionsAllowed) { [bool]$script:GameState.Combat.CombatPotionsAllowed } else { $true }
         Mindblast         = [bool]$script:GameState.Combat.UseMindblast
         CanEvade          = [bool]$script:GameState.Combat.CanEvade
         EvadeAvailableAfterRound = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EvadeAvailableAfterRound') -and $null -ne $script:GameState.Combat.EvadeAvailableAfterRound) { [int]$script:GameState.Combat.EvadeAvailableAfterRound } else { 0 }
@@ -18857,6 +18900,11 @@ function Complete-LWBook {
 function Invoke-LWCombatPotionRound {
     if (-not $script:GameState.Combat.Active) {
         Write-LWWarn 'No active combat. Use combat start first.'
+        return $null
+    }
+
+    if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'CombatPotionsAllowed') -and -not [bool]$script:GameState.Combat.CombatPotionsAllowed) {
+        Write-LWWarn 'Potions cannot be used in this combat.'
         return $null
     }
 

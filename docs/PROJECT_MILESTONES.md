@@ -13,7 +13,7 @@ Status values:
 
 Current top milestone focus:
 
-- `completed` `M4` Portable Distribution Packaging
+- `planned` `M5` Post-Release Stabilization And Book `7+` Planning
 
 ## Milestone List
 
@@ -506,6 +506,23 @@ Completion checkpoint:
 - validation passed in PowerShell `7` and Windows PowerShell `5.1`:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
+
+### M5 - Post-Release Stabilization And Book 7+ Planning
+
+Status:
+
+- `planned`
+
+Goal:
+
+- keep the released Books `1-6` experience stable while preparing the next expansion cleanly
+
+Deliverables:
+
+- post-release bug triage for the shipped Books `1-6` command surface
+- continued DE-difference cleanup found during real play
+- Book `7` source audit planning
+- ruleset/state design notes for the next expansion step
 
 ## Tracking Rules
 

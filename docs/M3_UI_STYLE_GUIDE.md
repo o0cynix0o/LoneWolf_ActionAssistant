@@ -55,7 +55,7 @@ Preferred model:
 ```text
 +==============================================================+
 | LONE WOLF ACTION ASSISTANT                                   |
-| MAGNAKAI MODE :: BOOK 6 :: v0.8.0-dev                        |
+| MAGNAKAI MODE :: BOOK 6 :: v0.8.0                            |
 +==============================================================+
 ```
 

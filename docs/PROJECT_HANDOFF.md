@@ -4,10 +4,11 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.8.0-dev` on `dev`
+- App version: `0.8.0`
 - Main script: `lonewolf.ps1`
-- Latest public release on `main`: `v0.7.40`
-- Active development branch for Magnakai work: `dev`
+- Latest public release on `main`: `v0.8.0`
+- `dev` and `main` are aligned at the `v0.8.0` release state
+- Active development branch for post-release work: `dev`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Public docs hygiene:
   - sanitize `README.md` before push
@@ -32,17 +33,17 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Tamper-evident run integrity
 - Book-aware rule support across Books 1-6
 - Transition-only Special Item safekeeping beginning at the Book `4` -> `5` handoff and continuing on later book-to-book transitions
-- Project Aon baseline catch-up complete across Books 1-5, plus first-pass Book 6 / Magnakai support on `dev`
-- The Kai ruleset campaign is complete through Book 5, and the first Magnakai transition book is now playable on `dev`
+- Project Aon baseline catch-up complete across Books 1-5, plus released Book 6 / Magnakai support
+- The Kai ruleset campaign is complete through Book 5, and the first Magnakai transition book is now part of the public build
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
 - GitHub Project board is now live
 - Formal architecture planning docs now exist for the modular-engine refactor milestone
 - M1 modular refactor is complete and pushed
-- M2 Magnakai / Book `6` support is complete on `dev`
-- M2.7 validation closeout is complete on `dev` under the route-and-mode validation bar
-- M3 UX polish is complete on `dev`
-- M4 portable packaging workflow is complete on `dev`
+- M2 Magnakai / Book `6` support is complete and released
+- M2.7 validation closeout is complete under the route-and-mode validation bar
+- M3 UX polish is complete and released
+- M4 portable packaging workflow is complete and released
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:

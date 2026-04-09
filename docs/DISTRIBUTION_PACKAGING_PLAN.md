@@ -13,7 +13,6 @@ Why:
 - the app depends on `lonewolf.ps1`
 - it depends on local `data/` JSON files
 - it now depends on local `modules/`
-- the modular refactor is still in progress
 - a portable bundle is easier to validate and easier to debug than a packaged
   executable at this stage
 
@@ -86,7 +85,7 @@ That should:
 
 ## Validation Workflow
 
-Before any push/release:
+Before any public release/package:
 
 1. rebuild the portable package locally
 2. validate the zip on a disposable extracted copy so the real staging folder stays clean
@@ -112,16 +111,13 @@ Preferred command:
 
 ## Packaging Milestone
 
-This packaging work is intentionally separate from the gameplay rules work.
+M4 portable packaging is complete and remains the current release workflow.
 
-Recommended milestone framing:
-
-- prepare portable release tooling while M1 is still in progress
-- do not treat installer/exe packaging as required for the first public release
+The portable zip is the correct public-release format for `v0.8.0`.
 
 ## Future Packaging Options
 
-After the modular refactor stabilizes:
+After the current portable flow stops meeting project needs:
 
 - optional installer package
 - optional ruleset-specific packages
