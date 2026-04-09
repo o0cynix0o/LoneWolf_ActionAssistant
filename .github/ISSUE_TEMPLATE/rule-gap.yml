@@ -15,6 +15,7 @@ body:
         - Book 3
         - Book 4
         - Book 5
+        - Book 6
         - Cross-book
     validations:
       required: true

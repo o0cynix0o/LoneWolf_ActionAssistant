@@ -32,6 +32,7 @@ body:
         - Book 3
         - Book 4
         - Book 5
+        - Book 6
     validations:
       required: true
   - type: input

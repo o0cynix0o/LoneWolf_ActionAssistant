@@ -319,6 +319,7 @@ Reference:
 
 - `docs/MAGNAKAI_BOOK6_PLAN.md`
 - GitHub issue `#18` `Plan Book 6 Magnakai ruleset transition`
+- GitHub issue `#19` `Book 6 playtest stabilization tracker`
 
 Local reports:
 

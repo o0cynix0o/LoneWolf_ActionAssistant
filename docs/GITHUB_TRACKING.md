@@ -31,6 +31,7 @@ Current top-level milestone set:
 - `M2 - Additional Rule Set Support`
 - `M3 - UX Polish Pass`
 - `M4 - Portable Distribution Packaging`
+- `M5 - Post-Release Stabilization And Book 7+ Planning`
 
 Sub-milestones stay in the repo docs rather than being mirrored 1:1 into GitHub milestones.
 
@@ -89,6 +90,31 @@ Current forms:
 - `Book Audit / Build Request`
 
 Use the forms instead of freeform issues whenever practical.
+
+### Book 6 Tracking Baseline
+
+Book `6` / Magnakai playtesting now uses a stricter GitHub bug trail than the earlier build-out pass.
+
+Baseline rule:
+
+- one confirmed Book `6` defect = one GitHub issue
+
+Expected labels:
+
+- `book-6`
+- `magnakai` when ruleset-specific
+- one or two area labels such as `rules`, `combat`, `inventory`, `automation`, `ui-ux`, or `command-surface`
+- `de-diff` when the report came from a Definitive Edition difference
+
+Expected closeout:
+
+- fix committed
+- validation noted
+- issue closed after the fix lands
+
+Current umbrella tracker:
+
+- GitHub issue `#19` `Book 6 playtest stabilization tracker`
 
 ### Wiki
 
