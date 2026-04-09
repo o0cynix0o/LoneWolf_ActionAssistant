@@ -679,6 +679,33 @@ function Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers {
     }
 }
 
+function Get-LWMagnakaiBookSixInstantDeathCause {
+    param([Parameter(Mandatory = $true)][int]$Section)
+
+    switch ($Section) {
+        29 { return 'Section 29: arrows cut you down beneath the Tekaro gate.' }
+        36 { return 'Section 36: your horse collapses at the wagon jump and crushes you.' }
+        52 { return 'Section 52: the archers on the highway to Varetta kill you.' }
+        57 { return 'Section 57: the bolt at Denka Gate kills you instantly.' }
+        80 { return 'Section 80: the Dakomyd knocks you into the acid pit.' }
+        84 { return 'Section 84: the taxidermist''s drugged wine leaves you helpless.' }
+        90 { return 'Section 90: the Dakomyd hurls you into the pit and acid.' }
+        99 { return 'Section 99: the pike ambush leaves you bleeding to death.' }
+        128 { return 'Section 128: the twin Yawshaths tear you apart in their lair.' }
+        129 { return 'Section 129: you are condemned and executed by order of Lord Roark.' }
+        161 { return 'Section 161: the robbers murder you after taking your Belt Pouch.' }
+        192 { return 'Section 192: the twin Yawshaths kill you in the dungeons of Castle Taunor.' }
+        218 { return 'Section 218: you are trampled to death on the bridge.' }
+        242 { return 'Section 242: the temple congregation hacks you to pieces.' }
+        257 { return 'Section 257: the energy bolt hurls you onto the altar and kills you.' }
+        311 { return 'Section 311: the falling Yawshath carries you over the precipice.' }
+        323 { return 'Section 323: the Dakomyd''s blood destroys your weapon before it kills you.' }
+        329 { return 'Section 329: the arrow storm and the captain''s charge crush you on Tekaro Bridge.' }
+        349 { return 'Section 349: the Dakomyd spawning chamber dissolves you in acid.' }
+        default { return $null }
+    }
+}
+
 function Invoke-LWMagnakaiBookSixSectionEntryRules {
     param([Parameter(Mandatory = $true)][object]$State)
 
@@ -688,14 +715,15 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
     }
 
     $section = [int]$script:GameState.CurrentSection
+    $instantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section $section
+    if (-not [string]::IsNullOrWhiteSpace($instantDeathCause)) {
+        Invoke-LWInstantDeath -Cause $instantDeathCause
+        return
+    }
 
     switch ($section) {
         4 {
             Invoke-LWMagnakaiBookSixSection004WeaponLoss
-        }
-        129 {
-            Invoke-LWInstantDeath -Cause 'Section 129: you are condemned and executed by order of Lord Roark.'
-            return
         }
         49 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section049CessUsed')) {
@@ -1061,6 +1089,7 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
 Export-ModuleMember -Function `
     Get-LWMagnakaiBookSixStartingChoices, `
     Grant-LWMagnakaiBookSixStartingChoice, `
+    Get-LWMagnakaiBookSixInstantDeathCause, `
     Get-LWMagnakaiBookSixSectionRandomNumberContext, `
     Invoke-LWMagnakaiBookSixStorySectionAchievementTriggers, `
     Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers, `
