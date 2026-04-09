@@ -302,6 +302,7 @@ function Invoke-LWCoreCommand {
             'recover'     { Restore-LWInventoryInteractive -InputParts $parts; return $null }
             'gold'        { Update-LWGoldInteractive -InputParts $parts; return $null }
             'meal'        { Use-LWMeal; return $null }
+            'eat'         { Use-LWMeal; return $null }
             'potion'      { Use-LWHealingPotion; return $null }
             'die'         { Invoke-LWInstantDeath -Cause $argumentText; return $null }
             'fail'        { Invoke-LWFailure -Cause $argumentText; return $null }

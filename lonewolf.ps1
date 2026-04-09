@@ -19592,7 +19592,8 @@ function Invoke-LWCombatCommand {
         return
     }
 
-    switch ($Parts[1].ToLowerInvariant()) {
+    $combatSubcommand = $Parts[1].ToLowerInvariant()
+    switch ($combatSubcommand) {
         'start'  {
             if ($Parts.Count -gt 2) {
                 [void](Start-LWCombat -Arguments @($Parts[2..($Parts.Count - 1)]))
@@ -19688,7 +19689,14 @@ function Invoke-LWCombatCommand {
         }
         'evade'  { Invoke-LWEvade }
         'stop'   { [void](Stop-LWCombat) }
-        default  { Write-LWWarn 'Unknown combat subcommand. Use start, round, next, potion, auto, status, log, evade, or stop.' }
+        default  {
+            if ($Parts.Count -ge 4) {
+                [void](Start-LWCombat -Arguments @($Parts[1..($Parts.Count - 1)]))
+                return
+            }
+
+            Write-LWWarn 'Unknown combat subcommand. Use start, round, next, potion, auto, status, log, evade, or stop.'
+        }
     }
 }
 
@@ -19873,6 +19881,7 @@ function Invoke-LWCommand {
         'recover'     { Restore-LWInventoryInteractive -InputParts $parts; return $null }
         'gold'        { Update-LWGoldInteractive -InputParts $parts; return $null }
         'meal'        { Use-LWMeal; return $null }
+        'eat'         { Use-LWMeal; return $null }
         'potion'      { Use-LWHealingPotion; return $null }
         'die'         { Invoke-LWInstantDeath -Cause $argumentText; return $null }
         'fail'        { Invoke-LWFailure -Cause $argumentText; return $null }
