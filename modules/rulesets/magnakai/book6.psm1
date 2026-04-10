@@ -285,6 +285,58 @@ function Get-LWMagnakaiBookSixSection304ChoiceDefinitions {
     )
 }
 
+function Get-LWMagnakaiBookSixSection010TicketDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'luyen'; Name = 'Riverboat Ticket to Luyen'; DisplayName = 'Riverboat Ticket to Luyen'; GoldCost = 10 },
+        [pscustomobject]@{ Id = 'rhem'; Name = 'Riverboat Ticket to Rhem'; DisplayName = 'Riverboat Ticket to Rhem'; GoldCost = 15 },
+        [pscustomobject]@{ Id = 'eula'; Name = 'Riverboat Ticket to Eula'; DisplayName = 'Riverboat Ticket to Eula'; GoldCost = 20 }
+    )
+}
+
+function Invoke-LWMagnakaiBookSixSection010TicketPrompt {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section010TicketClaimed') {
+        return
+    }
+
+    if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names (Get-LWBook6RiverboatTicketItemNames)) {
+        Set-LWStoryAchievementFlag -Name 'Book6Section010TicketClaimed'
+        return
+    }
+
+    $choices = @(Get-LWMagnakaiBookSixSection010TicketDefinitions)
+    while ($true) {
+        Write-LWPanelHeader -Title 'Section 10 Ticket' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Pocket Item' -Value 'Does not use a Special Item slot' -ValueColor 'DarkYellow'
+        Write-Host ''
+
+        for ($i = 0; $i -lt $choices.Count; $i++) {
+            $choice = $choices[$i]
+            Write-LWBulletItem -Text ("{0}. {1} ({2} Gold Crowns)" -f ($i + 1), [string]$choice.DisplayName, [int]$choice.GoldCost) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+
+        $choiceIndex = Read-LWInt -Prompt 'Section 10 ticket choice' -Default 1 -Min 1 -Max $choices.Count -NoRefresh
+        $selectedChoice = $choices[$choiceIndex - 1]
+        $ticketCost = [int]$selectedChoice.GoldCost
+
+        if ([int]$script:GameState.Inventory.GoldCrowns -lt $ticketCost) {
+            Write-LWInlineWarn ("You need {0} Gold Crowns for that ticket, but only have {1}." -f $ticketCost, [int]$script:GameState.Inventory.GoldCrowns)
+            continue
+        }
+
+        Update-LWGold -Delta (-$ticketCost)
+        if (TryAdd-LWPocketSpecialItemSilently -Name ([string]$selectedChoice.Name)) {
+            Set-LWStoryAchievementFlag -Name 'Book6Section010TicketClaimed'
+            Write-LWInfo ("Section 10: {0} added to Pocket Items for {1} Gold Crowns." -f [string]$selectedChoice.DisplayName, $ticketCost)
+        }
+        else {
+            Write-LWInfo ("Section 10: {0} should now be marked as a pocket-carried Special Item. It does not use a normal Special Item slot." -f [string]$selectedChoice.DisplayName)
+        }
+
+        return
+    }
+}
+
 function Get-LWMagnakaiBookSixSection076SaleDefinitions {
     return @(
         [pscustomobject]@{ Type = 'weapon'; Name = 'Sword'; Price = 3 },
@@ -1269,6 +1321,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
     }
 
     switch ($section) {
+        10 {
+            Invoke-LWMagnakaiBookSixSection010TicketPrompt
+        }
         4 {
             Invoke-LWMagnakaiBookSixSection004WeaponLoss
         }
@@ -1375,6 +1430,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         }
         123 {
             Invoke-LWBookFourChoiceTable -Title 'Section 123 Apothecary' -PromptLabel 'Section 123 choice' -ContextLabel 'Section 123' -Choices (Get-LWMagnakaiBookSixSection123ChoiceDefinitions) -Intro 'Section 123: Alether Berries cost 3 Gold Crowns each and may be bought up to three times.'
+        }
+        124 {
+            if ((Test-LWStoryAchievementFlag -Name 'Book6Section010TicketClaimed') -or (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names (Get-LWBook6RiverboatTicketItemNames))) {
+                Write-LWInfo 'Section 124: the Riverboat Ticket route is available here. Turn to 59 if you are following the ticket branch.'
+            }
+            else {
+                Write-LWInfo 'Section 124: without the Riverboat Ticket, this route continues to 290.'
+            }
         }
         139 {
             Invoke-LWBookFourChoiceTable -Title 'Section 139 Search' -PromptLabel 'Section 139 choice' -ContextLabel 'Section 139' -Choices (Get-LWMagnakaiBookSixSection139ChoiceDefinitions) -Intro 'Section 139: keep the slain assassin''s purse and Silver Brooch if you want them.'

@@ -6,6 +6,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- Book `6` section `10` now prompts for the riverboat ticket purchase, stores the ticket as a pocket-carried Special Item outside the normal `12`-item cap, and surfaces the ticket route again at section `124`
 - Book `6` OG automation catch-up expanded across:
   - fixed ENDURANCE losses and gains
   - Random Number helpers

@@ -132,6 +132,7 @@ function Invoke-LWCoreNewDefaultState {
                 BackpackItems = @()
                 HerbPouchItems = @()
                 SpecialItems  = @()
+                PocketSpecialItems = @()
                 GoldCrowns    = 0
                 HasBackpack   = $true
                 HasHerbPouch  = $false
@@ -335,13 +336,14 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Storage -Name 'Confiscated') -or $null -eq $State.Storage.Confiscated) {
             $State.Storage | Add-Member -Force -NotePropertyName Confiscated -NotePropertyValue (New-LWStorageState).Confiscated
         }
-        foreach ($entryName in @('Weapons', 'BackpackItems', 'HerbPouchItems', 'SpecialItems')) {
+        foreach ($entryName in @('Weapons', 'BackpackItems', 'HerbPouchItems', 'SpecialItems', 'PocketSpecialItems')) {
             if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $entryName) -or $null -eq $State.Storage.Confiscated.$entryName) {
                 $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue @()
             }
             else {
                 $normalizedType = switch ($entryName) {
                     'SpecialItems' { 'special' }
+                    'PocketSpecialItems' { 'special' }
                     'Weapons' { 'weapon' }
                     'HerbPouchItems' { 'herbpouch' }
                     default { 'backpack' }
@@ -502,6 +504,12 @@ function Invoke-LWCoreNormalizeState {
         }
         else {
             $State.Inventory.SpecialItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.SpecialItems) -Type 'special')
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'PocketSpecialItems') -or $null -eq $State.Inventory.PocketSpecialItems) {
+            $State.Inventory | Add-Member -Force -NotePropertyName PocketSpecialItems -NotePropertyValue @()
+        }
+        else {
+            $State.Inventory.PocketSpecialItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.PocketSpecialItems) -Type 'special')
         }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'Log') -or $null -eq $State.Combat.Log) {
             $State.Combat.Log = @()

@@ -6841,6 +6841,15 @@ function Get-LWCessItemNames {
     return @('Cess')
 }
 
+function Get-LWBook6RiverboatTicketItemNames {
+    return @(
+        'Riverboat Ticket to Luyen',
+        'Riverboat Ticket to Rhem',
+        'Riverboat Ticket to Eula',
+        'Riverboat Ticket'
+    )
+}
+
 function Get-LWBottleOfWineItemNames {
     return @('Bottle of Wine')
 }
@@ -8776,6 +8785,7 @@ function New-LWStorageState {
             Weapons        = @()
             BackpackItems  = @()
             SpecialItems   = @()
+            PocketSpecialItems = @()
             HerbPouchItems = @()
             HasHerbPouch   = $false
             GoldCrowns     = 0
@@ -8818,6 +8828,7 @@ function New-LWDefaultState {
             Weapons       = @()
             BackpackItems = @()
             SpecialItems  = @()
+            PocketSpecialItems = @()
             GoldCrowns    = 0
             HasBackpack   = $true
         }
@@ -8926,7 +8937,7 @@ function Normalize-LWState {
     if (-not (Test-LWPropertyExists -Object $State.Storage -Name 'Confiscated') -or $null -eq $State.Storage.Confiscated) {
         $State.Storage | Add-Member -Force -NotePropertyName Confiscated -NotePropertyValue (New-LWStorageState).Confiscated
     }
-    foreach ($entryName in @('Weapons', 'BackpackItems', 'SpecialItems')) {
+    foreach ($entryName in @('Weapons', 'BackpackItems', 'SpecialItems', 'PocketSpecialItems')) {
         if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $entryName) -or $null -eq $State.Storage.Confiscated.$entryName) {
             $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue @()
         }
@@ -9045,6 +9056,9 @@ function Normalize-LWState {
     }
     if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'SpecialItems') -or $null -eq $State.Inventory.SpecialItems) {
         $State.Inventory.SpecialItems = @()
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'PocketSpecialItems') -or $null -eq $State.Inventory.PocketSpecialItems) {
+        $State.Inventory | Add-Member -Force -NotePropertyName PocketSpecialItems -NotePropertyValue @()
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'Log') -or $null -eq $State.Combat.Log) {
         $State.Combat.Log = @()
@@ -13719,6 +13733,93 @@ function Set-LWInventoryItems {
     [void](Sync-LWAchievements -Context 'inventory')
 }
 
+function Get-LWPocketSpecialItems {
+    if (-not (Test-LWHasState) -or $null -eq $script:GameState.Inventory) {
+        return @()
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Inventory -Name 'PocketSpecialItems') -or $null -eq $script:GameState.Inventory.PocketSpecialItems) {
+        return @()
+    }
+
+    return @(Normalize-LWInventoryItemCollection -Type 'special' -Items @($script:GameState.Inventory.PocketSpecialItems))
+}
+
+function Test-LWStateHasPocketSpecialItem {
+    param(
+        [object]$State = $script:GameState,
+        [string[]]$Names = @()
+    )
+
+    if ($null -eq $State -or $null -eq $State.Inventory -or -not (Test-LWPropertyExists -Object $State.Inventory -Name 'PocketSpecialItems') -or $null -eq $State.Inventory.PocketSpecialItems) {
+        return $false
+    }
+
+    if (@($Names).Count -eq 0) {
+        return @($State.Inventory.PocketSpecialItems).Count -gt 0
+    }
+
+    foreach ($item in @($State.Inventory.PocketSpecialItems)) {
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values $Names -Target ([string]$item)))) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function TryAdd-LWPocketSpecialItemSilently {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name)) {
+        return $false
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Inventory -Name 'PocketSpecialItems') -or $null -eq $script:GameState.Inventory.PocketSpecialItems) {
+        $script:GameState.Inventory | Add-Member -Force -NotePropertyName PocketSpecialItems -NotePropertyValue @()
+    }
+
+    $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+    $current = @(Get-LWPocketSpecialItems)
+    if (@($current | ForEach-Object { Get-LWCanonicalInventoryItemName -Name ([string]$_) }) -icontains $resolvedName) {
+        return $false
+    }
+
+    $script:GameState.Inventory.PocketSpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items (@($current) + @($resolvedName)))
+    [void](Sync-LWAchievements -Context 'inventory')
+    return $true
+}
+
+function Remove-LWPocketSpecialItemSilently {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [int]$Quantity = 1
+    )
+
+    if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name) -or $Quantity -lt 1) {
+        return 0
+    }
+
+    $source = @(Get-LWPocketSpecialItems)
+    $remaining = @()
+    $removed = 0
+    foreach ($item in $source) {
+        if ($removed -lt $Quantity -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @($Name) -Target ([string]$item)))) {
+            $removed++
+            continue
+        }
+
+        $remaining += $item
+    }
+
+    if ($removed -gt 0) {
+        $script:GameState.Inventory.PocketSpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items @($remaining))
+        [void](Sync-LWAchievements -Context 'inventory')
+    }
+
+    return $removed
+}
+
 function Normalize-LWInventoryItemCollection {
     param(
         [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
@@ -14040,6 +14141,7 @@ function Get-LWConfiscatedInventorySummaryText {
     $backpack = @($State.Storage.Confiscated.BackpackItems)
     $herbPouch = @($State.Storage.Confiscated.HerbPouchItems)
     $special = @($State.Storage.Confiscated.SpecialItems)
+    $pocket = if ((Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $State.Storage.Confiscated.PocketSpecialItems) { @($State.Storage.Confiscated.PocketSpecialItems) } else { @() }
     $gold = if ($null -ne $State.Storage.Confiscated.GoldCrowns) { [int]$State.Storage.Confiscated.GoldCrowns } else { 0 }
 
     if ($weapons.Count -gt 0) {
@@ -14054,6 +14156,9 @@ function Get-LWConfiscatedInventorySummaryText {
     }
     if ($special.Count -gt 0) {
         $parts += ('Special: {0}' -f (Format-LWList -Items $special))
+    }
+    if ($pocket.Count -gt 0) {
+        $parts += ('Pocket: {0}' -f (Format-LWList -Items $pocket))
     }
     if ($gold -gt 0) {
         $parts += ('Gold: {0}' -f $gold)
@@ -14079,6 +14184,7 @@ function Test-LWStateHasConfiscatedEquipment {
         @($State.Storage.Confiscated.HerbPouchItems).Count -gt 0 -or
         [bool]$State.Storage.Confiscated.HasHerbPouch -or
         @($State.Storage.Confiscated.SpecialItems).Count -gt 0 -or
+        ((Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'PocketSpecialItems') -and @($State.Storage.Confiscated.PocketSpecialItems).Count -gt 0) -or
         [int]$State.Storage.Confiscated.GoldCrowns -gt 0
     )
 }
@@ -14098,6 +14204,7 @@ function Save-LWConfiscatedEquipment {
     $script:GameState.Storage.Confiscated.HerbPouchItems = @($script:GameState.Inventory.HerbPouchItems)
     $script:GameState.Storage.Confiscated.HasHerbPouch = [bool]$script:GameState.Inventory.HasHerbPouch
     $script:GameState.Storage.Confiscated.SpecialItems = @($script:GameState.Inventory.SpecialItems)
+    $script:GameState.Storage.Confiscated.PocketSpecialItems = @(Get-LWPocketSpecialItems)
     $script:GameState.Storage.Confiscated.GoldCrowns = [int]$script:GameState.Inventory.GoldCrowns
     $script:GameState.Storage.Confiscated.BookNumber = [int]$script:GameState.Character.BookNumber
     $script:GameState.Storage.Confiscated.Section = [int]$script:GameState.CurrentSection
@@ -14107,6 +14214,7 @@ function Save-LWConfiscatedEquipment {
     $script:GameState.Inventory.HerbPouchItems = @()
     $script:GameState.Inventory.HasHerbPouch = $false
     $script:GameState.Inventory.SpecialItems = @()
+    $script:GameState.Inventory.PocketSpecialItems = @()
     $script:GameState.Inventory.GoldCrowns = 0
     Set-LWBackpackState -HasBackpack:$false -ClearContents
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
@@ -14128,6 +14236,7 @@ function Restore-LWConfiscatedEquipment {
     $currentBackpackItems = @($script:GameState.Inventory.BackpackItems)
     $currentHerbPouchItems = @($script:GameState.Inventory.HerbPouchItems)
     $currentSpecialItems = @($script:GameState.Inventory.SpecialItems)
+    $currentPocketSpecialItems = @(Get-LWPocketSpecialItems)
     $currentGoldCrowns = [int]$script:GameState.Inventory.GoldCrowns
 
     $restoredWeapons = @($script:GameState.Storage.Confiscated.Weapons)
@@ -14135,6 +14244,7 @@ function Restore-LWConfiscatedEquipment {
     $restoredHerbPouchItems = @($script:GameState.Storage.Confiscated.HerbPouchItems)
     $restoredHasHerbPouch = [bool]$script:GameState.Storage.Confiscated.HasHerbPouch
     $restoredSpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems)
+    $restoredPocketSpecialItems = if ((Test-LWPropertyExists -Object $script:GameState.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $script:GameState.Storage.Confiscated.PocketSpecialItems) { @($script:GameState.Storage.Confiscated.PocketSpecialItems) } else { @() }
     $restoredGoldCrowns = [int]$script:GameState.Storage.Confiscated.GoldCrowns
 
     Set-LWInventoryItems -Type 'weapon' -Items @($currentWeapons + $restoredWeapons)
@@ -14142,6 +14252,7 @@ function Restore-LWConfiscatedEquipment {
     $script:GameState.Inventory.HasHerbPouch = ([bool]$script:GameState.Inventory.HasHerbPouch -or $restoredHasHerbPouch -or @($currentHerbPouchItems + $restoredHerbPouchItems).Count -gt 0)
     Set-LWInventoryItems -Type 'herbpouch' -Items @($currentHerbPouchItems + $restoredHerbPouchItems)
     Set-LWInventoryItems -Type 'special' -Items @($currentSpecialItems + $restoredSpecialItems)
+    $script:GameState.Inventory.PocketSpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items @($currentPocketSpecialItems + $restoredPocketSpecialItems))
     $totalGoldCrowns = $currentGoldCrowns + $restoredGoldCrowns
     $script:GameState.Inventory.GoldCrowns = [Math]::Min(50, $totalGoldCrowns)
     $script:GameState.Inventory.HasBackpack = $true
@@ -14151,6 +14262,7 @@ function Restore-LWConfiscatedEquipment {
     $script:GameState.Storage.Confiscated.HerbPouchItems = @()
     $script:GameState.Storage.Confiscated.HasHerbPouch = $false
     $script:GameState.Storage.Confiscated.SpecialItems = @()
+    $script:GameState.Storage.Confiscated.PocketSpecialItems = @()
     $script:GameState.Storage.Confiscated.GoldCrowns = 0
     $script:GameState.Storage.Confiscated.BookNumber = $null
     $script:GameState.Storage.Confiscated.Section = $null
@@ -14996,6 +15108,7 @@ function Show-LWInventory {
     $weapons = @($script:GameState.Inventory.Weapons)
     $backpack = @($script:GameState.Inventory.BackpackItems)
     $special = @($script:GameState.Inventory.SpecialItems)
+    $pocketSpecial = @(Get-LWPocketSpecialItems)
     $herbPouch = @($script:GameState.Inventory.HerbPouchItems)
     $backpackUsedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items $backpack
     $hasBackpack = Test-LWStateHasBackpack -State $script:GameState
@@ -15040,6 +15153,9 @@ function Show-LWInventory {
     Show-LWInventorySlotsGridSection -Type 'special'
 
     Write-LWRetroPanelHeader -Title 'Stored / Stashed' -AccentColor 'DarkGray'
+    if ($pocketSpecial.Count -gt 0) {
+        Write-LWRetroPanelWrappedKeyValueRows -Label 'Pocket Items' -Value (Format-LWList -Items $pocketSpecial) -ValueColor 'DarkYellow'
+    }
     Write-LWRetroPanelWrappedKeyValueRows -Label 'Safekeeping' -Value $(if (@($script:GameState.Storage.SafekeepingSpecialItems).Count -gt 0) { Format-LWList -Items @($script:GameState.Storage.SafekeepingSpecialItems) } else { '(none)' }) -ValueColor 'DarkGray'
     Write-LWRetroPanelWrappedKeyValueRows -Label 'Confiscated' -Value $(if (Test-LWStateHasConfiscatedEquipment) { Get-LWConfiscatedInventorySummaryText } else { '(none)' }) -ValueColor 'DarkGray'
     Write-LWRetroPanelFooter
