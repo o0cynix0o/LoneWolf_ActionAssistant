@@ -1791,6 +1791,7 @@ Export-ModuleMember -Function `
     Get-LWMagnakaiBookSixInstantDeathCause, `
     Get-LWMagnakaiBookSixConditionValue, `
     Get-LWMagnakaiBookSixSectionRandomNumberContext, `
+    Invoke-LWMagnakaiBookSixSectionRandomNumberResolution, `
     Invoke-LWMagnakaiBookSixSection284BettingRound, `
     Invoke-LWMagnakaiBookSixStorySectionAchievementTriggers, `
     Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers, `
