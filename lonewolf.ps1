@@ -560,7 +560,8 @@ function Show-LWDeathScreen {
     Write-LWRetroPanelHeader -Title 'Death' -AccentColor 'Red'
     Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $script:GameState.Character.Name -RightLabel 'Book / Section' -RightValue ("{0} / {1}" -f [int]$deathState.BookNumber, [string]$deathState.Section) -LeftColor 'White' -RightColor 'Gray' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
     Write-LWRetroPanelPairRow -LeftLabel 'Difficulty' -LeftValue (Get-LWCurrentDifficulty) -RightLabel 'Permadeath' -RightValue $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -LeftColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -RightColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' }) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
-    Write-LWRetroPanelKeyValueRow -Label 'Cause' -Value $causeText -ValueColor 'Gray'
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelWrappedKeyValueRows -Label 'Cause' -Value $causeText -ValueColor 'Gray'
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Final State' -AccentColor 'DarkYellow'
