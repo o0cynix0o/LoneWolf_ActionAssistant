@@ -25,6 +25,25 @@ function Get-LWMagnakaiSectionRandomNumberContext {
     }
 }
 
+function Invoke-LWMagnakaiSectionRandomNumberResolution {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [object]$Context = $null,
+        [int[]]$Rolls = @(),
+        [int[]]$EffectiveRolls = @(),
+        [int]$Subtotal = 0,
+        [int]$AdjustedTotal = 0
+    )
+
+    if ($null -eq $State -or $null -eq $State.Character) {
+        return
+    }
+
+    switch ([int]$State.Character.BookNumber) {
+        6 { Invoke-LWMagnakaiBookSixSectionRandomNumberResolution -State $State -Context $Context -Rolls $Rolls -EffectiveRolls $EffectiveRolls -Subtotal $Subtotal -AdjustedTotal $AdjustedTotal; return }
+    }
+}
+
 function Invoke-LWMagnakaiStorySectionAchievementTriggers {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -71,6 +90,7 @@ function Invoke-LWMagnakaiStartingEquipment {
 Export-ModuleMember -Function `
     Get-LWMagnakaiRulesetVersion, `
     Get-LWMagnakaiSectionRandomNumberContext, `
+    Invoke-LWMagnakaiSectionRandomNumberResolution, `
     Invoke-LWMagnakaiStorySectionAchievementTriggers, `
     Invoke-LWMagnakaiStorySectionTransitionAchievementTriggers, `
     Invoke-LWMagnakaiSectionEntryRules, `

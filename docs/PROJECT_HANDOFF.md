@@ -9,6 +9,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Latest public release on `main`: `v0.8.0`
 - `main` is the active working branch
 - `dev` is retired from the day-to-day workflow
+- M5 post-release stabilization is now in progress on `main`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Confirmed defects should be tracked in GitHub as they are found, not cleaned up later in a batch
 - Public docs hygiene:
@@ -45,6 +46,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M2.7 validation closeout is complete under the route-and-mode validation bar
 - M3 UX polish is complete and released
 - M4 portable packaging workflow is complete and released
+- M5 Book `6` automation catch-up is active on `main`
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
@@ -70,6 +72,15 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
+- latest Book `6` stabilization validation passed in both shells:
+  - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS7_AUTOFIX_RERUN.md`
+  - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS51_AUTOFIX_RERUN.md`
+  - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS7_AUTOFIX_RERUN2.md`
+  - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS51_AUTOFIX_RERUN2.md`
+  - `testing/logs/BOOK6_SECTION155_COMBAT_PS7.txt`
+  - `testing/logs/BOOK6_SECTION155_COMBAT_PS51.txt`
+  - `testing/logs/BOOK6_TARGETED_REGRESSION_PS7.txt`
+  - `testing/logs/BOOK6_TARGETED_REGRESSION_PS51.txt`
 
 ## Main Repo Files
 

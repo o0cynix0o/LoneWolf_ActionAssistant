@@ -3112,6 +3112,7 @@ function Write-LWCurrentSectionRandomNumberRoll {
         Write-LWInfo ("Book {0} section {1}: no automatic modifier applies." -f $bookNumber, [int]$context.Section)
     }
     Write-LWInfo ("Book {0} section {1} adjusted total: {2}. {3}" -f $bookNumber, [int]$context.Section, $adjusted, [string]$context.Description)
+    Invoke-LWRuleSetSectionRandomNumberResolution -State $State -Context $context -Rolls @([int]$Roll) -EffectiveRolls @($effectiveBase) -Subtotal $effectiveBase -AdjustedTotal $adjusted
 }
 
 function Write-LWCurrentSectionRandomNumberRollSequence {
@@ -3159,10 +3160,16 @@ function Write-LWCurrentSectionRandomNumberRollSequence {
         Write-LWInfo ("Book {0} section {1}: no automatic modifier applies." -f $bookNumber, [int]$context.Section)
     }
     Write-LWInfo ("Book {0} section {1} adjusted total: {2}. {3}" -f $bookNumber, [int]$context.Section, $adjusted, [string]$context.Description)
+    Invoke-LWRuleSetSectionRandomNumberResolution -State $State -Context $context -Rolls @($Rolls) -EffectiveRolls @($effectiveRolls) -Subtotal $subtotal -AdjustedTotal $adjusted
 }
 
 function Invoke-LWCurrentSectionRandomNumberCheck {
     param([object]$State = $script:GameState)
+
+    if ($null -ne $State -and $null -ne $State.Character -and [int]$State.Character.BookNumber -eq 6 -and [int]$State.CurrentSection -eq 284) {
+        [void](Invoke-LWMagnakaiBookSixSection284BettingRound -State $State)
+        return
+    }
 
     $context = Get-LWSectionRandomNumberContext -State $State
     $rollCount = 1
@@ -6964,6 +6971,7 @@ function Get-LWHerbPouchPotionItemNames {
             (Get-LWHealingPotionItemNames),
             (Get-LWPotentHealingPotionItemNames),
             (Get-LWConcentratedHealingPotionItemNames),
+            (Get-LWMinorHealingPotionItemNames),
             (Get-LWTaunorWaterItemNames),
             (Get-LWAletherPotionItemNames),
             (Get-LWGallowbrushItemNames),
@@ -7085,8 +7093,16 @@ function Get-LWConcentratedHealingPotionItemNames {
     return @('Concentrated Laumspur', 'Concentrated Laumspur Potion', 'Potion of Concentrated Laumspur')
 }
 
+function Get-LWMinorHealingPotionItemNames {
+    return @('Potion of Laumspur (3 END)')
+}
+
 function Get-LWAletherPotionItemNames {
     return @('Alether', 'Alether Potion', 'Potion of Alether')
+}
+
+function Get-LWAletherBerryItemNames {
+    return @('Alether Berries')
 }
 
 function Get-LWMealOfLaumspurItemNames {
@@ -8377,12 +8393,21 @@ function Get-LWCombatEvadeStatusText {
         return 'No'
     }
 
+    $completedRounds = @($State.Combat.Log).Count
     $requiredRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'EvadeAvailableAfterRound') -and $null -ne $State.Combat.EvadeAvailableAfterRound) { [int]$State.Combat.EvadeAvailableAfterRound } else { 0 }
     if ($requiredRounds -le 0) {
+        $expiryRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'EvadeExpiresAfterRound') -and $null -ne $State.Combat.EvadeExpiresAfterRound) { [int]$State.Combat.EvadeExpiresAfterRound } else { 0 }
+        if ($expiryRounds -gt 0) {
+            if ($completedRounds -ge $expiryRounds) {
+                return 'No'
+            }
+
+            return $(if ($expiryRounds -eq 1) { 'Round 1 only' } else { "Through round $expiryRounds" })
+        }
+
         return 'Yes'
     }
 
-    $completedRounds = @($State.Combat.Log).Count
     if ($completedRounds -ge $requiredRounds) {
         return 'Yes'
     }
@@ -8393,7 +8418,22 @@ function Get-LWCombatEvadeStatusText {
 function Test-LWCombatCanEvadeNow {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    return ((Get-LWCombatEvadeStatusText -State $State) -eq 'Yes')
+    if (-not [bool]$State.Combat.CanEvade) {
+        return $false
+    }
+
+    $completedRounds = @($State.Combat.Log).Count
+    $requiredRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'EvadeAvailableAfterRound') -and $null -ne $State.Combat.EvadeAvailableAfterRound) { [int]$State.Combat.EvadeAvailableAfterRound } else { 0 }
+    if ($requiredRounds -gt 0 -and $completedRounds -lt $requiredRounds) {
+        return $false
+    }
+
+    $expiryRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'EvadeExpiresAfterRound') -and $null -ne $State.Combat.EvadeExpiresAfterRound) { [int]$State.Combat.EvadeExpiresAfterRound } else { 0 }
+    if ($expiryRounds -gt 0 -and $completedRounds -ge $expiryRounds) {
+        return $false
+    }
+
+    return $true
 }
 
 function Get-LWCombatMindforceStatusText {
@@ -8661,9 +8701,12 @@ function New-LWCombatState {
         AttemptKnockout           = $false
         CanEvade                  = $false
         EvadeAvailableAfterRound  = 0
+        EvadeExpiresAfterRound    = 0
         EvadeResolutionSection    = $null
         EvadeResolutionNote       = $null
         EquippedWeapon            = $null
+        DeferredEquippedWeapon    = $null
+        EquipDeferredWeaponAfterRound = 0
         SommerswerdSuppressed     = $false
         IgnoreFirstRoundEnduranceLoss = $false
         IgnorePlayerEnduranceLossRounds = 0
@@ -9036,11 +9079,23 @@ function Normalize-LWState {
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeAvailableAfterRound') -or $null -eq $State.Combat.EvadeAvailableAfterRound) {
         $State.Combat | Add-Member -Force -NotePropertyName EvadeAvailableAfterRound -NotePropertyValue 0
     }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeExpiresAfterRound') -or $null -eq $State.Combat.EvadeExpiresAfterRound) {
+        $State.Combat | Add-Member -Force -NotePropertyName EvadeExpiresAfterRound -NotePropertyValue 0
+    }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeResolutionSection')) {
         $State.Combat | Add-Member -Force -NotePropertyName EvadeResolutionSection -NotePropertyValue $null
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeResolutionNote')) {
         $State.Combat | Add-Member -Force -NotePropertyName EvadeResolutionNote -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'DeferredEquippedWeapon')) {
+        $State.Combat | Add-Member -Force -NotePropertyName DeferredEquippedWeapon -NotePropertyValue $null
+    }
+    elseif ([string]::IsNullOrWhiteSpace([string]$State.Combat.DeferredEquippedWeapon)) {
+        $State.Combat.DeferredEquippedWeapon = $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EquipDeferredWeaponAfterRound') -or $null -eq $State.Combat.EquipDeferredWeaponAfterRound) {
+        $State.Combat | Add-Member -Force -NotePropertyName EquipDeferredWeaponAfterRound -NotePropertyValue 0
     }
     if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SommerswerdSuppressed') -or $null -eq $State.Combat.SommerswerdSuppressed) {
         $State.Combat | Add-Member -Force -NotePropertyName SommerswerdSuppressed -NotePropertyValue $false
@@ -9749,6 +9804,7 @@ function Get-LWAvailableHealingPotionChoices {
         [pscustomobject]@{ Names = (Get-LWPotentHealingPotionItemNames); RestoreAmount = 5; Types = @('herbpouch', 'backpack') },
         [pscustomobject]@{ Names = (Get-LWHealingPotionItemNames); RestoreAmount = 4; Types = @('herbpouch', 'backpack') },
         [pscustomobject]@{ Names = (Get-LWBottleOfKourshahItemNames); RestoreAmount = 4; Types = @('backpack') },
+        [pscustomobject]@{ Names = (Get-LWMinorHealingPotionItemNames); RestoreAmount = 3; Types = @('backpack') },
         [pscustomobject]@{ Names = (Get-LWLaumspurHerbItemNames); RestoreAmount = 3; Types = @('backpack') },
         [pscustomobject]@{ Names = (Get-LWMealOfLaumspurItemNames); RestoreAmount = 3; Types = @('backpack') },
         [pscustomobject]@{ Names = (Get-LWLarnumaOilItemNames); RestoreAmount = 2; Types = @('backpack') }
@@ -10002,7 +10058,7 @@ function Register-LWCombatStarted {
         $stats.HighestEnemyEnduranceFaced = [int]$script:GameState.Combat.EnemyEnduranceMax
     }
 
-    $weaponName = Get-LWCombatDisplayWeapon -Weapon ([string]$script:GameState.Combat.EquippedWeapon)
+    $weaponName = Get-LWCombatDisplayWeapon -Weapon $(if (-not [string]::IsNullOrWhiteSpace([string]$script:GameState.Combat.EquippedWeapon)) { [string]$script:GameState.Combat.EquippedWeapon } elseif ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'DeferredEquippedWeapon') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Combat.DeferredEquippedWeapon)) { [string]$script:GameState.Combat.DeferredEquippedWeapon } else { $null })
     Add-LWBookNamedCount -PropertyName 'WeaponUsage' -Name $weaponName
 }
 
@@ -16080,7 +16136,7 @@ function Use-LWHealingPotion {
 function Get-LWStateAletherPotionName {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    $location = Find-LWStateInventoryItemLocation -State $State -Names (Get-LWAletherPotionItemNames) -Types @('herbpouch', 'backpack')
+    $location = Find-LWStateInventoryItemLocation -State $State -Names @((Get-LWAletherPotionItemNames) + (Get-LWAletherBerryItemNames)) -Types @('herbpouch', 'backpack')
     if ($null -eq $location) {
         return $null
     }
@@ -17328,6 +17384,16 @@ function Apply-LWCombatRoundResolution {
     if ([int]$Resolution.PlayerLoss -gt 0 -and -not ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'UsePlayerTargetEndurance') -and [bool]$script:GameState.Combat.UsePlayerTargetEndurance)) {
         Add-LWBookEnduranceDelta -Delta (-[int]$Resolution.PlayerLoss)
     }
+
+    $equipDeferredAfterRound = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EquipDeferredWeaponAfterRound') -and $null -ne $script:GameState.Combat.EquipDeferredWeaponAfterRound) { [int]$script:GameState.Combat.EquipDeferredWeaponAfterRound } else { 0 }
+    $deferredWeapon = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'DeferredEquippedWeapon') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Combat.DeferredEquippedWeapon)) { [string]$script:GameState.Combat.DeferredEquippedWeapon } else { $null }
+    if ($Resolution.Outcome -eq 'Continue' -and $equipDeferredAfterRound -gt 0 -and [int]$Resolution.RoundNumber -ge $equipDeferredAfterRound -and -not [string]::IsNullOrWhiteSpace($deferredWeapon)) {
+        $script:GameState.Combat.EquippedWeapon = $deferredWeapon
+        $script:GameState.Combat.DeferredEquippedWeapon = $null
+        $script:GameState.Combat.EquipDeferredWeaponAfterRound = 0
+        $script:GameState.Character.LastCombatWeapon = $deferredWeapon
+        Write-LWInfo ("You draw {0} for the next round." -f (Get-LWCombatDisplayWeapon -Weapon $deferredWeapon))
+    }
 }
 
 function Start-LWCombat {
@@ -18547,6 +18613,12 @@ function Invoke-LWEvade {
         $requiredRounds = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EvadeAvailableAfterRound') -and $null -ne $script:GameState.Combat.EvadeAvailableAfterRound) { [int]$script:GameState.Combat.EvadeAvailableAfterRound } else { 0 }
         if ($requiredRounds -gt 0) {
             Write-LWWarn ("Evade is only available after round {0} in this combat." -f $requiredRounds)
+            return
+        }
+
+        $expiryRounds = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EvadeExpiresAfterRound') -and $null -ne $script:GameState.Combat.EvadeExpiresAfterRound) { [int]$script:GameState.Combat.EvadeExpiresAfterRound } else { 0 }
+        if ($expiryRounds -gt 0) {
+            Write-LWWarn $(if ($expiryRounds -eq 1) { 'Evade is only available in round 1 of this combat.' } else { "Evade is only available through round $expiryRounds in this combat." })
             return
         }
     }

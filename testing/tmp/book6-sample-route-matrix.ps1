@@ -1,6 +1,6 @@
 #requires -Version 5.1
 param(
-    [string]$SourceSave = 'C:\Scripts\Lone Wolf\saves\sample-save.json',
+    [string]$SourceSave = 'C:\Scripts\Lone Wolf\testing\saves\sample-book5-transition-source.json',
     [string]$ShellLabel = 'PS',
     [string]$LogPath = '',
     [string]$JsonPath = ''

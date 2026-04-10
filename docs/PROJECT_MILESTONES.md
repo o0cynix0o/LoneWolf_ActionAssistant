@@ -13,7 +13,7 @@ Status values:
 
 Current top milestone focus:
 
-- `planned` `M5` Post-Release Stabilization And Book `7+` Planning
+- `in_progress` `M5` Post-Release Stabilization And Book `7+` Planning
 
 ## Milestone List
 
@@ -511,7 +511,7 @@ Completion checkpoint:
 
 Status:
 
-- `planned`
+- `in_progress`
 
 Goal:
 
@@ -521,8 +521,22 @@ Deliverables:
 
 - post-release bug triage for the shipped Books `1-6` command surface
 - continued DE-difference cleanup found during real play
+- Book `6` OG automation catch-up across:
+  - instant-death sections
+  - fixed ENDURANCE sections
+  - Random Number helpers
+  - inventory/currency hooks
+  - combat special rules
 - Book `7` source audit planning
 - ruleset/state design notes for the next expansion step
+
+Current checkpoint:
+
+- Book `6` stabilization validation is green in both shells:
+  - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS7_AUTOFIX_RERUN.md`
+  - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS51_AUTOFIX_RERUN.md`
+  - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS7_AUTOFIX_RERUN2.md`
+  - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS51_AUTOFIX_RERUN2.md`
 
 ## Tracking Rules
 

@@ -238,6 +238,36 @@ function Get-LWMagnakaiBookSixSection109ChoiceDefinitions {
     )
 }
 
+function Get-LWMagnakaiBookSixSection123ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'berries_1'; FlagName = 'Book6Section123AletherOneBought'; DisplayName = 'Alether Berries'; Type = 'backpack'; Name = 'Alether Berries'; Quantity = 1; Description = 'Alether Berries'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'berries_2'; FlagName = 'Book6Section123AletherTwoBought'; DisplayName = 'Alether Berries'; Type = 'backpack'; Name = 'Alether Berries'; Quantity = 1; Description = 'Alether Berries'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'berries_3'; FlagName = 'Book6Section123AletherThreeBought'; DisplayName = 'Alether Berries'; Type = 'backpack'; Name = 'Alether Berries'; Quantity = 1; Description = 'Alether Berries'; GoldCost = 3 }
+    )
+}
+
+function Get-LWMagnakaiBookSixSection008ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book6Section008GoldClaimed'; DisplayName = '10 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 10; Description = '10 Gold Crowns' },
+        [pscustomobject]@{ Id = 'laumspur'; FlagName = 'Book6Section008LaumspurClaimed'; DisplayName = 'Potion of Laumspur (+3 END)'; Type = 'backpack'; Name = 'Potion of Laumspur (3 END)'; Quantity = 1; Description = 'Potion of Laumspur (+3 END)' },
+        [pscustomobject]@{ Id = 'map'; FlagName = 'Book6Section008MapClaimed'; DisplayName = 'Map of Varetta'; Type = 'special'; Name = 'Map of Varetta'; Quantity = 1; Description = 'Map of Varetta' }
+    )
+}
+
+function Get-LWMagnakaiBookSixSection139ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book6Section139GoldClaimed'; DisplayName = '11 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 11; Description = '11 Gold Crowns' },
+        [pscustomobject]@{ Id = 'brooch'; FlagName = 'Book6Section139BroochClaimed'; DisplayName = 'Silver Brooch'; Type = 'special'; Name = 'Silver Brooch'; Quantity = 1; Description = 'Silver Brooch' }
+    )
+}
+
+function Get-LWMagnakaiBookSixSection145ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book6Section145GoldClaimed'; DisplayName = '12 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 12; Description = '12 Gold Crowns' },
+        [pscustomobject]@{ Id = 'ring'; FlagName = 'Book6Section145RingClaimed'; DisplayName = 'Ruby Ring'; Type = 'special'; Name = 'Ruby Ring'; Quantity = 1; Description = 'Ruby Ring' }
+    )
+}
+
 function Get-LWMagnakaiBookSixSection158ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'quarterstaff'; FlagName = 'Book6Section158QuarterstaffClaimed'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
@@ -430,6 +460,432 @@ function Invoke-LWMagnakaiBookSixTaunorWaterPrompt {
     Write-LWWarn ("{0}: no room to store the Taunor Water automatically. Drink it now or make room and add it manually if you want to keep it." -f $SectionLabel)
 }
 
+function Get-LWMagnakaiBookSixConditionValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        $Default = $null
+    )
+
+    if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name)) {
+        return $Default
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'Conditions') -or $null -eq $script:GameState.Conditions) {
+        return $Default
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Conditions -Name $Name) -or $null -eq $script:GameState.Conditions.$Name) {
+        return $Default
+    }
+
+    return $script:GameState.Conditions.$Name
+}
+
+function Set-LWMagnakaiBookSixConditionValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)]$Value
+    )
+
+    if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name)) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'Conditions') -or $null -eq $script:GameState.Conditions) {
+        $script:GameState | Add-Member -Force -NotePropertyName Conditions -NotePropertyValue (New-LWConditionState)
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Conditions -Name $Name)) {
+        $script:GameState.Conditions | Add-Member -Force -NotePropertyName $Name -NotePropertyValue $Value
+        return
+    }
+
+    $script:GameState.Conditions.$Name = $Value
+}
+
+function Clear-LWMagnakaiBookSixConditionValue {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if (-not (Test-LWHasState) -or [string]::IsNullOrWhiteSpace($Name)) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'Conditions') -or $null -eq $script:GameState.Conditions) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState.Conditions -Name $Name)) {
+        return
+    }
+
+    $script:GameState.Conditions.$Name = $null
+}
+
+function Invoke-LWMagnakaiBookSixLaumspurPrompt {
+    param(
+        [Parameter(Mandatory = $true)][string]$ResolvedFlagName,
+        [Parameter(Mandatory = $true)][string]$SectionLabel
+    )
+
+    if (Test-LWStoryAchievementFlag -Name $ResolvedFlagName) {
+        return
+    }
+
+    $drinkNow = Read-LWInlineYesNo -Prompt ("{0}: swallow the Potion of Laumspur now for 4 ENDURANCE?" -f $SectionLabel) -Default $false
+    if ($drinkNow) {
+        $before = [int]$script:GameState.Character.EnduranceCurrent
+        $script:GameState.Character.EnduranceCurrent = [Math]::Min([int]$script:GameState.Character.EnduranceMax, ($before + 4))
+        $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
+        if ($restored -gt 0) {
+            Add-LWBookEnduranceDelta -Delta $restored
+            Register-LWManualRecoveryShortcut
+        }
+        Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+        Write-LWInfo ("{0}: Potion of Laumspur restores {1} ENDURANCE." -f $SectionLabel, $restored)
+        return
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Potion of Laumspur') {
+        Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+        Write-LWInfo ("{0}: Potion of Laumspur stored in your Backpack for later use." -f $SectionLabel)
+        return
+    }
+
+    Write-LWWarn ("{0}: no room to store the Potion of Laumspur automatically. Make room and add it manually if you are keeping it." -f $SectionLabel)
+}
+
+function Invoke-LWMagnakaiBookSixMealRequirement {
+    param(
+        [Parameter(Mandatory = $true)][string]$ResolvedFlagName,
+        [Parameter(Mandatory = $true)][string]$NoMealFlagName,
+        [Parameter(Mandatory = $true)][string]$SectionLabel,
+        [Parameter(Mandatory = $true)][string]$NoMealMessagePrefix,
+        [Parameter(Mandatory = $true)][string]$FatalCause,
+        [switch]$AllowInnMeal,
+        [int]$InnMealCost = 0,
+        [string]$InnMealLabel = 'inn meal'
+    )
+
+    if (Test-LWStoryAchievementFlag -Name $ResolvedFlagName) {
+        return
+    }
+
+    $maxOption = if ($AllowInnMeal) { 2 } else { 1 }
+    Write-LWRetroPanelHeader -Title ("{0} Meal Check" -f $SectionLabel) -AccentColor 'DarkYellow'
+    Write-LWRetroPanelTextRow -Text '1. Use normal meal rules now' -TextColor 'Gray'
+    if ($AllowInnMeal) {
+        Write-LWRetroPanelTextRow -Text ("2. Pay {0} Gold Crowns for {1}" -f $InnMealCost, $InnMealLabel) -TextColor 'Gray'
+    }
+    Write-LWRetroPanelTextRow -Text '0. Go without and take the ENDURANCE loss' -TextColor 'DarkGray'
+    Write-LWRetroPanelFooter
+
+    $choice = Read-LWInt -Prompt ("{0} meal choice" -f $SectionLabel) -Default 1 -Min 0 -Max $maxOption -NoRefresh
+    switch ($choice) {
+        1 {
+            Use-LWMeal
+            Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+            return
+        }
+        2 {
+            if ($AllowInnMeal) {
+                if ([int]$script:GameState.Inventory.GoldCrowns -lt $InnMealCost) {
+                    Write-LWWarn ("{0}: you do not have the {1} Gold Crowns needed for {2}." -f $SectionLabel, $InnMealCost, $InnMealLabel)
+                    return
+                }
+
+                Update-LWGold -Delta (-[int]$InnMealCost)
+                Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+                Write-LWInfo ("{0}: {1} paid for with {2} Gold Crowns." -f $SectionLabel, $InnMealLabel, $InnMealCost)
+                return
+            }
+        }
+    }
+
+    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName $NoMealFlagName -Delta -3 -MessagePrefix $NoMealMessagePrefix -FatalCause $FatalCause)
+    Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+}
+
+function Invoke-LWMagnakaiBookSixSection157MealsPrompt {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section157MealsClaimed') {
+        return
+    }
+
+    if (-not (Test-LWStateHasBackpack -State $script:GameState)) {
+        Write-LWWarn 'Section 157: you have no Backpack, so the spare bread cannot be carried.'
+        Set-LWStoryAchievementFlag -Name 'Book6Section157MealsClaimed'
+        return
+    }
+
+    $freeSlots = [Math]::Max(0, (8 - (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack'))))
+    $maxMeals = [Math]::Min(2, $freeSlots)
+    if ($maxMeals -le 0) {
+        Write-LWWarn 'Section 157: there is no Backpack space left for the spare bread.'
+        Set-LWStoryAchievementFlag -Name 'Book6Section157MealsClaimed'
+        return
+    }
+
+    $mealCount = Read-LWInt -Prompt ("Section 157: how many extra Meals do you take? (0-{0})" -f $maxMeals) -Default $maxMeals -Min 0 -Max $maxMeals -NoRefresh
+    if ($mealCount -gt 0) {
+        [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal' -Quantity ([int]$mealCount))
+        Write-LWInfo ("Section 157: added {0} Meal{1} to your Backpack." -f [int]$mealCount, $(if ($mealCount -eq 1) { '' } else { 's' }))
+    }
+    else {
+        Write-LWInfo 'Section 157: you leave the extra bread behind.'
+    }
+
+    Set-LWStoryAchievementFlag -Name 'Book6Section157MealsClaimed'
+}
+
+function Invoke-LWMagnakaiBookSixSection172InnRoute {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section172Handled') {
+        return
+    }
+
+    $foodCost = 2
+    $roomCost = 3
+    $totalCost = $foodCost + $roomCost
+    if ([int]$script:GameState.Inventory.GoldCrowns -lt $totalCost) {
+        Write-LWWarn ("Section 172: this route assumes you can pay {0} Gold Crowns for food and room, but you only have {1}." -f $totalCost, [int]$script:GameState.Inventory.GoldCrowns)
+    }
+    else {
+        Update-LWGold -Delta (-$foodCost)
+        Update-LWGold -Delta (-$roomCost)
+        Write-LWInfo 'Section 172: 2 Gold Crowns paid for supper and 3 Gold Crowns paid for Room 17.'
+    }
+
+    if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWIronKeyItemNames) -Type 'special')) {
+        if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Iron Key') {
+            Write-LWInfo 'Section 172: Iron Key added to Special Items.'
+        }
+        else {
+            Write-LWWarn 'Section 172: no room to add the Iron Key automatically. Make room and add it manually if needed.'
+        }
+    }
+
+    Set-LWStoryAchievementFlag -Name 'Book6Section172Handled'
+}
+
+function Invoke-LWMagnakaiBookSixSection212HorseTrade {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section212HorseTradeResolved') {
+        return
+    }
+
+    $specialItems = @((Get-LWInventoryItems -Type 'special') | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    $hasGoldOption = ([int]$script:GameState.Inventory.GoldCrowns -ge 20)
+    $hasSpecialOption = ($specialItems.Count -ge 2)
+    if (-not $hasGoldOption -and -not $hasSpecialOption) {
+        Write-LWWarn 'Section 212: you do not currently have the 20 Gold Crowns or 2 Special Items needed to honour Altan''s bargain.'
+        return
+    }
+
+    $paymentMethod = 1
+    if ($hasGoldOption -and $hasSpecialOption) {
+        Write-LWRetroPanelHeader -Title 'Section 212 Horse Trade' -AccentColor 'DarkYellow'
+        Write-LWRetroPanelTextRow -Text '1. Pay 20 Gold Crowns' -TextColor 'Gray'
+        Write-LWRetroPanelTextRow -Text '2. Surrender 2 Special Items' -TextColor 'Gray'
+        Write-LWRetroPanelFooter
+        $paymentMethod = Read-LWInt -Prompt 'Section 212 payment choice' -Default 1 -Min 1 -Max 2 -NoRefresh
+    }
+    elseif (-not $hasGoldOption) {
+        $paymentMethod = 2
+    }
+
+    if ($paymentMethod -eq 1) {
+        Update-LWGold -Delta -20
+        Write-LWInfo 'Section 212: 20 Gold Crowns paid to Altan for his horse.'
+        Set-LWStoryAchievementFlag -Name 'Book6Section212HorseTradeResolved'
+        return
+    }
+
+    for ($lossIndex = 1; $lossIndex -le 2; $lossIndex++) {
+        $specialItems = @((Get-LWInventoryItems -Type 'special') | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+        if ($specialItems.Count -le 0) {
+            Write-LWWarn 'Section 212: no more Special Items are available to surrender.'
+            break
+        }
+
+        Write-LWInfo ("Section 212: choose Special Item {0} to trade away." -f $lossIndex)
+        Show-LWInventorySlotsSection -Type 'special'
+        $slot = Read-LWInt -Prompt ("Section 212 Special Item #{0}" -f $lossIndex) -Default 1 -Min 1 -Max $specialItems.Count -NoRefresh
+        $lostItem = [string]$specialItems[$slot - 1]
+        [void](Remove-LWInventoryItemSilently -Type 'special' -Name $lostItem -Quantity 1)
+        Write-LWInfo ("Section 212: surrendered {0} to Altan." -f $lostItem)
+    }
+
+    Set-LWStoryAchievementFlag -Name 'Book6Section212HorseTradeResolved'
+}
+
+function Invoke-LWMagnakaiBookSixSection220Donation {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section220DonationHandled') {
+        return
+    }
+
+    $maxDonation = [int]$script:GameState.Inventory.GoldCrowns
+    $donation = Read-LWInt -Prompt ("Section 220: donate how many Gold Crowns? (0-{0})" -f $maxDonation) -Default 0 -Min 0 -Max $maxDonation -NoRefresh
+    if ($donation -gt 0) {
+        Update-LWGold -Delta (-[int]$donation)
+        Write-LWInfo ("Section 220: donated {0} Gold Crown{1} to the statue of Vynar Jupe." -f [int]$donation, $(if ($donation -eq 1) { '' } else { 's' }))
+    }
+    else {
+        Write-LWInfo 'Section 220: no donation is made to the statue.'
+    }
+
+    Set-LWStoryAchievementFlag -Name 'Book6Section220DonationHandled'
+}
+
+function Invoke-LWMagnakaiBookSixSection245ConundrumPrompt {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section245StakeRecorded') {
+        return
+    }
+
+    $maxStake = [Math]::Min(50, [int]$script:GameState.Inventory.GoldCrowns)
+    if ($maxStake -le 0) {
+        Write-LWWarn 'Section 245: you have no Gold Crowns available to wager on the conundrum.'
+        Set-LWMagnakaiBookSixConditionValue -Name 'BookSixSection245ConundrumStake' -Value 0
+        Set-LWStoryAchievementFlag -Name 'Book6Section245StakeRecorded'
+        return
+    }
+
+    $stake = Read-LWInt -Prompt ("Section 245: conundrum wager (0-{0})" -f $maxStake) -Default ([Math]::Min(5, $maxStake)) -Min 0 -Max $maxStake -NoRefresh
+    Set-LWMagnakaiBookSixConditionValue -Name 'BookSixSection245ConundrumStake' -Value ([int]$stake)
+    Set-LWStoryAchievementFlag -Name 'Book6Section245StakeRecorded'
+    if ($stake -gt 0) {
+        Write-LWInfo ("Section 245: wager of {0} Gold Crown{1} recorded for the conundrum." -f [int]$stake, $(if ($stake -eq 1) { '' } else { 's' }))
+    }
+    else {
+        Write-LWInfo 'Section 245: no Gold Crowns are wagered on the conundrum.'
+    }
+}
+
+function Resolve-LWMagnakaiBookSixSection245ConundrumOutcome {
+    param(
+        [Parameter(Mandatory = $true)][int]$Section,
+        [Parameter(Mandatory = $true)][bool]$Won
+    )
+
+    $resolvedFlag = ("Book6Section{0:000}ConundrumResolved" -f $Section)
+    if (Test-LWStoryAchievementFlag -Name $resolvedFlag) {
+        return
+    }
+
+    $stake = [int](Get-LWMagnakaiBookSixConditionValue -Name 'BookSixSection245ConundrumStake' -Default 0)
+    if ($stake -gt 0) {
+        if ($Won) {
+            Update-LWGold -Delta $stake
+            Write-LWInfo ("Section {0}: the conjurer pays you {1} Gold Crown{2}, equal to your wager." -f $Section, $stake, $(if ($stake -eq 1) { '' } else { 's' }))
+        }
+        else {
+            Update-LWGold -Delta (-$stake)
+            Write-LWInfo ("Section {0}: you lose the {1} Gold Crown{2} staked on the conundrum." -f $Section, $stake, $(if ($stake -eq 1) { '' } else { 's' }))
+        }
+    }
+    else {
+        Write-LWInfo ("Section {0}: no Gold Crowns were at stake on the conundrum." -f $Section)
+    }
+
+    Set-LWStoryAchievementFlag -Name $resolvedFlag
+    Clear-LWMagnakaiBookSixConditionValue -Name 'BookSixSection245ConundrumStake'
+}
+
+function Invoke-LWMagnakaiBookSixSection284BettingRound {
+    param([object]$State = $script:GameState)
+
+    if ($null -ne $State) {
+        $script:GameState = $State
+    }
+    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 6 -or [int]$script:GameState.CurrentSection -ne 284) {
+        return $false
+    }
+
+    $roundsPlayed = [int](Get-LWMagnakaiBookSixConditionValue -Name 'BookSixSection284RoundsPlayed' -Default 0)
+    if ($roundsPlayed -ge 3) {
+        Write-LWInfo 'Section 284: all three betting rounds have already been resolved. If any Gold remains, turn to 347; otherwise, turn to 76.'
+        return $true
+    }
+
+    $currentGold = [int]$script:GameState.Inventory.GoldCrowns
+    if ($currentGold -le 0) {
+        Write-LWInfo 'Section 284: you have lost all your Gold Crowns. Turn to 76.'
+        Set-LWMagnakaiBookSixConditionValue -Name 'BookSixSection284RoundsPlayed' -Value 3
+        return $true
+    }
+
+    $maxStake = [Math]::Min(10, $currentGold)
+    $stake = Read-LWInt -Prompt ("Section 284 stake for round {0} (1-{1}, 0 to quit)" -f ($roundsPlayed + 1), $maxStake) -Default ([Math]::Min(5, $maxStake)) -Min 0 -Max $maxStake -NoRefresh
+    if ($stake -eq 0) {
+        Write-LWInfo 'Section 284: you quit the betting game. Turn to 336.'
+        return $true
+    }
+
+    $firstRoll = Get-LWRandomDigit
+    $secondRoll = Get-LWRandomDigit
+    $secondTotal = [int]$secondRoll + 3
+    Write-LWInfo ("Random Number Table rolls: {0}, {1}" -f $firstRoll, $secondRoll)
+    Write-LWInfo ("Section 284: first roll is {0}; second roll is {1} and gains +3, for {2}." -f $firstRoll, $secondRoll, $secondTotal)
+    if ($firstRoll -gt $secondTotal) {
+        $winnings = [int]$stake * 2
+        Update-LWGold -Delta $winnings
+        Write-LWInfo ("Section 284: you win the bet and gain {0} Gold Crowns." -f $winnings)
+    }
+    else {
+        Update-LWGold -Delta (-[int]$stake)
+        Write-LWInfo ("Section 284: the rider wins and you lose your {0} Gold Crown stake." -f $stake)
+    }
+
+    $roundsPlayed++
+    Set-LWMagnakaiBookSixConditionValue -Name 'BookSixSection284RoundsPlayed' -Value $roundsPlayed
+    $remainingGold = [int]$script:GameState.Inventory.GoldCrowns
+    if ($remainingGold -le 0) {
+        Write-LWInfo 'Section 284: you have lost all your Gold Crowns. Turn to 76.'
+    }
+    elseif ($roundsPlayed -ge 3) {
+        Write-LWInfo 'Section 284: three rounds are complete and you still have Gold. Turn to 347.'
+    }
+    else {
+        Write-LWInfo ("Section 284: you may bet again for round {0} or quit to section 336." -f ($roundsPlayed + 1))
+    }
+
+    return $true
+}
+
+function Invoke-LWMagnakaiBookSixSectionRandomNumberResolution {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][object]$Context,
+        [int[]]$Rolls = @(),
+        [int[]]$EffectiveRolls = @(),
+        [int]$Subtotal = 0,
+        [int]$AdjustedTotal = 0
+    )
+
+    $script:GameState = $State
+    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 6 -or $null -eq $Context) {
+        return
+    }
+
+    switch ([int]$Context.Section) {
+        34 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section034GoldResolved')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section034GoldResolved'
+                Update-LWGold -Delta ([int]$AdjustedTotal)
+                Write-LWInfo ("Section 34: the guard's purse yields {0} Gold Crowns." -f [int]$AdjustedTotal)
+            }
+        }
+        56 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section056DamageApplied')) {
+                [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section056DamageApplied' -Delta (-[int]$AdjustedTotal) -MessagePrefix 'Section 56: the chest wound drops you hard to the ground.' -FatalCause 'The chest wound at section 56 reduced your Endurance to zero.')
+            }
+        }
+        91 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section091WinningsResolved')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section091WinningsResolved'
+                Update-LWGold -Delta ([int]$AdjustedTotal)
+                Write-LWInfo ("Section 91: the marked deck wins you {0} Gold Crowns before the dealer catches on." -f [int]$AdjustedTotal)
+            }
+        }
+    }
+}
+
 function Invoke-LWMagnakaiBookSixSection004WeaponLoss {
     if (Test-LWStoryAchievementFlag -Name 'Book6Section004LossApplied') {
         return
@@ -527,11 +983,44 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
                 $modifierNotes += 'Earlier archery contest participation'
             }
         }
+        34 {
+            $description = 'Guard-purse gold check. Add 5 to the roll to determine the Gold Crowns found.'
+            $modifier += 5
+            $modifierNotes += 'Guard purse value'
+            if (Test-LWStoryAchievementFlag -Name 'Book6Section034GoldResolved') {
+                $bypassed = $true
+                $bypassReason = 'The guard-purse gold from this section has already been applied.'
+            }
+        }
+        56 {
+            $description = 'Chest-wound loss check. In this instance, 0 counts as 10.'
+            $zeroCountsAsTen = $true
+            if (Test-LWStoryAchievementFlag -Name 'Book6Section056DamageApplied') {
+                $bypassed = $true
+                $bypassReason = 'The chest-wound ENDURANCE loss from this section has already been applied.'
+            }
+        }
+        69 {
+            $description = 'Creature-passage check: 0-5 -> 128, 6-14 -> 246.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Invisibility') {
+                $modifier += 5
+                $modifierNotes += 'Invisibility'
+            }
+        }
         72 {
             $description = 'Jump-the-wagon mounted leap check.'
             if (Test-LWStateHasDiscipline -State $State -Name 'Animal Control') {
                 $modifier += 2
                 $modifierNotes += 'Animal Control'
+            }
+        }
+        91 {
+            $description = 'Marked-deck winnings check. Add 5 to the roll to determine the Gold Crowns won.'
+            $modifier += 5
+            $modifierNotes += 'Marked deck winnings'
+            if (Test-LWStoryAchievementFlag -Name 'Book6Section091WinningsResolved') {
+                $bypassed = $true
+                $bypassReason = 'The marked-deck winnings from this section have already been applied.'
             }
         }
         95 {
@@ -540,6 +1029,9 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
                 $modifier += 3
                 $modifierNotes += 'Weaponmastery with Bow'
             }
+        }
+        97 {
+            $description = 'Ambush branch check: 0-3 -> 174, 4-6 -> 313, 7-9 -> 57.'
         }
         101 {
             $description = 'Warhammer retrieval check.'
@@ -567,6 +1059,27 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
                 else {
                     $modifierNotes += 'Two or more Ropes'
                 }
+            }
+        }
+        126 {
+            $description = 'Tekaro bridge charge check: 0-3 -> 244, 4-6 -> 29, 7-9 -> 150.'
+        }
+        142 {
+            $description = 'Thrown-blade avoidance check: 4 or less -> 184, 5 or more -> 51.'
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Nexus') -or (Test-LWStateHasDiscipline -State $State -Name 'Divination')) {
+                $modifier -= 2
+                $modifierNotes += 'Nexus or Divination'
+            }
+            if (Test-LWStateHasInventoryItem -State $State -Names (Get-LWShieldItemNames)) {
+                $modifier -= 3
+                $modifierNotes += 'Shield'
+            }
+        }
+        163 {
+            $description = 'River escape check: 3 or less -> 197, 4 or higher -> 229.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Invisibility') {
+                $modifier += 4
+                $modifierNotes += 'Invisibility'
             }
         }
         170 {
@@ -624,6 +1137,30 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
                 $modifierNotes += 'Silver Bow of Duadon'
             }
         }
+        261 {
+            $description = 'Gate escape check: 0-2 -> 99, 3-6 -> 187, 7 or higher -> 22.'
+            if (Test-LWStateHasDiscipline -State $State -Name 'Animal Control') {
+                $modifier += 3
+                $modifierNotes += 'Animal Control'
+            }
+        }
+        271 {
+            $description = 'Archers-at-the-field check: 5 or below -> 52, 6 or higher -> 81.'
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Animal Control') -or (Test-LWStateHasDiscipline -State $State -Name 'Huntmastery')) {
+                $modifier += 3
+                $modifierNotes += 'Animal Control or Huntmastery'
+            }
+        }
+        291 {
+            $description = 'Dice challenge check: 0-4 -> 177, 5-9 -> 309.'
+        }
+        317 {
+            $description = 'Crossbow ambush check: 6 or less -> 85, 7 or higher -> 153.'
+            if ((Test-LWStateHasDiscipline -State $State -Name 'Divination') -or (Test-LWStateHasDiscipline -State $State -Name 'Huntmastery')) {
+                $modifier -= 5
+                $modifierNotes += 'Divination or Huntmastery'
+            }
+        }
         340 {
             $description = 'Archery tournament total check (3 picks added together).'
             $rollCount = 3
@@ -677,6 +1214,16 @@ function Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers {
             Write-LWWarn 'Section 232: the room route assumes you eat a Meal immediately, but no Meal was available to deduct.'
         }
     }
+    if ($FromSection -eq 253 -and $ToSection -eq 35 -and -not (Test-LWStoryAchievementFlag -Name 'Book6Section253RoomPaid')) {
+        if ([int]$script:GameState.Inventory.GoldCrowns -ge 3) {
+            Update-LWGold -Delta -3
+            Set-LWStoryAchievementFlag -Name 'Book6Section253RoomPaid'
+            Write-LWInfo 'Section 253: 3 Gold Crowns paid for the room and your horse''s keep.'
+        }
+        else {
+            Write-LWWarn 'Section 253: the lodging route assumes you can pay 3 Gold Crowns for the room and your horse''s keep.'
+        }
+    }
 }
 
 function Get-LWMagnakaiBookSixInstantDeathCause {
@@ -725,6 +1272,15 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         4 {
             Invoke-LWMagnakaiBookSixSection004WeaponLoss
         }
+        8 {
+            Invoke-LWBookFourChoiceTable -Title 'Section 8 Loot' -PromptLabel 'Section 8 choice' -ContextLabel 'Section 8' -Choices (Get-LWMagnakaiBookSixSection008ChoiceDefinitions) -Intro 'Section 8: keep any of Chanda''s valuables before you leave the shop.'
+        }
+        37 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section037DamageApplied' -Delta -12 -MessagePrefix 'Section 37: the acid flask shatters against your shoulder.' -FatalCause 'The acid attack at section 37 reduced your Endurance to zero.')
+        }
+        44 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section044DamageApplied' -Delta -2 -MessagePrefix 'Section 44: the crash throws you head-first against the rail.' -FatalCause 'The river-rail impact at section 44 reduced your Endurance to zero.')
+        }
         49 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section049CessUsed')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section049CessUsed'
@@ -735,6 +1291,18 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                     Write-LWInfo 'Section 49: the Cess should now be erased from your Action Chart.'
                 }
             }
+        }
+        50 {
+            Resolve-LWMagnakaiBookSixSection245ConundrumOutcome -Section 50 -Won:$false
+        }
+        51 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section051DamageApplied' -Delta -2 -MessagePrefix 'Section 51: the thrown blade gashes your hip before your counterattack.' -FatalCause 'The blade wound at section 51 reduced your Endurance to zero.')
+        }
+        54 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section054DamageApplied' -Delta -2 -MessagePrefix 'Section 54: the draughty stable robs you of rest through the night.' -FatalCause 'The miserable night at section 54 reduced your Endurance to zero.')
+        }
+        62 {
+            Resolve-LWMagnakaiBookSixSection245ConundrumOutcome -Section 62 -Won:$true
         }
         35 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section035MealsRuined')) {
@@ -775,8 +1343,24 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         76 {
             Invoke-LWMagnakaiBookSixSection076SaleTable
         }
+        85 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section085DamageApplied' -Delta -2 -MessagePrefix 'Section 85: the crossbow bolt grazes your scalp.' -FatalCause 'The crossbow graze at section 85 reduced your Endurance to zero.')
+        }
+        88 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section088GoldClaimed')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section088GoldClaimed'
+                Update-LWGold -Delta 5
+                Write-LWInfo 'Section 88: recovered 5 Gold Crowns from the dead robbers.'
+            }
+        }
         65 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section065TaunorWaterResolved' -SectionLabel 'Section 65'
+        }
+        111 {
+            Invoke-LWMagnakaiBookSixLaumspurPrompt -ResolvedFlagName 'Book6Section111LaumspurResolved' -SectionLabel 'Section 111'
+        }
+        113 {
+            Resolve-LWMagnakaiBookSixSection245ConundrumOutcome -Section 113 -Won:$false
         }
         106 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section106TaunorWaterResolved' -SectionLabel 'Section 106'
@@ -788,6 +1372,37 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
             if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfTekaroItemNames) -Type 'backpack')) {
                 Invoke-LWBookFourChoiceTable -Title 'Section 109 Map' -PromptLabel 'Section 109 choice' -ContextLabel 'Section 109' -Choices (Get-LWMagnakaiBookSixSection109ChoiceDefinitions) -Intro 'Section 109: keep the Map of Tekaro if you want it.'
             }
+        }
+        123 {
+            Invoke-LWBookFourChoiceTable -Title 'Section 123 Apothecary' -PromptLabel 'Section 123 choice' -ContextLabel 'Section 123' -Choices (Get-LWMagnakaiBookSixSection123ChoiceDefinitions) -Intro 'Section 123: Alether Berries cost 3 Gold Crowns each and may be bought up to three times.'
+        }
+        139 {
+            Invoke-LWBookFourChoiceTable -Title 'Section 139 Search' -PromptLabel 'Section 139 choice' -ContextLabel 'Section 139' -Choices (Get-LWMagnakaiBookSixSection139ChoiceDefinitions) -Intro 'Section 139: keep the slain assassin''s purse and Silver Brooch if you want them.'
+        }
+        141 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section141FeePaid')) {
+                if ([int]$script:GameState.Inventory.GoldCrowns -ge 2) {
+                    Update-LWGold -Delta -2
+                    Write-LWInfo 'Section 141: 2 Gold Crowns paid as the tournament entrance fee.'
+                }
+                else {
+                    Write-LWWarn 'Section 141: the tournament entry route assumes you can pay 2 Gold Crowns.'
+                }
+                Set-LWStoryAchievementFlag -Name 'Book6Section141FeePaid'
+            }
+        }
+        145 {
+            Invoke-LWBookFourChoiceTable -Title 'Section 145 Leader''s Purse' -PromptLabel 'Section 145 choice' -ContextLabel 'Section 145' -Choices (Get-LWMagnakaiBookSixSection145ChoiceDefinitions) -Intro 'Section 145: keep the Crowns and Ruby Ring if you want them.'
+        }
+        146 {
+            Invoke-LWMagnakaiBookSixMealRequirement -ResolvedFlagName 'Book6Section146MealHandled' -NoMealFlagName 'Book6Section146NoMealLossApplied' -SectionLabel 'Section 146' -NoMealMessagePrefix 'Section 146: you ride on through the hunger and growing fatigue.' -FatalCause 'Hunger at section 146 reduced your Endurance to zero.'
+        }
+        153 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section153DamageApplied' -Delta -5 -MessagePrefix 'Section 153: the crossbow bolt tears a furrow from your ribs.' -FatalCause 'The crossbow wound at section 153 reduced your Endurance to zero.')
+        }
+        157 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section157RecoveryApplied' -Delta 1 -MessagePrefix 'Section 157: the hearty food restores 1 ENDURANCE point.')
+            Invoke-LWMagnakaiBookSixSection157MealsPrompt
         }
         158 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section158SilverKeyClaimed')) {
@@ -802,8 +1417,47 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
             }
             Invoke-LWBookFourChoiceTable -Title 'Section 158 Cellar' -PromptLabel 'Section 158 choice' -ContextLabel 'Section 158' -Choices (Get-LWMagnakaiBookSixSection158ChoiceDefinitions) -Intro 'Section 158: take whatever cellar supplies you want before midnight.'
         }
+        160 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section160CessClaimed')) {
+                if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Cess') {
+                    Set-LWStoryAchievementFlag -Name 'Book6Section160CessClaimed'
+                    Set-LWStoryAchievementFlag -Name 'Book6CessClaimed'
+                    Write-LWInfo 'Section 160: Cess added to Special Items.'
+                }
+                else {
+                    Write-LWWarn 'No room to add the Cess automatically. Make room and add it manually if needed.'
+                }
+            }
+        }
+        164 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section164DamageApplied' -Delta -2 -MessagePrefix 'Section 164: the quarrel grazes your shoulder as you dodge aside.' -FatalCause 'The crossbow graze at section 164 reduced your Endurance to zero.')
+        }
+        171 {
+            if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus')) {
+                [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section171ColdDamageApplied' -Delta -1 -MessagePrefix 'Section 171: the freezing river leaves you drained and numb.' -FatalCause 'The freezing river at section 171 reduced your Endurance to zero.')
+            }
+            elseif (-not (Test-LWStoryAchievementFlag -Name 'Book6Section171NexusProtected')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section171NexusProtected'
+                Write-LWInfo 'Section 171: Nexus protects you from the freezing river water.'
+            }
+        }
+        172 {
+            Invoke-LWMagnakaiBookSixSection172InnRoute
+        }
+        174 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section174DamageApplied' -Delta -5 -MessagePrefix 'Section 174: the bolt tears skin and muscle from your ribs.' -FatalCause 'The crossbow bolt at section 174 reduced your Endurance to zero.')
+        }
+        187 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section187DamageApplied' -Delta -3 -MessagePrefix 'Section 187: one of the pike heads rips into your tunic and flesh.' -FatalCause 'The pike wound at section 187 reduced your Endurance to zero.')
+        }
         190 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section190TaunorWaterResolved' -SectionLabel 'Section 190'
+        }
+        191 {
+            Invoke-LWMagnakaiBookSixMealRequirement -ResolvedFlagName 'Book6Section191MealHandled' -NoMealFlagName 'Book6Section191NoMealLossApplied' -SectionLabel 'Section 191' -NoMealMessagePrefix 'Section 191: the long night''s ride leaves you weak with hunger at the ford.' -FatalCause 'Hunger at section 191 reduced your Endurance to zero.'
+        }
+        197 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section197DamageApplied' -Delta -2 -MessagePrefix 'Section 197: an arrow gashes your calf as you drift downstream.' -FatalCause 'The arrow wound at section 197 reduced your Endurance to zero.')
         }
         207 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section207Handled')) {
@@ -821,6 +1475,25 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                     Write-LWInfo 'Section 207: Bronin Warhammer left behind.'
                 }
             }
+        }
+        212 {
+            Invoke-LWMagnakaiBookSixSection212HorseTrade
+        }
+        214 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section214KalteBowPenaltySet')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section214KalteBowPenaltySet'
+                Set-LWMagnakaiBookSixConditionValue -Name 'BookSixSection214KalteBowPenalty' -Value $true
+                Write-LWInfo 'Section 214: the Kalte hunting bow applies -4 Combat Skill for the duration of the tournament.'
+            }
+        }
+        220 {
+            Invoke-LWMagnakaiBookSixSection220Donation
+        }
+        222 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section222DamageApplied' -Delta -12 -MessagePrefix 'Section 222: the dead Yawshath crushes you as it falls.' -FatalCause 'The Yawshath''s dying weight at section 222 reduced your Endurance to zero.')
+        }
+        223 {
+            Resolve-LWMagnakaiBookSixSection245ConundrumOutcome -Section 223 -Won:$false
         }
         232 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section232RoomPaid')) {
@@ -842,6 +1515,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 }
             }
         }
+        245 {
+            Invoke-LWMagnakaiBookSixSection245ConundrumPrompt
+        }
         246 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section246TaunorWaterResolved' -SectionLabel 'Section 246'
         }
@@ -854,6 +1530,29 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 }
                 else {
                     Write-LWWarn 'No room to add the Silver Bow of Duadon automatically. Make room and add it manually if needed.'
+                }
+            }
+        }
+        253 {
+            Invoke-LWMagnakaiBookSixMealRequirement -ResolvedFlagName 'Book6Section253MealHandled' -NoMealFlagName 'Book6Section253NoMealLossApplied' -SectionLabel 'Section 253' -NoMealMessagePrefix 'Section 253: the inn offers no comfort against your hunger tonight.' -FatalCause 'Hunger at section 253 reduced your Endurance to zero.' -AllowInnMeal -InnMealCost 1 -InnMealLabel 'the inn meal of black bread and eggs'
+        }
+        266 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section266RecoveryApplied' -Delta 1 -MessagePrefix 'Section 266: the cool ale restores 1 ENDURANCE point.')
+        }
+        276 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section276Handled')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section276Handled'
+                $keepBroninWarhammer = Read-LWInlineYesNo -Prompt 'Section 276: keep the Bronin Warhammer?' -Default $true
+                if ($keepBroninWarhammer) {
+                    if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Bronin Warhammer') {
+                        Write-LWInfo 'Section 276: Bronin Warhammer added to Special Items.'
+                    }
+                    else {
+                        Write-LWWarn 'No room to add the Bronin Warhammer automatically. Make room and add it manually if you want to keep it.'
+                    }
+                }
+                else {
+                    Write-LWInfo 'Section 276: Bronin Warhammer left behind.'
                 }
             }
         }
@@ -1090,7 +1789,9 @@ Export-ModuleMember -Function `
     Get-LWMagnakaiBookSixStartingChoices, `
     Grant-LWMagnakaiBookSixStartingChoice, `
     Get-LWMagnakaiBookSixInstantDeathCause, `
+    Get-LWMagnakaiBookSixConditionValue, `
     Get-LWMagnakaiBookSixSectionRandomNumberContext, `
+    Invoke-LWMagnakaiBookSixSection284BettingRound, `
     Invoke-LWMagnakaiBookSixStorySectionAchievementTriggers, `
     Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers, `
     Invoke-LWMagnakaiBookSixSectionEntryRules, `

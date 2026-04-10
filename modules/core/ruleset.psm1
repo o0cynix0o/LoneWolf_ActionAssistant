@@ -34,6 +34,22 @@ function Get-LWRuleSetSectionRandomNumberContext {
     }
 }
 
+function Invoke-LWRuleSetSectionRandomNumberResolution {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [object]$Context = $null,
+        [int[]]$Rolls = @(),
+        [int[]]$EffectiveRolls = @(),
+        [int]$Subtotal = 0,
+        [int]$AdjustedTotal = 0
+    )
+
+    switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
+        'kai' { Invoke-LWKaiSectionRandomNumberResolution -State $State -Context $Context -Rolls $Rolls -EffectiveRolls $EffectiveRolls -Subtotal $Subtotal -AdjustedTotal $AdjustedTotal; return }
+        'magnakai' { Invoke-LWMagnakaiSectionRandomNumberResolution -State $State -Context $Context -Rolls $Rolls -EffectiveRolls $EffectiveRolls -Subtotal $Subtotal -AdjustedTotal $AdjustedTotal; return }
+    }
+}
+
 function Invoke-LWRuleSetStorySectionAchievementTriggers {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -85,6 +101,7 @@ Export-ModuleMember -Function `
     Get-LWActiveRuleSetName, `
     Get-LWActiveRuleSetVersion, `
     Get-LWRuleSetSectionRandomNumberContext, `
+    Invoke-LWRuleSetSectionRandomNumberResolution, `
     Invoke-LWRuleSetStorySectionAchievementTriggers, `
     Invoke-LWRuleSetStorySectionTransitionAchievementTriggers, `
     Invoke-LWRuleSetSectionEntryRules, `

@@ -536,11 +536,23 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeAvailableAfterRound') -or $null -eq $State.Combat.EvadeAvailableAfterRound) {
             $State.Combat | Add-Member -Force -NotePropertyName EvadeAvailableAfterRound -NotePropertyValue 0
         }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeExpiresAfterRound') -or $null -eq $State.Combat.EvadeExpiresAfterRound) {
+            $State.Combat | Add-Member -Force -NotePropertyName EvadeExpiresAfterRound -NotePropertyValue 0
+        }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeResolutionSection')) {
             $State.Combat | Add-Member -Force -NotePropertyName EvadeResolutionSection -NotePropertyValue $null
         }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EvadeResolutionNote')) {
             $State.Combat | Add-Member -Force -NotePropertyName EvadeResolutionNote -NotePropertyValue $null
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'DeferredEquippedWeapon')) {
+            $State.Combat | Add-Member -Force -NotePropertyName DeferredEquippedWeapon -NotePropertyValue $null
+        }
+        elseif ([string]::IsNullOrWhiteSpace([string]$State.Combat.DeferredEquippedWeapon)) {
+            $State.Combat.DeferredEquippedWeapon = $null
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'EquipDeferredWeaponAfterRound') -or $null -eq $State.Combat.EquipDeferredWeaponAfterRound) {
+            $State.Combat | Add-Member -Force -NotePropertyName EquipDeferredWeaponAfterRound -NotePropertyValue 0
         }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SommerswerdSuppressed') -or $null -eq $State.Combat.SommerswerdSuppressed) {
             $State.Combat | Add-Member -Force -NotePropertyName SommerswerdSuppressed -NotePropertyValue $false

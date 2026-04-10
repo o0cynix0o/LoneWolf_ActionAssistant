@@ -91,6 +91,9 @@ function Invoke-LWCoreStartCombat {
         $enemyRequiresMagicalWeapon = $false
         $canEvade = $false
         $evadeAvailableAfterRound = 0
+        $evadeExpiresAfterRound = 0
+        $deferredEquippedWeapon = $null
+        $equipDeferredWeaponAfterRound = 0
         $evadeResolutionSection = $null
         $evadeResolutionNote = $null
         $oneRoundOnly = $false
@@ -168,13 +171,16 @@ function Invoke-LWCoreStartCombat {
             $allowAletherBeforeCombat = $false
         }
         if ($allowAletherBeforeCombat -and (Test-LWCombatAletherAvailable -State $script:GameState)) {
-            $aletherPotionName = Get-LWStateAletherPotionName -State $script:GameState
-            if (-not [string]::IsNullOrWhiteSpace($aletherPotionName)) {
-                $useAlether = Read-LWYesNo -Prompt 'Use Alether before this fight for +4 Combat Skill?' -Default $false
+            $aletherLocation = Find-LWStateInventoryItemLocation -State $script:GameState -Names @((Get-LWAletherPotionItemNames) + (Get-LWAletherBerryItemNames)) -Types @('herbpouch', 'backpack')
+            if ($null -ne $aletherLocation) {
+                $aletherPotionName = [string]$aletherLocation.Name
+                $aletherInventoryType = [string]$aletherLocation.Type
+                $aletherBonus = if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWAletherBerryItemNames) -Target $aletherPotionName))) { 2 } else { 4 }
+                $useAlether = Read-LWYesNo -Prompt ("Use {0} before this fight for +{1} Combat Skill?" -f $aletherPotionName, $aletherBonus) -Default $false
                 if ($useAlether) {
-                    Remove-LWInventoryItem -Type 'backpack' -Name $aletherPotionName -Quantity 1
-                    $aletherCombatSkillBonus = 4
-                    Write-LWInfo "$aletherPotionName is used before combat and grants +4 Combat Skill for this fight."
+                    Remove-LWInventoryItem -Type $aletherInventoryType -Name $aletherPotionName -Quantity 1
+                    $aletherCombatSkillBonus = $aletherBonus
+                    Write-LWInfo ("{0} is used before combat and grants +{1} Combat Skill for this fight." -f $aletherPotionName, $aletherBonus)
                 }
             }
         }
@@ -803,6 +809,151 @@ function Invoke-LWCoreStartCombat {
             $victoryResolutionNote = 'Section 393 result: victory sends you to 255.'
             Write-LWInfo 'Book 5 section 393: surprise attack applies -2 Combat Skill in round 1.'
         }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 12) {
+            $canEvade = $true
+            $evadeResolutionSection = 305
+            $evadeResolutionNote = 'Section 12 result: evading sends you back through the chapel arch to 305.'
+            $ignorePlayerEnduranceLossRounds = 2
+            $victoryResolutionSection = 112
+            $victoryResolutionNote = 'Section 12 result: victory sends you to 112.'
+            Write-LWInfo 'Book 6 section 12: ignore Lone Wolf ENDURANCE loss in the first two rounds, and you may evade at any time.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 37) {
+            $canEvade = $true
+            $evadeResolutionSection = 279
+            $evadeResolutionNote = 'Section 37 result: evading means fleeing the shop, mounting your horse, and galloping to 279.'
+            $victoryResolutionSection = 8
+            $victoryResolutionNote = 'Section 37 result: victory sends you to 8.'
+            Write-LWInfo 'Book 6 section 37: you may evade at any time by fleeing the taxidermist''s shop.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 47) {
+            $bowRestricted = $true
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
+                $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+                    $equippedWeapon = $fallbackWeapon
+                    Write-LWWarn ("Book 6 section 47: a Bow cannot be used here, so you switch to {0}." -f $fallbackWeapon)
+                }
+                else {
+                    $equippedWeapon = $null
+                    Write-LWWarn 'Book 6 section 47: a Bow cannot be used here and no other weapon is ready, so you fight unarmed.'
+                }
+            }
+            $victoryResolutionSection = 263
+            $victoryResolutionNote = 'Section 47 result: victory sends you to 263.'
+            Write-LWInfo 'Book 6 section 47: the bodyguards attack too fast for Bow use.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 78) {
+            $enemyEnduranceThreshold = 11
+            $enemyEnduranceThresholdSection = 180
+            $enemyEnduranceThresholdNote = 'Section 78 result: once Roark falls to 11 ENDURANCE or less, stop combat and turn to 180.'
+            Write-LWInfo 'Book 6 section 78: reduce Roark to 11 ENDURANCE or less to end the duel.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 92) {
+            $canEvade = $true
+            $evadeResolutionSection = 286
+            $evadeResolutionNote = 'Section 92 result: evading sends you to 286.'
+            $victoryWithinRoundsSection = 77
+            $victoryWithinRoundsMax = 3
+            $victoryWithinRoundsNote = 'Section 92 result: if you win in 3 rounds or less, turn to 77.'
+            $victoryResolutionSection = 215
+            $victoryResolutionNote = 'Section 92 result: if the fight lasts longer than 3 rounds, victory sends you to 215.'
+            Write-LWInfo 'Book 6 section 92: you may evade at any time, and the route changes if the fight lasts longer than 3 rounds.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 114) {
+            $playerMod += 2
+            $playerModRounds = 1
+            $victoryResolutionSection = 88
+            $victoryResolutionNote = 'Section 114 result: victory sends you to 88.'
+            Write-LWInfo 'Book 6 section 114: surprise grants +2 Combat Skill in round 1.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 116) {
+            $canEvade = $true
+            $evadeExpiresAfterRound = 1
+            $evadeResolutionSection = 105
+            $evadeResolutionNote = 'Section 116 result: if you evade in round 1, run downstairs to 105.'
+            $victoryResolutionSection = 193
+            $victoryResolutionNote = 'Section 116 result: victory sends you to 193.'
+            Write-LWInfo 'Book 6 section 116: evade is only available in the first round.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 155) {
+            $canEvade = $true
+            $evadeAvailableAfterRound = 4
+            $evadeResolutionSection = 305
+            $evadeResolutionNote = 'Section 155 result: after surviving 4 rounds, you may escape through the chapel arch to 305.'
+            $victoryResolutionSection = 112
+            $victoryResolutionNote = 'Section 155 result: victory sends you to 112.'
+            if (-not [string]::IsNullOrWhiteSpace($equippedWeapon)) {
+                $deferredEquippedWeapon = $equippedWeapon
+                $equipDeferredWeaponAfterRound = 1
+                $equippedWeapon = $null
+            }
+            Write-LWInfo 'Book 6 section 155: you fight bare-handed in round 1, then may draw a weapon from round 2 onward.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 156) {
+            $canEvade = $true
+            $evadeResolutionSection = 339
+            $evadeResolutionNote = 'Section 156 result: if you stop forcing the sewer door, turn to 339.'
+            $victoryResolutionSection = 200
+            $victoryResolutionNote = 'Section 156 result: if the door''s RESISTANCE reaches 0, turn to 200.'
+            Write-LWInfo 'Book 6 section 156: this is treated as normal combat against the sewer door, but you may stop at any time.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 164) {
+            $bowRestricted = $true
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
+                $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+                    $equippedWeapon = $fallbackWeapon
+                    Write-LWWarn ("Book 6 section 164: a Bow cannot be used here, so you switch to {0}." -f $fallbackWeapon)
+                }
+                else {
+                    $equippedWeapon = $null
+                    Write-LWWarn 'Book 6 section 164: a Bow cannot be used here and no other weapon is ready, so you fight unarmed.'
+                }
+            }
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                $playerMod += 1
+                Write-LWInfo 'Book 6 section 164: Animal Control grants +1 Combat Skill for this fight.'
+            }
+            $canEvade = $false
+            $victoryResolutionSection = 28
+            $victoryResolutionNote = 'Section 164 result: victory sends you to 28.'
+            Write-LWInfo 'Book 6 section 164: this fight cannot be evaded and Bows are unusable.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 201) {
+            $bowRestricted = $true
+            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$equippedWeapon)))) {
+                $fallbackWeapon = [string](@($script:GameState.Inventory.Weapons | Where-Object {
+                            [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values @((Get-LWBowWeaponNames), (Get-LWJakanBowWeaponNames)) -Target ([string]$_)))
+                        } | Select-Object -First 1))
+                if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+                    $equippedWeapon = $fallbackWeapon
+                    Write-LWWarn ("Book 6 section 201: a Bow cannot be used here, so you switch to {0}." -f $fallbackWeapon)
+                }
+                else {
+                    $equippedWeapon = $null
+                    Write-LWWarn 'Book 6 section 201: a Bow cannot be used here and no other weapon is ready, so you fight unarmed.'
+                }
+            }
+            $victoryWithinRoundsSection = 15
+            $victoryWithinRoundsMax = 3
+            $victoryWithinRoundsNote = 'Section 201 result: if you win in 3 rounds or less, turn to 15.'
+            $victoryResolutionSection = 87
+            $victoryResolutionNote = 'Section 201 result: if the fight lasts longer than 3 rounds, victory sends you to 87.'
+            Write-LWInfo 'Book 6 section 201: you may fight with any weapon except a Bow.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 208) {
+            $canEvade = $true
+            $evadeResolutionSection = 279
+            $evadeResolutionNote = 'Section 208 result: evading means fleeing the shop, mounting your horse, and galloping to 279.'
+            $victoryResolutionSection = 8
+            $victoryResolutionNote = 'Section 208 result: victory sends you to 8.'
+            Write-LWInfo 'Book 6 section 208: your warning came in time, so only the duel remains.'
+        }
         elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 26 -and [string]$enemyName -ieq 'Altan') {
             $canEvade = $false
             $suppressShieldCombatSkillBonus = $true
@@ -829,6 +980,10 @@ function Invoke-LWCoreStartCombat {
             $victoryResolutionNote = 'Section 26 result: if Altan loses all 50 TARGET points, turn to 252.'
             $defeatResolutionSection = 183
             $defeatResolutionNote = 'Section 26 result: if you lose all 50 TARGET points, turn to 183.'
+            if ([bool](Get-LWMagnakaiBookSixConditionValue -Name 'BookSixSection214KalteBowPenalty' -Default $false)) {
+                $playerMod -= 4
+                Write-LWWarn 'Book 6 section 26: the Kalte hunting bow applies -4 Combat Skill for the duration of the tournament.'
+            }
             if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWJakanBowWeaponNames) -Target ([string]$equippedWeapon)))) {
                 $fallOnRollValue = 0
                 $fallOnRollResolutionSection = 335
@@ -891,6 +1046,24 @@ function Invoke-LWCoreStartCombat {
             $evadeResolutionNote = 'Section 194 result: you may evade at any time by turning to 289.'
             $victoryResolutionSection = 145
             $victoryResolutionNote = 'Section 194 result: victory sends you to 145.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 215) {
+            $canEvade = $true
+            $evadeAvailableAfterRound = 2
+            $evadeResolutionSection = 286
+            $evadeResolutionNote = 'Section 215 result: after 2 rounds you may evade to 286.'
+            $victoryResolutionSection = 111
+            $victoryResolutionNote = 'Section 215 result: victory sends you to 111.'
+            Write-LWInfo 'Book 6 section 215: evade is only available after round 2.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 254) {
+            if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                $playerMod -= 2
+                $playerModRounds = 1
+                Write-LWInfo 'Book 6 section 254: the rear attack applies -2 Combat Skill in round 1 unless you possess Huntmastery.'
+            }
+            $victoryResolutionSection = 77
+            $victoryResolutionNote = 'Section 254 result: victory sends you to 77.'
         }
         elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 270 -and [string]$enemyName -ieq 'Undead Summonation') {
             $enemyUndead = $true
@@ -974,6 +1147,24 @@ function Invoke-LWCoreStartCombat {
             $enemyEnduranceThresholdNote = 'Section 344 result: once Dakomyd is reduced to 25 ENDURANCE or less, stop combat and turn to 310.'
             Write-LWInfo 'Book 6 section 344: Dakomyd is immune to Psi-surge and Mindblast, and combat stops once it falls to 25 ENDURANCE or less.'
         }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 337) {
+            $canEvade = $true
+            $evadeExpiresAfterRound = 1
+            $evadeResolutionSection = 191
+            $evadeResolutionNote = 'Section 337 result: if you evade in round 1, gallop west to 191.'
+            $victoryResolutionSection = 40
+            $victoryResolutionNote = 'Section 337 result: victory sends you to 40.'
+            Write-LWInfo 'Book 6 section 337: evade is only available in the first round.'
+        }
+        elseif ([int]$script:GameState.Character.BookNumber -eq 6 -and [int]$script:GameState.CurrentSection -eq 343) {
+            $canEvade = $true
+            $evadeAvailableAfterRound = 3
+            $evadeResolutionSection = 305
+            $evadeResolutionNote = 'Section 343 result: after surviving 3 rounds, you may escape through the chapel arch to 305.'
+            $victoryResolutionSection = 112
+            $victoryResolutionNote = 'Section 343 result: victory sends you to 112.'
+            Write-LWInfo 'Book 6 section 343: evade is only available after surviving 3 rounds.'
+        }
 
         $psychicAttackMode = 'Mindblast'
         $useMindblast = $false
@@ -1030,9 +1221,12 @@ function Invoke-LWCoreStartCombat {
             AttemptKnockout           = $attemptKnockout
             CanEvade                  = $canEvade
             EvadeAvailableAfterRound  = $evadeAvailableAfterRound
+            EvadeExpiresAfterRound    = $evadeExpiresAfterRound
             EvadeResolutionSection    = $evadeResolutionSection
             EvadeResolutionNote       = $evadeResolutionNote
             EquippedWeapon            = $equippedWeapon
+            DeferredEquippedWeapon    = $deferredEquippedWeapon
+            EquipDeferredWeaponAfterRound = $equipDeferredWeaponAfterRound
             SommerswerdSuppressed     = $sommerswerdSuppressed
             IgnoreFirstRoundEnduranceLoss = $ignoreFirstRoundEnduranceLoss
             IgnorePlayerEnduranceLossRounds = $(if ($ignorePlayerEnduranceLossRounds -gt 0) { $ignorePlayerEnduranceLossRounds } elseif ($ignoreFirstRoundEnduranceLoss) { 1 } else { 0 })
@@ -1083,6 +1277,9 @@ function Invoke-LWCoreStartCombat {
         }
         if (-not [string]::IsNullOrWhiteSpace($equippedWeapon)) {
             $script:GameState.Character.LastCombatWeapon = $equippedWeapon
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($deferredEquippedWeapon)) {
+            $script:GameState.Character.LastCombatWeapon = $deferredEquippedWeapon
         }
 
         $script:GameState.SectionHadCombat = $true

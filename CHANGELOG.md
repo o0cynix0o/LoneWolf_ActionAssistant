@@ -6,7 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
-- No tracked changes yet after `v0.8.0`.
+- Book `6` OG automation catch-up expanded across:
+  - fixed ENDURANCE losses and gains
+  - Random Number helpers
+  - gold, item, and equipment state changes
+  - combat-special rules
+- Book `6` validation was rerun in both PowerShell `7` and Windows PowerShell `5.1`, including:
+  - instant-death matrix reruns
+  - full sample-route and difficulty matrix reruns
+  - targeted section `155` combat timing validation
 
 ## v0.8.0 - 2026-04-09
 

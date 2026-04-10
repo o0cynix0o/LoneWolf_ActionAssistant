@@ -29,6 +29,17 @@ function Get-LWKaiSectionRandomNumberContext {
     }
 }
 
+function Invoke-LWKaiSectionRandomNumberResolution {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [object]$Context = $null,
+        [int[]]$Rolls = @(),
+        [int[]]$EffectiveRolls = @(),
+        [int]$Subtotal = 0,
+        [int]$AdjustedTotal = 0
+    )
+}
+
 function Invoke-LWKaiStartingEquipment {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -1605,6 +1616,7 @@ function Invoke-LWKaiSectionEntryRules {
 Export-ModuleMember -Function `
     Get-LWKaiRulesetVersion, `
     Get-LWKaiSectionRandomNumberContext, `
+    Invoke-LWKaiSectionRandomNumberResolution, `
     Invoke-LWKaiStartingEquipment, `
     Invoke-LWKaiStorySectionAchievementTriggers, `
     Invoke-LWKaiStorySectionTransitionAchievementTriggers, `
