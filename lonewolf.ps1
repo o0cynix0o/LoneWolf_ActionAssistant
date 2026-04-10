@@ -20254,6 +20254,37 @@ function Sync-LWStateRefactorMetadata {
     return $State
 }
 
+function Get-LWBook6LatestCessSectionEvent {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $timeline = @()
+    if ((Test-LWPropertyExists -Object $State -Name 'SectionCheckpoints') -and $null -ne $State.SectionCheckpoints) {
+        foreach ($checkpoint in @($State.SectionCheckpoints)) {
+            if ($null -eq $checkpoint -or -not (Test-LWPropertyExists -Object $checkpoint -Name 'Section') -or $null -eq $checkpoint.Section) {
+                continue
+            }
+
+            $sectionNumber = [int]$checkpoint.Section
+            if ($sectionNumber -in @(49, 160, 304)) {
+                $timeline += $sectionNumber
+            }
+        }
+    }
+
+    if ((Test-LWPropertyExists -Object $State -Name 'CurrentSection') -and $null -ne $State.CurrentSection) {
+        $currentSection = [int]$State.CurrentSection
+        if ($currentSection -in @(49, 160, 304)) {
+            $timeline += $currentSection
+        }
+    }
+
+    if ($timeline.Count -gt 0) {
+        return [int]$timeline[-1]
+    }
+
+    return $null
+}
+
 function Initialize-LWData {
     $script:GameData = Invoke-LWCoreInitializeData -Context (Get-LWModuleContext)
 }
@@ -20290,19 +20321,40 @@ function Normalize-LWState {
                 $normalized.Achievements.StoryFlags.Book6Section049CessUsed = $true
             }
 
-            $specialItems = @()
-            if ($null -ne $normalized.Inventory -and $null -ne $normalized.Inventory.SpecialItems) {
-                $specialItems = @($normalized.Inventory.SpecialItems)
+            $latestCessEvent = Get-LWBook6LatestCessSectionEvent -State $normalized
+            if ($latestCessEvent -eq 49) {
+                $specialItems = @()
+                if ($null -ne $normalized.Inventory -and $null -ne $normalized.Inventory.SpecialItems) {
+                    $specialItems = @($normalized.Inventory.SpecialItems)
+                }
+                $normalized.Inventory.SpecialItems = @(
+                    foreach ($item in $specialItems) {
+                        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWCessItemNames) -Target ([string]$item)))) {
+                            continue
+                        }
+
+                        [string]$item
+                    }
+                )
             }
-            $normalized.Inventory.SpecialItems = @(
+            elseif ($latestCessEvent -in @(160, 304)) {
+                $specialItems = @()
+                if ($null -ne $normalized.Inventory -and $null -ne $normalized.Inventory.SpecialItems) {
+                    $specialItems = @($normalized.Inventory.SpecialItems)
+                }
+
+                $hasCess = $false
                 foreach ($item in $specialItems) {
                     if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWCessItemNames) -Target ([string]$item)))) {
-                        continue
+                        $hasCess = $true
+                        break
                     }
-
-                    [string]$item
                 }
-            )
+
+                if (-not $hasCess) {
+                    $normalized.Inventory.SpecialItems = @($specialItems) + @('Cess')
+                }
+            }
         }
     }
 
