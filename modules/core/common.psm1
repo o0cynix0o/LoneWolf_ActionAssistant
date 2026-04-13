@@ -1,5 +1,12 @@
 Set-StrictMode -Version Latest
 
+function Set-LWModuleContext {
+    param([hashtable]$Context)
+    if ($null -eq $Context) { return }
+    foreach ($key in @($Context.Keys)) {
+        Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
+    }
+}
 function Format-LWSigned {
     param([int]$Value)
     if ($Value -gt 0) {
@@ -356,3 +363,136 @@ Export-ModuleMember -Function `
     Get-LWDifficultyDefinition, `
     Get-LWCanonicalDateText, `
     Get-LWStringHash
+
+function Get-LWKaiRankTitle {
+    param([int]$DisciplineCount)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($DisciplineCount -le 0) {
+        return $null
+    }
+
+    switch ($DisciplineCount) {
+        1 { return 'Novice' }
+        2 { return 'Intuite' }
+        3 { return 'Doan' }
+        4 { return 'Acolyte' }
+        5 { return 'Initiate' }
+        6 { return 'Aspirant' }
+        7 { return 'Guardian' }
+        8 { return 'Warmarn / Journeyman' }
+        9 { return 'Savant' }
+        default { return 'Master' }
+    }
+}
+
+function Format-LWKaiRankLabel {
+    param([int]$DisciplineCount)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $rankTitle = Get-LWKaiRankTitle -DisciplineCount $DisciplineCount
+    if ([string]::IsNullOrWhiteSpace($rankTitle)) {
+        return '(unranked)'
+    }
+
+    $displayCount = if ($DisciplineCount -gt 10) { '10+' } else { [string]$DisciplineCount }
+    return "{0} - {1}" -f $displayCount, $rankTitle
+}
+
+function Get-LWMagnakaiRankTitle {
+    param([int]$Level)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($Level -le 0) {
+        return $null
+    }
+
+    $rankDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiRanks') -and $null -ne $script:GameData.MagnakaiRanks) {
+        @($script:GameData.MagnakaiRanks)
+    }
+    else {
+        @()
+    }
+    $rankEntry = @($rankDefinitions | Where-Object { [int]$_.Level -eq $Level } | Select-Object -First 1)
+    if ($rankEntry.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$rankEntry[0].Name)) {
+        return [string]$rankEntry[0].Name
+    }
+
+    switch ($Level) {
+        1 { return 'Kai Master' }
+        2 { return 'Kai Master Senior' }
+        3 { return 'Kai Master Superior' }
+        4 { return 'Primate' }
+        5 { return 'Tutelary' }
+        6 { return 'Principalin' }
+        7 { return 'Mentora' }
+        8 { return 'Scion-kai' }
+        9 { return 'Archmaster' }
+        default { return 'Kai Grand Master' }
+    }
+}
+
+function Format-LWMagnakaiRankLabel {
+    param([int]$Level)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $rankTitle = Get-LWMagnakaiRankTitle -Level $Level
+    if ([string]::IsNullOrWhiteSpace($rankTitle)) {
+        return '(unranked)'
+    }
+
+    return "{0} - {1}" -f $Level, $rankTitle
+}
+
+function Get-LWKnownKaiDisciplineNames {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if ($null -ne $script:GameData -and $null -ne $script:GameData.KaiDisciplines -and @($script:GameData.KaiDisciplines).Count -gt 0) {
+        return @($script:GameData.KaiDisciplines | ForEach-Object { [string]$_.Name })
+    }
+
+    return @('Camouflage', 'Hunting', 'Sixth Sense', 'Tracking', 'Healing', 'Weaponskill', 'Mindblast', 'Mindshield', 'Animal Kinship', 'Mind Over Matter')
+}
+
+function Get-LWKnownMagnakaiDisciplineNames {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if ($null -ne $script:GameData -and $null -ne $script:GameData.MagnakaiDisciplines -and @($script:GameData.MagnakaiDisciplines).Count -gt 0) {
+        return @($script:GameData.MagnakaiDisciplines | ForEach-Object { [string]$_.Name })
+    }
+
+    return @('Weaponmastery', 'Animal Control', 'Curing', 'Invisibility', 'Huntmastery', 'Pathsmanship', 'Psi-surge', 'Psi-screen', 'Nexus', 'Divination')
+}
+
+function Test-LWStateIsMagnakaiRuleset {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return ([string]$State.RuleSet -ieq 'Magnakai')
+}
+
+function Get-LWCurrentRankLabel {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (Test-LWStateIsMagnakaiRuleset -State $State) {
+        $level = if ((Test-LWPropertyExists -Object $State.Character -Name 'MagnakaiRank') -and $null -ne $State.Character.MagnakaiRank -and [int]$State.Character.MagnakaiRank -gt 0) {
+            [int]$State.Character.MagnakaiRank
+        }
+        else {
+            [Math]::Max(1, @($State.Character.MagnakaiDisciplines).Count)
+        }
+
+        return (Format-LWMagnakaiRankLabel -Level $level)
+    }
+
+    return (Format-LWKaiRankLabel -DisciplineCount @($State.Character.Disciplines).Count)
+}
+
+Export-ModuleMember -Function Get-LWKaiRankTitle, Format-LWKaiRankLabel, Get-LWMagnakaiRankTitle, Format-LWMagnakaiRankLabel, Get-LWKnownKaiDisciplineNames, Get-LWKnownMagnakaiDisciplineNames, Test-LWStateIsMagnakaiRuleset, Get-LWCurrentRankLabel
+
+

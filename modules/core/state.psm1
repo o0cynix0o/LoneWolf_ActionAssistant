@@ -94,6 +94,7 @@ function Invoke-LWCoreInitializeData {
             WeaponskillMap      = (Import-LWJson -Path $weaponskillPath -Default $null)
             CRT                 = (Import-LWJson -Path $crtPath -Default $null)
         }
+        if (Get-Command -Name 'Set-LWHostGameData' -ErrorAction SilentlyContinue) { Set-LWHostGameData -Data $script:GameData | Out-Null }
 
     return $script:GameData
 }
@@ -846,4 +847,1328 @@ Export-ModuleMember -Function `
     Invoke-LWCoreAddBookGoldDelta, `
     Invoke-LWCoreAddBookNamedCount, `
     Invoke-LWCoreNormalizeState
+
+function New-LWRunState {
+    param(
+        [string]$Difficulty = 'Normal',
+        [bool]$Permadeath = $false
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $normalizedDifficulty = Get-LWNormalizedDifficultyName -Difficulty $Difficulty
+    if ($normalizedDifficulty -eq 'Story') {
+        $Permadeath = $false
+    }
+
+    return [pscustomobject]@{
+        Id             = ([guid]::NewGuid().ToString())
+        Difficulty     = $normalizedDifficulty
+        Permadeath     = [bool]$Permadeath
+        Status         = 'Active'
+        StartedOn      = (Get-Date).ToString('o')
+        CompletedOn    = $null
+        IntegrityState = 'Clean'
+        IntegrityNote  = $null
+        Signature      = $null
+    }
+}
+
+function New-LWRunArchiveEntry {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Status = ''
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $run = if ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run) { $State.Run } else { $null }
+    $campaign = $null
+    $previousState = $script:GameState
+    try {
+        $script:GameState = $State
+        if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+        $campaign = Get-LWCampaignSummary
+    }
+    finally {
+        $script:GameState = $previousState
+        if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+    }
+
+    return [pscustomobject]@{
+        RunId          = $(if ($null -ne $run) { [string]$run.Id } else { ([guid]::NewGuid().ToString()) })
+        CharacterName  = [string]$State.Character.Name
+        Difficulty     = $(if ($null -ne $run) { [string]$run.Difficulty } else { 'Normal' })
+        Permadeath     = $(if ($null -ne $run) { [bool]$run.Permadeath } else { $false })
+        IntegrityState = $(if ($null -ne $run) { [string]$run.IntegrityState } else { 'Clean' })
+        Status         = $(if ([string]::IsNullOrWhiteSpace($Status)) { if ($null -ne $run) { [string]$run.Status } else { 'Archived' } } else { $Status })
+        StartedOn      = $(if ($null -ne $run) { [string]$run.StartedOn } else { $null })
+        EndedOn        = (Get-Date).ToString('o')
+        LastBook       = [int]$State.Character.BookNumber
+        CompletedBooks = @($State.Character.CompletedBooks)
+        Summary        = $campaign
+    }
+}
+
+function Ensure-LWRunState {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Run') -or $null -eq $State.Run) {
+        $State | Add-Member -Force -NotePropertyName Run -NotePropertyValue (New-LWRunState)
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Id') -or [string]::IsNullOrWhiteSpace([string]$State.Run.Id)) {
+        $State.Run | Add-Member -Force -NotePropertyName Id -NotePropertyValue ([guid]::NewGuid().ToString())
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Difficulty')) {
+        $State.Run | Add-Member -Force -NotePropertyName Difficulty -NotePropertyValue 'Normal'
+    }
+    else {
+        $State.Run.Difficulty = Get-LWNormalizedDifficultyName -Difficulty ([string]$State.Run.Difficulty)
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Permadeath') -or $null -eq $State.Run.Permadeath) {
+        $State.Run | Add-Member -Force -NotePropertyName Permadeath -NotePropertyValue $false
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Status') -or [string]::IsNullOrWhiteSpace([string]$State.Run.Status)) {
+        $State.Run | Add-Member -Force -NotePropertyName Status -NotePropertyValue 'Active'
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'StartedOn') -or [string]::IsNullOrWhiteSpace([string]$State.Run.StartedOn)) {
+        $State.Run | Add-Member -Force -NotePropertyName StartedOn -NotePropertyValue (Get-Date).ToString('o')
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'CompletedOn')) {
+        $State.Run | Add-Member -Force -NotePropertyName CompletedOn -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'IntegrityState') -or [string]::IsNullOrWhiteSpace([string]$State.Run.IntegrityState)) {
+        $State.Run | Add-Member -Force -NotePropertyName IntegrityState -NotePropertyValue 'Clean'
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'IntegrityNote')) {
+        $State.Run | Add-Member -Force -NotePropertyName IntegrityNote -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Run -Name 'Signature')) {
+        $State.Run | Add-Member -Force -NotePropertyName Signature -NotePropertyValue $null
+    }
+}
+
+function Ensure-LWRunHistory {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'RunHistory') -or $null -eq $State.RunHistory) {
+        $State | Add-Member -Force -NotePropertyName RunHistory -NotePropertyValue @()
+        return
+    }
+
+    $State.RunHistory = @($State.RunHistory)
+}
+
+function Get-LWRunSignaturePayload {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Ensure-LWRunState -State $State
+
+    $completedBooks = @()
+    if ($null -ne $State.Character -and (Test-LWPropertyExists -Object $State.Character -Name 'CompletedBooks') -and $null -ne $State.Character.CompletedBooks) {
+        $completedBooks = @($State.Character.CompletedBooks | ForEach-Object { [int]$_ } | Sort-Object)
+    }
+
+    return @(
+        [string]$State.Run.Id,
+        [string]$State.Run.Difficulty,
+        [string]([bool]$State.Run.Permadeath),
+        [string]$State.Run.Status,
+        (Get-LWCanonicalDateText -Value $State.Run.StartedOn),
+        [string]([int]$State.Character.BookNumber),
+        [string]([int]$State.CurrentSection),
+        ($completedBooks -join ',')
+    ) -join '|'
+}
+
+function Get-LWRunSignature {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return (Get-LWStringHash -Text (Get-LWRunSignaturePayload -State $State))
+}
+
+function Mark-LWRunTampered {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$Reason = 'Run settings were modified outside the assistant.'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Ensure-LWRunState -State $State
+    $State.Run.IntegrityState = 'Tampered'
+    $State.Run.IntegrityNote = $Reason
+}
+
+function Sync-LWRunIntegrityState {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [switch]$Reseal
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Ensure-LWRunState -State $State
+
+    if ([string]$State.Run.Difficulty -eq 'Story' -and [bool]$State.Run.Permadeath) {
+        $State.Run.Permadeath = $false
+        Mark-LWRunTampered -State $State -Reason 'Story mode cannot be combined with Permadeath.'
+    }
+
+    $computed = Get-LWRunSignature -State $State
+    $stored = [string]$State.Run.Signature
+
+    if ($Reseal) {
+        if ([string]$State.Run.IntegrityState -ne 'Tampered') {
+            $State.Run.IntegrityState = 'Clean'
+            $State.Run.IntegrityNote = $null
+        }
+        $State.Run.Signature = $computed
+        return
+    }
+
+    if ([string]::IsNullOrWhiteSpace($stored)) {
+        $State.Run.Signature = $computed
+        if ([string]$State.Run.IntegrityState -ne 'Tampered') {
+            $State.Run.IntegrityState = 'Clean'
+            $State.Run.IntegrityNote = $null
+        }
+        return
+    }
+
+    if ($stored -ne $computed) {
+        Mark-LWRunTampered -State $State -Reason 'Locked run settings or signed progress fields were edited outside the assistant.'
+        $State.Run.Signature = $computed
+        return
+    }
+
+    $State.Run.IntegrityState = 'Clean'
+    $State.Run.IntegrityNote = $null
+    $State.Run.Signature = $computed
+}
+
+function Get-LWCurrentDifficulty {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -eq $State) {
+        return 'Normal'
+    }
+
+    if ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run -and (Test-LWPropertyExists -Object $State.Run -Name 'Difficulty')) {
+        return (Get-LWNormalizedDifficultyName -Difficulty ([string]$State.Run.Difficulty))
+    }
+
+    return 'Normal'
+}
+
+function Test-LWPermadeathEnabled {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -eq $State) {
+        return $false
+    }
+
+    if ((Get-LWCurrentDifficulty -State $State) -eq 'Story') {
+        return $false
+    }
+
+    return ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run -and (Test-LWPropertyExists -Object $State.Run -Name 'Permadeath') -and [bool]$State.Run.Permadeath)
+}
+
+function Test-LWRunTampered {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -eq $State) {
+        return $false
+    }
+
+    return ((Test-LWPropertyExists -Object $State -Name 'Run') -and $null -ne $State.Run -and (Test-LWPropertyExists -Object $State.Run -Name 'IntegrityState') -and [string]$State.Run.IntegrityState -eq 'Tampered')
+}
+
+function Test-LWDifficultyAllowsChallengeAchievements {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return (@('Hard', 'Veteran') -contains (Get-LWCurrentDifficulty -State $State))
+}
+
+function New-LWDeathState {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return [pscustomobject]@{
+        Active     = $false
+        Type       = $null
+        Cause      = $null
+        BookNumber = $null
+        BookTitle  = $null
+        Section    = $null
+        RecordedOn = $null
+    }
+}
+
+function Ensure-LWDeathState {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'DeathState') -or $null -eq $State.DeathState) {
+        $State | Add-Member -Force -NotePropertyName DeathState -NotePropertyValue (New-LWDeathState)
+        return
+    }
+
+    foreach ($propertyName in @('Active', 'Type', 'Cause', 'BookNumber', 'BookTitle', 'Section', 'RecordedOn')) {
+        if (-not (Test-LWPropertyExists -Object $State.DeathState -Name $propertyName)) {
+            $State.DeathState | Add-Member -NotePropertyName $propertyName -NotePropertyValue $null
+        }
+    }
+
+    if ($null -eq $State.DeathState.Active) {
+        $State.DeathState.Active = $false
+    }
+}
+
+function Get-LWActiveDeathState {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if ($null -eq $script:GameState) {
+        return $null
+    }
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'DeathState') -or $null -eq $script:GameState.DeathState) {
+        return $null
+    }
+    if (-not (Test-LWPropertyExists -Object $script:GameState.DeathState -Name 'Active') -or -not [bool]$script:GameState.DeathState.Active) {
+        return $null
+    }
+
+    return $script:GameState.DeathState
+}
+
+function Test-LWDeathActive {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return ($null -ne (Get-LWActiveDeathState))
+}
+
+function Clear-LWDeathState {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if ($null -eq $script:GameState) {
+        return
+    }
+
+    $script:GameState.DeathState = (New-LWDeathState)
+}
+
+function Normalize-LWSectionCheckpoints {
+    param([object[]]$Checkpoints = @())
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $normalized = @()
+    foreach ($checkpoint in @($Checkpoints)) {
+        if ($null -eq $checkpoint) {
+            continue
+        }
+
+        $snapshot = if ((Test-LWPropertyExists -Object $checkpoint -Name 'Snapshot') -and -not [string]::IsNullOrWhiteSpace([string]$checkpoint.Snapshot)) { [string]$checkpoint.Snapshot } else { $null }
+        $section = if ((Test-LWPropertyExists -Object $checkpoint -Name 'Section') -and $null -ne $checkpoint.Section) { [int]$checkpoint.Section } else { 0 }
+        if ([string]::IsNullOrWhiteSpace($snapshot) -or $section -lt 1) {
+            continue
+        }
+
+        $bookNumber = if ((Test-LWPropertyExists -Object $checkpoint -Name 'BookNumber') -and $null -ne $checkpoint.BookNumber) { [int]$checkpoint.BookNumber } else { $null }
+        $bookTitle = if ((Test-LWPropertyExists -Object $checkpoint -Name 'BookTitle') -and -not [string]::IsNullOrWhiteSpace([string]$checkpoint.BookTitle)) { [string]$checkpoint.BookTitle } else { '' }
+        if (($null -eq $bookNumber -or $bookNumber -le 0) -and -not [string]::IsNullOrWhiteSpace($bookTitle)) {
+            $bookNumber = Get-LWBookNumberFromTitle -Title $bookTitle
+        }
+        if ([string]::IsNullOrWhiteSpace($bookTitle) -and $null -ne $bookNumber -and [int]$bookNumber -gt 0) {
+            $bookTitle = Get-LWBookTitle -BookNumber ([int]$bookNumber)
+        }
+
+        $normalized += [pscustomobject]@{
+            BookNumber = $bookNumber
+            BookTitle  = $bookTitle
+            Section    = $section
+            Snapshot   = $snapshot
+        }
+    }
+
+    return @($normalized)
+}
+
+function Get-LWCheckpointSnapshotObject {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    # Rewind restores the current tactical state, then preserves the live run history,
+    # book history, book stats, achievements, and notes from the active state.
+    return [pscustomobject]@{
+        Version                = $State.Version
+        RuleSet                = $State.RuleSet
+        CurrentSection         = $State.CurrentSection
+        SectionHadCombat       = $State.SectionHadCombat
+        SectionHealingResolved = $State.SectionHealingResolved
+        Character              = $State.Character
+        Inventory              = $State.Inventory
+        Combat                 = $State.Combat
+        EquipmentBonuses       = $State.EquipmentBonuses
+    }
+}
+
+function Get-LWCheckpointSnapshotJson {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return ((Get-LWCheckpointSnapshotObject -State $State) | ConvertTo-Json -Depth 20 -Compress)
+}
+
+function New-LWSectionCheckpoint {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -eq $State.Character -or $null -eq $State.CurrentSection -or [int]$State.CurrentSection -lt 1) {
+        return $null
+    }
+
+    $bookNumber = if ($null -ne $State.Character.BookNumber) { [int]$State.Character.BookNumber } else { $null }
+    return [pscustomobject]@{
+        BookNumber = $bookNumber
+        BookTitle  = if ($null -ne $bookNumber -and $bookNumber -gt 0) { Get-LWBookTitle -BookNumber $bookNumber } else { $null }
+        Section    = [int]$State.CurrentSection
+        Snapshot   = Get-LWCheckpointSnapshotJson -State $State
+    }
+}
+
+function Reset-LWSectionCheckpoints {
+    param([switch]$SeedCurrentSection)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -eq $script:GameState) {
+        return
+    }
+
+    $script:GameState.SectionCheckpoints = @()
+    if (-not $SeedCurrentSection -or -not (Test-LWHasState) -or [int]$script:GameState.CurrentSection -lt 1) {
+        return
+    }
+
+    $checkpoint = New-LWSectionCheckpoint -State $script:GameState
+    if ($null -ne $checkpoint) {
+        $script:GameState.SectionCheckpoints = @($checkpoint)
+    }
+}
+
+function Ensure-LWCurrentSectionCheckpoint {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState) -or (Test-LWDeathActive)) {
+        return
+    }
+
+    if (@($script:GameState.SectionCheckpoints).Count -eq 0) {
+        Reset-LWSectionCheckpoints -SeedCurrentSection
+    }
+}
+
+function Save-LWCurrentSectionCheckpoint {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState) -or [int]$script:GameState.CurrentSection -lt 1) {
+        return
+    }
+
+    $checkpoint = New-LWSectionCheckpoint -State $script:GameState
+    if ($null -eq $checkpoint) {
+        return
+    }
+
+    $checkpoints = @($script:GameState.SectionCheckpoints)
+    if ($checkpoints.Count -gt 0) {
+        $last = $checkpoints[-1]
+        $sameBook = ((Test-LWPropertyExists -Object $last -Name 'BookNumber') -and $null -ne $last.BookNumber -and [int]$last.BookNumber -eq [int]$checkpoint.BookNumber)
+        $sameSection = ((Test-LWPropertyExists -Object $last -Name 'Section') -and $null -ne $last.Section -and [int]$last.Section -eq [int]$checkpoint.Section)
+        if ($sameBook -and $sameSection) {
+            $checkpoints[$checkpoints.Count - 1] = $checkpoint
+        }
+        else {
+            $checkpoints = @($checkpoints) + @($checkpoint)
+        }
+    }
+    else {
+        $checkpoints = @($checkpoint)
+    }
+
+    $script:GameState.SectionCheckpoints = @($checkpoints)
+}
+
+function Sync-LWCurrentSectionCheckpoint {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState) -or (Test-LWDeathActive)) {
+        return
+    }
+
+    Ensure-LWCurrentSectionCheckpoint
+    Save-LWCurrentSectionCheckpoint
+}
+
+function Get-LWBookDeathCount {
+    param([int]$BookNumber)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState) -or $BookNumber -lt 1 -or -not (Test-LWPropertyExists -Object $script:GameState -Name 'DeathHistory') -or $null -eq $script:GameState.DeathHistory) {
+        return 0
+    }
+
+    $count = 0
+    foreach ($entry in @($script:GameState.DeathHistory)) {
+        if ($null -ne $entry -and (Test-LWPropertyExists -Object $entry -Name 'BookNumber') -and $null -ne $entry.BookNumber -and [int]$entry.BookNumber -eq $BookNumber) {
+            $count++
+        }
+    }
+
+    return $count
+}
+
+function Register-LWDeath {
+    param(
+        [string]$Type = 'Instant',
+        [string]$Cause = ''
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    Ensure-LWDeathState -State $script:GameState
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'DeathHistory') -or $null -eq $script:GameState.DeathHistory) {
+        $script:GameState.DeathHistory = @()
+    }
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $entry = [pscustomobject]@{
+        Type       = if ([string]::IsNullOrWhiteSpace($Type)) { 'Instant' } else { $Type }
+        Cause      = if ([string]::IsNullOrWhiteSpace($Cause)) { 'A fatal choice ended this path.' } else { $Cause.Trim() }
+        BookNumber = $bookNumber
+        BookTitle  = Get-LWBookTitle -BookNumber $bookNumber
+        Section    = [int]$script:GameState.CurrentSection
+        RecordedOn = (Get-Date).ToString('o')
+    }
+
+    $script:GameState.DeathState.Active = $true
+    $script:GameState.DeathState.Type = $entry.Type
+    $script:GameState.DeathState.Cause = $entry.Cause
+    $script:GameState.DeathState.BookNumber = $entry.BookNumber
+    $script:GameState.DeathState.BookTitle = $entry.BookTitle
+    $script:GameState.DeathState.Section = $entry.Section
+    $script:GameState.DeathState.RecordedOn = $entry.RecordedOn
+    $script:GameState.DeathHistory = @($script:GameState.DeathHistory) + @($entry)
+    if ((Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and $null -ne $script:GameState.Run) {
+        $script:GameState.Run.Status = 'Failed'
+        $script:GameState.Run.CompletedOn = $entry.RecordedOn
+    }
+    Register-LWDeathStat -Type $entry.Type
+    [void](Sync-LWAchievements -Context 'death' -Data $entry)
+
+    if (Test-LWPermadeathEnabled) {
+        $path = if ((Test-LWPropertyExists -Object $script:GameState.Settings -Name 'SavePath')) { [string]$script:GameState.Settings.SavePath } else { $null }
+        if (-not [string]::IsNullOrWhiteSpace($path) -and (Test-Path -LiteralPath $path)) {
+            try {
+                Remove-Item -LiteralPath $path -Force
+                Write-LWError "Permadeath is active. Deleted save file: $path"
+            }
+            catch {
+                Write-LWError "Permadeath is active, but the save file could not be deleted: $path"
+            }
+        }
+        else {
+            Write-LWError 'Permadeath is active. This run cannot be resumed from a save.'
+        }
+
+        $script:GameState.Settings.AutoSave = $false
+        $script:GameState.Settings.SavePath = $null
+    }
+
+    return $entry
+}
+
+function Register-LWFailureState {
+    param([string]$Cause = '')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    Ensure-LWDeathState -State $script:GameState
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $entry = [pscustomobject]@{
+        Type       = 'Failure'
+        Cause      = if ([string]::IsNullOrWhiteSpace($Cause)) { 'The mission failed.' } else { $Cause.Trim() }
+        BookNumber = $bookNumber
+        BookTitle  = Get-LWBookTitle -BookNumber $bookNumber
+        Section    = [int]$script:GameState.CurrentSection
+        RecordedOn = (Get-Date).ToString('o')
+    }
+
+    $script:GameState.DeathState.Active = $true
+    $script:GameState.DeathState.Type = $entry.Type
+    $script:GameState.DeathState.Cause = $entry.Cause
+    $script:GameState.DeathState.BookNumber = $entry.BookNumber
+    $script:GameState.DeathState.BookTitle = $entry.BookTitle
+    $script:GameState.DeathState.Section = $entry.Section
+    $script:GameState.DeathState.RecordedOn = $entry.RecordedOn
+    if ((Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and $null -ne $script:GameState.Run) {
+        $script:GameState.Run.Status = 'Failed'
+        $script:GameState.Run.CompletedOn = $entry.RecordedOn
+    }
+
+    return $entry
+}
+
+function Get-LWAvailableRewindCount {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (Test-LWPermadeathEnabled) {
+        return 0
+    }
+
+    if (-not (Test-LWHasState) -or -not (Test-LWPropertyExists -Object $script:GameState -Name 'SectionCheckpoints') -or $null -eq $script:GameState.SectionCheckpoints) {
+        return 0
+    }
+
+    return [Math]::Max(0, (@($script:GameState.SectionCheckpoints).Count - 1))
+}
+
+function Get-LWBookPathSectionCount {
+    param([int]$BookNumber)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState) -or $BookNumber -lt 1 -or -not (Test-LWPropertyExists -Object $script:GameState -Name 'SectionCheckpoints') -or $null -eq $script:GameState.SectionCheckpoints) {
+        return 0
+    }
+
+    $count = 0
+    foreach ($checkpoint in @($script:GameState.SectionCheckpoints)) {
+        if ($null -ne $checkpoint -and (Test-LWPropertyExists -Object $checkpoint -Name 'BookNumber') -and $null -ne $checkpoint.BookNumber -and [int]$checkpoint.BookNumber -eq $BookNumber) {
+            $count++
+        }
+    }
+
+    return $count
+}
+
+function Restore-LWSectionCheckpoint {
+    param(
+        [Parameter(Mandatory = $true)][object]$Checkpoint,
+        [object[]]$RemainingCheckpoints = @()
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $snapshotJson = if ((Test-LWPropertyExists -Object $Checkpoint -Name 'Snapshot') -and -not [string]::IsNullOrWhiteSpace([string]$Checkpoint.Snapshot)) { [string]$Checkpoint.Snapshot } else { $null }
+    if ([string]::IsNullOrWhiteSpace($snapshotJson)) {
+        throw 'Checkpoint snapshot is missing.'
+    }
+
+    $currentSettings = $script:GameState.Settings
+    $currentHistory = @($script:GameState.History)
+    $currentBookHistory = @($script:GameState.BookHistory)
+    $currentBookStats = $script:GameState.CurrentBookStats
+    $currentDeathHistory = @($script:GameState.DeathHistory)
+    $currentAchievements = $script:GameState.Achievements
+    $currentNotes = @($script:GameState.Character.Notes)
+
+    $restored = Normalize-LWState -State ($snapshotJson | ConvertFrom-Json)
+    $restored.Settings = $currentSettings
+    $restored.History = @($currentHistory)
+    $restored.BookHistory = @($currentBookHistory)
+    $restored.CurrentBookStats = $currentBookStats
+    $restored.DeathHistory = @($currentDeathHistory)
+    $restored.Achievements = $currentAchievements
+    $restored.DeathState = (New-LWDeathState)
+    $restored.SectionCheckpoints = @(Normalize-LWSectionCheckpoints -Checkpoints @($RemainingCheckpoints))
+    if ($null -ne $restored.Character) {
+        $restored.Character.Notes = @($currentNotes)
+    }
+
+    $script:GameState = Normalize-LWState -State $restored
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+}
+
+function Invoke-LWInstantDeath {
+    param([string]$Cause = '')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+    if ($script:GameState.Combat.Active) {
+        Write-LWWarn 'Combat defeat is handled through the combat flow. Finish the combat or stop it first.'
+        return
+    }
+    if (Test-LWDeathActive) {
+        Write-LWWarn 'The character is already dead. Use rewind, load, new, or quit.'
+        return
+    }
+
+    $script:GameState.Character.EnduranceCurrent = 0
+    [void](Register-LWDeath -Type 'Instant' -Cause $Cause)
+    Set-LWScreen -Name 'death'
+    Write-LWError 'Instant death recorded.'
+    Invoke-LWMaybeAutosave
+}
+
+function Invoke-LWFailure {
+    param([string]$Cause = '')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+    if ($script:GameState.Combat.Active) {
+        Write-LWWarn 'Finish the combat or stop it before recording a failed mission.'
+        return
+    }
+    if (Test-LWDeathActive) {
+        Write-LWWarn 'A death or failed mission is already active. Use rewind, load, new, or quit.'
+        return
+    }
+
+    [void](Register-LWFailureState -Cause $Cause)
+    Set-LWScreen -Name 'death'
+    Write-LWError 'Mission failed.'
+    Invoke-LWMaybeAutosave
+}
+
+function Invoke-LWFatalEnduranceCheck {
+    param([string]$Cause = 'Endurance has fallen to zero.')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState) -or $script:GameState.Combat.Active -or (Test-LWDeathActive)) {
+        return $false
+    }
+    if ([int]$script:GameState.Character.EnduranceCurrent -gt 0) {
+        return $false
+    }
+
+    [void](Register-LWDeath -Type 'Endurance' -Cause $Cause)
+    Set-LWScreen -Name 'death'
+    Write-LWError 'Lone Wolf has fallen.'
+    Invoke-LWMaybeAutosave
+    return $true
+}
+
+function Invoke-LWRewind {
+    param([Nullable[int]]$Steps = $null)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+    if (-not (Test-LWDeathActive)) {
+        Write-LWWarn 'rewind is only available after a death or failed mission.'
+        return
+    }
+    if (Test-LWPermadeathEnabled) {
+        Write-LWWarn 'Permadeath disables rewind for this run.'
+        return
+    }
+
+    if ($null -eq $Steps) {
+        $Steps = 1
+    }
+
+    $rewindSteps = [int]$Steps
+    if ($rewindSteps -lt 1) {
+        $rewindSteps = 1
+    }
+
+    $available = Get-LWAvailableRewindCount
+    if ($available -lt 1) {
+        Write-LWWarn 'No earlier safe section is available to rewind to.'
+        return
+    }
+    if ($rewindSteps -gt $available) {
+        Write-LWWarn "You can rewind at most $available section(s) from this death."
+        return
+    }
+
+    $checkpoints = @($script:GameState.SectionCheckpoints)
+    $targetCount = $checkpoints.Count - $rewindSteps
+    $remaining = @($checkpoints[0..($targetCount - 1)])
+    $target = $remaining[-1]
+
+    Register-LWRewindUsed -Count $rewindSteps
+    Restore-LWSectionCheckpoint -Checkpoint $target -RemainingCheckpoints $remaining
+    Clear-LWDeathState
+    Set-LWScreen -Name 'sheet'
+    Write-LWInfo ("Rewound {0} section{1}. You are back at section {2}." -f $rewindSteps, $(if ($rewindSteps -eq 1) { '' } else { 's' }), $script:GameState.CurrentSection)
+    Invoke-LWMaybeAutosave
+}
+
+function Normalize-LWCombatHistoryMetadata {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'History') -or $null -eq $State.History) {
+        return
+    }
+
+    $history = @($State.History)
+    if (@($history).Count -eq 0) {
+        return
+    }
+
+    foreach ($entry in $history) {
+        $entryBookNumber = $null
+        if ((Test-LWPropertyExists -Object $entry -Name 'BookNumber') -and $null -ne $entry.BookNumber -and [int]$entry.BookNumber -gt 0) {
+            $entryBookNumber = [int]$entry.BookNumber
+        }
+
+        $entryBookTitle = ''
+        if ((Test-LWPropertyExists -Object $entry -Name 'BookTitle') -and -not [string]::IsNullOrWhiteSpace([string]$entry.BookTitle)) {
+            $entryBookTitle = [string]$entry.BookTitle
+        }
+
+        if ($null -ne $entryBookNumber -or -not [string]::IsNullOrWhiteSpace($entryBookTitle)) {
+            Set-LWCombatEntryBookMetadata -Entry $entry -BookNumber $entryBookNumber -BookTitle $entryBookTitle
+        }
+    }
+
+    $missingEntries = @($history | Where-Object {
+            $bookNumberMissing = (-not (Test-LWPropertyExists -Object $_ -Name 'BookNumber')) -or $null -eq $_.BookNumber -or [int]$_.BookNumber -le 0
+            $bookTitleMissing = (-not (Test-LWPropertyExists -Object $_ -Name 'BookTitle')) -or [string]::IsNullOrWhiteSpace([string]$_.BookTitle)
+            $bookNumberMissing -and $bookTitleMissing
+        })
+
+    if (@($missingEntries).Count -eq 0) {
+        return
+    }
+
+    $bookHistory = if ((Test-LWPropertyExists -Object $State -Name 'BookHistory') -and $null -ne $State.BookHistory) { @($State.BookHistory) } else { @() }
+    $historyIndex = 0
+
+    foreach ($bookSummary in $bookHistory) {
+        if ($historyIndex -ge @($history).Count) {
+            break
+        }
+
+        if (-not (Test-LWPropertyExists -Object $bookSummary -Name 'BookNumber') -or $null -eq $bookSummary.BookNumber) {
+            continue
+        }
+
+        $bookNumber = [int]$bookSummary.BookNumber
+        $combatCount = if ((Test-LWPropertyExists -Object $bookSummary -Name 'CombatCount') -and $null -ne $bookSummary.CombatCount) { [int]$bookSummary.CombatCount } else { 0 }
+        for ($i = 0; $i -lt $combatCount -and $historyIndex -lt @($history).Count; $i++) {
+            Set-LWCombatEntryBookMetadata -Entry $history[$historyIndex] -BookNumber $bookNumber -BookTitle ([string](Get-LWBookTitle -BookNumber $bookNumber))
+            $historyIndex++
+        }
+    }
+
+    $missingEntries = @($history | Where-Object {
+            ((-not (Test-LWPropertyExists -Object $_ -Name 'BookNumber')) -or $null -eq $_.BookNumber -or [int]$_.BookNumber -le 0) -and
+            ((-not (Test-LWPropertyExists -Object $_ -Name 'BookTitle')) -or [string]::IsNullOrWhiteSpace([string]$_.BookTitle))
+        })
+
+    if (@($missingEntries).Count -eq 0) {
+        return
+    }
+
+    $currentBookNumber = if ((Test-LWPropertyExists -Object $State.Character -Name 'BookNumber') -and $null -ne $State.Character.BookNumber) { [int]$State.Character.BookNumber } else { 1 }
+    $completedBooks = if ((Test-LWPropertyExists -Object $State.Character -Name 'CompletedBooks') -and $null -ne $State.Character.CompletedBooks) { @($State.Character.CompletedBooks | ForEach-Object { [int]$_ }) } else { @() }
+    $currentBookResolvedCombats = Get-LWCurrentBookResolvedCombatCount -State $State
+
+    if ($currentBookNumber -eq 1) {
+        foreach ($entry in $missingEntries) {
+            Set-LWCombatEntryBookMetadata -Entry $entry -BookNumber 1 -BookTitle (Get-LWBookTitle -BookNumber 1)
+        }
+        return
+    }
+
+    if (@($completedBooks).Count -eq 1 -and $completedBooks[0] -eq ($currentBookNumber - 1) -and $currentBookResolvedCombats -eq 0) {
+        foreach ($entry in $missingEntries) {
+            Set-LWCombatEntryBookMetadata -Entry $entry -BookNumber $completedBooks[0] -BookTitle (Get-LWBookTitle -BookNumber $completedBooks[0])
+        }
+    }
+
+    Normalize-LWCombatHistorySections -State $State
+}
+
+function New-LWBookStats {
+    param(
+        [int]$BookNumber,
+        [Nullable[int]]$StartSection = $null,
+        [bool]$PartialTracking = $false
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $visitedSections = @()
+    $sectionsVisited = 0
+    $startValue = $null
+    $lastValue = $null
+
+    if ($null -ne $StartSection -and [int]$StartSection -gt 0) {
+        $startValue = [int]$StartSection
+        $lastValue = [int]$StartSection
+        $visitedSections = @([int]$StartSection)
+        $sectionsVisited = 1
+    }
+
+    return [pscustomobject]@{
+        BookNumber                    = $BookNumber
+        BookTitle                     = Get-LWBookTitle -BookNumber $BookNumber
+        StartSection                  = $startValue
+        LastSection                   = $lastValue
+        SectionsVisited               = $sectionsVisited
+        VisitedSections               = @($visitedSections)
+        EnduranceLost                 = 0
+        EnduranceGained               = 0
+        MealsEaten                    = 0
+        MealsCoveredByHunting         = 0
+        StarvationPenalties           = 0
+        PotionsUsed                   = 0
+        ConcentratedPotionsUsed       = 0
+        PotionEnduranceRestored       = 0
+        RewindsUsed                   = 0
+        ManualRecoveryShortcuts       = 0
+        GoldGained                    = 0
+        GoldSpent                     = 0
+        HealingTriggers               = 0
+        HealingEnduranceRestored      = 0
+        MindblastCombats              = 0
+        MindblastVictories            = 0
+        WeaponUsage                   = @()
+        WeaponVictories               = @()
+        InstantDeaths                 = 0
+        CombatDeaths                  = 0
+        CombatCount                   = 0
+        Victories                     = 0
+        Defeats                       = 0
+        Evades                        = 0
+        RoundsFought                  = 0
+        HighestEnemyCombatSkillFaced  = 0
+        HighestEnemyEnduranceFaced    = 0
+        HighestEnemyCombatSkillDefeated = 0
+        HighestEnemyEnduranceDefeated = 0
+        FastestVictoryEnemyName       = $null
+        FastestVictoryRounds          = 0
+        EasiestVictoryEnemyName       = $null
+        EasiestVictoryRatio           = $null
+        LongestFightEnemyName         = $null
+        LongestFightRounds            = 0
+        PartialTracking               = [bool]$PartialTracking
+    }
+}
+
+function Normalize-LWBookStats {
+    param(
+        [object]$Stats,
+        [int]$BookNumber,
+        [Nullable[int]]$CurrentSection = $null,
+        [bool]$PartialTracking = $false
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -eq $Stats) {
+        return (New-LWBookStats -BookNumber $BookNumber -StartSection $CurrentSection -PartialTracking $PartialTracking)
+    }
+
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'BookNumber') -or [int]$Stats.BookNumber -ne $BookNumber) {
+        return (New-LWBookStats -BookNumber $BookNumber -StartSection $CurrentSection -PartialTracking $PartialTracking)
+    }
+
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'BookTitle')) {
+        $Stats | Add-Member -NotePropertyName BookTitle -NotePropertyValue (Get-LWBookTitle -BookNumber $BookNumber)
+    }
+    else {
+        $Stats.BookTitle = Get-LWBookTitle -BookNumber $BookNumber
+    }
+
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'StartSection')) {
+        $Stats | Add-Member -NotePropertyName StartSection -NotePropertyValue $CurrentSection
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'LastSection')) {
+        $Stats | Add-Member -NotePropertyName LastSection -NotePropertyValue $Stats.StartSection
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'SectionsVisited')) {
+        $Stats | Add-Member -NotePropertyName SectionsVisited -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'VisitedSections') -or $null -eq $Stats.VisitedSections) {
+        $Stats | Add-Member -Force -NotePropertyName VisitedSections -NotePropertyValue @()
+    }
+    else {
+        $Stats.VisitedSections = @($Stats.VisitedSections)
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'EnduranceLost')) {
+        $Stats | Add-Member -NotePropertyName EnduranceLost -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'EnduranceGained')) {
+        $Stats | Add-Member -NotePropertyName EnduranceGained -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'MealsEaten')) {
+        $Stats | Add-Member -NotePropertyName MealsEaten -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'MealsCoveredByHunting')) {
+        $Stats | Add-Member -NotePropertyName MealsCoveredByHunting -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'StarvationPenalties')) {
+        $Stats | Add-Member -NotePropertyName StarvationPenalties -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'PotionsUsed')) {
+        $Stats | Add-Member -NotePropertyName PotionsUsed -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'ConcentratedPotionsUsed')) {
+        $Stats | Add-Member -NotePropertyName ConcentratedPotionsUsed -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'PotionEnduranceRestored')) {
+        $Stats | Add-Member -NotePropertyName PotionEnduranceRestored -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'RewindsUsed')) {
+        $Stats | Add-Member -NotePropertyName RewindsUsed -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'ManualRecoveryShortcuts')) {
+        $Stats | Add-Member -NotePropertyName ManualRecoveryShortcuts -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'GoldGained')) {
+        $Stats | Add-Member -NotePropertyName GoldGained -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'GoldSpent')) {
+        $Stats | Add-Member -NotePropertyName GoldSpent -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'HealingTriggers')) {
+        $Stats | Add-Member -NotePropertyName HealingTriggers -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'HealingEnduranceRestored')) {
+        $Stats | Add-Member -NotePropertyName HealingEnduranceRestored -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'MindblastCombats')) {
+        $Stats | Add-Member -NotePropertyName MindblastCombats -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'MindblastVictories')) {
+        $Stats | Add-Member -NotePropertyName MindblastVictories -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'WeaponUsage') -or $null -eq $Stats.WeaponUsage) {
+        $Stats | Add-Member -Force -NotePropertyName WeaponUsage -NotePropertyValue @()
+    }
+    else {
+        $Stats.WeaponUsage = @(Normalize-LWNamedCountEntries -Entries @($Stats.WeaponUsage))
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'WeaponVictories') -or $null -eq $Stats.WeaponVictories) {
+        $Stats | Add-Member -Force -NotePropertyName WeaponVictories -NotePropertyValue @()
+    }
+    else {
+        $Stats.WeaponVictories = @(Normalize-LWNamedCountEntries -Entries @($Stats.WeaponVictories))
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'InstantDeaths')) {
+        $Stats | Add-Member -NotePropertyName InstantDeaths -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'CombatDeaths')) {
+        $Stats | Add-Member -NotePropertyName CombatDeaths -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'CombatCount')) {
+        $Stats | Add-Member -NotePropertyName CombatCount -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'Victories')) {
+        $Stats | Add-Member -NotePropertyName Victories -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'Defeats')) {
+        $Stats | Add-Member -NotePropertyName Defeats -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'Evades')) {
+        $Stats | Add-Member -NotePropertyName Evades -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'RoundsFought')) {
+        $Stats | Add-Member -NotePropertyName RoundsFought -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'HighestEnemyCombatSkillFaced')) {
+        $Stats | Add-Member -NotePropertyName HighestEnemyCombatSkillFaced -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'HighestEnemyEnduranceFaced')) {
+        $Stats | Add-Member -NotePropertyName HighestEnemyEnduranceFaced -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'HighestEnemyCombatSkillDefeated')) {
+        $Stats | Add-Member -NotePropertyName HighestEnemyCombatSkillDefeated -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'HighestEnemyEnduranceDefeated')) {
+        $Stats | Add-Member -NotePropertyName HighestEnemyEnduranceDefeated -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'FastestVictoryEnemyName')) {
+        $Stats | Add-Member -NotePropertyName FastestVictoryEnemyName -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'FastestVictoryRounds')) {
+        $Stats | Add-Member -NotePropertyName FastestVictoryRounds -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'EasiestVictoryEnemyName')) {
+        $Stats | Add-Member -NotePropertyName EasiestVictoryEnemyName -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'EasiestVictoryRatio')) {
+        $Stats | Add-Member -NotePropertyName EasiestVictoryRatio -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'LongestFightEnemyName')) {
+        $Stats | Add-Member -NotePropertyName LongestFightEnemyName -NotePropertyValue $null
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'LongestFightRounds')) {
+        $Stats | Add-Member -NotePropertyName LongestFightRounds -NotePropertyValue 0
+    }
+    if (-not (Test-LWPropertyExists -Object $Stats -Name 'PartialTracking')) {
+        $Stats | Add-Member -NotePropertyName PartialTracking -NotePropertyValue $PartialTracking
+    }
+
+    if (@($Stats.VisitedSections).Count -eq 0 -and $null -ne $Stats.StartSection) {
+        $Stats.VisitedSections = @([int]$Stats.StartSection)
+    }
+    if ([int]$Stats.SectionsVisited -lt @($Stats.VisitedSections).Count) {
+        $Stats.SectionsVisited = @($Stats.VisitedSections).Count
+    }
+    if ($null -eq $Stats.LastSection -and @($Stats.VisitedSections).Count -gt 0) {
+        $Stats.LastSection = @($Stats.VisitedSections)[-1]
+    }
+
+    return $Stats
+}
+
+function Import-LWJson {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+        [object]$Default = $null
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return $Default
+    }
+
+    $raw = Get-Content -LiteralPath $Path -Raw
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        return $Default
+    }
+
+    return ($raw | ConvertFrom-Json)
+}
+
+function Ensure-LWCurrentBookStats {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'BookHistory') -or $null -eq $script:GameState.BookHistory) {
+        $script:GameState.BookHistory = @()
+    }
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $currentSection = if ($null -ne $script:GameState.CurrentSection) { [int]$script:GameState.CurrentSection } else { $null }
+
+    if (-not (Test-LWPropertyExists -Object $script:GameState -Name 'CurrentBookStats') -or $null -eq $script:GameState.CurrentBookStats) {
+        $script:GameState.CurrentBookStats = (New-LWBookStats -BookNumber $bookNumber -StartSection $currentSection -PartialTracking $true)
+    }
+    else {
+        $script:GameState.CurrentBookStats = Normalize-LWBookStats -Stats $script:GameState.CurrentBookStats -BookNumber $bookNumber -CurrentSection $currentSection
+    }
+
+    return $script:GameState.CurrentBookStats
+}
+
+function Reset-LWCurrentBookStats {
+    param(
+        [int]$BookNumber,
+        [Nullable[int]]$StartSection = $null,
+        [bool]$PartialTracking = $false
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $script:GameState.CurrentBookStats = (New-LWBookStats -BookNumber $BookNumber -StartSection $StartSection -PartialTracking $PartialTracking)
+    return $script:GameState.CurrentBookStats
+}
+
+function Add-LWBookSectionVisit {
+    param([int]$Section)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreAddBookSectionVisit -Context (Get-LWModuleContext) -Section $Section
+}
+
+function Add-LWBookEnduranceDelta {
+    param([int]$Delta)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreAddBookEnduranceDelta -Context (Get-LWModuleContext) -Delta $Delta
+}
+
+function Add-LWBookGoldDelta {
+    param([int]$Delta)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreAddBookGoldDelta -Context (Get-LWModuleContext) -Delta $Delta
+}
+
+function Add-LWBookNamedCount {
+    param(
+        [Parameter(Mandatory = $true)][string]$PropertyName,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [int]$Delta = 1
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreAddBookNamedCount -Context (Get-LWModuleContext) -PropertyName $PropertyName -Name $Name -Delta $Delta
+}
+
+function Register-LWMealConsumed {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats) {
+        return
+    }
+
+    $stats.MealsEaten = [int]$stats.MealsEaten + 1
+    [void](Sync-LWAchievements -Context 'meal')
+}
+
+function Register-LWMealCoveredByHunting {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats) {
+        return
+    }
+
+    $stats.MealsCoveredByHunting = [int]$stats.MealsCoveredByHunting + 1
+    [void](Sync-LWAchievements -Context 'hunting')
+}
+
+function Register-LWStarvationPenalty {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats) {
+        return
+    }
+
+    $stats.StarvationPenalties = [int]$stats.StarvationPenalties + 1
+    [void](Sync-LWAchievements -Context 'starvation')
+}
+
+function Register-LWPotionUsed {
+    param(
+        [string]$PotionName = '',
+        [int]$EnduranceRestored = 0
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats) {
+        return
+    }
+
+    $stats.PotionsUsed = [int]$stats.PotionsUsed + 1
+    if (Test-LWConcentratedHealingPotionName -Name $PotionName) {
+        $stats.ConcentratedPotionsUsed = [int]$stats.ConcentratedPotionsUsed + 1
+    }
+    if ($EnduranceRestored -gt 0) {
+        $stats.PotionEnduranceRestored = [int]$stats.PotionEnduranceRestored + $EnduranceRestored
+    }
+    [void](Sync-LWAchievements -Context 'potion')
+}
+
+function Register-LWRewindUsed {
+    param([int]$Count = 1)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or $Count -le 0) {
+        return
+    }
+
+    $stats.RewindsUsed = [int]$stats.RewindsUsed + $Count
+    [void](Sync-LWAchievements -Context 'rewind')
+}
+
+function Register-LWManualRecoveryShortcut {
+    param([int]$Count = 1)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or $Count -le 0) {
+        return
+    }
+
+    $stats.ManualRecoveryShortcuts = [int]$stats.ManualRecoveryShortcuts + $Count
+    [void](Sync-LWAchievements -Context 'recovery')
+}
+
+function Register-LWHealingRestore {
+    param([int]$Amount)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or $Amount -le 0) {
+        return
+    }
+
+    $stats.HealingTriggers = [int]$stats.HealingTriggers + 1
+    $stats.HealingEnduranceRestored = [int]$stats.HealingEnduranceRestored + $Amount
+    if (-not (Test-LWAchievementSyncSuppressed -Context 'healing')) {
+        [void](Sync-LWAchievements -Context 'healing')
+    }
+}
+
+function Get-LWModeAchievementPools {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $difficulty = Get-LWCurrentDifficulty -State $State
+    switch ($difficulty) {
+        'Story' { return @('Universal', 'Story') }
+        'Easy' { return @('Universal') }
+        'Hard' { return @('Universal', 'Combat', 'Exploration', 'Challenge') }
+        'Veteran' { return @('Universal', 'Combat', 'Exploration', 'Challenge') }
+        default { return @('Universal', 'Combat', 'Exploration') }
+    }
+}
+
+Export-ModuleMember -Function New-LWRunState, New-LWRunArchiveEntry, Ensure-LWRunState, Ensure-LWRunHistory, Get-LWRunSignaturePayload, Get-LWRunSignature, Mark-LWRunTampered, Sync-LWRunIntegrityState, Get-LWCurrentDifficulty, Test-LWPermadeathEnabled, Test-LWRunTampered, Test-LWDifficultyAllowsChallengeAchievements, New-LWDeathState, Ensure-LWDeathState, Get-LWActiveDeathState, Test-LWDeathActive, Clear-LWDeathState, Normalize-LWSectionCheckpoints, Get-LWCheckpointSnapshotObject, Get-LWCheckpointSnapshotJson, New-LWSectionCheckpoint, Reset-LWSectionCheckpoints, Ensure-LWCurrentSectionCheckpoint, Save-LWCurrentSectionCheckpoint, Sync-LWCurrentSectionCheckpoint, Get-LWBookDeathCount, Register-LWDeath, Register-LWFailureState, Get-LWAvailableRewindCount, Get-LWBookPathSectionCount, Restore-LWSectionCheckpoint, Invoke-LWInstantDeath, Invoke-LWFailure, Invoke-LWFatalEnduranceCheck, Invoke-LWRewind, Normalize-LWCombatHistoryMetadata, New-LWBookStats, Normalize-LWBookStats, Import-LWJson, Ensure-LWCurrentBookStats, Reset-LWCurrentBookStats, Add-LWBookSectionVisit, Add-LWBookEnduranceDelta, Add-LWBookGoldDelta, Add-LWBookNamedCount, Register-LWMealConsumed, Register-LWMealCoveredByHunting, Register-LWStarvationPenalty, Register-LWPotionUsed, Register-LWRewindUsed, Register-LWManualRecoveryShortcut, Register-LWHealingRestore, Get-LWModeAchievementPools
+
+
+
 

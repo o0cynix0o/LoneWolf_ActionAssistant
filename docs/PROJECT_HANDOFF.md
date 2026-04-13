@@ -82,9 +82,34 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Book `4` section `12` choice handling now lives in `modules/rulesets/kai/book4.psm1`
 - Book `6` riverboat-ticket item names now live in `modules/rulesets/magnakai/book6.psm1`
 - `Book of the Magnakai` item-name helper now lives in `modules/rulesets/magnakai/magnakai.psm1`
+- latest architecture extraction slice on `dev` moved the largest remaining monolith blocks into:
+  - `modules/core/achievements.psm1`
+  - `modules/core/items.psm1`
+  - `modules/core/inventory.psm1`
+- the remaining shared extraction pass also pushed more ownership into:
+  - `modules/core/combat.psm1`
+  - `modules/core/state.psm1`
+  - `modules/core/save.psm1`
+  - `modules/core/shell.psm1`
+  - `modules/core/common.psm1`
+  - `modules/core/ruleset.psm1`
+  - `modules/rulesets/kai/kai.psm1`
+  - `modules/rulesets/magnakai/magnakai.psm1`
+- current approximate file sizes after the extraction pass:
+  - `lonewolf.ps1`: `3916`
+  - `modules/core/achievements.psm1`: `1800`
+  - `modules/core/items.psm1`: `994`
+  - `modules/core/inventory.psm1`: `1671`
+  - `modules/core/combat.psm1`: `2105`
+  - `modules/core/shell.psm1`: `2638`
+  - `modules/core/state.psm1`: `1850`
+  - `modules/core/save.psm1`: `295`
 - latest `dev` architecture-hardening smoke passed in both shells:
   - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS7.txt`
   - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS51.txt`
+- latest post-extraction command-surface smoke passed in both shells:
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`

@@ -6,6 +6,23 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- architecture extraction pass now moves the largest remaining engine blocks out of `lonewolf.ps1` into:
+  - `modules/core/achievements.psm1`
+  - `modules/core/items.psm1`
+  - `modules/core/inventory.psm1`
+- remaining state, save, screen, combat, common, and ruleset helpers were also extracted into their owning modules:
+  - `modules/core/combat.psm1`
+  - `modules/core/state.psm1`
+  - `modules/core/save.psm1`
+  - `modules/core/shell.psm1`
+  - `modules/core/common.psm1`
+  - `modules/core/ruleset.psm1`
+  - `modules/rulesets/kai/kai.psm1`
+  - `modules/rulesets/magnakai/magnakai.psm1`
+- `lonewolf.ps1` is now reduced to roughly `3.9k` lines and acts primarily as bootstrap, shared-state wiring, and top-level orchestration
+- post-extraction runtime validation is green in both shells:
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`
 - runtime now rotates oversized `data/error.log` files at startup, archives them as `error-YYYYMMDD-HHMMSS.log`, and keeps the latest `5`
 - new `modules/core/shell.psm1` now owns runtime maintenance, notifications, banners, and additional screen renderers for:
   - stats

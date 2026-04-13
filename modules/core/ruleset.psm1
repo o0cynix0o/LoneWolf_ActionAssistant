@@ -1,5 +1,12 @@
 Set-StrictMode -Version Latest
 
+function Set-LWModuleContext {
+    param([hashtable]$Context)
+    if ($null -eq $Context) { return }
+    foreach ($key in @($Context.Keys)) {
+        Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
+    }
+}
 function Get-LWActiveRuleSetName {
     param([object]$State = $null)
 
@@ -145,3 +152,25 @@ Export-ModuleMember -Function `
     Get-LWRuleSetCombatEncounterProfile, `
     Invoke-LWRuleSetCombatScenarioRules, `
     Get-LWBookSectionContextAchievementIds
+
+function Add-LWDiscipline {
+    param([string]$Name = '')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) {
+        Add-LWMagnakaiDiscipline -Name $Name
+        return
+    }
+
+    Add-LWKaiDiscipline -Name $Name
+}
+
+Export-ModuleMember -Function Add-LWDiscipline
+
+

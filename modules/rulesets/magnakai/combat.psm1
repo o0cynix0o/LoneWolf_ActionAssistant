@@ -34,6 +34,8 @@ function Invoke-LWMagnakaiCombatScenarioRules {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     $enemyName = [string]$Scenario.EnemyName
 
     if ([int]$script:GameState.Character.BookNumber -ne 6) {
@@ -329,3 +331,5 @@ function Invoke-LWMagnakaiCombatScenarioRules {
 Export-ModuleMember -Function `
     Get-LWMagnakaiCombatEncounterProfile, `
     Invoke-LWMagnakaiCombatScenarioRules
+
+

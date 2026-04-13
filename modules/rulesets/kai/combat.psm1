@@ -53,6 +53,8 @@ function Invoke-LWKaiCombatScenarioRules {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     $enemyName = [string]$Scenario.EnemyName
     $useQuickDefaults = [bool]$Scenario.UseQuickDefaults
 
@@ -653,3 +655,5 @@ function Invoke-LWKaiCombatScenarioRules {
 Export-ModuleMember -Function `
     Get-LWKaiCombatEncounterProfile, `
     Invoke-LWKaiCombatScenarioRules
+
+

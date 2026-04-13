@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
@@ -1555,3 +1555,1576 @@ Export-ModuleMember -Function `
     Invoke-LWCoreShowDeathScreen, `
     Invoke-LWCoreShowBookCompleteScreen, `
     Invoke-LWCoreRefreshScreen
+
+function Write-LWInfo {
+    param([string]$Message)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    Invoke-LWCoreWriteInfo -Context (Get-LWModuleContext) -Message $Message
+}
+
+function Write-LWWarn {
+    param([string]$Message)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    Invoke-LWCoreWriteWarn -Context (Get-LWModuleContext) -Message $Message
+}
+
+function Write-LWError {
+    param([string]$Message)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    Invoke-LWCoreWriteError -Context (Get-LWModuleContext) -Message $Message
+}
+
+function Write-LWMessageLine {
+    param(
+        [Parameter(Mandatory = $true)][string]$Level,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreWriteMessageLine -Level $Level -Message $Message
+}
+
+function Add-LWNotification {
+    param(
+        [Parameter(Mandatory = $true)][string]$Level,
+        [Parameter(Mandatory = $true)][string]$Message
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreAddNotification -Context (Get-LWModuleContext) -Level $Level -Message $Message
+}
+
+function Write-LWCrashLog {
+    param(
+        [Parameter(Mandatory = $true)][System.Management.Automation.ErrorRecord]$ErrorRecord,
+        [string]$InputLine = '',
+        [string]$Stage = 'command'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return (Invoke-LWCoreWriteCrashLog -Context (Get-LWModuleContext) -ErrorRecord $ErrorRecord -InputLine $InputLine -Stage $Stage)
+}
+
+function Clear-LWNotifications {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreClearNotifications -Context (Get-LWModuleContext)
+}
+
+function Clear-LWAchievementDisplayCountsCache {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreClearAchievementDisplayCountsCache -Context (Get-LWModuleContext)
+}
+
+function Warm-LWRuntimeCaches {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreWarmRuntimeCaches -Context (Get-LWModuleContext)
+}
+
+function Request-LWRender {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreRequestRender -Context (Get-LWModuleContext)
+}
+
+function Clear-LWScreenHost {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreClearScreenHost
+}
+
+function Get-LWDefaultScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return (Invoke-LWCoreGetDefaultScreen -Context (Get-LWModuleContext))
+}
+
+function Set-LWScreen {
+    param(
+        [string]$Name = '',
+        $Data = $null
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreSetScreen -Context (Get-LWModuleContext) -Name $Name -Data $Data
+}
+
+function Write-LWNotifications {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreWriteNotifications -Context (Get-LWModuleContext)
+}
+
+function Write-LWBannerFooter {
+    param(
+        [string]$ProductName = $script:LWAppName,
+        [switch]$VersionOnly,
+        [switch]$ShowHelpLine
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreWriteBannerFooter -Context (Get-LWModuleContext) -ProductName $ProductName -VersionOnly:$VersionOnly -ShowHelpLine:$ShowHelpLine
+}
+
+function Write-LWInventoryBanner {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Write-LWBanner
+}
+
+function Write-LWCombatBanner {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Write-LWBanner
+}
+
+function Write-LWStatsBanner {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Write-LWBanner
+}
+
+function Write-LWCampaignBanner {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Write-LWBanner
+}
+
+function Write-LWAchievementsBanner {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Write-LWBanner
+}
+
+function Write-LWDeathBanner {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Write-LWBanner
+}
+
+function Show-LWWelcomeScreen {
+    param([switch]$NoBanner)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreShowWelcomeScreen -Context (Get-LWModuleContext) -NoBanner:$NoBanner
+}
+
+function Show-LWLoadScreen {
+    param([object[]]$SaveFiles = @())
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Invoke-LWCoreShowLoadScreen -Context (Get-LWModuleContext) -SaveFiles $SaveFiles
+}
+
+function Show-LWDisciplineSelectionScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowDisciplineSelectionScreen -Context (Get-LWModuleContext)
+}
+
+function Show-LWCombatScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowCombatScreen -Context (Get-LWModuleContext)
+}
+
+function Show-LWCombatLogScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowCombatLogScreen -Context (Get-LWModuleContext)
+}
+
+function Show-LWModesScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowModesScreen -Context (Get-LWModuleContext)
+}
+
+function Show-LWDeathScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowDeathScreen -Context (Get-LWModuleContext)
+}
+
+function Show-LWBookCompleteScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowBookCompleteScreen -Context (Get-LWModuleContext)
+}
+
+function Refresh-LWScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreRefreshScreen -Context (Get-LWModuleContext)
+}
+
+function Get-LWCombatEntryBookNumber {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ((Test-LWPropertyExists -Object $Entry -Name 'BookNumber') -and $null -ne $Entry.BookNumber) {
+        return [int]$Entry.BookNumber
+    }
+
+    return 0
+}
+
+function Get-LWCombatEntryBookTitle {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ((Test-LWPropertyExists -Object $Entry -Name 'BookTitle') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.BookTitle)) {
+        return [string]$Entry.BookTitle
+    }
+
+    $bookNumber = Get-LWCombatEntryBookNumber -Entry $Entry
+    if ($bookNumber -gt 0) {
+        return [string](Get-LWBookTitle -BookNumber $bookNumber)
+    }
+
+    return ''
+}
+
+function Get-LWCombatEntryBookLabel {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $bookNumber = Get-LWCombatEntryBookNumber -Entry $Entry
+    $bookTitle = Get-LWCombatEntryBookTitle -Entry $Entry
+
+    if ($bookNumber -gt 0) {
+        return (Format-LWBookLabel -BookNumber $bookNumber -IncludePrefix)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($bookTitle)) {
+        return $bookTitle
+    }
+
+    return 'Book Unknown'
+}
+
+function Get-LWCombatEntryBookKey {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return ('{0}|{1}' -f (Get-LWCombatEntryBookNumber -Entry $Entry), (Get-LWCombatEntryBookTitle -Entry $Entry))
+}
+
+function Write-LWCombatArchiveBookHeader {
+    param([Parameter(Mandatory = $true)][object]$Entry)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Write-Host ''
+    Write-Host ("  {0}" -f (Get-LWCombatEntryBookLabel -Entry $Entry)) -ForegroundColor DarkYellow
+    Write-LWSubtle '  ------------------------------------------------------------'
+}
+
+function Get-LWCombatArchiveOutcomeLabel {
+    param([string]$Outcome = '')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    switch ([string]$Outcome) {
+        'Victory' { return 'Win' }
+        'Defeat' { return 'Loss' }
+        'Knockout' { return 'KO' }
+        'Special' { return 'Spec' }
+        'Evaded' { return 'Evade' }
+        'In Progress' { return 'Live' }
+        'Stopped' { return 'Stop' }
+        default { return ([string]$Outcome) }
+    }
+}
+
+function Format-LWCombatArchiveCellText {
+    param(
+        [string]$Text,
+        [int]$Width
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $value = if ($null -eq $Text) { '' } else { [string]$Text }
+    if ($Width -le 0) {
+        return ''
+    }
+
+    if ($value.Length -gt $Width) {
+        if ($Width -le 3) {
+            return $value.Substring(0, $Width)
+        }
+
+        return ($value.Substring(0, ($Width - 3)) + '...')
+    }
+
+    return $value.PadRight($Width)
+}
+
+function Get-LWCombatArchiveEntryText {
+    param(
+        [Parameter(Mandatory = $true)][object]$Entry,
+        [Parameter(Mandatory = $true)][string]$Prefix
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $sectionText = if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [string]$Entry.Section } else { '?' }
+    $enemyName = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyName') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.EnemyName)) { [string]$Entry.EnemyName } else { 'Unknown' }
+    $outcomeLabel = Get-LWCombatArchiveOutcomeLabel -Outcome $(if (Test-LWPropertyExists -Object $Entry -Name 'Outcome') { [string]$Entry.Outcome } else { '' })
+    $roundText = if ((Test-LWPropertyExists -Object $Entry -Name 'RoundCount') -and $null -ne $Entry.RoundCount) { ("R{0}" -f [int]$Entry.RoundCount) } else { 'R?' }
+    $ratioText = if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) { (Format-LWSigned -Value ([int]$Entry.CombatRatio)) } else { '?' }
+    $weaponText = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { 'Unknown' }
+    $entryFieldText = ("{0} {1}" -f $Prefix, $sectionText).Trim()
+    $fields = @(
+        (Format-LWCombatArchiveCellText -Text $entryFieldText -Width 8),
+        (Format-LWCombatArchiveCellText -Text $enemyName -Width 15),
+        (Format-LWCombatArchiveCellText -Text $outcomeLabel -Width 5),
+        (Format-LWCombatArchiveCellText -Text $roundText -Width 3),
+        (Format-LWCombatArchiveCellText -Text $ratioText -Width 3),
+        (Format-LWCombatArchiveCellText -Text $weaponText -Width 11)
+    )
+
+    return ([string]::Join(' | ', $fields))
+}
+
+function Get-LWCombatArchiveHeaderText {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    $fields = @(
+        (Format-LWCombatArchiveCellText -Text '#/Sect' -Width 8),
+        (Format-LWCombatArchiveCellText -Text 'Enemy' -Width 15),
+        (Format-LWCombatArchiveCellText -Text 'Out' -Width 5),
+        (Format-LWCombatArchiveCellText -Text 'Rnd' -Width 3),
+        (Format-LWCombatArchiveCellText -Text 'CR' -Width 3),
+        (Format-LWCombatArchiveCellText -Text 'Weapon' -Width 11)
+    )
+
+    return ([string]::Join(' | ', $fields))
+}
+
+function Show-LWCombatArchiveEntriesPanel {
+    param(
+        [Parameter(Mandatory = $true)][object[]]$Items,
+        [string]$Title = 'Combat Archive'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Write-LWRetroPanelHeader -Title $Title -AccentColor 'DarkRed'
+    Write-LWRetroPanelTextRow -Text (Get-LWCombatArchiveHeaderText) -TextColor 'DarkGray'
+    foreach ($item in @($Items)) {
+        if ($null -eq $item) {
+            continue
+        }
+
+        $entry = if (Test-LWPropertyExists -Object $item -Name 'Entry') { $item.Entry } else { $item }
+        $prefix = if (Test-LWPropertyExists -Object $item -Name 'Prefix') { [string]$item.Prefix } else { '#' }
+        $textColor = if (Test-LWPropertyExists -Object $item -Name 'Color') { [string]$item.Color } else { 'Gray' }
+        Write-LWRetroPanelTextRow -Text (Get-LWCombatArchiveEntryText -Entry $entry -Prefix $prefix) -TextColor $textColor
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWHistory {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $campaignSummary = Get-LWCampaignSummary
+    $recentAchievements = @(Get-LWAchievementRecentUnlocks -Count 4)
+    $runHistoryLines = @(Get-LWCompactRunHistoryLines)
+    $lastEnemy = if (@($script:GameState.History).Count -gt 0) { [string]$script:GameState.History[-1].EnemyName } else { '(none)' }
+
+    Write-LWRetroPanelHeader -Title 'Run History' -AccentColor 'DarkYellow'
+    if ($runHistoryLines.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    else {
+        for ($i = 0; $i -lt $runHistoryLines.Count; $i += 2) {
+            $left = $runHistoryLines[$i]
+            $right = if (($i + 1) -lt $runHistoryLines.Count) { $runHistoryLines[$i + 1] } else { $null }
+            Write-LWRetroPanelTwoColumnRow `
+                -LeftText ([string]$left.Text) `
+                -RightText $(if ($null -ne $right) { [string]$right.Text } else { '' }) `
+                -LeftColor ([string]$left.Color) `
+                -RightColor $(if ($null -ne $right) { [string]$right.Color } else { 'Gray' }) `
+                -LeftWidth 28 `
+                -Gap 2
+        }
+    }
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Recent Events' -AccentColor 'Cyan'
+    if ($recentAchievements.Count -gt 0) {
+        foreach ($entry in $recentAchievements) {
+            Write-LWRetroPanelTextRow -Text ("{0} : {1}" -f (Format-LWBookLabel -BookNumber ([int]$entry.BookNumber)), (Get-LWAchievementUnlockedDisplayName -Entry $entry)) -TextColor 'Gray'
+        }
+    }
+    elseif (@($script:GameState.Character.Notes).Count -gt 0) {
+        foreach ($note in @($script:GameState.Character.Notes | Select-Object -Last 4)) {
+            Write-LWRetroPanelTextRow -Text ([string]$note) -TextColor 'Gray'
+        }
+    }
+    else {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Combat History' -AccentColor 'Red'
+    if ($null -ne $campaignSummary) {
+        Write-LWRetroPanelPairRow -LeftLabel 'Fights Won' -LeftValue ([string]$campaignSummary.TotalVictories) -RightLabel 'Fights Lost' -RightValue ([string]$campaignSummary.TotalDefeats) -LeftColor 'Green' -RightColor 'Red'
+        Write-LWRetroPanelPairRow -LeftLabel 'Total Rounds' -LeftValue ([string]$campaignSummary.TotalRoundsFought) -RightLabel 'Last Enemy' -RightValue $lastEnemy -LeftColor 'Gray' -RightColor 'Gray'
+    }
+    else {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    Write-LWRetroPanelFooter
+
+    Show-LWHelpfulCommandsPanel -ScreenName 'history'
+}
+
+function Get-LWLiveBookStatsSummary {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats) {
+        return $null
+    }
+
+    return (New-LWBookHistoryEntry -Stats $stats)
+}
+
+function Show-LWStatsOverview {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $campaignSummary = Get-LWCampaignSummary
+
+    Write-LWRetroPanelHeader -Title 'Run Stats' -AccentColor 'Cyan'
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Wins' -LeftValue ([string]$campaignSummary.TotalVictories) -RightLabel 'Combat Losses' -RightValue ([string]$campaignSummary.TotalDefeats) -LeftColor 'Green' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Total Rounds' -LeftValue ([string]$campaignSummary.TotalRoundsFought) -RightLabel 'Damage Taken' -RightValue ([string]$campaignSummary.TotalEnduranceLost) -LeftColor 'Gray' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Gained' -LeftValue ([string]$campaignSummary.TotalGoldGained) -RightLabel 'Sections Seen' -RightValue ([string]$campaignSummary.TotalSectionsVisited) -LeftColor 'Yellow' -RightColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'Notes Added' -LeftValue ([string]@($script:GameState.Character.Notes).Count) -RightLabel 'Rewinds Used' -RightValue ([string]$campaignSummary.TotalRewindsUsed) -LeftColor 'Gray' -RightColor 'Yellow'
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Current Book Stats' -AccentColor 'Cyan'
+    Write-LWRetroPanelKeyValueRow -Label 'Book' -Value (Format-LWBookLabel -BookNumber ([int]$Summary.BookNumber)) -ValueColor 'White'
+    Write-LWRetroPanelPairRow -LeftLabel 'Fights Won' -LeftValue ([string]$Summary.Victories) -RightLabel 'Fights Lost' -RightValue ([string]$Summary.Defeats) -LeftColor 'Green' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Summary.RoundsFought) -RightLabel 'Damage Taken' -RightValue ([string]$Summary.EnduranceLost) -LeftColor 'Gray' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Sections Seen' -LeftValue ([string]$Summary.SectionsVisited) -RightLabel 'Notes Added' -RightValue ([string]@($script:GameState.Character.Notes).Count) -LeftColor 'Gray' -RightColor 'Gray'
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Mode Summary' -AccentColor 'Magenta'
+    Write-LWRetroPanelPairRow -LeftLabel 'Difficulty' -LeftValue (Get-LWCurrentDifficulty) -RightLabel 'Permadeath' -RightValue $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }) -LeftColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -RightColor $(if (Test-LWPermadeathEnabled) { 'Red' } else { 'Gray' })
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Mode' -LeftValue ([string]$script:GameState.Settings.CombatMode) -RightLabel 'Run Integrity' -RightValue ([string]$script:GameState.Run.IntegrityState) -LeftColor (Get-LWModeColor -Mode ([string]$script:GameState.Settings.CombatMode)) -RightColor (Get-LWIntegrityColor -IntegrityState ([string]$script:GameState.Run.IntegrityState))
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Milestones' -AccentColor 'DarkYellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Books Complete' -LeftValue $(if (@($script:GameState.Character.CompletedBooks).Count -gt 0) { [string](@($script:GameState.Character.CompletedBooks | Sort-Object) -join '-') } else { '(none)' }) -RightLabel 'Achievements' -RightValue ("{0} / {1}" -f (Get-LWAchievementEligibleUnlockedCount), (Get-LWAchievementAvailableCount)) -LeftColor 'Gray' -RightColor 'Magenta'
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWStatsCombat {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $highestCSFaced = if ([int]$Summary.HighestEnemyCombatSkillFaced -gt 0) { [string]$Summary.HighestEnemyCombatSkillFaced } else { '(none)' }
+    $highestEndFaced = if ([int]$Summary.HighestEnemyEnduranceFaced -gt 0) { [string]$Summary.HighestEnemyEnduranceFaced } else { '(none)' }
+    $highestCSDefeated = if ([int]$Summary.HighestEnemyCombatSkillDefeated -gt 0) { [string]$Summary.HighestEnemyCombatSkillDefeated } else { '(none)' }
+    $highestEndDefeated = if ([int]$Summary.HighestEnemyEnduranceDefeated -gt 0) { [string]$Summary.HighestEnemyEnduranceDefeated } else { '(none)' }
+    $weaponUsage = Format-LWNamedCountSummary -Entries @($Summary.WeaponUsage)
+    $weaponVictories = Format-LWNamedCountSummary -Entries @($Summary.WeaponVictories)
+    $fastestVictory = if ([int]$Summary.FastestVictoryRounds -gt 0) { "{0} ({1} round{2})" -f $Summary.FastestVictoryEnemyName, $Summary.FastestVictoryRounds, $(if ([int]$Summary.FastestVictoryRounds -eq 1) { '' } else { 's' }) } else { '(none)' }
+    $easiestVictory = if ($null -ne $Summary.EasiestVictoryRatio) { "{0} (ratio {1})" -f $Summary.EasiestVictoryEnemyName, [int]$Summary.EasiestVictoryRatio } else { '(none)' }
+    $longestFight = if ([int]$Summary.LongestFightRounds -gt 0) { "{0} ({1} round{2})" -f $Summary.LongestFightEnemyName, $Summary.LongestFightRounds, $(if ([int]$Summary.LongestFightRounds -eq 1) { '' } else { 's' }) } else { '(none)' }
+
+    Write-LWRetroPanelHeader -Title 'Combat Stats' -AccentColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Fights' -LeftValue ([string]$Summary.CombatCount) -RightLabel 'Victories' -RightValue ([string]$Summary.Victories) -LeftColor 'Gray' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Defeats' -LeftValue ([string]$Summary.Defeats) -RightLabel 'Evades' -RightValue ([string]$Summary.Evades) -LeftColor 'Red' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Summary.RoundsFought) -RightLabel 'Mindblast Wins' -RightValue ([string]$Summary.MindblastVictories) -LeftColor 'Gray' -RightColor 'Cyan'
+    Write-LWRetroPanelPairRow -LeftLabel 'Highest CS Faced' -LeftValue $highestCSFaced -RightLabel 'Highest END Faced' -RightValue $highestEndFaced -LeftColor 'Cyan' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Highest CS Defeated' -LeftValue $highestCSDefeated -RightLabel 'Highest END Defeated' -RightValue $highestEndDefeated -LeftColor 'Cyan' -RightColor 'Red'
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelKeyValueRow -Label 'Fastest Victory' -Value $fastestVictory -ValueColor 'Green'
+    Write-LWRetroPanelKeyValueRow -Label 'Easiest Victory' -Value $easiestVictory -ValueColor 'Green'
+    Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFight -ValueColor 'Yellow'
+    Write-LWRetroPanelKeyValueRow -Label 'Weapons Used' -Value $weaponUsage -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Weapon Wins' -Value $weaponVictories -ValueColor 'Gray'
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWStatsSurvival {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $deathCount = if ((Test-LWPropertyExists -Object $Summary -Name 'DeathCount') -and $null -ne $Summary.DeathCount) { [string]$Summary.DeathCount } else { '0' }
+
+    Write-LWRetroPanelHeader -Title 'Survival Stats' -AccentColor 'DarkYellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'END Lost' -LeftValue ([string]$Summary.EnduranceLost) -RightLabel 'END Gained' -RightValue ([string]$Summary.EnduranceGained) -LeftColor 'Red' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Healing Uses' -LeftValue ([string]$Summary.HealingTriggers) -RightLabel 'Healing END' -RightValue ([string]$Summary.HealingEnduranceRestored) -LeftColor 'Green' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Gained' -LeftValue ([string]$Summary.GoldGained) -RightLabel 'Gold Spent' -RightValue ([string]$Summary.GoldSpent) -LeftColor 'Yellow' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Meals Eaten' -LeftValue ([string]$Summary.MealsEaten) -RightLabel 'Hunting Meals' -RightValue ([string]$Summary.MealsCoveredByHunting) -LeftColor 'Yellow' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Potions Used' -LeftValue ([string]$Summary.PotionsUsed) -RightLabel 'Potion END' -RightValue ([string]$Summary.PotionEnduranceRestored) -LeftColor 'Green' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Deaths' -LeftValue $deathCount -RightLabel 'Starvation' -RightValue ([string]$Summary.StarvationPenalties) -LeftColor 'Red' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Rewinds' -LeftValue ([string]$Summary.RewindsUsed) -RightLabel 'Recovery' -RightValue ([string]$Summary.ManualRecoveryShortcuts) -LeftColor 'Yellow' -RightColor 'Yellow'
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWStatsScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowStatsScreen -Context @{
+        GameState = $script:GameState
+        LWUi      = $script:LWUi
+    }
+}
+
+function Merge-LWNamedCountEntries {
+    param([object[]]$Entries)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $totals = @{}
+    foreach ($entry in @(Normalize-LWNamedCountEntries -Entries $Entries)) {
+        $name = [string]$entry.Name
+        if ([string]::IsNullOrWhiteSpace($name)) {
+            continue
+        }
+
+        if (-not $totals.ContainsKey($name)) {
+            $totals[$name] = 0
+        }
+
+        $totals[$name] = [int]$totals[$name] + [int]$entry.Count
+    }
+
+    $merged = @()
+    foreach ($name in @($totals.Keys | Sort-Object)) {
+        $merged += [pscustomobject]@{
+            Name  = [string]$name
+            Count = [int]$totals[$name]
+        }
+    }
+
+    return @(Normalize-LWNamedCountEntries -Entries $merged)
+}
+
+function Get-LWCampaignBookEntries {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState)) {
+        return @()
+    }
+
+    $entries = @()
+    foreach ($summary in @($script:GameState.BookHistory)) {
+        $entries += [pscustomobject]@{
+            Status  = 'Completed'
+            Summary = $summary
+        }
+    }
+
+    $currentSummary = Get-LWLiveBookStatsSummary
+    if ($null -ne $currentSummary) {
+        $entries += [pscustomobject]@{
+            Status  = 'Current'
+            Summary = $currentSummary
+        }
+    }
+
+    return @($entries)
+}
+
+function Get-LWCampaignTopNamedCountEntry {
+    param([object[]]$Entries)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $values = @(Merge-LWNamedCountEntries -Entries $Entries | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
+    if ($values.Count -eq 0) {
+        return $null
+    }
+
+    return $values[0]
+}
+
+function Get-LWCampaignRunStatus {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState)) {
+        return 'No active run'
+    }
+
+    if (Test-LWDeathActive) {
+        return 'Fallen'
+    }
+    if ($script:GameState.Combat.Active) {
+        return 'In Combat'
+    }
+
+    return 'Adventure Ongoing'
+}
+
+function Get-LWCampaignRunStyle {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ([int]$Summary.TotalDeaths -eq 0 -and [int]$Summary.TotalRewindsUsed -eq 0 -and [int]$Summary.TotalVictories -ge 10) {
+        return 'Iron-Willed'
+    }
+    if ([int]$Summary.TotalDeaths -ge 3) {
+        return 'Death-Touched'
+    }
+    if ([int]$Summary.TotalCombatCount -ge 10) {
+        return 'Battle-Hardened'
+    }
+    if ([int]$Summary.TotalEnduranceGained -ge [int]$Summary.TotalEnduranceLost -and [int]$Summary.TotalDeaths -eq 0) {
+        return 'Steady Survivor'
+    }
+    if ([int]$Summary.TotalSectionsVisited -le 5) {
+        return 'Trail Beginner'
+    }
+
+    return 'Kai in Progress'
+}
+
+function Get-LWCampaignSummary {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not (Test-LWHasState)) {
+        return $null
+    }
+
+    $bookEntries = @(Get-LWCampaignBookEntries)
+    if ($bookEntries.Count -eq 0) {
+        return $null
+    }
+
+    $totalSuccessfulPathSections = 0
+    $totalSectionsVisited = 0
+    $totalUniqueSectionsVisited = 0
+    $totalEnduranceLost = 0
+    $totalEnduranceGained = 0
+    $totalMealsEaten = 0
+    $totalHuntingMeals = 0
+    $totalStarvationPenalties = 0
+    $totalPotionsUsed = 0
+    $totalStrongPotions = 0
+    $totalPotionEnduranceRestored = 0
+    $totalRewindsUsed = 0
+    $totalManualRecoveryShortcuts = 0
+    $totalGoldGained = 0
+    $totalGoldSpent = 0
+    $totalHealingTriggers = 0
+    $totalHealingEnduranceRestored = 0
+    $totalCombatCount = 0
+    $totalVictories = 0
+    $totalDefeats = 0
+    $totalEvades = 0
+    $totalRoundsFought = 0
+    $totalMindblastCombats = 0
+    $totalMindblastVictories = 0
+    $totalInstantDeaths = 0
+    $totalCombatDeaths = 0
+    $totalDeaths = 0
+    $highestEnemyCombatSkillFaced = 0
+    $highestEnemyEnduranceFaced = 0
+    $highestEnemyCombatSkillDefeated = 0
+    $highestEnemyEnduranceDefeated = 0
+    $fastestVictoryEnemyName = $null
+    $fastestVictoryRounds = 0
+    $fastestVictoryBookLabel = $null
+    $easiestVictoryEnemyName = $null
+    $easiestVictoryRatio = $null
+    $easiestVictoryBookLabel = $null
+    $longestFightEnemyName = $null
+    $longestFightRounds = 0
+    $longestFightBookLabel = $null
+    $partialTracking = $false
+    $weaponUsageEntries = @()
+    $weaponVictoryEntries = @()
+
+    foreach ($entry in $bookEntries) {
+        $summary = $entry.Summary
+        if ($null -eq $summary) {
+            continue
+        }
+
+        $bookLabel = Format-LWBookLabel -BookNumber ([int]$summary.BookNumber) -IncludePrefix
+
+        $totalSuccessfulPathSections += [int]$summary.SuccessfulPathSections
+        $totalSectionsVisited += [int]$summary.SectionsVisited
+        $totalUniqueSectionsVisited += [int]$summary.UniqueSectionsVisited
+        $totalEnduranceLost += [int]$summary.EnduranceLost
+        $totalEnduranceGained += [int]$summary.EnduranceGained
+        $totalMealsEaten += [int]$summary.MealsEaten
+        $totalHuntingMeals += [int]$summary.MealsCoveredByHunting
+        $totalStarvationPenalties += [int]$summary.StarvationPenalties
+        $totalPotionsUsed += [int]$summary.PotionsUsed
+        $totalStrongPotions += [int]$summary.ConcentratedPotionsUsed
+        $totalPotionEnduranceRestored += [int]$summary.PotionEnduranceRestored
+        $totalRewindsUsed += [int]$summary.RewindsUsed
+        $totalManualRecoveryShortcuts += [int]$summary.ManualRecoveryShortcuts
+        $totalGoldGained += [int]$summary.GoldGained
+        $totalGoldSpent += [int]$summary.GoldSpent
+        $totalHealingTriggers += [int]$summary.HealingTriggers
+        $totalHealingEnduranceRestored += [int]$summary.HealingEnduranceRestored
+        $totalCombatCount += [int]$summary.CombatCount
+        $totalVictories += [int]$summary.Victories
+        $totalDefeats += [int]$summary.Defeats
+        $totalEvades += [int]$summary.Evades
+        $totalRoundsFought += [int]$summary.RoundsFought
+        $totalMindblastCombats += [int]$summary.MindblastCombats
+        $totalMindblastVictories += [int]$summary.MindblastVictories
+        $totalInstantDeaths += [int]$summary.InstantDeaths
+        $totalCombatDeaths += [int]$summary.CombatDeaths
+        $totalDeaths += [int]$summary.DeathCount
+
+        if ([int]$summary.HighestEnemyCombatSkillFaced -gt $highestEnemyCombatSkillFaced) {
+            $highestEnemyCombatSkillFaced = [int]$summary.HighestEnemyCombatSkillFaced
+        }
+        if ([int]$summary.HighestEnemyEnduranceFaced -gt $highestEnemyEnduranceFaced) {
+            $highestEnemyEnduranceFaced = [int]$summary.HighestEnemyEnduranceFaced
+        }
+        if ([int]$summary.HighestEnemyCombatSkillDefeated -gt $highestEnemyCombatSkillDefeated) {
+            $highestEnemyCombatSkillDefeated = [int]$summary.HighestEnemyCombatSkillDefeated
+        }
+        if ([int]$summary.HighestEnemyEnduranceDefeated -gt $highestEnemyEnduranceDefeated) {
+            $highestEnemyEnduranceDefeated = [int]$summary.HighestEnemyEnduranceDefeated
+        }
+
+        if ([int]$summary.FastestVictoryRounds -gt 0 -and ($fastestVictoryRounds -eq 0 -or [int]$summary.FastestVictoryRounds -lt $fastestVictoryRounds)) {
+            $fastestVictoryEnemyName = [string]$summary.FastestVictoryEnemyName
+            $fastestVictoryRounds = [int]$summary.FastestVictoryRounds
+            $fastestVictoryBookLabel = $bookLabel
+        }
+
+        if ($null -ne $summary.EasiestVictoryRatio -and ($null -eq $easiestVictoryRatio -or [int]$summary.EasiestVictoryRatio -gt [int]$easiestVictoryRatio)) {
+            $easiestVictoryEnemyName = [string]$summary.EasiestVictoryEnemyName
+            $easiestVictoryRatio = [int]$summary.EasiestVictoryRatio
+            $easiestVictoryBookLabel = $bookLabel
+        }
+
+        if ([int]$summary.LongestFightRounds -gt $longestFightRounds) {
+            $longestFightEnemyName = [string]$summary.LongestFightEnemyName
+            $longestFightRounds = [int]$summary.LongestFightRounds
+            $longestFightBookLabel = $bookLabel
+        }
+
+        if ($summary.PartialTracking) {
+            $partialTracking = $true
+        }
+
+        $weaponUsageEntries += @($summary.WeaponUsage)
+        $weaponVictoryEntries += @($summary.WeaponVictories)
+    }
+
+    $mergedWeaponUsage = @(Merge-LWNamedCountEntries -Entries $weaponUsageEntries)
+    $mergedWeaponVictories = @(Merge-LWNamedCountEntries -Entries $weaponVictoryEntries)
+    $favoriteWeapon = Get-LWCampaignTopNamedCountEntry -Entries $mergedWeaponUsage
+    $deadliestWeapon = Get-LWCampaignTopNamedCountEntry -Entries $mergedWeaponVictories
+    $completedBooks = @($script:GameState.Character.CompletedBooks | Sort-Object | ForEach-Object { Format-LWBookLabel -BookNumber ([int]$_) -IncludePrefix })
+    $recentAchievements = @(Get-LWAchievementRecentUnlocks -Count 5)
+
+    $summary = [pscustomobject]@{
+        CharacterName                     = [string]$script:GameState.Character.Name
+        CurrentBookLabel                  = Format-LWBookLabel -BookNumber ([int]$script:GameState.Character.BookNumber) -IncludePrefix
+        CurrentRankLabel                  = Get-LWCurrentRankLabel -State $script:GameState
+        CurrentRankFieldLabel             = $(if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) { 'Magnakai Rank' } else { 'Kai Rank' })
+        Difficulty                        = Get-LWCurrentDifficulty
+        PermadeathEnabled                 = [bool](Test-LWPermadeathEnabled)
+        RunIntegrityState                 = [string]$script:GameState.Run.IntegrityState
+        AchievementPoolLabel              = Get-LWModeAchievementPoolLabel
+        CurrentSection                    = [int]$script:GameState.CurrentSection
+        RunStatus                         = Get-LWCampaignRunStatus
+        BooksCompletedCount               = @($script:GameState.Character.CompletedBooks).Count
+        CompletedBooksLabel               = $(if ($completedBooks.Count -gt 0) { $completedBooks -join '; ' } else { '(none)' })
+        BooksTrackedCount                 = $bookEntries.Count
+        AchievementsUnlocked              = Get-LWAchievementEligibleUnlockedCount
+        AchievementsAvailable             = Get-LWAchievementAvailableCount
+        ProfileAchievementsUnlocked       = Get-LWAchievementUnlockedCount
+        ProfileAchievementsAvailable      = @((Get-LWAchievementDefinitions)).Count
+        ActiveCombat                      = [bool]$script:GameState.Combat.Active
+        DeathActive                       = [bool](Test-LWDeathActive)
+        AutoSaveEnabled                   = [bool]$script:GameState.Settings.AutoSave
+        TotalSuccessfulPathSections       = $totalSuccessfulPathSections
+        TotalSectionsVisited              = $totalSectionsVisited
+        TotalUniqueSectionsVisited        = $totalUniqueSectionsVisited
+        TotalEnduranceLost                = $totalEnduranceLost
+        TotalEnduranceGained              = $totalEnduranceGained
+        TotalMealsEaten                   = $totalMealsEaten
+        TotalHuntingMeals                 = $totalHuntingMeals
+        TotalStarvationPenalties          = $totalStarvationPenalties
+        TotalPotionsUsed                  = $totalPotionsUsed
+        TotalStrongPotions                = $totalStrongPotions
+        TotalPotionEnduranceRestored      = $totalPotionEnduranceRestored
+        TotalRewindsUsed                  = $totalRewindsUsed
+        TotalManualRecoveryShortcuts      = $totalManualRecoveryShortcuts
+        TotalGoldGained                   = $totalGoldGained
+        TotalGoldSpent                    = $totalGoldSpent
+        TotalHealingTriggers              = $totalHealingTriggers
+        TotalHealingEnduranceRestored     = $totalHealingEnduranceRestored
+        TotalCombatCount                  = $totalCombatCount
+        TotalVictories                    = $totalVictories
+        TotalDefeats                      = $totalDefeats
+        TotalEvades                       = $totalEvades
+        TotalRoundsFought                 = $totalRoundsFought
+        TotalMindblastCombats             = $totalMindblastCombats
+        TotalMindblastVictories           = $totalMindblastVictories
+        TotalInstantDeaths                = $totalInstantDeaths
+        TotalCombatDeaths                 = $totalCombatDeaths
+        TotalDeaths                       = $totalDeaths
+        HighestEnemyCombatSkillFaced      = $highestEnemyCombatSkillFaced
+        HighestEnemyEnduranceFaced        = $highestEnemyEnduranceFaced
+        HighestEnemyCombatSkillDefeated   = $highestEnemyCombatSkillDefeated
+        HighestEnemyEnduranceDefeated     = $highestEnemyEnduranceDefeated
+        FastestVictoryEnemyName           = $fastestVictoryEnemyName
+        FastestVictoryRounds              = $fastestVictoryRounds
+        FastestVictoryBookLabel           = $fastestVictoryBookLabel
+        EasiestVictoryEnemyName           = $easiestVictoryEnemyName
+        EasiestVictoryRatio               = $easiestVictoryRatio
+        EasiestVictoryBookLabel           = $easiestVictoryBookLabel
+        LongestFightEnemyName             = $longestFightEnemyName
+        LongestFightRounds                = $longestFightRounds
+        LongestFightBookLabel             = $longestFightBookLabel
+        FavoriteWeapon                    = $favoriteWeapon
+        DeadliestWeapon                   = $deadliestWeapon
+        WeaponUsage                       = @($mergedWeaponUsage)
+        WeaponVictories                   = @($mergedWeaponVictories)
+        BookEntries                       = @($bookEntries)
+        RecentAchievements                = @($recentAchievements)
+        PartialTracking                   = [bool]$partialTracking
+    }
+
+    $summary | Add-Member -NotePropertyName RunStyle -NotePropertyValue (Get-LWCampaignRunStyle -Summary $summary)
+    return $summary
+}
+
+function Format-LWCampaignFightHighlight {
+    param(
+        [string]$EnemyName,
+        [object]$Value,
+        [string]$Suffix = '',
+        [string]$BookLabel = ''
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ([string]::IsNullOrWhiteSpace($EnemyName) -or $null -eq $Value -or ([string]$Value) -eq '' -or ([int]$Value) -le 0) {
+        return '(none)'
+    }
+
+    $bookText = if ([string]::IsNullOrWhiteSpace($BookLabel)) { '' } else { " | $BookLabel" }
+    return ("{0} ({1}{2}){3}" -f $EnemyName, $Value, $Suffix, $bookText)
+}
+
+function Show-LWCampaignOverview {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $completedBookLines = @($script:GameState.Character.CompletedBooks | Sort-Object | ForEach-Object {
+            [pscustomobject]@{
+                Text  = Get-LWBookDisplayLine -BookNumber ([int]$_)
+                Color = 'Gray'
+            }
+        })
+    $progressLines = @(Get-LWCompactRunHistoryLines)
+
+    Write-LWRetroPanelHeader -Title 'Campaign Status' -AccentColor 'DarkCyan'
+    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $Summary.CharacterName -RightLabel 'Difficulty' -RightValue ([string]$Summary.Difficulty) -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty ([string]$Summary.Difficulty))
+    Write-LWRetroPanelPairRow -LeftLabel 'Current Sect.' -LeftValue ([string]$Summary.CurrentSection) -RightLabel 'Permadeath' -RightValue $(if ($Summary.PermadeathEnabled) { 'On' } else { 'Off' }) -LeftColor 'White' -RightColor $(if ($Summary.PermadeathEnabled) { 'Red' } else { 'Gray' })
+    Write-LWRetroPanelKeyValueRow -Label 'Current Book' -Value $Summary.CurrentBookLabel -ValueColor 'White' -LabelWidth 12
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Completed Books' -AccentColor 'Cyan'
+    if ($completedBookLines.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    else {
+        for ($i = 0; $i -lt $completedBookLines.Count; $i += 2) {
+            $left = $completedBookLines[$i]
+            $right = if (($i + 1) -lt $completedBookLines.Count) { $completedBookLines[$i + 1] } else { $null }
+            Write-LWRetroPanelTwoColumnRow -LeftText ([string]$left.Text) -RightText $(if ($null -ne $right) { [string]$right.Text } else { '' }) -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+        }
+    }
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Book Progression' -AccentColor 'DarkYellow'
+    if ($progressLines.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    else {
+        for ($i = 0; $i -lt $progressLines.Count; $i += 2) {
+            $left = $progressLines[$i]
+            $right = if (($i + 1) -lt $progressLines.Count) { $progressLines[$i + 1] } else { $null }
+            Write-LWRetroPanelTwoColumnRow `
+                -LeftText ([string]$left.Text) `
+                -RightText $(if ($null -ne $right) { [string]$right.Text } else { '' }) `
+                -LeftColor ([string]$left.Color) `
+                -RightColor $(if ($null -ne $right) { [string]$right.Color } else { 'Gray' }) `
+                -LeftWidth 28 `
+                -Gap 2
+        }
+    }
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Campaign Notes' -AccentColor 'Magenta'
+    Write-LWRetroPanelPairRow -LeftLabel 'Run Integrity' -LeftValue ([string]$Summary.RunIntegrityState) -RightLabel 'Achievements' -RightValue ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -LeftColor (Get-LWIntegrityColor -IntegrityState ([string]$Summary.RunIntegrityState)) -RightColor 'Magenta' -LeftLabelWidth 13 -RightLabelWidth 12 -LeftWidth 29 -Gap 2
+    if (Test-LWStateIsMagnakaiRuleset -State $script:GameState) {
+        Write-LWRetroPanelTextRow -Text 'Kai campaign has crossed into Magnakai rules.' -TextColor 'Gray'
+        Write-LWRetroPanelTextRow -Text 'Transition safekeeping appears between later books.' -TextColor 'Gray'
+    }
+    else {
+        Write-LWRetroPanelTextRow -Text 'Campaign is still operating under the Kai ruleset.' -TextColor 'Gray'
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Format-LWCampaignFightHighlightWrappedText {
+    param(
+        [string]$Label,
+        [string]$EnemyName,
+        [object]$Value,
+        [string]$Suffix = '',
+        [string]$BookLabel = ''
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ([string]::IsNullOrWhiteSpace($EnemyName) -or $null -eq $Value -or ([string]$Value) -eq '' -or ([int]$Value) -le 0) {
+        return ("{0}: (none)" -f $Label)
+    }
+
+    return ("{0}: {1} ({2}{3}) | {4}" -f $Label, $EnemyName, $Value, $Suffix, $BookLabel)
+}
+
+function Get-LWDisplayBookHighlightTitle {
+    param([string]$BookLabel)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $value = if ($null -eq $BookLabel) { '' } else { [string]$BookLabel }
+    $value = [regex]::Replace($value, '^\s*Book\s+\d+\s*-\s*', '')
+    $value = [regex]::Replace($value, '^\s*The\s+', '')
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return '(unknown)'
+    }
+
+    return $value.Trim()
+}
+
+function Show-LWCampaignBooks {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Write-LWRetroPanelHeader -Title 'Campaign Books' -AccentColor 'DarkCyan'
+    $shownBookNumbers = @()
+    foreach ($entry in @($Summary.BookEntries)) {
+        $bookSummary = $entry.Summary
+        $bookLabel = Format-LWBookLabel -BookNumber ([int]$bookSummary.BookNumber) -IncludePrefix
+        $statusText = if ([string]$entry.Status -eq 'Current') { 'Current' } else { 'Completed' }
+        $statusColor = if ([string]$entry.Status -eq 'Current') { 'Yellow' } else { 'Green' }
+        $shownBookNumbers += [int]$bookSummary.BookNumber
+        Write-LWRetroPanelTextRow -Text ("{0} | {1} | sections {2} | victories {3}" -f $bookLabel, $statusText, [int]$bookSummary.SectionsVisited, [int]$bookSummary.Victories) -TextColor $statusColor
+    }
+
+    $missingCompletedBooks = @($script:GameState.Character.CompletedBooks | Where-Object { $shownBookNumbers -notcontains [int]$_ } | Sort-Object)
+    foreach ($bookNumber in $missingCompletedBooks) {
+        $bookLabel = Format-LWBookLabel -BookNumber ([int]$bookNumber) -IncludePrefix
+        Write-LWRetroPanelTextRow -Text ("{0} | Completed | summary unavailable from older save history" -f $bookLabel) -TextColor 'DarkGray'
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWCampaignCombat {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $usageEntries = @(Merge-LWNamedCountEntries -Entries @($Summary.WeaponUsage) | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
+    $victoryEntries = @(Merge-LWNamedCountEntries -Entries @($Summary.WeaponVictories) | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
+    $favoriteWeapons = @($usageEntries | Select-Object -First 2 | ForEach-Object { "{0} x{1}" -f [string]$_.Name, [int]$_.Count })
+    $deadliestWeapons = @($victoryEntries | Select-Object -First 2 | ForEach-Object { "{0} x{1}" -f [string]$_.Name, [int]$_.Count })
+    $favoriteWeaponOne = if ($favoriteWeapons.Count -gt 0) { [string]$favoriteWeapons[0] } else { '(none)' }
+    $favoriteWeaponTwo = if ($favoriteWeapons.Count -gt 1) { [string]$favoriteWeapons[1] } else { '(none)' }
+    $deadliestWeaponOne = if ($deadliestWeapons.Count -gt 0) { [string]$deadliestWeapons[0] } else { '(none)' }
+    $deadliestWeaponTwo = if ($deadliestWeapons.Count -gt 1) { [string]$deadliestWeapons[1] } else { '(none)' }
+    $fastestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.FastestVictoryEnemyName) -or [int]$Summary.FastestVictoryRounds -le 0) { 'Fastest Victory: (none)' } else { "Fastest Victory: $([string]$Summary.FastestVictoryEnemyName) ($([int]$Summary.FastestVictoryRounds) round$(if ([int]$Summary.FastestVictoryRounds -eq 1) { '' } else { 's' }))" }
+    $fastestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.FastestVictoryBookLabel)
+    $easiestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.EasiestVictoryEnemyName) -or $null -eq $Summary.EasiestVictoryRatio) { 'Easiest Victory: (none)' } else { "Easiest Victory: $([string]$Summary.EasiestVictoryEnemyName) ($([int]$Summary.EasiestVictoryRatio) ratio)" }
+    $easiestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.EasiestVictoryBookLabel)
+    $longestFightLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.LongestFightEnemyName) -or [int]$Summary.LongestFightRounds -le 0) { 'Longest Fight  : (none)' } else { "Longest Fight  : $([string]$Summary.LongestFightEnemyName) ($([int]$Summary.LongestFightRounds) round$(if ([int]$Summary.LongestFightRounds -eq 1) { '' } else { 's' }))" }
+    $longestFightRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.LongestFightBookLabel)
+
+    Write-LWRetroPanelHeader -Title 'Campaign Combat' -AccentColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Fights' -LeftValue ([string]$Summary.TotalCombatCount) -RightLabel 'Victories' -RightValue ([string]$Summary.TotalVictories) -LeftColor 'Gray' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Defeats' -LeftValue ([string]$Summary.TotalDefeats) -RightLabel 'Evades' -RightValue ([string]$Summary.TotalEvades) -LeftColor 'Red' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Summary.TotalRoundsFought) -RightLabel 'Mindblast Wins' -RightValue ([string]$Summary.TotalMindblastVictories) -LeftColor 'Gray' -RightColor 'Cyan'
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelTwoColumnRow -LeftText $fastestVictoryLeft -RightText $fastestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $easiestVictoryLeft -RightText $easiestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $longestFightLeft -RightText $longestFightRight -LeftColor 'Yellow' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelTwoColumnRow -LeftText ("Favorite Weapons : {0}" -f $favoriteWeaponOne) -RightText $favoriteWeaponTwo -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText ("Deadliest Weapons: {0}" -f $deadliestWeaponOne) -RightText $deadliestWeaponTwo -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWCampaignSurvival {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Write-LWRetroPanelHeader -Title 'Campaign Survival' -AccentColor 'DarkYellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'END Lost' -LeftValue ([string]$Summary.TotalEnduranceLost) -RightLabel 'END Gained' -RightValue ([string]$Summary.TotalEnduranceGained) -LeftColor 'Red' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Healing Uses' -LeftValue ([string]$Summary.TotalHealingTriggers) -RightLabel 'Healing END' -RightValue ([string]$Summary.TotalHealingEnduranceRestored) -LeftColor 'Green' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Gained' -LeftValue ([string]$Summary.TotalGoldGained) -RightLabel 'Gold Spent' -RightValue ([string]$Summary.TotalGoldSpent) -LeftColor 'Yellow' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Deaths' -LeftValue ([string]$Summary.TotalDeaths) -RightLabel 'Rewinds Used' -RightValue ([string]$Summary.TotalRewindsUsed) -LeftColor 'Red' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Potions Used' -LeftValue ([string]$Summary.TotalPotionsUsed) -RightLabel 'Autosave' -RightValue $(if ($Summary.AutoSaveEnabled) { 'On' } else { 'Off' }) -LeftColor 'Green' -RightColor $(if ($Summary.AutoSaveEnabled) { 'Green' } else { 'DarkGray' })
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWCampaignMilestones {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $recentAchievements = @($Summary.RecentAchievements)
+    $fastestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.FastestVictoryEnemyName) -or [int]$Summary.FastestVictoryRounds -le 0) { 'Fastest Victory: (none)' } else { "Fastest Victory: $([string]$Summary.FastestVictoryEnemyName) ($([int]$Summary.FastestVictoryRounds) round$(if ([int]$Summary.FastestVictoryRounds -eq 1) { '' } else { 's' }))" }
+    $fastestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.FastestVictoryBookLabel)
+    $easiestVictoryLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.EasiestVictoryEnemyName) -or $null -eq $Summary.EasiestVictoryRatio) { 'Easiest Victory: (none)' } else { "Easiest Victory: $([string]$Summary.EasiestVictoryEnemyName) ($([int]$Summary.EasiestVictoryRatio) ratio)" }
+    $easiestVictoryRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.EasiestVictoryBookLabel)
+    $longestFightLeft = if ([string]::IsNullOrWhiteSpace([string]$Summary.LongestFightEnemyName) -or [int]$Summary.LongestFightRounds -le 0) { 'Longest Fight  : (none)' } else { "Longest Fight  : $([string]$Summary.LongestFightEnemyName) ($([int]$Summary.LongestFightRounds) round$(if ([int]$Summary.LongestFightRounds -eq 1) { '' } else { 's' }))" }
+    $longestFightRight = Get-LWDisplayBookHighlightTitle -BookLabel ([string]$Summary.LongestFightBookLabel)
+
+    Write-LWRetroPanelHeader -Title 'Campaign Milestones' -AccentColor 'Magenta'
+    Write-LWRetroPanelPairRow -LeftLabel 'Books Comp.' -LeftValue ([string]$Summary.BooksCompletedCount) -RightLabel 'Achievements' -RightValue ("{0}/{1}" -f $Summary.AchievementsUnlocked, $Summary.AchievementsAvailable) -LeftColor 'Green' -RightColor 'Magenta'
+    Write-LWRetroPanelPairRow -LeftLabel 'Profile Total' -LeftValue ("{0}/{1}" -f $Summary.ProfileAchievementsUnlocked, $Summary.ProfileAchievementsAvailable) -RightLabel 'Run Style' -RightValue $Summary.RunStyle -LeftColor 'DarkMagenta' -RightColor 'Cyan'
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelTwoColumnRow -LeftText $fastestVictoryLeft -RightText $fastestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $easiestVictoryLeft -RightText $easiestVictoryRight -LeftColor 'Green' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText $longestFightLeft -RightText $longestFightRight -LeftColor 'Yellow' -RightColor 'Gray' -LeftWidth 40 -Gap 2
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Recent Achievements' -AccentColor 'DarkYellow'
+    if ($recentAchievements.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none yet)' -TextColor 'DarkGray'
+    }
+    else {
+        foreach ($entry in $recentAchievements) {
+            Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray'
+        }
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWCampaignScreen {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    Invoke-LWCoreShowCampaignScreen -Context @{
+        GameState = $script:GameState
+        LWUi      = $script:LWUi
+    }
+}
+
+function Get-LWAchievementDefinitionById {
+    param([Parameter(Mandatory = $true)][string]$Id)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    foreach ($definition in @(Get-LWAchievementDefinitions)) {
+        if ([string]$definition.Id -eq $Id) {
+            return $definition
+        }
+    }
+
+    return $null
+}
+
+function Show-LWCombatPromptHint {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not $script:GameState.Combat.Active) {
+        return
+    }
+
+    Show-LWHelpfulCommandsPanel -ScreenName 'combat'
+}
+
+function Get-LWCombatMeterText {
+    param(
+        [int]$Current,
+        [int]$Max,
+        [int]$Width = 18
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $safeMax = [Math]::Max(1, $Max)
+    $clampedCurrent = [Math]::Max(0, [Math]::Min($Current, $safeMax))
+    $filled = [Math]::Round(($clampedCurrent / [double]$safeMax) * $Width)
+    if ($filled -lt 0) {
+        $filled = 0
+    }
+    if ($filled -gt $Width) {
+        $filled = $Width
+    }
+
+    return ('[' + ('#' * $filled) + ('-' * ($Width - $filled)) + ']')
+}
+
+function Write-LWCombatMeterLine {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][int]$Current,
+        [Parameter(Mandatory = $true)][int]$Max,
+        [Parameter(Mandatory = $true)][int]$CombatSkill,
+        [string]$LabelColor = 'White'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $displayLabel = if ($Label.Length -gt 14) { ($Label.Substring(0, 12) + '..') } else { $Label }
+    $meterColor = Get-LWEnduranceColor -Current $Current -Max $Max
+    $meterText = Get-LWCombatMeterText -Current $Current -Max $Max
+
+    Write-Host ("  {0,-14}" -f $displayLabel) -NoNewline -ForegroundColor $LabelColor
+    Write-Host (" CS {0,-3}" -f $CombatSkill) -NoNewline -ForegroundColor Cyan
+    Write-Host (" END {0,2}/{1,-2} " -f $Current, $Max) -NoNewline -ForegroundColor $meterColor
+    Write-Host $meterText -ForegroundColor $meterColor
+}
+
+function Write-LWCombatRoundLine {
+    param([Parameter(Mandatory = $true)][object]$Round)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $crtSuffix = ''
+    if ((Test-LWPropertyExists -Object $Round -Name 'CRTColumn') -and $null -ne $Round.CRTColumn -and [int]$Round.CRTColumn -ne [int]$Round.Ratio) {
+        $crtSuffix = " -> CRT $($Round.CRTColumn)"
+    }
+
+    Write-Host ("  R{0,-2}" -f $Round.Round) -NoNewline -ForegroundColor DarkYellow
+    Write-Host (" ratio {0,3}" -f (Format-LWSigned -Value ([int]$Round.Ratio))) -NoNewline -ForegroundColor (Get-LWCombatRatioColor -Ratio ([int]$Round.Ratio))
+    Write-Host ("  roll {0}{1}" -f $Round.Roll, $crtSuffix) -NoNewline -ForegroundColor Gray
+    Write-Host ("  enemy -{0}" -f $Round.EnemyLoss) -NoNewline -ForegroundColor Red
+    if ((Test-LWPropertyExists -Object $Round -Name 'SpecialNote') -and -not [string]::IsNullOrWhiteSpace([string]$Round.SpecialNote)) {
+        Write-Host (" [{0}]" -f [string]$Round.SpecialNote) -NoNewline -ForegroundColor DarkYellow
+    }
+    Write-Host ("  Lone Wolf -{0}" -f $Round.PlayerLoss) -NoNewline -ForegroundColor Red
+    Write-Host ("  END {0}/{1}" -f $Round.PlayerEnd, $Round.EnemyEnd) -ForegroundColor DarkGray
+}
+
+function Get-LWCombatRoundSummaryText {
+    param([Parameter(Mandatory = $true)][object]$Round)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    return ("R{0}  Ratio {1}   You lose {2}   Enemy loses {3}" -f [int]$Round.Round, (Format-LWSigned -Value ([int]$Round.Ratio)), [int]$Round.PlayerLoss, [int]$Round.EnemyLoss)
+}
+
+function Show-LWCombatRecentRounds {
+    param(
+        [object[]]$Rounds = @(),
+        [int]$Count = 3,
+        [string]$Title = 'Recent Rounds'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Write-LWRetroPanelHeader -Title $Title -AccentColor 'DarkRed'
+    $rounds = @($Rounds)
+    if ($rounds.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text 'No rounds resolved yet.' -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
+        return
+    }
+
+    $start = [Math]::Max(0, $rounds.Count - $Count)
+    foreach ($round in @($rounds[$start..($rounds.Count - 1)])) {
+        Write-LWRetroPanelTextRow -Text (Get-LWCombatRoundSummaryText -Round $round) -TextColor 'Gray'
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWCombatDuelPanel {
+    param(
+        [Parameter(Mandatory = $true)][string]$EnemyName,
+        [Parameter(Mandatory = $true)][int]$PlayerCurrent,
+        [Parameter(Mandatory = $true)][int]$PlayerMax,
+        [Parameter(Mandatory = $true)][int]$EnemyCurrent,
+        [Parameter(Mandatory = $true)][int]$EnemyMax,
+        [Parameter(Mandatory = $true)][int]$PlayerCombatSkill,
+        [Parameter(Mandatory = $true)][int]$EnemyCombatSkill,
+        [Parameter(Mandatory = $true)][int]$CombatRatio,
+        [Nullable[int]]$RoundCount = $null,
+        [string]$Title = 'The Duel'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    Write-LWRetroPanelHeader -Title $Title -AccentColor 'Red'
+    Write-LWRetroPanelTwoColumnRow -LeftText 'Lone Wolf' -RightText $EnemyName -LeftColor 'White' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText ("CS {0}" -f $PlayerCombatSkill) -RightText ("CS {0}" -f $EnemyCombatSkill) -LeftColor 'Cyan' -RightColor 'Cyan' -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText ("END {0} / {1}" -f $PlayerCurrent, $PlayerMax) -RightText ("END {0} / {1}" -f $EnemyCurrent, $EnemyMax) -LeftColor (Get-LWEnduranceColor -Current $PlayerCurrent -Max $PlayerMax) -RightColor (Get-LWEnduranceColor -Current $EnemyCurrent -Max $EnemyMax) -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelTwoColumnRow -LeftText (Get-LWCombatMeterText -Current $PlayerCurrent -Max $PlayerMax) -RightText (Get-LWCombatMeterText -Current $EnemyCurrent -Max $EnemyMax) -LeftColor (Get-LWEnduranceColor -Current $PlayerCurrent -Max $PlayerMax) -RightColor (Get-LWEnduranceColor -Current $EnemyCurrent -Max $EnemyMax) -LeftWidth 28 -Gap 2
+    Write-LWRetroPanelFooter
+}
+
+function Write-LWCombatTacticalTwoColumnRows {
+    param(
+        [string[]]$Items = @(),
+        [string]$TextColor = 'Gray'
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $rows = @($Items | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($rows.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+        return
+    }
+
+    for ($i = 0; $i -lt $rows.Count; $i += 2) {
+        $leftText = [string]$rows[$i]
+        $rightText = if (($i + 1) -lt $rows.Count) { [string]$rows[$i + 1] } else { '' }
+        Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor $TextColor -RightColor $TextColor -LeftWidth 29 -Gap 2
+    }
+}
+
+function Show-LWCombatTacticalPanel {
+    param(
+        [Parameter(Mandatory = $true)][string]$Weapon,
+        [Parameter(Mandatory = $true)][bool]$UseMindblast,
+        [string]$PsychicAttackLabel = 'Mindblast',
+        [Parameter(Mandatory = $true)][bool]$EnemyIsUndead,
+        [Parameter(Mandatory = $true)][string]$MindforceStatus,
+        [Parameter(Mandatory = $true)][string]$KnockoutStatus,
+        [Parameter(Mandatory = $true)][string]$EvadeStatus,
+        [Parameter(Mandatory = $true)][string]$Mode,
+        [object[]]$Notes = @(),
+        [string]$BowStatus = '',
+        [string]$PotionStatus = '',
+        [switch]$UsesSommerswerd,
+        [switch]$SommerswerdSuppressed
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $notes = @(
+        $Notes |
+            ForEach-Object { [string]$_ } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+    $bonusNotes = @($notes | Where-Object { $_ -match '\+' } | Select-Object -Unique)
+    $overflowRuleNotes = @(
+        $notes | Where-Object {
+            $_ -notmatch '\+' -and
+            $_ -notmatch '^Mindforce ' -and
+            $_ -notmatch '^Evade ' -and
+            $_ -notmatch '^Sommerswerd ' -and
+            $_ -notmatch '^Undead damage x2$'
+        } | Select-Object -Unique
+    )
+
+    $ruleStatusNotes = @(
+        ("Mindforce : {0}" -f $MindforceStatus),
+        ("Evade     : {0}" -f $EvadeStatus)
+    )
+    if ($UsesSommerswerd) {
+        $ruleStatusNotes += ("Sommerswerd: {0}" -f $(if ($SommerswerdSuppressed) { 'Suppressed' } elseif ($EnemyIsUndead) { 'Active (undead x2)' } else { 'Active' }))
+    }
+    if ($KnockoutStatus -ne 'Off') {
+        $ruleStatusNotes += ("Knockout  : {0}" -f $KnockoutStatus)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($BowStatus)) {
+        $ruleStatusNotes += ("Bow       : {0}" -f $BowStatus)
+    }
+    if (-not [string]::IsNullOrWhiteSpace($PotionStatus)) {
+        $ruleStatusNotes += ("Potions   : {0}" -f $PotionStatus)
+    }
+
+    Write-LWRetroPanelHeader -Title 'Weapons / Rules' -AccentColor 'DarkYellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Weapon' -LeftValue $Weapon -RightLabel 'Mode' -RightValue $Mode -LeftColor 'Gray' -RightColor (Get-LWModeColor -Mode $Mode) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelDivider
+    Write-LWCombatTacticalTwoColumnRows -Items $bonusNotes -TextColor 'Gray'
+    Write-LWRetroPanelDivider
+    Write-LWCombatTacticalTwoColumnRows -Items $ruleStatusNotes -TextColor 'Gray'
+    $overflowNoteText = @($overflowRuleNotes | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) }) -join ' | '
+    if (-not [string]::IsNullOrWhiteSpace($overflowNoteText)) {
+        Write-LWRetroPanelWrappedKeyValueRows -Label 'Notes' -Value $overflowNoteText -ValueColor 'Gray' -LabelWidth 13
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Get-LWCurrentCombatLogEntry {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    if (-not $script:GameState.Combat.Active) {
+        return $null
+    }
+
+    $playerPool = Get-LWCombatPlayerEndurancePool -State $script:GameState
+    $breakdown = Get-LWCombatBreakdown
+    return [pscustomobject]@{
+        BookNumber = [int]$script:GameState.Character.BookNumber
+        BookTitle  = [string](Get-LWBookTitle -BookNumber ([int]$script:GameState.Character.BookNumber))
+        Section    = [int]$script:GameState.CurrentSection
+        EnemyName  = $script:GameState.Combat.EnemyName
+        Outcome    = 'In Progress'
+        RoundCount = @($script:GameState.Combat.Log).Count
+        PlayerEnd  = [int]$playerPool.Current
+        PlayerEnduranceMax = [int]$playerPool.Max
+        UsesPlayerTargetEndurance = [bool]$playerPool.UsesTarget
+        EnemyEnd   = $script:GameState.Combat.EnemyEnduranceCurrent
+        EnemyEnduranceMax = [int]$script:GameState.Combat.EnemyEnduranceMax
+        EnemyIsUndead = [bool]$script:GameState.Combat.EnemyIsUndead
+        EnemyUsesMindforce = [bool]$script:GameState.Combat.EnemyUsesMindforce
+        MindforceBlockedByMindshield = [bool](Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)
+        AletherCombatSkillBonus = [int]$script:GameState.Combat.AletherCombatSkillBonus
+        AttemptKnockout = [bool]$script:GameState.Combat.AttemptKnockout
+        Weapon     = [string]$script:GameState.Combat.EquippedWeapon
+        SommerswerdSuppressed = [bool]$script:GameState.Combat.SommerswerdSuppressed
+        BowRestricted = [bool]$script:GameState.Combat.BowRestricted
+        CombatPotionsAllowed = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'CombatPotionsAllowed') -and $null -ne $script:GameState.Combat.CombatPotionsAllowed) { [bool]$script:GameState.Combat.CombatPotionsAllowed } else { $true }
+        Mindblast  = [bool]$script:GameState.Combat.UseMindblast
+        CanEvade   = [bool]$script:GameState.Combat.CanEvade
+        EvadeAvailableAfterRound = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EvadeAvailableAfterRound') -and $null -ne $script:GameState.Combat.EvadeAvailableAfterRound) { [int]$script:GameState.Combat.EvadeAvailableAfterRound } else { 0 }
+        Mode       = [string]$script:GameState.Settings.CombatMode
+        PlayerCombatSkill = if ($null -ne $breakdown) { [int]$breakdown.PlayerCombatSkill } else { $null }
+        EnemyCombatSkill = if ($null -ne $breakdown) { [int]$breakdown.EnemyCombatSkill } else { $null }
+        CombatRatio = if ($null -ne $breakdown) { [int]$breakdown.CombatRatio } else { $null }
+        Notes      = if ($null -ne $breakdown) { @($breakdown.Notes) } else { @() }
+        Log        = @($script:GameState.Combat.Log)
+    }
+}
+
+function Write-LWCombatLogEntry {
+    param(
+        [Parameter(Mandatory = $true)][object]$Entry,
+        [string]$TitleSuffix = ''
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $playerEndMax = if ((Test-LWPropertyExists -Object $Entry -Name 'PlayerEnduranceMax') -and $null -ne $Entry.PlayerEnduranceMax) { [int]$Entry.PlayerEnduranceMax } else { [Math]::Max([int]$Entry.PlayerEnd, 1) }
+    $enemyEndMax = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyEnduranceMax') -and $null -ne $Entry.EnemyEnduranceMax) { [int]$Entry.EnemyEnduranceMax } else { [Math]::Max([int]$Entry.EnemyEnd, 1) }
+    $bookLabel = Get-LWCombatEntryBookLabel -Entry $Entry
+    $combatSummary = if ([int](Get-LWCombatEntryBookNumber -Entry $Entry) -eq [int]$script:GameState.Character.BookNumber) {
+        Get-LWLiveBookStatsSummary
+    }
+    else {
+        $historicalSummary = @($script:GameState.BookHistory | Where-Object { [int]$_.BookNumber -eq [int](Get-LWCombatEntryBookNumber -Entry $Entry) } | Select-Object -Last 1)
+        if ($historicalSummary.Count -gt 0) {
+            $historicalSummary[0]
+        }
+        else {
+            $null
+        }
+    }
+
+    $displayWeapon = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { (Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon)) } else { '' }
+
+    $recordTitle = 'Combat Record'
+    if (-not [string]::IsNullOrWhiteSpace($TitleSuffix)) {
+        $recordTitle = ("Combat Record {0}" -f $TitleSuffix)
+    }
+    Write-LWRetroPanelHeader -Title $recordTitle -AccentColor 'DarkRed'
+    if (-not [string]::IsNullOrWhiteSpace($displayWeapon)) {
+        Write-LWRetroPanelPairRow -LeftLabel 'Enemy' -LeftValue ([string]$Entry.EnemyName) -RightLabel 'Weapon' -RightValue $displayWeapon -LeftColor 'White' -RightColor 'Gray' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    }
+    else {
+        Write-LWRetroPanelKeyValueRow -Label 'Enemy' -Value ([string]$Entry.EnemyName) -ValueColor 'White'
+    }
+    Write-LWRetroPanelPairRow -LeftLabel 'Book / Section' -LeftValue ("{0} / {1}" -f [int](Get-LWCombatEntryBookNumber -Entry $Entry), $(if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [string]$Entry.Section } else { '?' })) -RightLabel 'Outcome' -RightValue ([string]$Entry.Outcome) -LeftColor 'Gray' -RightColor (Get-LWOutcomeColor -Outcome ([string]$Entry.Outcome)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) {
+        Write-LWRetroPanelPairRow -LeftLabel 'Rounds Fought' -LeftValue ([string]$Entry.RoundCount) -RightLabel 'Combat Ratio' -RightValue (Format-LWSigned -Value ([int]$Entry.CombatRatio)) -LeftColor 'Gray' -RightColor (Get-LWCombatRatioColor -Ratio ([int]$Entry.CombatRatio)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    }
+    else {
+        Write-LWRetroPanelKeyValueRow -Label 'Rounds Fought' -Value ([string]$Entry.RoundCount) -ValueColor 'Gray'
+    }
+    Write-LWRetroPanelFooter
+
+    Show-LWCombatDuelPanel -Title 'Player / Enemy' -EnemyName ([string]$Entry.EnemyName) -PlayerCurrent ([int]$Entry.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Entry.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $(if ((Test-LWPropertyExists -Object $Entry -Name 'PlayerCombatSkill') -and $null -ne $Entry.PlayerCombatSkill) { [int]$Entry.PlayerCombatSkill } else { 0 }) -EnemyCombatSkill $(if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyCombatSkill') -and $null -ne $Entry.EnemyCombatSkill) { [int]$Entry.EnemyCombatSkill } else { 0 }) -CombatRatio $(if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) { [int]$Entry.CombatRatio } else { 0 })
+
+    Show-LWCombatTacticalPanel -Weapon $(if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { Get-LWCombatDisplayWeapon -Weapon ([string]$Entry.Weapon) } else { 'Unknown' }) -UseMindblast:([bool]((Test-LWPropertyExists -Object $Entry -Name 'Mindblast') -and [bool]$Entry.Mindblast)) -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:([bool]((Test-LWPropertyExists -Object $Entry -Name 'EnemyIsUndead') -and [bool]$Entry.EnemyIsUndead)) -MindforceStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyUsesMindforce') -and [bool]$Entry.EnemyUsesMindforce) { $(if ((Test-LWPropertyExists -Object $Entry -Name 'MindforceBlockedByMindshield') -and [bool]$Entry.MindforceBlockedByMindshield) { 'Blocked by Mindshield' } else { 'Active' }) } else { 'Off' }) -KnockoutStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'AttemptKnockout') -and [bool]$Entry.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }) -EvadeStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'CanEvade') -and [bool]$Entry.CanEvade) { 'Yes' } else { 'No' }) -Mode $(if ((Test-LWPropertyExists -Object $Entry -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Mode)) { [string]$Entry.Mode } else { [string]$script:GameState.Settings.CombatMode }) -Notes @($Entry.Notes) -BowStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'BowRestricted') -and [bool]$Entry.BowRestricted) { 'Locked' } else { '' }) -PotionStatus $(if ((Test-LWPropertyExists -Object $Entry -Name 'CombatPotionsAllowed') -and -not [bool]$Entry.CombatPotionsAllowed) { 'Locked' } else { '' }) -UsesSommerswerd:(Test-LWWeaponIsSommerswerd -Weapon ([string]$Entry.Weapon)) -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Entry -Name 'SommerswerdSuppressed') -and [bool]$Entry.SommerswerdSuppressed))
+
+    Show-LWCombatRecentRounds -Rounds @($Entry.Log) -Count ([Math]::Max(1, @($Entry.Log).Count)) -Title 'Round Log'
+
+    Write-LWRetroPanelHeader -Title 'Book Combat Totals' -AccentColor 'DarkYellow'
+    if ($null -ne $combatSummary) {
+        Write-LWRetroPanelPairRow -LeftLabel 'Fights Won' -LeftValue ([string]$combatSummary.Victories) -RightLabel 'Fights Lost' -RightValue ([string]$combatSummary.Defeats) -LeftColor 'Green' -RightColor 'Red'
+        Write-LWRetroPanelPairRow -LeftLabel 'Total Rounds' -LeftValue ([string]$combatSummary.RoundsFought) -RightLabel 'Damage Taken' -RightValue ([string]$combatSummary.EnduranceLost) -LeftColor 'Gray' -RightColor 'Red'
+    }
+    else {
+        Write-LWRetroPanelTextRow -Text '(unavailable)' -TextColor 'DarkGray'
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Show-LWCombatLog {
+    param(
+        [object]$Entry = $null,
+        [Nullable[int]]$HistoryIndex = $null,
+        [Nullable[int]]$BookNumber = $null,
+        [switch]$All
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($All) {
+        $history = @($script:GameState.History)
+        $activeEntry = Get-LWCurrentCombatLogEntry
+        $renderedCount = 0
+        $currentBookKey = $null
+        $currentBookEntry = $null
+        $bookItems = @()
+
+        $flushArchiveGroup = {
+            param(
+                [object]$BookEntry,
+                [object[]]$Items
+            )
+
+            if ($null -eq $BookEntry -or @($Items).Count -eq 0) {
+                return
+            }
+
+            Write-LWCombatArchiveBookHeader -Entry $BookEntry
+            Show-LWCombatArchiveEntriesPanel -Items @($Items)
+        }
+
+        if ($null -ne $BookNumber -and $null -ne $activeEntry -and (Get-LWCombatEntryBookNumber -Entry $activeEntry) -ne [int]$BookNumber) {
+            $activeEntry = $null
+        }
+
+        if ($history.Count -eq 0 -and $null -eq $activeEntry) {
+            Write-LWWarn 'No combat log available.'
+            return
+        }
+
+        for ($i = 0; $i -lt $history.Count; $i++) {
+            if ($null -ne $BookNumber -and (Get-LWCombatEntryBookNumber -Entry $history[$i]) -ne [int]$BookNumber) {
+                continue
+            }
+
+            $bookKey = Get-LWCombatEntryBookKey -Entry $history[$i]
+            if ($bookKey -ne $currentBookKey) {
+                & $flushArchiveGroup -BookEntry $currentBookEntry -Items @($bookItems)
+                $currentBookKey = $bookKey
+                $currentBookEntry = $history[$i]
+                $bookItems = @()
+            }
+            $bookItems += [pscustomobject]@{
+                Entry  = $history[$i]
+                Prefix = ("#{0}" -f ($i + 1))
+                Color  = (Get-LWOutcomeColor -Outcome ([string]$history[$i].Outcome))
+            }
+            $renderedCount++
+        }
+
+        if ($null -ne $activeEntry) {
+            $activeBookKey = Get-LWCombatEntryBookKey -Entry $activeEntry
+            if ($activeBookKey -ne $currentBookKey) {
+                & $flushArchiveGroup -BookEntry $currentBookEntry -Items @($bookItems)
+                $bookItems = @()
+                $currentBookKey = $activeBookKey
+                $currentBookEntry = $activeEntry
+            }
+            $bookItems += [pscustomobject]@{
+                Entry  = $activeEntry
+                Prefix = 'Current'
+                Color  = 'Cyan'
+            }
+            $renderedCount++
+        }
+
+        if ($renderedCount -gt 0) {
+            & $flushArchiveGroup -BookEntry $currentBookEntry -Items @($bookItems)
+        }
+
+        if ($renderedCount -eq 0) {
+            if ($null -ne $BookNumber) {
+                Write-LWWarn ("No combat log available for {0}." -f (Format-LWBookLabel -BookNumber ([int]$BookNumber) -IncludePrefix))
+            }
+            else {
+                Write-LWWarn 'No combat log available.'
+            }
+        }
+
+        return
+    }
+
+    if ($null -ne $HistoryIndex) {
+        $history = @($script:GameState.History)
+        if ($HistoryIndex -lt 1 -or $HistoryIndex -gt $history.Count) {
+            Write-LWWarn "Combat log number must be between 1 and $($history.Count)."
+            return
+        }
+
+        Write-LWCombatLogEntry -Entry $history[$HistoryIndex - 1] -TitleSuffix ("#{0}" -f $HistoryIndex)
+        return
+    }
+
+    if ($null -eq $Entry) {
+        if ($script:GameState.Combat.Active) {
+            $Entry = Get-LWCurrentCombatLogEntry
+        }
+        elseif (@($script:GameState.History).Count -gt 0) {
+            $Entry = $script:GameState.History[-1]
+        }
+        else {
+            Write-LWWarn 'No combat log available.'
+            return
+        }
+    }
+
+    Write-LWCombatLogEntry -Entry $Entry
+}
+
+function Show-LWCombatSummary {
+    param([Parameter(Mandatory = $true)][object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $notes = if ((Test-LWPropertyExists -Object $Summary -Name 'Notes') -and @($Summary.Notes).Count -gt 0) { @($Summary.Notes) } else { @() }
+    $weapon = if (Test-LWPropertyExists -Object $Summary -Name 'Weapon') { Get-LWCombatDisplayWeapon -Weapon ([string]$Summary.Weapon) } else { 'Unknown' }
+    $ratio = if (Test-LWPropertyExists -Object $Summary -Name 'CombatRatio') { [int]$Summary.CombatRatio } else { 0 }
+    $usingSommerswerd = (Test-LWPropertyExists -Object $Summary -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$Summary.Weapon)) -and (Test-LWPropertyExists -Object $Summary -Name 'BookNumber') -and [int]$Summary.BookNumber -ge 2
+    $enemyUndead = (Test-LWPropertyExists -Object $Summary -Name 'EnemyIsUndead') -and [bool]$Summary.EnemyIsUndead
+    $enemyUsesMindforce = (Test-LWPropertyExists -Object $Summary -Name 'EnemyUsesMindforce') -and [bool]$Summary.EnemyUsesMindforce
+    $mindforceBlocked = (Test-LWPropertyExists -Object $Summary -Name 'MindforceBlockedByMindshield') -and [bool]$Summary.MindforceBlockedByMindshield
+    $useMindblast = (Test-LWPropertyExists -Object $Summary -Name 'Mindblast') -and [bool]$Summary.Mindblast
+    $playerCombatSkill = if ((Test-LWPropertyExists -Object $Summary -Name 'PlayerCombatSkill') -and $null -ne $Summary.PlayerCombatSkill) { [int]$Summary.PlayerCombatSkill } else { 0 }
+    $enemyCombatSkill = if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyCombatSkill') -and $null -ne $Summary.EnemyCombatSkill) { [int]$Summary.EnemyCombatSkill } else { 0 }
+    $playerEndMax = if ((Test-LWPropertyExists -Object $Summary -Name 'PlayerEnduranceMax') -and $null -ne $Summary.PlayerEnduranceMax) { [int]$Summary.PlayerEnduranceMax } else { [Math]::Max([int]$Summary.PlayerEnd, 1) }
+    $enemyEndMax = if ((Test-LWPropertyExists -Object $Summary -Name 'EnemyEnduranceMax') -and $null -ne $Summary.EnemyEnduranceMax) { [int]$Summary.EnemyEnduranceMax } else { [Math]::Max([int]$Summary.EnemyEnd, 1) }
+    $mode = if ((Test-LWPropertyExists -Object $Summary -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.Mode)) { [string]$Summary.Mode } else { $script:GameState.Settings.CombatMode }
+    $canEvade = (Test-LWPropertyExists -Object $Summary -Name 'CanEvade') -and [bool]$Summary.CanEvade
+    $evadeStatus = if (-not $canEvade) { 'No' } elseif ((Test-LWPropertyExists -Object $Summary -Name 'EvadeAvailableAfterRound') -and [int]$Summary.EvadeAvailableAfterRound -gt 0 -and [int]$Summary.RoundCount -lt [int]$Summary.EvadeAvailableAfterRound) { "After round $([int]$Summary.EvadeAvailableAfterRound)" } else { 'Yes' }
+    $mindforceLossPerRound = if ((Test-LWPropertyExists -Object $Summary -Name 'MindforceLossPerRound') -and $null -ne $Summary.MindforceLossPerRound) { [int]$Summary.MindforceLossPerRound } else { 2 }
+    $mindforceStatus = if (-not $enemyUsesMindforce) { 'Off' } elseif ($mindforceBlocked) { 'Blocked by Mindshield' } else { "Active (-$mindforceLossPerRound END/round)" }
+    $knockoutStatus = if ((Test-LWPropertyExists -Object $Summary -Name 'AttemptKnockout') -and [bool]$Summary.AttemptKnockout) { 'Attempt in progress' } else { 'Off' }
+
+    Write-LWRetroPanelHeader -Title 'Combat Status' -AccentColor 'Red'
+    Write-LWRetroPanelKeyValueRow -Label 'Enemy' -Value ([string]$Summary.EnemyName) -ValueColor 'White'
+    Write-LWRetroPanelKeyValueRow -Label 'Outcome' -Value ([string]$Summary.Outcome) -ValueColor (Get-LWOutcomeColor -Outcome ([string]$Summary.Outcome))
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Ratio' -LeftValue (Format-LWSigned -Value $ratio) -RightLabel 'Rounds' -RightValue ([string]$Summary.RoundCount) -LeftColor (Get-LWCombatRatioColor -Ratio $ratio) -RightColor 'Gray'
+    if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionSection') -and $null -ne $Summary.SpecialResolutionSection) {
+        Write-LWRetroPanelKeyValueRow -Label 'Next Section' -Value ([string]$Summary.SpecialResolutionSection) -ValueColor 'Yellow'
+    }
+    Write-LWRetroPanelFooter
+
+    Show-LWCombatDuelPanel -Title 'Player / Enemy' -EnemyName ([string]$Summary.EnemyName) -PlayerCurrent ([int]$Summary.PlayerEnd) -PlayerMax $playerEndMax -EnemyCurrent ([int]$Summary.EnemyEnd) -EnemyMax $enemyEndMax -PlayerCombatSkill $playerCombatSkill -EnemyCombatSkill $enemyCombatSkill -CombatRatio $ratio -RoundCount ([int]$Summary.RoundCount)
+    Show-LWCombatTacticalPanel -Weapon $weapon -UseMindblast:$useMindblast -PsychicAttackLabel (Get-LWCombatPsychicAttackLabel -State $script:GameState) -EnemyIsUndead:$enemyUndead -MindforceStatus $mindforceStatus -KnockoutStatus $knockoutStatus -EvadeStatus $evadeStatus -Mode $mode -Notes $notes -BowStatus $(if ((Test-LWPropertyExists -Object $Summary -Name 'BowRestricted') -and [bool]$Summary.BowRestricted) { 'Locked' } else { '' }) -PotionStatus $(if ((Test-LWPropertyExists -Object $Summary -Name 'CombatPotionsAllowed') -and -not [bool]$Summary.CombatPotionsAllowed) { 'Locked' } else { '' }) -UsesSommerswerd:$usingSommerswerd -SommerswerdSuppressed:([bool]((Test-LWPropertyExists -Object $Summary -Name 'SommerswerdSuppressed') -and [bool]$Summary.SommerswerdSuppressed))
+    Show-LWCombatRecentRounds -Rounds @($Summary.Log) -Count 5 -Title 'Round History'
+    if ((Test-LWPropertyExists -Object $Summary -Name 'SpecialResolutionNote') -and -not [string]::IsNullOrWhiteSpace([string]$Summary.SpecialResolutionNote)) {
+        Write-LWRetroPanelHeader -Title 'Combat Note' -AccentColor 'DarkYellow'
+        Write-LWRetroPanelTextRow -Text ([string]$Summary.SpecialResolutionNote) -TextColor 'Gray'
+        Write-LWRetroPanelFooter
+    }
+
+    Show-LWHelpfulCommandsPanel -ScreenName 'combat' -Variant 'summary'
+}
+
+Export-ModuleMember -Function Write-LWInfo, Write-LWWarn, Write-LWError, Write-LWMessageLine, Add-LWNotification, Write-LWCrashLog, Clear-LWNotifications, Clear-LWAchievementDisplayCountsCache, Warm-LWRuntimeCaches, Request-LWRender, Clear-LWScreenHost, Get-LWDefaultScreen, Set-LWScreen, Write-LWNotifications, Write-LWBannerFooter, Write-LWInventoryBanner, Write-LWCombatBanner, Write-LWStatsBanner, Write-LWCampaignBanner, Write-LWAchievementsBanner, Write-LWDeathBanner, Show-LWWelcomeScreen, Show-LWLoadScreen, Show-LWDisciplineSelectionScreen, Show-LWCombatScreen, Show-LWCombatLogScreen, Show-LWModesScreen, Show-LWDeathScreen, Show-LWBookCompleteScreen, Refresh-LWScreen, Get-LWCombatEntryBookNumber, Get-LWCombatEntryBookTitle, Get-LWCombatEntryBookLabel, Get-LWCombatEntryBookKey, Write-LWCombatArchiveBookHeader, Get-LWCombatArchiveOutcomeLabel, Format-LWCombatArchiveCellText, Get-LWCombatArchiveEntryText, Get-LWCombatArchiveHeaderText, Show-LWCombatArchiveEntriesPanel, Show-LWHistory, Get-LWLiveBookStatsSummary, Show-LWStatsOverview, Show-LWStatsCombat, Show-LWStatsSurvival, Show-LWStatsScreen, Merge-LWNamedCountEntries, Get-LWCampaignBookEntries, Get-LWCampaignTopNamedCountEntry, Get-LWCampaignRunStatus, Get-LWCampaignRunStyle, Get-LWCampaignSummary, Format-LWCampaignFightHighlight, Show-LWCampaignOverview, Format-LWCampaignFightHighlightWrappedText, Get-LWDisplayBookHighlightTitle, Show-LWCampaignBooks, Show-LWCampaignCombat, Show-LWCampaignSurvival, Show-LWCampaignMilestones, Show-LWCampaignScreen, Get-LWAchievementDefinitionById, Show-LWCombatPromptHint, Get-LWCombatMeterText, Write-LWCombatMeterLine, Write-LWCombatRoundLine, Get-LWCombatRoundSummaryText, Show-LWCombatRecentRounds, Show-LWCombatDuelPanel, Write-LWCombatTacticalTwoColumnRows, Show-LWCombatTacticalPanel, Get-LWCurrentCombatLogEntry, Write-LWCombatLogEntry, Show-LWCombatLog, Show-LWCombatSummary
+

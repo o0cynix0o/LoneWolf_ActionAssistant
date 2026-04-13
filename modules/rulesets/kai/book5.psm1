@@ -11,7 +11,7 @@ function Set-LWModuleContext {
 function Get-LWKaiBookFiveSectionRandomNumberContext {
     param([object]$State = $null)
 
-    if ($null -ne $State) { $script:GameState = $State }
+    if ($null -ne $State) { $script:GameState = $State; if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null } }
 
         if ($null -eq $State -or [int]$State.Character.BookNumber -ne 5) {
             return $null
@@ -307,6 +307,8 @@ function Apply-LWKaiBookFiveStartingEquipment {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
 
         if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 5) {
             return
@@ -678,3 +680,5 @@ Export-ModuleMember -Function `
     Get-LWBookFiveSection255ChoiceDefinitions, `
     Get-LWBookFiveSection281ChoiceDefinitions, `
     Get-LWBookFiveSectionContextAchievementIds
+
+

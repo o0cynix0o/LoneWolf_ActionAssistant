@@ -543,6 +543,21 @@ Current checkpoint:
   - `modules/core/shell.psm1` extraction
   - ruleset combat-hook dispatch modules
   - strict-mode/null-safety hardening in core modules
+  - large-scale monolith extraction now landed for:
+    - `modules/core/achievements.psm1`
+    - `modules/core/items.psm1`
+    - `modules/core/inventory.psm1`
+  - remaining ownership cleanup also landed in:
+    - `modules/core/combat.psm1`
+    - `modules/core/state.psm1`
+    - `modules/core/save.psm1`
+    - `modules/core/common.psm1`
+    - `modules/core/ruleset.psm1`
+    - `modules/rulesets/kai/kai.psm1`
+    - `modules/rulesets/magnakai/magnakai.psm1`
+  - post-extraction command-surface validation is green in both shells:
+    - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
+    - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`
 
 ## Tracking Rules
 

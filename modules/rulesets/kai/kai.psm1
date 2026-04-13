@@ -64,6 +64,8 @@ function Invoke-LWKaiStorySectionAchievementTriggers {
 
     $script:GameState = $State
 
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+
         if (-not (Test-LWHasState)) {
             return
         }
@@ -163,6 +165,8 @@ function Invoke-LWKaiStorySectionTransitionAchievementTriggers {
 
     $script:GameState = $State
 
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+
         if (-not (Test-LWHasState)) {
             return
         }
@@ -245,6 +249,8 @@ function Invoke-LWKaiSectionEntryRules {
     param([Parameter(Mandatory = $true)][object]$State)
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
 
     if (-not (Test-LWHasState)) {
             return
@@ -1621,4 +1627,131 @@ Export-ModuleMember -Function `
     Invoke-LWKaiStorySectionAchievementTriggers, `
     Invoke-LWKaiStorySectionTransitionAchievementTriggers, `
     Invoke-LWKaiSectionEntryRules
+
+function Select-LWKaiDisciplines {
+    param(
+        [int]$Count = 5,
+        [string[]]$Exclude = @()
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    $available = @($script:GameData.KaiDisciplines | Where-Object { $Exclude -notcontains $_.Name })
+    if ($available.Count -lt $Count) {
+        throw "Not enough disciplines available to choose $Count item(s)."
+    }
+
+    $previousScreen = $script:LWUi.CurrentScreen
+    $previousData = $script:LWUi.ScreenData
+    if ($script:LWUi.Enabled) {
+        Set-LWScreen -Name 'disciplineselect' -Data ([pscustomobject]@{
+                Available = @($available)
+                Count     = $Count
+            })
+    }
+
+    try {
+        while ($true) {
+            Refresh-LWScreen
+            $raw = Read-Host "Enter $Count number(s) separated by commas"
+            if ([string]::IsNullOrWhiteSpace($raw)) {
+                Write-LWWarn 'Please choose at least one discipline.'
+                continue
+            }
+
+            $pieces = @($raw.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+            $numbers = @()
+            $valid = $true
+
+            foreach ($piece in $pieces) {
+                $number = 0
+                if (-not [int]::TryParse($piece, [ref]$number)) {
+                    $valid = $false
+                    break
+                }
+                if ($number -lt 1 -or $number -gt $available.Count) {
+                    $valid = $false
+                    break
+                }
+                if ($numbers -contains $number) {
+                    $valid = $false
+                    break
+                }
+                $numbers += $number
+            }
+
+            if (-not $valid -or $numbers.Count -ne $Count) {
+                Write-LWWarn "Enter exactly $Count unique number(s) from the list."
+                continue
+            }
+
+            $selected = foreach ($number in $numbers) {
+                $available[$number - 1].Name
+            }
+            return @($selected)
+        }
+    }
+    finally {
+        if ($script:LWUi.Enabled) {
+            Set-LWScreen -Name $previousScreen -Data $previousData
+        }
+    }
+}
+
+function Add-LWKaiDiscipline {
+    param([string]$Name = '')
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $owned = @($script:GameState.Character.Disciplines)
+    $availableNames = @($script:GameData.KaiDisciplines | ForEach-Object { [string]$_.Name })
+    $remainingNames = @($availableNames | Where-Object { $owned -notcontains $_ })
+
+    if ($remainingNames.Count -eq 0) {
+        Write-LWWarn 'All Kai Disciplines are already owned.'
+        return
+    }
+
+    $disciplineName = $null
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        $selection = Select-LWKaiDisciplines -Count 1 -Exclude $owned
+        if (@($selection).Count -gt 0) {
+            $disciplineName = [string]$selection[0]
+        }
+    }
+    else {
+        $disciplineName = Get-LWMatchingValue -Values $remainingNames -Target $Name.Trim()
+        if ([string]::IsNullOrWhiteSpace($disciplineName)) {
+            Write-LWWarn ("Unknown or already owned discipline: {0}" -f $Name.Trim())
+            return
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($disciplineName)) {
+        Write-LWWarn 'No discipline was selected.'
+        return
+    }
+
+    $script:GameState.Character.Disciplines = @($owned + $disciplineName)
+    Set-LWScreen -Name 'disciplines'
+    Write-LWInfo "Added discipline: $disciplineName."
+
+    if ($disciplineName -eq 'Weaponskill' -and [string]::IsNullOrWhiteSpace($script:GameState.Character.WeaponskillWeapon)) {
+        $weaponRoll = Get-LWRandomDigit
+        $weaponName = Get-LWWeaponskillWeapon -Roll $weaponRoll
+        $script:GameState.Character.WeaponskillWeapon = $weaponName
+        Write-LWInfo "Weaponskill roll: $weaponRoll -> $weaponName"
+    }
+
+    Invoke-LWMaybeAutosave
+}
+
+Export-ModuleMember -Function Select-LWKaiDisciplines, Add-LWKaiDiscipline
+
+
 

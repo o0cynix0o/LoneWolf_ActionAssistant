@@ -47,7 +47,7 @@ function Grant-LWBookThreeStartingChoice {
 function Get-LWKaiBookThreeSectionRandomNumberContext {
     param([object]$State = $null)
 
-    if ($null -ne $State) { $script:GameState = $State }
+    if ($null -ne $State) { $script:GameState = $State; if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null } }
 
         if ($null -eq $State -or [int]$State.Character.BookNumber -ne 3) {
             return $null
@@ -133,6 +133,8 @@ function Apply-LWKaiBookThreeStartingEquipment {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
 
         if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 3) {
             return
@@ -307,4 +309,6 @@ Export-ModuleMember -Function `
     Get-LWBookThreeSection309ChoiceDefinitions, `
     Get-LWBookThreeSection321ChoiceDefinitions, `
     Get-LWBookThreeSectionContextAchievementIds
+
+
 

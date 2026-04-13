@@ -844,6 +844,7 @@ function Invoke-LWMagnakaiBookSixSection284BettingRound {
 
     if ($null -ne $State) {
         $script:GameState = $State
+        if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     }
     if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 6 -or [int]$script:GameState.CurrentSection -ne 284) {
         return $false
@@ -911,6 +912,8 @@ function Invoke-LWMagnakaiBookSixSectionRandomNumberResolution {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 6 -or $null -eq $Context) {
         return
     }
@@ -1243,6 +1246,8 @@ function Invoke-LWMagnakaiBookSixStorySectionAchievementTriggers {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     switch ($Section) {
         274 { Set-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute' }
         304 { Set-LWStoryAchievementFlag -Name 'Book6CessClaimed' }
@@ -1257,6 +1262,8 @@ function Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers {
     )
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     if ($FromSection -eq 232 -and $ToSection -eq 219 -and -not (Test-LWStoryAchievementFlag -Name 'Book6Section232MealDeducted')) {
         if (Remove-LWInventoryItemSilently -Type 'backpack' -Name 'Meal' -Quantity 1) {
             Set-LWStoryAchievementFlag -Name 'Book6Section232MealDeducted'
@@ -1309,6 +1316,8 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
     param([Parameter(Mandatory = $true)][object]$State)
 
     $script:GameState = $State
+
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     if (-not (Test-LWHasState)) {
         return
     }
@@ -1746,6 +1755,8 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
 
     $script:GameState = $State
 
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+
     if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 6) {
         return
     }
@@ -2074,3 +2085,5 @@ Export-ModuleMember -Function `
     Test-LWBookSixDEWeaponskillEnabled, `
     Get-LWBookSixDEWeaponskillOptionLabel, `
     Get-LWBookSixDEAdventureRuleSummary
+
+
