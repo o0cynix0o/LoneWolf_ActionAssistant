@@ -36,13 +36,15 @@ For deeper project state, workflow details, and local report locations, use:
   - `modules/core/achievements.psm1`
   - `modules/core/items.psm1`
   - `modules/core/inventory.psm1`
+- final late-stage extraction now also includes:
+  - `modules/core/healing.psm1`
 - Runtime shell extraction now lives in:
   - `modules/core/shell.psm1`
 - Kai ruleset modules live under:
   - `modules/rulesets/kai/`
 - Magnakai ruleset modules live under:
   - `modules/rulesets/magnakai/`
-- `lonewolf.ps1` is now down to roughly `3.9k` lines after the latest extraction slice
+- `lonewolf.ps1` is now down to roughly `1.2k` lines after the latest extraction slice
 - Book-specific combat dispatch now lives in:
   - `modules/rulesets/kai/combat.psm1`
   - `modules/rulesets/magnakai/combat.psm1`

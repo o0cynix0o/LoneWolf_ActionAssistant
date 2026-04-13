@@ -495,4 +495,145 @@ function Get-LWCurrentRankLabel {
 
 Export-ModuleMember -Function Get-LWKaiRankTitle, Format-LWKaiRankLabel, Get-LWMagnakaiRankTitle, Format-LWMagnakaiRankLabel, Get-LWKnownKaiDisciplineNames, Get-LWKnownMagnakaiDisciplineNames, Test-LWStateIsMagnakaiRuleset, Get-LWCurrentRankLabel
 
+function Read-LWYesNo {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+        [bool]$Default = $true
+    )
+
+    while ($true) {
+        Refresh-LWScreen
+        $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
+        $raw = Read-Host "$Prompt $suffix"
+
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return $Default
+        }
+
+        switch ($raw.Trim().ToLowerInvariant()) {
+            'y' { return $true }
+            'yes' { return $true }
+            'n' { return $false }
+            'no' { return $false }
+            default { Write-LWWarn 'Please enter y or n.' }
+        }
+    }
+}
+
+function Read-LWInlineYesNo {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+        [bool]$Default = $true
+    )
+
+    while ($true) {
+        $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
+        $raw = Read-Host "$Prompt $suffix"
+
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return $Default
+        }
+
+        switch ($raw.Trim().ToLowerInvariant()) {
+            'y' { return $true }
+            'yes' { return $true }
+            'n' { return $false }
+            'no' { return $false }
+            default { Write-LWInlineWarn 'Please enter y or n.' }
+        }
+    }
+}
+
+function Read-LWInt {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+        [Nullable[int]]$Default = $null,
+        [Nullable[int]]$Min = $null,
+        [Nullable[int]]$Max = $null,
+        [switch]$NoRefresh
+    )
+
+    while ($true) {
+        if (-not $NoRefresh) {
+            Refresh-LWScreen
+        }
+        $label = if ($null -ne $Default) { "$Prompt [$Default]" } else { $Prompt }
+        $raw = Read-Host $label
+
+        if ([string]::IsNullOrWhiteSpace($raw) -and $null -ne $Default) {
+            return [int]$Default
+        }
+
+        $value = 0
+        if (-not [int]::TryParse($raw, [ref]$value)) {
+            Write-LWWarn 'Please enter a whole number.'
+            continue
+        }
+
+        if ($null -ne $Min -and $value -lt $Min) {
+            Write-LWWarn "Value must be at least $Min."
+            continue
+        }
+
+        if ($null -ne $Max -and $value -gt $Max) {
+            Write-LWWarn "Value must be at most $Max."
+            continue
+        }
+
+        return $value
+    }
+}
+
+function Read-LWText {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+        [string]$Default = '',
+        [switch]$NoRefresh
+    )
+
+    if (-not $NoRefresh) {
+        Refresh-LWScreen
+    }
+    $label = if ([string]::IsNullOrWhiteSpace($Default)) { $Prompt } else { "$Prompt [$Default]" }
+    $raw = Read-Host $label
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        return $Default
+    }
+    return $raw.Trim()
+}
+
+function Get-LWModeAchievementPoolLabel {
+    param([object]$State = $script:GameState)
+
+    return ((Get-LWModeAchievementPools -State $State) -join ' + ')
+}
+
+function Get-LWMatchingValue {
+    param(
+        [object[]]$Values = @(),
+        [string]$Target
+    )
+
+    foreach ($value in @($Values)) {
+        if ($value -ieq $Target) {
+            return [string]$value
+        }
+    }
+
+    return $null
+}
+
+function Get-LWSafeFileName {
+    param([string]$Name)
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return 'lonewolf-save'
+    }
+    return ($Name -replace '[^A-Za-z0-9_-]', '_')
+}
+
+Export-ModuleMember -Function Read-LWYesNo, Read-LWInlineYesNo, Read-LWInt, Read-LWText, Get-LWMatchingValue, Get-LWSafeFileName, Get-LWModeAchievementPoolLabel
 

@@ -2169,6 +2169,133 @@ function Get-LWModeAchievementPools {
 
 Export-ModuleMember -Function New-LWRunState, New-LWRunArchiveEntry, Ensure-LWRunState, Ensure-LWRunHistory, Get-LWRunSignaturePayload, Get-LWRunSignature, Mark-LWRunTampered, Sync-LWRunIntegrityState, Get-LWCurrentDifficulty, Test-LWPermadeathEnabled, Test-LWRunTampered, Test-LWDifficultyAllowsChallengeAchievements, New-LWDeathState, Ensure-LWDeathState, Get-LWActiveDeathState, Test-LWDeathActive, Clear-LWDeathState, Normalize-LWSectionCheckpoints, Get-LWCheckpointSnapshotObject, Get-LWCheckpointSnapshotJson, New-LWSectionCheckpoint, Reset-LWSectionCheckpoints, Ensure-LWCurrentSectionCheckpoint, Save-LWCurrentSectionCheckpoint, Sync-LWCurrentSectionCheckpoint, Get-LWBookDeathCount, Register-LWDeath, Register-LWFailureState, Get-LWAvailableRewindCount, Get-LWBookPathSectionCount, Restore-LWSectionCheckpoint, Invoke-LWInstantDeath, Invoke-LWFailure, Invoke-LWFatalEnduranceCheck, Invoke-LWRewind, Normalize-LWCombatHistoryMetadata, New-LWBookStats, Normalize-LWBookStats, Import-LWJson, Ensure-LWCurrentBookStats, Reset-LWCurrentBookStats, Add-LWBookSectionVisit, Add-LWBookEnduranceDelta, Add-LWBookGoldDelta, Add-LWBookNamedCount, Register-LWMealConsumed, Register-LWMealCoveredByHunting, Register-LWStarvationPenalty, Register-LWPotionUsed, Register-LWRewindUsed, Register-LWManualRecoveryShortcut, Register-LWHealingRestore, Get-LWModeAchievementPools
 
+function New-LWInventoryRecoveryEntry {
+    return [pscustomobject]@{
+        Items      = @()
+        BookNumber = $null
+        Section    = $null
+        SavedOn    = $null
+    }
+}
 
+function New-LWInventoryRecoveryState {
+    return [pscustomobject]@{
+        Weapon    = (New-LWInventoryRecoveryEntry)
+        Backpack  = (New-LWInventoryRecoveryEntry)
+        Special   = (New-LWInventoryRecoveryEntry)
+        HerbPouch = (New-LWInventoryRecoveryEntry)
+    }
+}
 
+function New-LWStorageState {
+    return [pscustomobject]@{
+        SafekeepingSpecialItems = @()
+        Confiscated             = [pscustomobject]@{
+            Weapons        = @()
+            BackpackItems  = @()
+            SpecialItems   = @()
+            PocketSpecialItems = @()
+            HerbPouchItems = @()
+            HasHerbPouch   = $false
+            GoldCrowns     = 0
+            BookNumber     = $null
+            Section        = $null
+            SavedOn        = $null
+        }
+    }
+}
+
+function New-LWConditionState {
+    return [pscustomobject]@{
+        BookFiveBloodPoisoning = $false
+        BookFiveLimbdeath      = $false
+        BookSixDECuringOption  = -1
+        BookSixDEWeaponskillOption = -1
+    }
+}
+
+function Test-LWHasState {
+    return ($script:GameState -and $script:GameState.Character -and -not [string]::IsNullOrWhiteSpace($script:GameState.Character.Name))
+}
+
+function Register-LWDeathStat {
+    param([string]$Type = 'Instant')
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats) {
+        return
+    }
+
+    if ([string]$Type -ieq 'Combat') {
+        $stats.CombatDeaths = [int]$stats.CombatDeaths + 1
+        return
+    }
+
+    $stats.InstantDeaths = [int]$stats.InstantDeaths + 1
+}
+
+function New-LWBookHistoryEntry {
+    param([Parameter(Mandatory = $true)][object]$Stats)
+
+    $stats = Normalize-LWBookStats -Stats $Stats -BookNumber ([int]$Stats.BookNumber) -CurrentSection $Stats.LastSection
+    $bookNumber = [int]$Stats.BookNumber
+    return [pscustomobject]@{
+        BookNumber                    = $bookNumber
+        BookTitle                     = [string](Get-LWBookTitle -BookNumber $bookNumber)
+        Difficulty                    = Get-LWCurrentDifficulty
+        Permadeath                    = [bool](Test-LWPermadeathEnabled)
+        RunIntegrityState             = [string]$script:GameState.Run.IntegrityState
+        StartSection                  = $Stats.StartSection
+        LastSection                   = $Stats.LastSection
+        SuccessfulPathSections        = (Get-LWBookPathSectionCount -BookNumber $bookNumber)
+        SectionsVisited               = [int]$Stats.SectionsVisited
+        UniqueSectionsVisited         = @($Stats.VisitedSections).Count
+        EnduranceLost                 = [int]$Stats.EnduranceLost
+        EnduranceGained               = [int]$Stats.EnduranceGained
+        MealsEaten                    = [int]$Stats.MealsEaten
+        MealsCoveredByHunting         = [int]$Stats.MealsCoveredByHunting
+        StarvationPenalties           = [int]$Stats.StarvationPenalties
+        PotionsUsed                   = [int]$Stats.PotionsUsed
+        ConcentratedPotionsUsed       = [int]$Stats.ConcentratedPotionsUsed
+        PotionEnduranceRestored       = [int]$Stats.PotionEnduranceRestored
+        RewindsUsed                   = [int]$Stats.RewindsUsed
+        ManualRecoveryShortcuts       = [int]$Stats.ManualRecoveryShortcuts
+        GoldGained                    = [int]$Stats.GoldGained
+        GoldSpent                     = [int]$Stats.GoldSpent
+        HealingTriggers               = [int]$Stats.HealingTriggers
+        HealingEnduranceRestored      = [int]$Stats.HealingEnduranceRestored
+        CombatCount                   = [int]$Stats.CombatCount
+        Victories                     = [int]$Stats.Victories
+        Defeats                       = [int]$Stats.Defeats
+        Evades                        = [int]$Stats.Evades
+        RoundsFought                  = [int]$Stats.RoundsFought
+        MindblastCombats              = [int]$Stats.MindblastCombats
+        MindblastVictories            = [int]$Stats.MindblastVictories
+        WeaponUsage                   = @(Normalize-LWNamedCountEntries -Entries @($Stats.WeaponUsage))
+        WeaponVictories               = @(Normalize-LWNamedCountEntries -Entries @($Stats.WeaponVictories))
+        InstantDeaths                 = [int]$Stats.InstantDeaths
+        CombatDeaths                  = [int]$Stats.CombatDeaths
+        HighestEnemyCombatSkillFaced  = [int]$Stats.HighestEnemyCombatSkillFaced
+        HighestEnemyEnduranceFaced    = [int]$Stats.HighestEnemyEnduranceFaced
+        HighestEnemyCombatSkillDefeated = [int]$Stats.HighestEnemyCombatSkillDefeated
+        HighestEnemyEnduranceDefeated = [int]$Stats.HighestEnemyEnduranceDefeated
+        FastestVictoryEnemyName       = $Stats.FastestVictoryEnemyName
+        FastestVictoryRounds          = [int]$Stats.FastestVictoryRounds
+        EasiestVictoryEnemyName       = $Stats.EasiestVictoryEnemyName
+        EasiestVictoryRatio           = $Stats.EasiestVictoryRatio
+        LongestFightEnemyName         = $Stats.LongestFightEnemyName
+        LongestFightRounds            = [int]$Stats.LongestFightRounds
+        DeathCount                    = (Get-LWBookDeathCount -BookNumber $bookNumber)
+        PartialTracking               = [bool]$Stats.PartialTracking
+        CompletionQuote               = Get-LWBookCompletionQuote -BookNumber $bookNumber
+    }
+}
+
+function New-LWDefaultState {
+    $state = Invoke-LWCoreNewDefaultState -Context (Get-LWModuleContext)
+    $state = Sync-LWHerbPouchState -State $state
+    return (Sync-LWStateRefactorMetadata -State $state)
+}
+
+Export-ModuleMember -Function New-LWInventoryRecoveryEntry, New-LWInventoryRecoveryState, New-LWStorageState, New-LWConditionState, Test-LWHasState, Register-LWDeathStat, New-LWBookHistoryEntry, New-LWDefaultState
 

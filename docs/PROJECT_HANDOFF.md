@@ -86,6 +86,13 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `modules/core/achievements.psm1`
   - `modules/core/items.psm1`
   - `modules/core/inventory.psm1`
+- the final cleanup pass from `recommendations.md` also moved the remaining late-stage helpers into:
+  - `modules/core/combat.psm1`
+  - `modules/core/healing.psm1`
+  - `modules/core/ruleset.psm1`
+  - `modules/core/shell.psm1`
+  - `modules/core/common.psm1`
+  - `modules/core/state.psm1`
 - the remaining shared extraction pass also pushed more ownership into:
   - `modules/core/combat.psm1`
   - `modules/core/state.psm1`
@@ -96,13 +103,14 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `modules/rulesets/kai/kai.psm1`
   - `modules/rulesets/magnakai/magnakai.psm1`
 - current approximate file sizes after the extraction pass:
-  - `lonewolf.ps1`: `3916`
+  - `lonewolf.ps1`: `1226`
   - `modules/core/achievements.psm1`: `1800`
   - `modules/core/items.psm1`: `994`
   - `modules/core/inventory.psm1`: `1671`
-  - `modules/core/combat.psm1`: `2105`
-  - `modules/core/shell.psm1`: `2638`
-  - `modules/core/state.psm1`: `1850`
+  - `modules/core/combat.psm1`: `3104`
+  - `modules/core/healing.psm1`: `361`
+  - `modules/core/shell.psm1`: `3554`
+  - `modules/core/state.psm1`: `1967`
   - `modules/core/save.psm1`: `295`
 - latest `dev` architecture-hardening smoke passed in both shells:
   - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS7.txt`
@@ -110,6 +118,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - latest post-extraction command-surface smoke passed in both shells:
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`
+- latest final-pass command-surface smoke also passed in both shells:
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS7.txt`
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS51.txt`
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`

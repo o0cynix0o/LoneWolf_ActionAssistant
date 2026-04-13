@@ -6,6 +6,17 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- final architecture cleanup pass completed the remaining extraction buckets from `recommendations.md`, including:
+  - combat stat / weapon / archive helpers into `modules/core/combat.psm1`
+  - a new `modules/core/healing.psm1`
+  - section random-number / torch / hunting helpers into `modules/core/ruleset.psm1`
+  - remaining UI primitives into `modules/core/shell.psm1`
+  - input helpers into `modules/core/common.psm1`
+  - missed state constructors into `modules/core/state.psm1`
+- `lonewolf.ps1` is now reduced to roughly `1.2k` lines and acts as bootstrap plus top-level orchestration
+- post-final-pass command-surface validation is green in both shells:
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS7.txt`
+  - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS51.txt`
 - architecture extraction pass now moves the largest remaining engine blocks out of `lonewolf.ps1` into:
   - `modules/core/achievements.psm1`
   - `modules/core/items.psm1`
@@ -19,7 +30,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - `modules/core/ruleset.psm1`
   - `modules/rulesets/kai/kai.psm1`
   - `modules/rulesets/magnakai/magnakai.psm1`
-- `lonewolf.ps1` is now reduced to roughly `3.9k` lines and acts primarily as bootstrap, shared-state wiring, and top-level orchestration
+- `lonewolf.ps1` is now reduced to roughly `1.2k` lines and acts primarily as bootstrap, shared-state wiring, and top-level orchestration
 - post-extraction runtime validation is green in both shells:
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`

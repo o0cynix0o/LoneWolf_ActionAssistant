@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
@@ -3127,4 +3127,994 @@ function Show-LWCombatSummary {
 }
 
 Export-ModuleMember -Function Write-LWInfo, Write-LWWarn, Write-LWError, Write-LWMessageLine, Add-LWNotification, Write-LWCrashLog, Clear-LWNotifications, Clear-LWAchievementDisplayCountsCache, Warm-LWRuntimeCaches, Request-LWRender, Clear-LWScreenHost, Get-LWDefaultScreen, Set-LWScreen, Write-LWNotifications, Write-LWBannerFooter, Write-LWInventoryBanner, Write-LWCombatBanner, Write-LWStatsBanner, Write-LWCampaignBanner, Write-LWAchievementsBanner, Write-LWDeathBanner, Show-LWWelcomeScreen, Show-LWLoadScreen, Show-LWDisciplineSelectionScreen, Show-LWCombatScreen, Show-LWCombatLogScreen, Show-LWModesScreen, Show-LWDeathScreen, Show-LWBookCompleteScreen, Refresh-LWScreen, Get-LWCombatEntryBookNumber, Get-LWCombatEntryBookTitle, Get-LWCombatEntryBookLabel, Get-LWCombatEntryBookKey, Write-LWCombatArchiveBookHeader, Get-LWCombatArchiveOutcomeLabel, Format-LWCombatArchiveCellText, Get-LWCombatArchiveEntryText, Get-LWCombatArchiveHeaderText, Show-LWCombatArchiveEntriesPanel, Show-LWHistory, Get-LWLiveBookStatsSummary, Show-LWStatsOverview, Show-LWStatsCombat, Show-LWStatsSurvival, Show-LWStatsScreen, Merge-LWNamedCountEntries, Get-LWCampaignBookEntries, Get-LWCampaignTopNamedCountEntry, Get-LWCampaignRunStatus, Get-LWCampaignRunStyle, Get-LWCampaignSummary, Format-LWCampaignFightHighlight, Show-LWCampaignOverview, Format-LWCampaignFightHighlightWrappedText, Get-LWDisplayBookHighlightTitle, Show-LWCampaignBooks, Show-LWCampaignCombat, Show-LWCampaignSurvival, Show-LWCampaignMilestones, Show-LWCampaignScreen, Get-LWAchievementDefinitionById, Show-LWCombatPromptHint, Get-LWCombatMeterText, Write-LWCombatMeterLine, Write-LWCombatRoundLine, Get-LWCombatRoundSummaryText, Show-LWCombatRecentRounds, Show-LWCombatDuelPanel, Write-LWCombatTacticalTwoColumnRows, Show-LWCombatTacticalPanel, Get-LWCurrentCombatLogEntry, Write-LWCombatLogEntry, Show-LWCombatLog, Show-LWCombatSummary
+
+function Write-LWInlineWarn {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    if ($script:LWUi.Enabled) {
+        Write-LWMessageLine -Level 'Warn' -Message $Message
+        return
+    }
+
+    Write-LWWarn $Message
+}
+
+function Write-LWLootNoRoomWarning {
+    param(
+        [Parameter(Mandatory = $true)][string]$DisplayName,
+        [string]$ExtraMessage = ''
+    )
+
+    $message = "You don't have room for {0} right now." -f $DisplayName
+    if (-not [string]::IsNullOrWhiteSpace($ExtraMessage)) {
+        $message = "{0} {1}" -f $message, $ExtraMessage.Trim()
+    }
+
+    Write-LWInlineWarn $message
+}
+
+function Format-LWCompletedBooks {
+    param([object[]]$Books)
+
+    $books = @($Books | Where-Object { $null -ne $_ } | ForEach-Object { [int]$_ } | Sort-Object -Unique)
+    if ($books.Count -eq 0) {
+        return '(none)'
+    }
+
+    if ($books.Count -eq 1) {
+        return [string]$books[0]
+    }
+
+    $ranges = @()
+    $rangeStart = [int]$books[0]
+    $rangeEnd = [int]$books[0]
+    for ($i = 1; $i -lt $books.Count; $i++) {
+        $bookNumber = [int]$books[$i]
+        if ($bookNumber -eq ($rangeEnd + 1)) {
+            $rangeEnd = $bookNumber
+            continue
+        }
+
+        $ranges += $(if ($rangeStart -eq $rangeEnd) { [string]$rangeStart } else { "{0}-{1}" -f $rangeStart, $rangeEnd })
+        $rangeStart = $bookNumber
+        $rangeEnd = $bookNumber
+    }
+
+    $ranges += $(if ($rangeStart -eq $rangeEnd) { [string]$rangeStart } else { "{0}-{1}" -f $rangeStart, $rangeEnd })
+    return ($ranges -join ', ')
+}
+
+function Get-LWBookCompletionQuote {
+    param([int]$BookNumber)
+
+    $quotes = @(
+        'A Kai Lord''s finest victories are the ones that light the next road forward.',
+        'When the dark is beaten back, wisdom bids you take the next step without fear.',
+        'The true strength of the Kai is not only in the blade, but in the will to endure.',
+        'Each trial survived becomes a lesson carried into the battles yet to come.',
+        'Sommerlund is guarded not by steel alone, but by courage, discipline, and hope.'
+    )
+
+    if ($quotes.Count -eq 0) {
+        return 'The wisdom of the Kai goes with you into the next chapter of your journey.'
+    }
+
+    $index = [Math]::Abs(($BookNumber - 1) % $quotes.Count)
+    return $quotes[$index]
+}
+
+function Show-LWSectionGateHints {
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $section = [int]$script:GameState.CurrentSection
+
+    switch ($bookNumber) {
+        1 {
+            switch ($section) {
+                23 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGoldenKeyItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 23: Golden Key route is available here.'
+                    }
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Mind Over Matter') {
+                        Write-LWInfo 'Section 23: Mind Over Matter route is available here.'
+                    }
+                }
+                88 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Healing') {
+                        Write-LWInfo 'Section 88: Healing can save the wounded man here.'
+                    }
+                }
+                105 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Kinship') {
+                        Write-LWInfo 'Section 105: Animal Kinship route is available here.'
+                    }
+                }
+                128 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Hunting') {
+                        Write-LWInfo 'Section 128: Hunting route is available here.'
+                    }
+                }
+                151 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Mind Over Matter') {
+                        Write-LWInfo 'Section 151: Mind Over Matter route is available here.'
+                    }
+                }
+                242 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Mindshield') {
+                        Write-LWInfo 'Section 242: Mindshield route is available here.'
+                    }
+                }
+                311 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Camouflage') {
+                        Write-LWInfo 'Section 311: Camouflage route is available here.'
+                    }
+                }
+            }
+        }
+        2 {
+            switch ($section) {
+                { @(59, 134, 299, 338) -contains $_ } {
+                    if (Test-LWStateHasMagicSpear -State $script:GameState) {
+                        Write-LWInfo ("Section {0}: Magic Spear route is available here." -f $section)
+                    }
+                }
+                { @(62, 223, 273, 291, 349) -contains $_ } {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWSealOfHammerdalItemNames) -Type 'special') {
+                        Write-LWInfo ("Section {0}: Seal of Hammerdal route is available here." -f $section)
+                    }
+                }
+                { @(170, 202, 246, 287) -contains $_ } {
+                    $passes = @()
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWWhitePassItemNames) -Type 'special') { $passes += 'White Pass' }
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWRedPassItemNames) -Type 'special') { $passes += 'Red Pass' }
+                    if ($passes.Count -gt 0) {
+                        Write-LWInfo ("Section {0}: pass route available ({1})." -f $section, ($passes -join ', '))
+                    }
+                }
+                95 {
+                    if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Healing') -or
+                        (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWHealingPotionItemNames) -Type 'backpack') -or
+                        (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWLaumspurHerbItemNames) -Type 'backpack')) {
+                        Write-LWInfo 'Section 95: recovery route options are available here.'
+                    }
+                }
+                346 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWCoachTicketItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 346: coach ticket continuity route is available here.'
+                    }
+                }
+            }
+        }
+        3 {
+            switch ($section) {
+                15 {
+                    $names = @('Dagger') + (Get-LWBoneSwordWeaponNames)
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names $names -Type 'weapon') {
+                        Write-LWInfo 'Section 15: Dagger / Bone Sword route is available here.'
+                    }
+                }
+                { @(45, 303) -contains $_ } {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWOrnateSilverKeyItemNames) -Type 'special') {
+                        Write-LWInfo ("Section {0}: Ornate Silver Key route is available here." -f $section)
+                    }
+                }
+                { @(67, 104, 202) -contains $_ } {
+                    $stoneNames = @((Get-LWBlueStoneTriangleItemNames) + (Get-LWBlueStoneDiscItemNames))
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names $stoneNames -Type 'special') {
+                        Write-LWInfo ("Section {0}: Blue Stone route is available here." -f $section)
+                    }
+                }
+                { @(76, 114, 194, 319) -contains $_ } {
+                    if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Hunting') -or (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Kinship')) {
+                        Write-LWInfo ("Section {0}: Hunting / Animal Kinship route is available here." -f $section)
+                    }
+                }
+                { @(170, 271, 345) -contains $_ } {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names @('Rope', 'Long Rope') -Type 'backpack') {
+                        Write-LWInfo ("Section {0}: Rope route is available here." -f $section)
+                    }
+                }
+                173 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWStoneEffigyItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 173: Effigy endgame route is available here.'
+                    }
+                    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+                        Write-LWInfo 'Section 173: Sommerswerd endgame route is available here.'
+                    }
+                }
+                { @(187, 236, 258, 345) -contains $_ } {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGoldBraceletItemNames) -Type 'special') {
+                        Write-LWInfo ("Section {0}: Gold Bracelet continuity is active here." -f $section)
+                    }
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Mindshield') {
+                        Write-LWInfo ("Section {0}: Mindshield route is available here." -f $section)
+                    }
+                }
+            }
+        }
+        5 {
+            switch ($section) {
+                31 {
+                    if ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWFiresphereItemNames) -Type 'special') -or (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWTinderboxItemNames) -Type 'backpack')) {
+                        Write-LWInfo 'Section 31: your Firesphere or Tinderbox opens the lit-market route here.'
+                    }
+                }
+                137 {
+                    if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Tracking') -or (Test-LWStateHasDiscipline -State $script:GameState -Name 'Sixth Sense')) {
+                        Write-LWInfo 'Section 137: Tracking / Sixth Sense can guide you onto the safer route here.'
+                    }
+                }
+                221 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book1StarOfToranClaimed') {
+                        Write-LWInfo 'Section 221: Crystal Star Pendant continuity route is available here.'
+                    }
+                }
+                224 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Kinship') {
+                        Write-LWInfo 'Section 224: Animal Kinship route is available here.'
+                    }
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWOnyxMedallionItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 224: Onyx Medallion route is available here.'
+                    }
+                }
+                239 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGraveweedItemNames) -Type 'backpack') {
+                        Write-LWInfo 'Section 239: Tincture of Graveweed route is available here.'
+                    }
+                }
+                395 {
+                    if ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWPrismItemNames) -Type 'backpack') -or (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBlueStoneTriangleItemNames) -Type 'special')) {
+                        Write-LWInfo 'Section 395: Prism / Blue Stone Triangle route is available here.'
+                    }
+                }
+                397 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') {
+                        Write-LWInfo 'Section 397: you may ask whether the vaxeler is Soushilla.'
+                    }
+                }
+                256 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book5SoushillaNameHeard') {
+                        Write-LWInfo 'Section 256: the Soushilla question is available here because you learned her name earlier.'
+                    }
+                }
+            }
+        }
+    }
+}
+
+function Get-LWScreenAccentColor {
+    $screen = if ($null -ne $script:LWUi -and -not [string]::IsNullOrWhiteSpace([string]$script:LWUi.CurrentScreen)) {
+        [string]$script:LWUi.CurrentScreen
+    }
+    else {
+        'sheet'
+    }
+
+    switch ($screen) {
+        'inventory' { return 'Yellow' }
+        'combat' { return 'Red' }
+        'combatlog' { return 'DarkRed' }
+        'disciplines' { return 'DarkYellow' }
+        'notes' { return 'DarkCyan' }
+        'history' { return 'DarkYellow' }
+        'stats' { return 'Cyan' }
+        'campaign' { return 'DarkCyan' }
+        'achievements' { return 'Magenta' }
+        'modes' { return 'Magenta' }
+        'help' { return 'Cyan' }
+        'load' { return 'Cyan' }
+        'bookcomplete' { return 'Green' }
+        'death' { return 'Red' }
+        default { return 'Cyan' }
+    }
+}
+
+function Get-LWScreenBannerStatusText {
+    $versionText = "v$($script:LWAppVersion)"
+    $screen = if ($null -ne $script:LWUi -and -not [string]::IsNullOrWhiteSpace([string]$script:LWUi.CurrentScreen)) {
+        [string]$script:LWUi.CurrentScreen
+    }
+    else {
+        'sheet'
+    }
+
+    if (-not (Test-LWHasState)) {
+        switch ($screen) {
+            'load' { return "LOAD SAVE :: $versionText" }
+            'help' { return "HELP :: $versionText" }
+            'modes' { return "RUN MODES :: $versionText" }
+            default { return "CAMPAIGN READY :: $versionText" }
+        }
+    }
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    switch ($screen) {
+        'inventory' { return ("INVENTORY :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'combat' { return ("COMBAT MODE :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'combatlog' { return ("COMBAT LOG :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'disciplines' { return ("DISCIPLINES :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'notes' { return ("NOTES :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'history' { return ("HISTORY :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'stats' { return ("STATS :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'campaign' { return ("CAMPAIGN :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'achievements' { return ("ACHIEVEMENTS :: BOOK {0} :: {1}" -f $bookNumber, $versionText) }
+        'modes' { return ("RUN MODES :: {0}" -f $versionText) }
+        'help' { return ("HELP :: {0}" -f $versionText) }
+        'load' { return ("LOAD SAVE :: {0}" -f $versionText) }
+        'bookcomplete' { return ("BOOK COMPLETE :: {0}" -f $versionText) }
+        'death' { return ("YOU HAVE FALLEN :: {0}" -f $versionText) }
+        default { return ("{0} MODE :: BOOK {1} :: {2}" -f ([string]$script:GameState.RuleSet).ToUpperInvariant(), $bookNumber, $versionText) }
+    }
+}
+
+function Get-LWInlineKeyValueText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string]$Value,
+        [int]$LabelWidth = 13
+    )
+
+    return ("{0,-$LabelWidth}: {1}" -f $Label, $Value)
+}
+
+function Write-LWRetroPanelPairRow {
+    param(
+        [Parameter(Mandatory = $true)][string]$LeftLabel,
+        [Parameter(Mandatory = $true)][string]$LeftValue,
+        [Parameter(Mandatory = $true)][string]$RightLabel,
+        [Parameter(Mandatory = $true)][string]$RightValue,
+        [string]$LeftColor = 'Gray',
+        [string]$RightColor = 'Gray',
+        [int]$LeftLabelWidth = 13,
+        [int]$RightLabelWidth = 13,
+        [int]$LeftWidth = 28,
+        [int]$Gap = 2
+    )
+
+    Write-LWRetroPanelTwoColumnRow `
+        -LeftText (Get-LWInlineKeyValueText -Label $LeftLabel -Value $LeftValue -LabelWidth $LeftLabelWidth) `
+        -RightText (Get-LWInlineKeyValueText -Label $RightLabel -Value $RightValue -LabelWidth $RightLabelWidth) `
+        -LeftColor $LeftColor `
+        -RightColor $RightColor `
+        -LeftWidth $LeftWidth `
+        -Gap $Gap
+}
+
+function New-LWHelpfulCommandRow {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string]$Value,
+        [string]$LabelColor = 'DarkYellow'
+    )
+
+    return [pscustomobject]@{
+        Label      = $Label
+        Value      = $Value
+        LabelColor = $LabelColor
+    }
+}
+
+function Get-LWHelpfulCommandRows {
+    param(
+        [Parameter(Mandatory = $true)][string]$ScreenName,
+        [string]$View = '',
+        [string]$Variant = ''
+    )
+
+    $screen = $ScreenName.Trim().ToLowerInvariant()
+    $viewName = if ([string]::IsNullOrWhiteSpace($View)) { '' } else { $View.Trim().ToLowerInvariant() }
+    $variantName = if ([string]::IsNullOrWhiteSpace($Variant)) { '' } else { $Variant.Trim().ToLowerInvariant() }
+
+    switch ($screen) {
+        'welcome' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'load' -Value 'open the save catalog'),
+                (New-LWHelpfulCommandRow -Label 'new' -Value 'create a fresh character'),
+                (New-LWHelpfulCommandRow -Label 'newrun' -Value 'restart the run on this profile'),
+                (New-LWHelpfulCommandRow -Label 'modes' -Value 'review run difficulty and rules')
+            )
+        }
+        'load' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'load 2' -Value 'open save number 2 from the catalog'),
+                (New-LWHelpfulCommandRow -Label 'load sample-save.json' -Value 'load a save by file name'),
+                (New-LWHelpfulCommandRow -Label 'new' -Value 'start a new character instead'),
+                (New-LWHelpfulCommandRow -Label 'help' -Value 'show the full command reference')
+            )
+        }
+        'help' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet'),
+                (New-LWHelpfulCommandRow -Label 'section <n>' -Value 'move to the section you are reading'),
+                (New-LWHelpfulCommandRow -Label 'load' -Value 'open the save picker'),
+                (New-LWHelpfulCommandRow -Label 'quit' -Value 'leave the app')
+            )
+        }
+        'disciplineselect' {
+            return @(
+                (New-LWHelpfulCommandRow -Label '1' -Value 'choose the first listed option'),
+                (New-LWHelpfulCommandRow -Label '1,3' -Value 'choose multiple numbered options'),
+                (New-LWHelpfulCommandRow -Label 'help' -Value 'show the full command reference'),
+                (New-LWHelpfulCommandRow -Label 'quit' -Value 'leave the app')
+            )
+        }
+        'sheet' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'section <n>' -Value 'move to the section you are reading'),
+                (New-LWHelpfulCommandRow -Label 'inv' -Value 'open the full inventory screen'),
+                (New-LWHelpfulCommandRow -Label 'disciplines' -Value 'review Kai or Magnakai abilities'),
+                (New-LWHelpfulCommandRow -Label 'campaign' -Value 'open run-wide progress and summaries')
+            )
+        }
+        'inventory' {
+            $rows = @(
+                (New-LWHelpfulCommandRow -Label 'add <type> <name>' -Value 'add an item to a carried section'),
+                (New-LWHelpfulCommandRow -Label 'drop <type> <slot>' -Value 'remove one carried item by slot'),
+                (New-LWHelpfulCommandRow -Label 'recover <type|all>' -Value 'restore gear from the recovery stash')
+            )
+            if (Test-LWStateHasQuiver -State $script:GameState) {
+                $rows += (New-LWHelpfulCommandRow -Label 'arrows +/-n' -Value 'spend or refill quiver arrows')
+            }
+            else {
+                $rows += (New-LWHelpfulCommandRow -Label 'gold +/-n' -Value 'adjust carried Gold Crowns')
+            }
+
+            return $rows
+        }
+        'disciplines' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet'),
+                (New-LWHelpfulCommandRow -Label 'section <n>' -Value 'continue play from the next section'),
+                (New-LWHelpfulCommandRow -Label 'campaign' -Value 'compare this book to the full run'),
+                (New-LWHelpfulCommandRow -Label 'help' -Value 'show the full command reference')
+            )
+        }
+        'notes' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'note <text>' -Value 'add a new reminder'),
+                (New-LWHelpfulCommandRow -Label 'note remove <n>' -Value 'erase a note by number'),
+                (New-LWHelpfulCommandRow -Label 'history' -Value 'review recent events and combat history'),
+                (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+            )
+        }
+        'history' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'combat log' -Value 'inspect the latest or current fight'),
+                (New-LWHelpfulCommandRow -Label 'campaign' -Value 'open the full run overview'),
+                (New-LWHelpfulCommandRow -Label 'achievements' -Value 'review unlock progress'),
+                (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+            )
+        }
+        'stats' {
+            switch ($viewName) {
+                'combat' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'stats' -Value 'return to the overview stats'),
+                        (New-LWHelpfulCommandRow -Label 'stats survival' -Value 'switch to survival totals'),
+                        (New-LWHelpfulCommandRow -Label 'combat log' -Value 'inspect a fight in detail'),
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'open full run summaries')
+                    )
+                }
+                'survival' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'stats' -Value 'return to the overview stats'),
+                        (New-LWHelpfulCommandRow -Label 'stats combat' -Value 'switch to combat totals'),
+                        (New-LWHelpfulCommandRow -Label 'inv' -Value 'review current inventory and gear'),
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'open full run summaries')
+                    )
+                }
+                default {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'stats combat' -Value 'switch to combat totals'),
+                        (New-LWHelpfulCommandRow -Label 'stats survival' -Value 'switch to survival totals'),
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'open full run summaries'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+            }
+        }
+        'campaign' {
+            switch ($viewName) {
+                'books' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'return to campaign overview'),
+                        (New-LWHelpfulCommandRow -Label 'campaign combat' -Value 'switch to combat totals'),
+                        (New-LWHelpfulCommandRow -Label 'achievements' -Value 'review unlock progress'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                'combat' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'return to campaign overview'),
+                        (New-LWHelpfulCommandRow -Label 'combat log' -Value 'inspect archived fights'),
+                        (New-LWHelpfulCommandRow -Label 'stats combat' -Value 'switch to current-book combat stats'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                'survival' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'return to campaign overview'),
+                        (New-LWHelpfulCommandRow -Label 'stats survival' -Value 'switch to current-book survival stats'),
+                        (New-LWHelpfulCommandRow -Label 'inv' -Value 'review current gear and resources'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                'milestones' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'return to campaign overview'),
+                        (New-LWHelpfulCommandRow -Label 'achievements recent' -Value 'show the latest unlocks'),
+                        (New-LWHelpfulCommandRow -Label 'stats' -Value 'switch to current-book stats'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                default {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'campaign books' -Value 'show book-by-book status'),
+                        (New-LWHelpfulCommandRow -Label 'campaign combat' -Value 'show run-wide combat totals'),
+                        (New-LWHelpfulCommandRow -Label 'campaign milestones' -Value 'show achievements and highlights'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+            }
+        }
+        'achievements' {
+            switch ($viewName) {
+                'unlocked' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
+                        (New-LWHelpfulCommandRow -Label 'achievements locked' -Value 'show locked achievement slots'),
+                        (New-LWHelpfulCommandRow -Label 'achievements recent' -Value 'show the latest unlocks'),
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'compare against run progress')
+                    )
+                }
+                'locked' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
+                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show tracked milestone progress'),
+                        (New-LWHelpfulCommandRow -Label 'achievements recent' -Value 'show the latest unlocks'),
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'compare against run progress')
+                    )
+                }
+                'recent' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
+                        (New-LWHelpfulCommandRow -Label 'achievements unlocked' -Value 'show unlocked achievements'),
+                        (New-LWHelpfulCommandRow -Label 'campaign' -Value 'compare against run progress'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                'progress' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
+                        (New-LWHelpfulCommandRow -Label 'achievements unlocked' -Value 'show unlocked achievements'),
+                        (New-LWHelpfulCommandRow -Label 'achievements locked' -Value 'show locked achievement slots'),
+                        (New-LWHelpfulCommandRow -Label 'campaign milestones' -Value 'compare run milestones')
+                    )
+                }
+                'planned' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'achievements' -Value 'return to achievement overview'),
+                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show tracked milestone progress'),
+                        (New-LWHelpfulCommandRow -Label 'campaign milestones' -Value 'compare run milestones'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                default {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'achievements unlocked' -Value 'show unlocked achievements'),
+                        (New-LWHelpfulCommandRow -Label 'achievements locked' -Value 'show locked achievement slots'),
+                        (New-LWHelpfulCommandRow -Label 'achievements recent' -Value 'show the latest unlocks'),
+                        (New-LWHelpfulCommandRow -Label 'achievements progress' -Value 'show tracked milestone progress'),
+                        (New-LWHelpfulCommandRow -Label 'campaign milestones' -Value 'compare run milestones')
+                    )
+                }
+            }
+        }
+        'modes' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'difficulty <name>' -Value 'set Story, Easy, Normal, Hard, or Veteran'),
+                (New-LWHelpfulCommandRow -Label 'permadeath on|off' -Value 'toggle permadeath for the next run'),
+                (New-LWHelpfulCommandRow -Label 'mode manual|data' -Value 'switch combat resolution mode'),
+                (New-LWHelpfulCommandRow -Label 'newrun' -Value 'start a fresh run with the current mode rules')
+            )
+        }
+        'combat' {
+            switch ($variantName) {
+                'setup' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label '1 / 2 / ...' -Value 'choose one of the listed weapons'),
+                        (New-LWHelpfulCommandRow -Label '0' -Value 'fight unarmed'),
+                        (New-LWHelpfulCommandRow -Label 'help' -Value 'show the full command reference'),
+                        (New-LWHelpfulCommandRow -Label 'quit' -Value 'leave the app')
+                    )
+                }
+                'summary' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'combat log' -Value 'inspect the archived fight details'),
+                        (New-LWHelpfulCommandRow -Label 'section <n>' -Value 'continue into the next section'),
+                        (New-LWHelpfulCommandRow -Label 'history' -Value 'review recent events'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                'inactive' {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'combat <enemy cs end>' -Value 'start a tracked combat'),
+                        (New-LWHelpfulCommandRow -Label 'fight <enemy cs end>' -Value 'start and auto-resolve a combat'),
+                        (New-LWHelpfulCommandRow -Label 'combat log' -Value 'inspect the latest recorded fight'),
+                        (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+                    )
+                }
+                default {
+                    return @(
+                        (New-LWHelpfulCommandRow -Label 'fight' -Value 'resolve the next combat round'),
+                        (New-LWHelpfulCommandRow -Label 'evade' -Value 'attempt escape if this fight allows it'),
+                        (New-LWHelpfulCommandRow -Label 'potion' -Value 'use a healing item before the next round'),
+                        (New-LWHelpfulCommandRow -Label 'combat log' -Value 'inspect the current fight record')
+                    )
+                }
+            }
+        }
+        'combatlog' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'combat log all' -Value 'show the full combat archive'),
+                (New-LWHelpfulCommandRow -Label 'combat log 1' -Value 'open one archived fight by number'),
+                (New-LWHelpfulCommandRow -Label 'history' -Value 'review recent events and run context'),
+                (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+            )
+        }
+        'death' {
+            $rows = @()
+            if (-not (Test-LWPermadeathEnabled) -and (Get-LWAvailableRewindCount) -gt 0) {
+                $rows += (New-LWHelpfulCommandRow -Label 'rewind 1' -Value 'return to the latest safe checkpoint')
+            }
+            $rows += (New-LWHelpfulCommandRow -Label 'load' -Value 'open a save and recover the run')
+            $rows += (New-LWHelpfulCommandRow -Label 'newrun' -Value 'start a fresh run on the same profile')
+            $rows += (New-LWHelpfulCommandRow -Label 'quit' -Value 'leave the app')
+            return $rows
+        }
+        'bookcomplete' {
+            return @(
+                (New-LWHelpfulCommandRow -Label 'campaign' -Value 'review full-run progress after the book'),
+                (New-LWHelpfulCommandRow -Label 'achievements' -Value 'review unlocks earned so far'),
+                (New-LWHelpfulCommandRow -Label 'save' -Value 'write the new campaign state to disk'),
+                (New-LWHelpfulCommandRow -Label 'sheet' -Value 'return to the main character sheet')
+            )
+        }
+        default {
+            return @()
+        }
+    }
+}
+
+function Show-LWHelpfulCommandsPanel {
+    param(
+        [Parameter(Mandatory = $true)][string]$ScreenName,
+        [string]$View = '',
+        [string]$Variant = '',
+        [string]$AccentColor = 'DarkYellow'
+    )
+
+    $rows = @(Get-LWHelpfulCommandRows -ScreenName $ScreenName -View $View -Variant $Variant)
+    if ($rows.Count -eq 0) {
+        return
+    }
+
+    $labelWidth = 18
+    foreach ($row in $rows) {
+        $labelText = if ($null -eq $row.Label) { '' } else { [string]$row.Label }
+        if ($labelText.Length -gt $labelWidth) {
+            $labelWidth = $labelText.Length
+        }
+    }
+    $labelWidth = [Math]::Min(24, [Math]::Max(16, $labelWidth))
+
+    Write-LWRetroPanelHeader -Title 'Helpful Commands' -AccentColor $AccentColor
+    foreach ($row in $rows) {
+        $labelColor = if ($null -ne $row -and (Test-LWPropertyExists -Object $row -Name 'LabelColor') -and -not [string]::IsNullOrWhiteSpace([string]$row.LabelColor)) {
+            [string]$row.LabelColor
+        }
+        else {
+            'DarkYellow'
+        }
+        Write-LWRetroPanelKeyValueRow -Label ([string]$row.Label) -Value ([string]$row.Value) -LabelColor $labelColor -ValueColor 'Gray' -LabelWidth $labelWidth
+    }
+    Write-LWRetroPanelFooter
+}
+
+function Get-LWCompactRunHistoryLines {
+    if (-not (Test-LWHasState)) {
+        return @()
+    }
+
+    $lines = @()
+    foreach ($bookNumber in @(1..[int]$script:GameState.Character.BookNumber)) {
+        $status = if ([int]$bookNumber -eq [int]$script:GameState.Character.BookNumber) {
+            if (@($script:GameState.Character.CompletedBooks) -contains $bookNumber) { 'Complete' } else { 'In Progress' }
+        }
+        elseif (@($script:GameState.Character.CompletedBooks) -contains $bookNumber) {
+            'Complete'
+        }
+        else {
+            'Unplayed'
+        }
+
+        $lines += [pscustomobject]@{
+            BookNumber = $bookNumber
+            Text       = ("Book {0} : {1}" -f $bookNumber, $status)
+            Color      = $(if ($status -eq 'Complete') { 'Green' } elseif ($status -eq 'In Progress') { 'Yellow' } else { 'DarkGray' })
+        }
+    }
+
+    return @($lines)
+}
+
+function Write-LWBanner {
+    Invoke-LWCoreWriteBanner -Context (Get-LWModuleContext)
+}
+
+function Write-LWCommandPromptHint {
+    Invoke-LWCoreWriteCommandPromptHint -Context (Get-LWModuleContext)
+}
+
+function Write-LWScreenFooterNote {
+    param([Parameter(Mandatory = $true)][string]$Message)
+
+    Invoke-LWCoreWriteScreenFooterNote -Context (Get-LWModuleContext) -Message $Message
+}
+
+function Show-LWDisciplines {
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $isMagnakai = Test-LWStateIsMagnakaiRuleset -State $script:GameState
+    $panelTitle = if ($isMagnakai) { 'Magnakai Disciplines' } else { 'Kai Disciplines' }
+    $displayDisciplines = @()
+    $definitionsByName = @{}
+    $kaiDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'KaiDisciplines') -and $null -ne $script:GameData.KaiDisciplines) {
+        @($script:GameData.KaiDisciplines)
+    }
+    else {
+        @()
+    }
+    $magnakaiDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiDisciplines') -and $null -ne $script:GameData.MagnakaiDisciplines) {
+        @($script:GameData.MagnakaiDisciplines)
+    }
+    else {
+        @()
+    }
+    $magnakaiDisciplines = if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'MagnakaiDisciplines') -and $null -ne $script:GameState.Character.MagnakaiDisciplines) {
+        @($script:GameState.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+    }
+    else {
+        @()
+    }
+
+    if ($isMagnakai) {
+        foreach ($definition in $magnakaiDefinitions) {
+            $definitionsByName[[string]$definition.Name] = $definition
+        }
+        $displayDisciplines = @($magnakaiDisciplines)
+    }
+    else {
+        foreach ($definition in $kaiDefinitions) {
+            $definitionsByName[[string]$definition.Name] = $definition
+        }
+        foreach ($discipline in @($script:GameState.Character.Disciplines)) {
+            if ([string]$discipline -eq 'Weaponskill' -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Character.WeaponskillWeapon)) {
+                $displayDisciplines += ("Weaponskill ({0})" -f [string]$script:GameState.Character.WeaponskillWeapon)
+            }
+            else {
+                $displayDisciplines += [string]$discipline
+            }
+        }
+    }
+
+    Write-LWRetroPanelHeader -Title $panelTitle -AccentColor 'DarkYellow'
+    if ($displayDisciplines.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    else {
+        if ($isMagnakai) {
+            for ($i = 0; $i -lt $displayDisciplines.Count; $i += 3) {
+                $leftLabel = [string]$displayDisciplines[$i]
+                $middleLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
+                $rightLabel = if (($i + 2) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 2] } else { '' }
+                Write-LWRetroPanelThreeColumnRow `
+                    -LeftText $leftLabel `
+                    -MiddleText $middleLabel `
+                    -RightText $rightLabel `
+                    -LeftColor 'Green' `
+                    -MiddleColor 'Green' `
+                    -RightColor 'Green' `
+                    -LeftWidth 18 `
+                    -MiddleWidth 18 `
+                    -Gap 2
+            }
+        }
+        else {
+            for ($i = 0; $i -lt $displayDisciplines.Count; $i += 2) {
+                $leftLabel = [string]$displayDisciplines[$i]
+                $rightLabel = if (($i + 1) -lt $displayDisciplines.Count) { [string]$displayDisciplines[$i + 1] } else { '' }
+                Write-LWRetroPanelTwoColumnRow -LeftText $leftLabel -RightText $rightLabel -LeftColor 'Green' -RightColor 'Green' -LeftWidth 28 -Gap 2
+            }
+        }
+    }
+    Write-LWRetroPanelFooter
+
+    if ($isMagnakai -and @($script:GameState.Character.WeaponmasteryWeapons).Count -gt 0) {
+        Write-LWRetroPanelHeader -Title 'Weaponmastery' -AccentColor 'DarkYellow'
+        $weapons = @($script:GameState.Character.WeaponmasteryWeapons | ForEach-Object { [string]$_ })
+        for ($i = 0; $i -lt $weapons.Count; $i += 3) {
+            $leftText = [string]$weapons[$i]
+            $middleText = if (($i + 1) -lt $weapons.Count) { [string]$weapons[$i + 1] } else { '' }
+            $rightText = if (($i + 2) -lt $weapons.Count) { [string]$weapons[$i + 2] } else { '' }
+            Write-LWRetroPanelThreeColumnRow `
+                -LeftText $leftText `
+                -MiddleText $middleText `
+                -RightText $rightText `
+                -LeftColor 'Gray' `
+                -MiddleColor 'Gray' `
+                -RightColor 'Gray' `
+                -LeftWidth 18 `
+                -MiddleWidth 18 `
+                -Gap 2
+        }
+        Write-LWRetroPanelFooter
+    }
+
+    if ($isMagnakai -and $null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiLoreCircles') -and @($script:GameData.MagnakaiLoreCircles).Count -gt 0) {
+        Write-LWRetroPanelHeader -Title 'Lore Circles' -AccentColor 'Magenta'
+        $owned = @($magnakaiDisciplines)
+        $circleRows = @()
+        foreach ($definition in @($script:GameData.MagnakaiLoreCircles | Sort-Object @{ Expression = { Get-LWLoreCircleDisplayOrder -Name ([string]$_.Name) } }, @{ Expression = { [string]$_.Name } })) {
+            $circleRows += (Format-LWLoreCirclePanelRow -Definition $definition -OwnedDisciplines $owned)
+        }
+
+        for ($i = 0; $i -lt $circleRows.Count; $i += 2) {
+            $left = $circleRows[$i]
+            $right = if (($i + 1) -lt $circleRows.Count) { $circleRows[$i + 1] } else { $null }
+            Write-LWRetroPanelTwoColumnRow `
+                -LeftText ([string]$left.Text) `
+                -RightText $(if ($null -ne $right) { [string]$right.Text } else { '' }) `
+                -LeftColor ([string]$left.Color) `
+                -RightColor $(if ($null -ne $right) { [string]$right.Color } else { 'Gray' }) `
+                -LeftWidth 27 `
+                -Gap 2
+        }
+        Write-LWRetroPanelFooter
+    }
+
+    if ($isMagnakai -and @($script:GameState.Character.ImprovedDisciplines).Count -gt 0) {
+        Write-LWRetroPanelHeader -Title 'Improved Disciplines' -AccentColor 'DarkCyan'
+        for ($i = 0; $i -lt @($script:GameState.Character.ImprovedDisciplines).Count; $i += 2) {
+            $leftText = [string]$script:GameState.Character.ImprovedDisciplines[$i]
+            $rightText = if (($i + 1) -lt @($script:GameState.Character.ImprovedDisciplines).Count) { [string]$script:GameState.Character.ImprovedDisciplines[$i + 1] } else { '' }
+            Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+        }
+        Write-LWRetroPanelFooter
+    }
+
+    if ([string]$script:LWUi.CurrentScreen -eq 'disciplines') {
+        Write-LWRetroPanelHeader -Title 'Discipline Notes' -AccentColor 'Cyan'
+        if ($displayDisciplines.Count -eq 0) {
+            Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+        }
+        else {
+            $noteNames = if ($isMagnakai) {
+                @($magnakaiDisciplines)
+            }
+            else {
+                @($script:GameState.Character.Disciplines | ForEach-Object { [string]$_ })
+            }
+
+            foreach ($disciplineName in $noteNames) {
+                $effect = if ($definitionsByName.ContainsKey([string]$disciplineName) -and -not [string]::IsNullOrWhiteSpace([string]$definitionsByName[[string]$disciplineName].Effect)) {
+                    [string]$definitionsByName[[string]$disciplineName].Effect
+                }
+                else {
+                    'No note available.'
+                }
+
+                Write-LWRetroPanelTextRow -Text ("{0}: {1}" -f [string]$disciplineName, $effect) -TextColor 'Gray'
+            }
+        }
+        Write-LWRetroPanelFooter
+
+        Show-LWHelpfulCommandsPanel -ScreenName 'disciplines'
+    }
+}
+
+function Show-LWNotes {
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $notes = @($script:GameState.Character.Notes)
+
+    Write-LWRetroPanelHeader -Title 'Notes' -AccentColor 'DarkCyan'
+    if ($notes.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+    }
+    else {
+        for ($i = 0; $i -lt $notes.Count; $i++) {
+            Write-LWRetroPanelTextRow -Text ("{0,2}. {1}" -f ($i + 1), [string]$notes[$i]) -TextColor 'Gray'
+        }
+    }
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Note Summary' -AccentColor 'Cyan'
+    Write-LWRetroPanelKeyValueRow -Label 'Total Notes' -Value ([string]$notes.Count) -ValueColor 'White'
+    Write-LWRetroPanelFooter
+
+    Show-LWHelpfulCommandsPanel -ScreenName 'notes'
+}
+
+function Show-LWRunDifficulty {
+    if (-not (Test-LWHasState)) {
+        Set-LWScreen -Name 'modes'
+        Write-LWWarn 'Difficulty is chosen when a new run begins.'
+        return
+    }
+
+    Set-LWScreen -Name 'modes'
+    Write-LWInfo ("Current difficulty: {0}. Difficulty is locked for this run." -f (Get-LWCurrentDifficulty))
+}
+
+function Show-LWRunPermadeath {
+    if (-not (Test-LWHasState)) {
+        Set-LWScreen -Name 'modes'
+        Write-LWWarn 'Permadeath is chosen when a new run begins.'
+        return
+    }
+
+    Set-LWScreen -Name 'modes'
+    Write-LWInfo ("Permadeath is {0} for this run and cannot be changed now." -f $(if (Test-LWPermadeathEnabled) { 'On' } else { 'Off' }))
+}
+
+function Show-LWHelp {
+    Invoke-LWCoreShowHelpScreen -Context (Get-LWModuleContext)
+}
+
+function Show-LWBookCompletionSummary {
+    param(
+        [Parameter(Mandatory = $true)][object]$Summary,
+        [Parameter(Mandatory = $true)][string]$CharacterName
+    )
+
+    $completedBookLabel = Format-LWBookLabel -BookNumber ([int]$Summary.BookNumber) -IncludePrefix
+    $bookAchievements = @($script:GameState.Achievements.Unlocked | Where-Object { [int]$_.BookNumber -eq [int]$Summary.BookNumber } | Select-Object -Last 4)
+
+    Write-LWRetroPanelHeader -Title 'Adventure Complete' -AccentColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $CharacterName -RightLabel 'Difficulty' -RightValue (Get-LWCurrentDifficulty) -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Rule Set' -LeftValue ([string]$script:GameState.RuleSet) -RightLabel 'Outcome' -RightValue 'Victory' -LeftColor 'Gray' -RightColor 'Green' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelKeyValueRow -Label 'Completed Book' -Value $completedBookLabel -ValueColor 'White'
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Book Summary' -AccentColor 'Cyan'
+    Write-LWRetroPanelPairRow -LeftLabel 'Combat Wins' -LeftValue ([string]$Summary.Victories) -RightLabel 'Combat Losses' -RightValue ([string]$Summary.Defeats) -LeftColor 'Green' -RightColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Sections Seen' -LeftValue ([string]$Summary.SectionsVisited) -RightLabel 'Notes Added' -RightValue ([string]@($script:GameState.Character.Notes).Count) -LeftColor 'Gray' -RightColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Crowns' -LeftValue ("{0} / 50" -f [int]$script:GameState.Inventory.GoldCrowns) -RightLabel 'Endurance' -RightValue ("{0} / {1}" -f [int]$script:GameState.Character.EnduranceCurrent, [int]$script:GameState.Character.EnduranceMax) -LeftColor 'Yellow' -RightColor (Get-LWEnduranceColor -Current ([int]$script:GameState.Character.EnduranceCurrent) -Max ([int]$script:GameState.Character.EnduranceMax))
+    Write-LWRetroPanelFooter
+
+    Write-LWRetroPanelHeader -Title 'Achievements Earned' -AccentColor 'Magenta'
+    if ($bookAchievements.Count -eq 0) {
+        Write-LWRetroPanelTextRow -Text '(none recorded)' -TextColor 'DarkGray'
+    }
+    else {
+        for ($i = 0; $i -lt $bookAchievements.Count; $i += 2) {
+            $leftText = Get-LWAchievementUnlockedDisplayName -Entry $bookAchievements[$i]
+            $rightText = if (($i + 1) -lt $bookAchievements.Count) { Get-LWAchievementUnlockedDisplayName -Entry $bookAchievements[$i + 1] } else { '' }
+            Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 28 -Gap 2
+        }
+    }
+    Write-LWRetroPanelFooter
+}
+
+Export-ModuleMember -Function Write-LWInlineWarn, Write-LWLootNoRoomWarning, Format-LWCompletedBooks, Get-LWBookCompletionQuote, Show-LWSectionGateHints, Get-LWScreenAccentColor, Get-LWScreenBannerStatusText, Get-LWInlineKeyValueText, Write-LWRetroPanelPairRow, New-LWHelpfulCommandRow, Get-LWHelpfulCommandRows, Show-LWHelpfulCommandsPanel, Get-LWCompactRunHistoryLines, Write-LWBanner, Write-LWCommandPromptHint, Write-LWScreenFooterNote, Show-LWDisciplines, Show-LWNotes, Show-LWRunDifficulty, Show-LWRunPermadeath, Show-LWHelp, Show-LWBookCompletionSummary
 
