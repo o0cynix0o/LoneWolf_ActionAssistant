@@ -18,6 +18,19 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - `modules/rulesets/magnakai/combat.psm1`
 - `modules/core/combat.psm1` no longer carries the legacy inline per-book scenario branch
 - additional strict-mode/null-safety hardening landed in core save/common/shell handling
+- stale duplicate wrapper-era functions were removed from `lonewolf.ps1`, including dead legacy copies of:
+  - save/load
+  - command dispatch
+  - combat startup
+  - section-entry rules
+  - section random-number context dispatch
+  - story-section achievement trigger dispatch
+- Book `1-5` starting-equipment helper definitions now live with their respective Kai book modules instead of the main script
+- Book `1-6` section-context achievement ID lists now live with their respective book modules and dispatch through `modules/core/ruleset.psm1`
+- generic loot-choice and book-transition safekeeping prompts now live in `modules/core/shell.psm1` instead of `lonewolf.ps1`
+- Book `4` section `12` choice handling now lives in `modules/rulesets/kai/book4.psm1`
+- Book `6` riverboat-ticket item names now live in `modules/rulesets/magnakai/book6.psm1`
+- `Book of the Magnakai` item-name helpers now live in `modules/rulesets/magnakai/magnakai.psm1`
 - Book `6` section `10` now prompts for the riverboat ticket purchase, stores the ticket as a pocket-carried Special Item outside the normal `12`-item cap, and surfaces the ticket route again at section `124`
 - Book `6` OG automation catch-up expanded across:
   - fixed ENDURANCE losses and gains

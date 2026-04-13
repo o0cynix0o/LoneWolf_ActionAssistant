@@ -1848,6 +1848,209 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
     }
 }
 
+
+function Get-LWBook6LatestCessSectionEvent {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $timeline = @()
+    if ((Test-LWPropertyExists -Object $State -Name 'SectionCheckpoints') -and $null -ne $State.SectionCheckpoints) {
+        foreach ($checkpoint in @($State.SectionCheckpoints)) {
+            if ($null -eq $checkpoint -or -not (Test-LWPropertyExists -Object $checkpoint -Name 'Section') -or $null -eq $checkpoint.Section) {
+                continue
+            }
+
+            $sectionNumber = [int]$checkpoint.Section
+            if ($sectionNumber -in @(49, 160, 304)) {
+                $timeline += $sectionNumber
+            }
+        }
+    }
+
+    if ((Test-LWPropertyExists -Object $State -Name 'CurrentSection') -and $null -ne $State.CurrentSection) {
+        $currentSection = [int]$State.CurrentSection
+        if ($currentSection -in @(49, 160, 304)) {
+            $timeline += $currentSection
+        }
+    }
+
+    if ($timeline.Count -gt 0) {
+        return [int]$timeline[-1]
+    }
+
+    return $null
+}
+
+function Get-LWBook6RiverboatTicketItemNames {
+    return @(
+        'Riverboat Ticket to Luyen',
+        'Riverboat Ticket to Rhem',
+        'Riverboat Ticket to Eula',
+        'Riverboat Ticket'
+    )
+}
+
+function Get-LWBookSixSectionContextAchievementIds {
+    return @(
+        'jump_the_wagons',
+        'water_bearer',
+        'tekaro_cartographer',
+        'key_to_varetta',
+        'silver_oak_prize',
+        'cess_to_enter',
+        'cold_comfort',
+        'mind_over_malice_book6'
+    )
+}
+
+
+
+function Get-LWBookSixDECuringOption {
+    param([object]$State = $script:GameState)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State -or $null -eq $State.Conditions) {
+        return -1
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDECuringOption') -or $null -eq $State.Conditions.BookSixDECuringOption) {
+        return -1
+    }
+
+    return [int]$State.Conditions.BookSixDECuringOption
+}
+
+function Set-LWBookSixDECuringOption {
+    param(
+        [Parameter(Mandatory = $true)][int]$Option,
+        [object]$State = $script:GameState
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State) {
+        return
+    }
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Conditions') -or $null -eq $State.Conditions) {
+        $State | Add-Member -Force -NotePropertyName Conditions -NotePropertyValue (New-LWConditionState)
+    }
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDECuringOption')) {
+        $State.Conditions | Add-Member -Force -NotePropertyName BookSixDECuringOption -NotePropertyValue $Option
+    }
+    else {
+        $State.Conditions.BookSixDECuringOption = $Option
+    }
+}
+
+function Get-LWBookSixDECuringOptionLabel {
+    param(
+        [int]$Option = (Get-LWBookSixDECuringOption),
+        [object]$State = $script:GameState
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    switch ([int]$Option) {
+        0 {
+            if ($null -ne $State -and -not (Test-LWStateHasDiscipline -State $State -Name 'Curing')) {
+                return 'Standard Magnakai'
+            }
+            return 'Standard Curing'
+        }
+        1 { return 'Curing Cap' }
+        2 { return 'Healing Instead' }
+        3 { return 'Herb Pouch' }
+        default { return 'Not Selected' }
+    }
+}
+
+function Get-LWBookSixDEWeaponskillOption {
+    param([object]$State = $script:GameState)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State -or $null -eq $State.Conditions) {
+        return -1
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDEWeaponskillOption') -or $null -eq $State.Conditions.BookSixDEWeaponskillOption) {
+        return -1
+    }
+
+    return [int]$State.Conditions.BookSixDEWeaponskillOption
+}
+
+function Set-LWBookSixDEWeaponskillOption {
+    param(
+        [object]$State = $script:GameState,
+        [ValidateSet(-1, 0, 1)][int]$Option
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State -Name 'Conditions') -or $null -eq $State.Conditions) {
+        $State | Add-Member -Force -NotePropertyName Conditions -NotePropertyValue (New-LWConditionState)
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Conditions -Name 'BookSixDEWeaponskillOption')) {
+        $State.Conditions | Add-Member -Force -NotePropertyName BookSixDEWeaponskillOption -NotePropertyValue $Option
+    }
+    else {
+        $State.Conditions.BookSixDEWeaponskillOption = $Option
+    }
+}
+
+function Test-LWBookSixDEWeaponskillEnabled {
+    param([object]$State = $script:GameState)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    return ($null -ne $State -and
+        (Test-LWStateIsMagnakaiRuleset -State $State) -and
+        [int]$State.Character.BookNumber -eq 6 -and
+        (Get-LWBookSixDEWeaponskillOption -State $State) -eq 1 -and
+        -not [string]::IsNullOrWhiteSpace([string]$State.Character.WeaponskillWeapon))
+}
+
+function Get-LWBookSixDEWeaponskillOptionLabel {
+    param([object]$State = $script:GameState)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not (Test-LWBookSixDEWeaponskillEnabled -State $State)) {
+        return 'Disabled'
+    }
+
+    return ('Weaponskill ({0})' -f [string]$State.Character.WeaponskillWeapon)
+}
+
+function Get-LWBookSixDEAdventureRuleSummary {
+    param([object]$State = $script:GameState)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State -or -not (Test-LWStateIsMagnakaiRuleset -State $State) -or [int]$State.Character.BookNumber -ne 6) {
+        return @()
+    }
+
+    $rules = @()
+    switch (Get-LWBookSixDECuringOption -State $State) {
+        1 { $rules += 'Curing Cap' }
+        2 { $rules += 'Healing Instead' }
+        3 { $rules += 'Herb Pouch' }
+    }
+
+    if (Test-LWBookSixDEWeaponskillEnabled -State $State) {
+        $rules += (Get-LWBookSixDEWeaponskillOptionLabel -State $State)
+    }
+
+    return @($rules)
+}
+
+
 Export-ModuleMember -Function `
     Get-LWMagnakaiBookSixStartingChoices, `
     Grant-LWMagnakaiBookSixStartingChoice, `
@@ -1859,4 +2062,15 @@ Export-ModuleMember -Function `
     Invoke-LWMagnakaiBookSixStorySectionAchievementTriggers, `
     Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers, `
     Invoke-LWMagnakaiBookSixSectionEntryRules, `
-    Apply-LWMagnakaiBookSixStartingEquipment
+    Apply-LWMagnakaiBookSixStartingEquipment, `
+    Get-LWBook6LatestCessSectionEvent, `
+    Get-LWBook6RiverboatTicketItemNames, `
+    Get-LWBookSixSectionContextAchievementIds, `
+    Get-LWBookSixDECuringOption, `
+    Set-LWBookSixDECuringOption, `
+    Get-LWBookSixDECuringOptionLabel, `
+    Get-LWBookSixDEWeaponskillOption, `
+    Set-LWBookSixDEWeaponskillOption, `
+    Test-LWBookSixDEWeaponskillEnabled, `
+    Get-LWBookSixDEWeaponskillOptionLabel, `
+    Get-LWBookSixDEAdventureRuleSummary

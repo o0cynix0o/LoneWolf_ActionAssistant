@@ -87,6 +87,10 @@ function Invoke-LWMagnakaiStartingEquipment {
     }
 }
 
+function Get-LWBookOfMagnakaiItemNames {
+    return @('Book of the Magnakai')
+}
+
 Export-ModuleMember -Function `
     Get-LWMagnakaiRulesetVersion, `
     Get-LWMagnakaiSectionRandomNumberContext, `
@@ -94,4 +98,5 @@ Export-ModuleMember -Function `
     Invoke-LWMagnakaiStorySectionAchievementTriggers, `
     Invoke-LWMagnakaiStorySectionTransitionAchievementTriggers, `
     Invoke-LWMagnakaiSectionEntryRules, `
-    Invoke-LWMagnakaiStartingEquipment
+    Invoke-LWMagnakaiStartingEquipment, `
+    Get-LWBookOfMagnakaiItemNames

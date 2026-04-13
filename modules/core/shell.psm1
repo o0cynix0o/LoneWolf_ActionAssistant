@@ -406,6 +406,52 @@ function Invoke-LWCoreWriteCommandPromptHint {
     Write-LWSubtle 'Type help for commands.'
 }
 
+function Format-LWBookFourStartingChoiceLine {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $costSuffix = ''
+    if ((Test-LWPropertyExists -Object $Choice -Name 'GoldCost') -and $null -ne $Choice.GoldCost -and [int]$Choice.GoldCost -gt 0) {
+        $costSuffix = " - $([int]$Choice.GoldCost) Gold"
+    }
+
+    $typeLabel = switch ([string]$Choice.Type) {
+        'weapon' { 'Weapon' }
+        'special' { 'Special Item' }
+        'gold' { 'Gold' }
+        'backpack_restore' { 'Backpack' }
+        'backpack' {
+            $slotCost = [int]$Choice.Quantity * (Get-LWBackpackItemSlotSize -Name ([string]$Choice.Name))
+            "Backpack, $slotCost slot$(if ($slotCost -eq 1) { '' } else { 's' })"
+        }
+        default { [string]$Choice.Type }
+    }
+
+    return ("{0} [{1}]{2}" -f [string]$Choice.DisplayName, $typeLabel, $costSuffix)
+}
+
+function Invoke-LWBookFourStartingInventoryManagement {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    while ($true) {
+        Set-LWScreen -Name 'inventory'
+        Show-LWInventory
+        if (-not (Read-LWYesNo -Prompt 'Drop an item to make room?' -Default $true)) {
+            break
+        }
+
+        Remove-LWInventoryInteractive -InputParts @('drop')
+        if (-not (Read-LWYesNo -Prompt 'Drop another item?' -Default $false)) {
+            break
+        }
+    }
+}
+
 function Invoke-LWCoreWriteScreenFooterNote {
     param(
         [hashtable]$Context,
@@ -1107,6 +1153,364 @@ function Invoke-LWCoreRefreshScreen {
     Invoke-LWCoreWriteNotifications -Context $Context
 }
 
+function Get-LWBookDisplayLine {
+    param([int]$BookNumber)
+
+    return ("{0}. {1}" -f $BookNumber, (Get-LWBookTitle -BookNumber $BookNumber))
+}
+
+function Get-LWBookFourSectionChoiceLine {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    return (Format-LWBookFourStartingChoiceLine -Choice $Choice)
+}
+
+function Grant-LWBookFourGenericChoice {
+    param(
+        [Parameter(Mandatory = $true)][object]$Choice,
+        [Parameter(Mandatory = $true)][string]$ContextLabel
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $Choice) {
+        return $false
+    }
+
+    $goldCost = if ((Test-LWPropertyExists -Object $Choice -Name 'GoldCost') -and $null -ne $Choice.GoldCost) { [int]$Choice.GoldCost } else { 0 }
+    if ($goldCost -gt 0) {
+        if ([int]$script:GameState.Inventory.GoldCrowns -lt $goldCost) {
+            Write-LWWarn ("You need {0} Gold Crown{1} for {2}." -f $goldCost, $(if ($goldCost -eq 1) { '' } else { 's' }), [string]$Choice.DisplayName)
+            return $false
+        }
+    }
+
+    $granted = $false
+    $successMessage = $null
+    switch ([string]$Choice.Type) {
+        'weapon' {
+            $granted = Add-LWWeaponWithOptionalReplace -Name ([string]$Choice.Name) -PromptLabel ([string]$Choice.DisplayName)
+        }
+        'gold' {
+            $oldGold = [int]$script:GameState.Inventory.GoldCrowns
+            $newGold = [Math]::Min(50, ($oldGold + [int]$Choice.Quantity))
+            $addedGold = $newGold - $oldGold
+            if ($addedGold -le 0) {
+                Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Spend some Gold Crowns first if you want to keep it.'
+                return $false
+            }
+
+            $script:GameState.Inventory.GoldCrowns = $newGold
+            Add-LWBookGoldDelta -Delta $addedGold
+            [void](Sync-LWAchievements -Context 'gold')
+            if ($newGold -lt ($oldGold + [int]$Choice.Quantity)) {
+                Write-LWWarn ("Gold Crowns are capped at 50. Excess gold from {0} is lost." -f $ContextLabel.ToLowerInvariant())
+            }
+            $granted = $true
+        }
+        'backpack_restore' {
+            if (Test-LWStateHasBackpack -State $script:GameState) {
+                $successMessage = ("{0}: you already have a Backpack." -f $ContextLabel)
+            }
+            else {
+                Restore-LWBackpackState
+                $successMessage = ("{0}: Backpack restored." -f $ContextLabel)
+            }
+            $granted = $true
+        }
+        default {
+            $granted = TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)
+        }
+    }
+
+    if (-not $granted) {
+        Write-LWLootNoRoomWarning -DisplayName ([string]$Choice.DisplayName) -ExtraMessage 'Make room and try again if you are keeping it.'
+        return $false
+    }
+
+    if ($goldCost -gt 0) {
+        $script:GameState.Inventory.GoldCrowns = [Math]::Max(0, ([int]$script:GameState.Inventory.GoldCrowns - $goldCost))
+        Add-LWBookGoldDelta -Delta (-$goldCost)
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Choice.FlagName)) {
+        Set-LWStoryAchievementFlag -Name ([string]$Choice.FlagName)
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($successMessage)) {
+        Write-LWInfo $successMessage
+    }
+    else {
+        if ($goldCost -gt 0) {
+            Write-LWInfo ("{0}: added {1} for {2} Gold Crown{3}." -f $ContextLabel, [string]$Choice.Description, $goldCost, $(if ($goldCost -eq 1) { '' } else { 's' }))
+        }
+        else {
+            Write-LWInfo ("{0}: added {1}." -f $ContextLabel, [string]$Choice.Description)
+        }
+    }
+    return $true
+}
+
+function Invoke-LWBookFourChoiceTable {
+    param(
+        [Parameter(Mandatory = $true)][string]$Title,
+        [Parameter(Mandatory = $true)][string]$PromptLabel,
+        [Parameter(Mandatory = $true)][string]$ContextLabel,
+        [Parameter(Mandatory = $true)][object[]]$Choices,
+        [string]$Intro = ''
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $availableChoices = @($Choices | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.FlagName) -or -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+    if ($availableChoices.Count -le 0) {
+        return
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($Intro)) {
+        Write-LWInfo $Intro
+    }
+
+    while ($availableChoices.Count -gt 0) {
+        Write-LWPanelHeader -Title $Title -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+        Write-Host ''
+
+        for ($i = 0; $i -lt $availableChoices.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), (Get-LWBookFourSectionChoiceLine -Choice $availableChoices[$i])) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text 'D. Drop an item by number' -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceText = [string](Read-LWText -Prompt $PromptLabel -Default '0' -NoRefresh)
+        if ([string]::IsNullOrWhiteSpace($choiceText)) {
+            $choiceText = '0'
+        }
+        $choiceText = $choiceText.Trim()
+
+        if ($choiceText -eq '0') {
+            break
+        }
+
+        if ($choiceText -match '^[dD]$') {
+            Remove-LWInventoryInteractive -InputParts @('drop')
+            $availableChoices = @($Choices | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.FlagName) -or -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+            continue
+        }
+
+        $choiceIndex = 0
+        if (-not [int]::TryParse($choiceText, [ref]$choiceIndex)) {
+            Write-LWInlineWarn 'Choose a numbered item, D to drop something, or 0 when you are done here.'
+            continue
+        }
+        if ($choiceIndex -lt 1 -or $choiceIndex -gt $availableChoices.Count) {
+            Write-LWInlineWarn ("Choose a number from 1 to {0}, D to drop something, or 0 when you are done here." -f $availableChoices.Count)
+            continue
+        }
+
+        $choice = $availableChoices[$choiceIndex - 1]
+        if (-not (Grant-LWBookFourGenericChoice -Choice $choice -ContextLabel $ContextLabel) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+            Invoke-LWBookFourStartingInventoryManagement
+        }
+
+        $availableChoices = @($Choices | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.FlagName) -or -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+    }
+}
+
+function Invoke-LWTransitionSafekeepingInventorySelection {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $selected = @()
+    while ($true) {
+        $available = @($script:GameState.Inventory.SpecialItems | Where-Object { $selected -notcontains [string]$_ })
+        if ($available.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title ("Book {0} Safekeeping" -f $BookNumber) -AccentColor 'DarkYellow'
+        Write-LWSubtle ("  Choose carried Special Items to leave in safekeeping before Book {0} begins." -f $BookNumber)
+        Write-Host ''
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt 'Safekeep which Special Item' -Default 0 -Min 0 -Max $available.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            break
+        }
+
+        $selected += [string]$available[$choiceIndex - 1]
+    }
+
+    if ($selected.Count -gt 0) {
+        Move-LWSpecialItemsToSafekeeping -Items @($selected) -WriteMessages
+    }
+}
+
+function Invoke-LWTransitionSafekeepingReclaimSelection {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $selected = @()
+    while ($true) {
+        $available = @($script:GameState.Storage.SafekeepingSpecialItems | Where-Object { $selected -notcontains [string]$_ })
+        if ($available.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title ("Book {0} Safekeeping" -f $BookNumber) -AccentColor 'DarkYellow'
+        Write-LWSubtle ("  Reclaim stored Special Items before Book {0} begins." -f $BookNumber)
+        Write-Host ''
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            Write-LWBulletItem -Text ("{0}. {1}" -f ($i + 1), [string]$available[$i]) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
+
+        $choiceIndex = Read-LWInt -Prompt 'Reclaim which Special Item' -Default 0 -Min 0 -Max $available.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            break
+        }
+
+        $selected += [string]$available[$choiceIndex - 1]
+    }
+
+    if ($selected.Count -gt 0) {
+        Move-LWSpecialItemsFromSafekeeping -Items @($selected) -WriteMessages
+    }
+}
+
+function Invoke-LWBookTransitionSafekeepingPrompt {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $targetBookTitle = [string](Get-LWBookTitle -BookNumber $BookNumber)
+    $continueLabel = if ([string]::IsNullOrWhiteSpace($targetBookTitle)) { "Book $BookNumber" } else { "Book $BookNumber - $targetBookTitle" }
+
+    $promptComplete = $false
+    while (-not $promptComplete) {
+        $carriedItems = @($script:GameState.Inventory.SpecialItems)
+        $storedItems = @($script:GameState.Storage.SafekeepingSpecialItems)
+
+        if ($carriedItems.Count -eq 0 -and $storedItems.Count -eq 0) {
+            break
+        }
+
+        Write-LWPanelHeader -Title ("Book {0} Safekeeping" -f $BookNumber) -AccentColor 'DarkYellow'
+        Write-LWSubtle ("  Manage Special Items in safekeeping before {0} begins." -f $continueLabel)
+        Write-LWSubtle '  You can leave carried Special Items here and reclaim stored ones during book-to-book transitions.'
+        Write-Host ''
+        Write-LWKeyValue -Label 'Carried Special Items' -Value $(if ($carriedItems.Count -gt 0) { Format-LWCompactInventorySummary -Items $carriedItems -MaxGroups 4 } else { '(none)' }) -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Safekeeping' -Value $(if ($storedItems.Count -gt 0) { Format-LWCompactInventorySummary -Items $storedItems -MaxGroups 4 } else { '(none)' }) -ValueColor 'DarkGray'
+        Write-Host ''
+        if ($carriedItems.Count -gt 0) {
+            Write-LWBulletItem -Text 'Y. Choose carried Special Items to leave in safekeeping' -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        if ($storedItems.Count -gt 0) {
+            Write-LWBulletItem -Text 'R. Reclaim Special Items from safekeeping' -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text 'I. Review inventory first' -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text ("N. Continue into {0}" -f $continueLabel) -TextColor 'Gray' -BulletColor 'Yellow'
+
+        $safekeepingChoice = [string](Read-LWText -Prompt 'Safekeeping choice' -Default 'N' -NoRefresh)
+        switch ($safekeepingChoice.Trim().ToLowerInvariant()) {
+            'y' {
+                if ($carriedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingInventorySelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no carried Special Items to place in safekeeping right now.'
+                }
+                break
+            }
+            'yes' {
+                if ($carriedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingInventorySelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no carried Special Items to place in safekeeping right now.'
+                }
+                break
+            }
+            'r' {
+                if ($storedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingReclaimSelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no safekept Special Items to reclaim right now.'
+                }
+                break
+            }
+            'reclaim' {
+                if ($storedItems.Count -gt 0) {
+                    Invoke-LWTransitionSafekeepingReclaimSelection -BookNumber $BookNumber
+                }
+                else {
+                    Write-LWWarn 'There are no safekept Special Items to reclaim right now.'
+                }
+                break
+            }
+            'i' {
+                Show-LWInventory
+                [void](Read-LWText -Prompt 'Press Enter to return to the safekeeping prompt' -NoRefresh)
+                break
+            }
+            'inv' {
+                Show-LWInventory
+                [void](Read-LWText -Prompt 'Press Enter to return to the safekeeping prompt' -NoRefresh)
+                break
+            }
+            'inventory' {
+                Show-LWInventory
+                [void](Read-LWText -Prompt 'Press Enter to return to the safekeeping prompt' -NoRefresh)
+                break
+            }
+            'n' {
+                $promptComplete = $true
+                break
+            }
+            'no' {
+                $promptComplete = $true
+                break
+            }
+            '0' {
+                $promptComplete = $true
+                break
+            }
+            'done' {
+                $promptComplete = $true
+                break
+            }
+            'continue' {
+                $promptComplete = $true
+                break
+            }
+            default {
+                Write-LWWarn 'Choose Y to safekeep items, R to reclaim items, I to review inventory, or N/0 to continue.'
+            }
+        }
+    }
+}
+
 Export-ModuleMember -Function `
     Invoke-LWCoreMaintainRuntime, `
     Invoke-LWCoreRequestRender, `
@@ -1126,6 +1530,15 @@ Export-ModuleMember -Function `
     Invoke-LWCoreWriteBannerFooter, `
     Invoke-LWCoreWriteBanner, `
     Invoke-LWCoreWriteCommandPromptHint, `
+    Get-LWBookDisplayLine, `
+    Get-LWBookFourSectionChoiceLine, `
+    Grant-LWBookFourGenericChoice, `
+    Format-LWBookFourStartingChoiceLine, `
+    Invoke-LWBookFourChoiceTable, `
+    Invoke-LWBookFourStartingInventoryManagement, `
+    Invoke-LWTransitionSafekeepingInventorySelection, `
+    Invoke-LWTransitionSafekeepingReclaimSelection, `
+    Invoke-LWBookTransitionSafekeepingPrompt, `
     Invoke-LWCoreWriteScreenFooterNote, `
     Invoke-LWCoreShowHelpScreen, `
     Invoke-LWCoreShowStatsScreen, `

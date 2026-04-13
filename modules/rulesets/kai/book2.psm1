@@ -8,6 +8,50 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWBookTwoArmoryChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'short_sword'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' },
+        [pscustomobject]@{ Id = 'two_meals'; DisplayName = 'Two Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 2; Description = 'Two Meals' },
+        [pscustomobject]@{ Id = 'chainmail'; DisplayName = 'Chainmail Waistcoat'; Type = 'special'; Name = 'Chainmail Waistcoat'; Quantity = 1; Description = 'Chainmail Waistcoat' },
+        [pscustomobject]@{ Id = 'mace'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'healing_potion'; DisplayName = 'Healing Potion'; Type = 'backpack'; Name = 'Healing Potion'; Quantity = 1; Description = 'Healing Potion' },
+        [pscustomobject]@{ Id = 'quarterstaff'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'spear'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' },
+        [pscustomobject]@{ Id = 'shield'; DisplayName = 'Shield'; Type = 'special'; Name = 'Shield'; Quantity = 1; Description = 'Shield' },
+        [pscustomobject]@{ Id = 'broadsword'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' }
+    )
+}
+
+function Grant-LWBookTwoArmoryChoice {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    if ($null -eq $Choice) {
+        return $false
+    }
+
+    if ([string]$Choice.Type -eq 'weapon' -and @($script:GameState.Inventory.Weapons).Count -ge 2) {
+        Write-LWInfo 'Book 2 allows you to exchange one of your carried weapons for an armory choice.'
+        Show-LWInventorySlotsSection -Type 'weapon'
+        $slot = Read-LWInt -Prompt ("Replace which weapon with {0}?" -f [string]$Choice.DisplayName) -Min 1 -Max 2
+        $weapons = @(Get-LWInventoryItems -Type 'weapon')
+        $replacedWeapon = [string]$weapons[$slot - 1]
+        $weapons[$slot - 1] = [string]$Choice.Name
+        Set-LWInventoryItems -Type 'weapon' -Items @($weapons)
+        Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+        Write-LWInfo ("Exchanged {0} for {1}." -f $replacedWeapon, [string]$Choice.DisplayName)
+        return $true
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)) {
+        Write-LWInfo ("Book 2 armory choice added: {0}." -f [string]$Choice.Description)
+        return $true
+    }
+
+    Write-LWWarn ("Could not add the Book 2 armory choice '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
+    return $false
+}
+
 function Get-LWKaiBookTwoSectionRandomNumberContext {
     param([object]$State = $null)
 
@@ -98,7 +142,47 @@ function Apply-LWKaiBookTwoStartingEquipment {
         }
 }
 
+
+function Get-LWBookTwoSection262ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section262SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section262MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'quarterstaff'; FlagName = 'Book2Section262QuarterstaffClaimed'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'meal'; FlagName = 'Book2Section262MealClaimed'; DisplayName = 'Meal'; Type = 'backpack'; Name = 'Meal'; Quantity = 1; Description = 'Meal' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section262GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' },
+        [pscustomobject]@{ Id = 'orange_potion'; FlagName = 'Book2Section262OrangePotionClaimed'; DisplayName = 'Potion of Orange Liquid'; Type = 'backpack'; Name = 'Potion of Orange Liquid'; Quantity = 1; Description = 'Potion of Orange Liquid' }
+    )
+}
+
+function Get-LWBookTwoSection302ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section302MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book2Section302BroadswordClaimed'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' },
+        [pscustomobject]@{ Id = 'quarterstaff'; FlagName = 'Book2Section302QuarterstaffClaimed'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'healing_potion'; FlagName = 'Book2Section302HealingPotionClaimed'; DisplayName = 'Healing Potion'; Type = 'backpack'; Name = 'Healing Potion'; Quantity = 1; Description = 'Healing Potion' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book2Section302MealsClaimed'; DisplayName = '3 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 3; Description = '3 Meals' },
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book2Section302BackpackClaimed'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section302GoldClaimed'; DisplayName = '12 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 12; Description = '12 Gold Crowns' }
+    )
+}
+
+function Get-LWBookTwoSectionContextAchievementIds {
+    return @(
+        'found_the_sommerswerd',
+        'by_a_thread',
+        'skyfall',
+        'fight_through_the_smoke',
+        'storm_tossed',
+        'seal_of_approval',
+        'papers_please'
+    )
+}
+
+
 Export-ModuleMember -Function `
     Get-LWKaiBookTwoSectionRandomNumberContext, `
-    Apply-LWKaiBookTwoStartingEquipment
+    Apply-LWKaiBookTwoStartingEquipment, `
+    Get-LWBookTwoSection262ChoiceDefinitions, `
+    Get-LWBookTwoSection302ChoiceDefinitions, `
+    Get-LWBookTwoSectionContextAchievementIds
 

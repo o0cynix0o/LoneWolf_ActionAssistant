@@ -8,6 +8,42 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWBookThreeStartingChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'short_sword'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' },
+        [pscustomobject]@{ Id = 'padded_leather'; DisplayName = 'Padded Leather Waistcoat'; Type = 'special'; Name = 'Padded Leather Waistcoat'; Quantity = 1; Description = 'Padded Leather Waistcoat' },
+        [pscustomobject]@{ Id = 'spear'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' },
+        [pscustomobject]@{ Id = 'mace'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'warhammer'; DisplayName = 'Warhammer'; Type = 'weapon'; Name = 'Warhammer'; Quantity = 1; Description = 'Warhammer' },
+        [pscustomobject]@{ Id = 'axe'; DisplayName = 'Axe'; Type = 'weapon'; Name = 'Axe'; Quantity = 1; Description = 'Axe' },
+        [pscustomobject]@{ Id = 'laumspur_potion'; DisplayName = 'Potion of Laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; Description = 'Potion of Laumspur' },
+        [pscustomobject]@{ Id = 'quarterstaff'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'special_rations'; DisplayName = 'Special Rations'; Type = 'backpack'; Name = 'Special Rations'; Quantity = 1; Description = 'Special Rations' },
+        [pscustomobject]@{ Id = 'broadsword'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' }
+    )
+}
+
+function Grant-LWBookThreeStartingChoice {
+    param([Parameter(Mandatory = $true)][object]$Choice)
+
+    if ($null -eq $Choice) {
+        return $false
+    }
+
+    if ([string]$Choice.Type -eq 'weapon') {
+        return (Add-LWWeaponWithOptionalReplace -Name ([string]$Choice.Name) -PromptLabel ([string]$Choice.DisplayName))
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type ([string]$Choice.Type) -Name ([string]$Choice.Name) -Quantity ([int]$Choice.Quantity)) {
+        Write-LWInfo ("Book 3 starting item added: {0}." -f [string]$Choice.Description)
+        return $true
+    }
+
+    Write-LWWarn ("Could not add the Book 3 starting item '{0}' automatically. Make room and add it manually if you are keeping it." -f [string]$Choice.DisplayName)
+    return $false
+}
+
 function Get-LWKaiBookThreeSectionRandomNumberContext {
     param([object]$State = $null)
 
@@ -164,7 +200,111 @@ function Apply-LWKaiBookThreeStartingEquipment {
         }
 }
 
+
+function Get-LWBookThreeSection004ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'bone_sword'; FlagName = 'Book3Section004BoneSwordClaimed'; DisplayName = 'Bone Sword'; Type = 'weapon'; Name = 'Bone Sword'; Quantity = 1; Description = 'Bone Sword' },
+        [pscustomobject]@{ Id = 'blue_stone_disc'; FlagName = 'Book3Section004BlueStoneDiscClaimed'; DisplayName = 'Blue Stone Disc'; Type = 'special'; Name = 'Blue Stone Disc'; Quantity = 1; Description = 'Blue Stone Disc' }
+    )
+}
+
+function Get-LWBookThreeSection012ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book3Section012MealsClaimed'; DisplayName = '3 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 3; Description = '3 Meals' },
+        [pscustomobject]@{ Id = 'sleeping_furs'; FlagName = 'Book3Section012SleepingFursClaimed'; DisplayName = 'Sleeping Furs'; Type = 'backpack'; Name = 'Sleeping Furs'; Quantity = 1; Description = 'Sleeping Furs' },
+        [pscustomobject]@{ Id = 'rope'; FlagName = 'Book3Section012RopeClaimed'; DisplayName = 'Rope'; Type = 'backpack'; Name = 'Rope'; Quantity = 1; Description = 'Rope' }
+    )
+}
+
+function Get-LWBookThreeSection038ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book3Section038BackpackClaimed'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack' },
+        [pscustomobject]@{ Id = 'long_rope'; FlagName = 'Book3Section038LongRopeClaimed'; DisplayName = 'Long Rope'; Type = 'backpack'; Name = 'Long Rope'; Quantity = 1; Description = 'Long Rope' }
+    )
+}
+
+function Get-LWBookThreeSection084ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section084TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' }
+    )
+}
+
+function Get-LWBookThreeSection102ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'stone_effigy'; FlagName = 'Book3Section102EffigyClaimed'; DisplayName = 'Stone Effigy'; Type = 'special'; Name = 'Stone Effigy'; Quantity = 1; Description = 'Stone Effigy' }
+    )
+}
+
+function Get-LWBookThreeSection231ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold_bracelet'; FlagName = 'Book3Section231BraceletClaimed'; DisplayName = 'Gold Bracelet'; Type = 'special'; Name = 'Gold Bracelet'; Quantity = 1; Description = 'Gold Bracelet' }
+    )
+}
+
+function Get-LWBookThreeSection295ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'firesphere'; FlagName = 'Book3Section295FiresphereClaimed'; DisplayName = 'Firesphere'; Type = 'special'; Name = 'Firesphere'; Quantity = 1; Description = 'Firesphere' }
+    )
+}
+
+function Get-LWBookThreeSection298ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section298TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' }
+    )
+}
+
+function Get-LWBookThreeSection282ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book3Section282SpearClaimed'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' },
+        [pscustomobject]@{ Id = 'blue_stone_disc'; FlagName = 'Book3Section282BlueStoneDiscClaimed'; DisplayName = 'Blue Stone Disc'; Type = 'special'; Name = 'Blue Stone Disc'; Quantity = 1; Description = 'Blue Stone Disc' }
+    )
+}
+
+function Get-LWBookThreeSection309ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section309TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' },
+        [pscustomobject]@{ Id = 'firesphere'; FlagName = 'Book3Section309FiresphereClaimed'; DisplayName = 'Firesphere'; Type = 'special'; Name = 'Firesphere'; Quantity = 1; Description = 'Firesphere' }
+    )
+}
+
+function Get-LWBookThreeSection321ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section321TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' }
+    )
+}
+
+function Get-LWBookThreeSectionContextAchievementIds {
+    return @(
+        'snakes_why',
+        'cliffhanger',
+        'whats_in_the_box',
+        'snowblind',
+        'you_touched_it_with_your_hands',
+        'lucky_button_theory',
+        'well_it_worked_once',
+        'cellfish',
+        'loi_kymar_lives',
+        'puppet_master',
+        'sun_on_the_ice',
+        'lucky_break',
+        'too_slow'
+    )
+}
+
+
 Export-ModuleMember -Function `
     Get-LWKaiBookThreeSectionRandomNumberContext, `
-    Apply-LWKaiBookThreeStartingEquipment
+    Apply-LWKaiBookThreeStartingEquipment, `
+    Get-LWBookThreeSection004ChoiceDefinitions, `
+    Get-LWBookThreeSection012ChoiceDefinitions, `
+    Get-LWBookThreeSection038ChoiceDefinitions, `
+    Get-LWBookThreeSection084ChoiceDefinitions, `
+    Get-LWBookThreeSection102ChoiceDefinitions, `
+    Get-LWBookThreeSection231ChoiceDefinitions, `
+    Get-LWBookThreeSection295ChoiceDefinitions, `
+    Get-LWBookThreeSection298ChoiceDefinitions, `
+    Get-LWBookThreeSection282ChoiceDefinitions, `
+    Get-LWBookThreeSection309ChoiceDefinitions, `
+    Get-LWBookThreeSection321ChoiceDefinitions, `
+    Get-LWBookThreeSectionContextAchievementIds
 

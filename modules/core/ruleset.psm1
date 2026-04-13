@@ -119,6 +119,20 @@ function Invoke-LWRuleSetCombatScenarioRules {
     }
 }
 
+function Get-LWBookSectionContextAchievementIds {
+    param([int]$BookNumber)
+
+    switch ($BookNumber) {
+        1 { return @(Get-LWBookOneSectionContextAchievementIds) }
+        2 { return @(Get-LWBookTwoSectionContextAchievementIds) }
+        3 { return @(Get-LWBookThreeSectionContextAchievementIds) }
+        4 { return @(Get-LWBookFourSectionContextAchievementIds) }
+        5 { return @(Get-LWBookFiveSectionContextAchievementIds) }
+        6 { return @(Get-LWBookSixSectionContextAchievementIds) }
+        default { return @() }
+    }
+}
+
 Export-ModuleMember -Function `
     Get-LWActiveRuleSetName, `
     Get-LWActiveRuleSetVersion, `
@@ -129,4 +143,5 @@ Export-ModuleMember -Function `
     Invoke-LWRuleSetSectionEntryRules, `
     Invoke-LWRuleSetStartingEquipment, `
     Get-LWRuleSetCombatEncounterProfile, `
-    Invoke-LWRuleSetCombatScenarioRules
+    Invoke-LWRuleSetCombatScenarioRules, `
+    Get-LWBookSectionContextAchievementIds

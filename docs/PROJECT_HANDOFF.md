@@ -46,7 +46,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M2.7 validation closeout is complete under the route-and-mode validation bar
 - M3 UX polish is complete and released
 - M4 portable packaging workflow is complete and released
-- M5 Book `6` automation catch-up is active on `main`
+- M5 Book `6` automation catch-up is complete on `main`
+- current `dev` work is architecture hardening and dead-code cleanup after the `0.8.0` release
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
@@ -74,6 +75,16 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `modules/rulesets/kai/combat.psm1`
   - `modules/rulesets/magnakai/combat.psm1`
 - startup now rotates oversized `data/error.log` files and keeps only the latest archive set
+- stale duplicate legacy wrappers and book-specific copies were removed from `lonewolf.ps1` after their module-backed replacements went live
+- Book `1-5` starting-equipment helper definitions now live in their respective Kai book modules
+- Book `1-6` section-context achievement ID lists now live in their respective book modules and dispatch through `modules/core/ruleset.psm1`
+- generic loot-choice and book-transition safekeeping prompts now live in `modules/core/shell.psm1`
+- Book `4` section `12` choice handling now lives in `modules/rulesets/kai/book4.psm1`
+- Book `6` riverboat-ticket item names now live in `modules/rulesets/magnakai/book6.psm1`
+- `Book of the Magnakai` item-name helper now lives in `modules/rulesets/magnakai/magnakai.psm1`
+- latest `dev` architecture-hardening smoke passed in both shells:
+  - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS7.txt`
+  - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS51.txt`
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
