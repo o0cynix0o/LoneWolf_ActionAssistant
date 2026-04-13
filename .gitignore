@@ -3,6 +3,7 @@ saves/*
 !saves/.gitkeep
 data/last-save.txt
 data/error.log
+data/error-*.log
 
 # Local CRT/reference data not intended for redistribution
 data/crt.json

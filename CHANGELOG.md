@@ -6,6 +6,18 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- runtime now rotates oversized `data/error.log` files at startup, archives them as `error-YYYYMMDD-HHMMSS.log`, and keeps the latest `5`
+- new `modules/core/shell.psm1` now owns runtime maintenance, notifications, banners, and additional screen renderers for:
+  - stats
+  - campaign
+  - achievements
+  - inventory
+  - main sheet
+- book-specific combat encounter profiles and scenario rules now dispatch through:
+  - `modules/rulesets/kai/combat.psm1`
+  - `modules/rulesets/magnakai/combat.psm1`
+- `modules/core/combat.psm1` no longer carries the legacy inline per-book scenario branch
+- additional strict-mode/null-safety hardening landed in core save/common/shell handling
 - Book `6` section `10` now prompts for the riverboat ticket purchase, stores the ticket as a pocket-carried Special Item outside the normal `12`-item cap, and surfaces the ticket route again at section `124`
 - Book `6` OG automation catch-up expanded across:
   - fixed ENDURANCE losses and gains

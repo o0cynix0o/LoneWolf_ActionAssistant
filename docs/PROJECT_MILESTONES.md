@@ -14,6 +14,7 @@ Status values:
 Current top milestone focus:
 
 - `in_progress` `M5` Post-Release Stabilization And Book `7+` Planning
+- active integration branch for this work: `dev`
 
 ## Milestone List
 
@@ -537,6 +538,11 @@ Current checkpoint:
   - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS51_AUTOFIX_RERUN.md`
   - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS7_AUTOFIX_RERUN2.md`
   - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS51_AUTOFIX_RERUN2.md`
+- architecture-hardening slice now in progress on `dev`:
+  - runtime `error.log` rotation
+  - `modules/core/shell.psm1` extraction
+  - ruleset combat-hook dispatch modules
+  - strict-mode/null-safety hardening in core modules
 
 ## Tracking Rules
 

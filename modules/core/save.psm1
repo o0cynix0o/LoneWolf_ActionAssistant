@@ -78,8 +78,9 @@ function Invoke-LWCoreLoadGame {
             Write-LWWarn ("Run integrity warning: {0}" -f $integrityNote)
         }
         $backfilled = @(Sync-LWAchievements -Context 'load' -Silent)
-        if ($backfilled.Count -gt 0) {
-            Write-LWInfo ("Backfilled {0} achievement{1} from save history." -f $backfilled.Count, $(if ($backfilled.Count -eq 1) { '' } else { 's' }))
+        $backfilledCount = @($backfilled).Count
+        if ($backfilledCount -gt 0) {
+            Write-LWInfo ("Backfilled {0} achievement{1} from save history." -f $backfilledCount, $(if ($backfilledCount -eq 1) { '' } else { 's' }))
         }
         Write-LWInfo "Loaded game from $Path"
 
@@ -106,10 +107,10 @@ function Invoke-LWCoreLoadGameInteractive {
             Set-LWScreen -Name 'load' -Data ([pscustomobject]@{
                     SaveFiles = @($saveFiles)
                 })
-            if ($saveFiles.Count -gt 0) {
+            if (@($saveFiles).Count -gt 0) {
                 $defaultSelection = '1'
                 $currentSave = @($saveFiles | Where-Object { $_.IsCurrent } | Select-Object -First 1)
-                if ($currentSave.Count -gt 0) {
+                if (@($currentSave).Count -gt 0) {
                     $defaultSelection = [string]$currentSave[0].Index
                 }
 

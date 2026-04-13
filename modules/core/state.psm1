@@ -168,6 +168,124 @@ function Invoke-LWCoreNewDefaultState {
         }
 }
 
+function Invoke-LWCoreAddBookSectionVisit {
+    param(
+        [hashtable]$Context,
+        [int]$Section
+    )
+
+    Set-LWModuleContext -Context $Context
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or $Section -lt 1) {
+        return
+    }
+
+    if ($null -eq $stats.StartSection) {
+        $stats.StartSection = $Section
+    }
+
+    $stats.LastSection = $Section
+    $stats.SectionsVisited = [int]$stats.SectionsVisited + 1
+
+    $visited = @($stats.VisitedSections)
+    if ($visited -notcontains $Section) {
+        $stats.VisitedSections = @($visited + $Section)
+    }
+
+    Register-LWStorySectionAchievementTriggers -Section $Section
+    if (-not (Test-LWAchievementSyncSuppressed -Context 'section')) {
+        [void](Sync-LWAchievements -Context 'section')
+    }
+}
+
+function Invoke-LWCoreAddBookEnduranceDelta {
+    param(
+        [hashtable]$Context,
+        [int]$Delta
+    )
+
+    Set-LWModuleContext -Context $Context
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or $Delta -eq 0) {
+        return
+    }
+
+    if ($Delta -lt 0) {
+        $stats.EnduranceLost = [int]$stats.EnduranceLost + [Math]::Abs($Delta)
+        return
+    }
+
+    $stats.EnduranceGained = [int]$stats.EnduranceGained + $Delta
+}
+
+function Invoke-LWCoreAddBookGoldDelta {
+    param(
+        [hashtable]$Context,
+        [int]$Delta
+    )
+
+    Set-LWModuleContext -Context $Context
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or $Delta -eq 0) {
+        return
+    }
+
+    if ($Delta -lt 0) {
+        $stats.GoldSpent = [int]$stats.GoldSpent + [Math]::Abs($Delta)
+        return
+    }
+
+    $stats.GoldGained = [int]$stats.GoldGained + $Delta
+}
+
+function Invoke-LWCoreAddBookNamedCount {
+    param(
+        [hashtable]$Context,
+        [Parameter(Mandatory = $true)][string]$PropertyName,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [int]$Delta = 1
+    )
+
+    Set-LWModuleContext -Context $Context
+
+    $stats = Ensure-LWCurrentBookStats
+    if ($null -eq $stats -or [string]::IsNullOrWhiteSpace($PropertyName) -or [string]::IsNullOrWhiteSpace($Name) -or $Delta -eq 0) {
+        return
+    }
+
+    if (-not (Test-LWPropertyExists -Object $stats -Name $PropertyName) -or $null -eq $stats.$PropertyName) {
+        $stats | Add-Member -Force -NotePropertyName $PropertyName -NotePropertyValue @()
+    }
+
+    $currentEntries = @(Normalize-LWNamedCountEntries -Entries @($stats.$PropertyName))
+    $updatedEntries = @()
+    $matched = $false
+    foreach ($entry in $currentEntries) {
+        if ([string]$entry.Name -ieq $Name) {
+            $updatedEntries += [pscustomobject]@{
+                Name  = [string]$entry.Name
+                Count = [Math]::Max(0, ([int]$entry.Count + $Delta))
+            }
+            $matched = $true
+        }
+        else {
+            $updatedEntries += $entry
+        }
+    }
+
+    if (-not $matched -and $Delta -gt 0) {
+        $updatedEntries += [pscustomobject]@{
+            Name  = $Name
+            Count = $Delta
+        }
+    }
+
+    $stats.$PropertyName = @($updatedEntries | Where-Object { [int]$_.Count -gt 0 })
+}
+
 function Get-LWCombatHistorySectionBackfillName {
     param([string]$EnemyName = '')
 
@@ -723,5 +841,9 @@ function Invoke-LWCoreNormalizeState {
 Export-ModuleMember -Function `
     Invoke-LWCoreInitializeData, `
     Invoke-LWCoreNewDefaultState, `
+    Invoke-LWCoreAddBookSectionVisit, `
+    Invoke-LWCoreAddBookEnduranceDelta, `
+    Invoke-LWCoreAddBookGoldDelta, `
+    Invoke-LWCoreAddBookNamedCount, `
     Invoke-LWCoreNormalizeState
 

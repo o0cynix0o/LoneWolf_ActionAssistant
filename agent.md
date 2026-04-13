@@ -1,6 +1,6 @@
 # Lone Wolf Terminal - Agent Handoff
 
-Last updated: 2026-04-09
+Last updated: 2026-04-13
 
 ## What This File Is For
 
@@ -18,6 +18,8 @@ For deeper project state, workflow details, and local report locations, use:
 
 - App version: `0.8.0`
 - Main script: `lonewolf.ps1`
+- `main` is the public release branch
+- `dev` is the active integration branch for current architecture-hardening work
 - Runtime target:
   - Windows PowerShell 5.1
   - PowerShell 7
@@ -30,10 +32,15 @@ For deeper project state, workflow details, and local report locations, use:
 - M1 modular refactor is complete and pushed
 - Core modules live under:
   - `modules/core/`
+- Runtime shell extraction now lives in:
+  - `modules/core/shell.psm1`
 - Kai ruleset modules live under:
   - `modules/rulesets/kai/`
 - Magnakai ruleset modules live under:
   - `modules/rulesets/magnakai/`
+- Book-specific combat dispatch now lives in:
+  - `modules/rulesets/kai/combat.psm1`
+  - `modules/rulesets/magnakai/combat.psm1`
 
 This project is no longer a “single-script starter kit with combat overhaul next.”
 That old framing is stale.

@@ -7,9 +7,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - App version: `0.8.0`
 - Main script: `lonewolf.ps1`
 - Latest public release on `main`: `v0.8.0`
-- `main` is the active working branch
-- `dev` is retired from the day-to-day workflow
-- M5 post-release stabilization is now in progress on `main`
+- `main` remains the public release branch
+- `dev` is active again as the integration branch for post-release architecture hardening
+- M5 post-release stabilization and architecture hardening are now in progress on `dev`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Confirmed defects should be tracked in GitHub as they are found, not cleaned up later in a batch
 - Public docs hygiene:
@@ -69,6 +69,11 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - death
   - book complete
 - screen-specific `Helpful Commands` panels now appear across the main screen families on `main`
+- `modules/core/shell.psm1` now owns runtime maintenance, notifications, banners, and several screen renderers
+- ruleset combat hook modules now exist in:
+  - `modules/rulesets/kai/combat.psm1`
+  - `modules/rulesets/magnakai/combat.psm1`
+- startup now rotates oversized `data/error.log` files and keeps only the latest archive set
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`
@@ -102,6 +107,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   Local portable package validator that rebuilds, extracts, and smoke-tests a disposable package copy in both shells
 - `modules/core/`
   Core-engine modules, including state/save/command/combat/ruleset slices
+- `modules/core/shell.psm1`
+  Runtime maintenance, notifications, banner helpers, and extracted screen renderers
 - `modules/rulesets/kai/`
   Kai ruleset shell plus Book `1-5` modules
 - `modules/rulesets/magnakai/`
@@ -136,6 +143,7 @@ These are intentionally local and should normally stay out of git:
 - `books/`
 - `data/last-save.txt`
 - `data/error.log`
+  Local runtime error log; oversized logs are rotated automatically at startup
 - ad-hoc temp files under `testing/tmp/`
 
 The working pattern has been:

@@ -83,8 +83,9 @@ function Normalize-LWNamedCountEntries {
         }
 
         $count = 0
-        if ((Test-LWPropertyExists -Object $entry -Name 'Count') -and $null -ne $entry.Count) {
-            $count = [int]$entry.Count
+        $entryCountValue = Get-LWJsonProperty -Object $entry -Name 'Count'
+        if ($null -ne $entryCountValue) {
+            $count = [int]$entryCountValue
         }
 
         if ($count -lt 0) {
@@ -104,7 +105,7 @@ function Format-LWNamedCountSummary {
     param([object[]]$Entries)
 
     $values = @(Normalize-LWNamedCountEntries -Entries $Entries | Sort-Object @{ Expression = 'Count'; Descending = $true }, @{ Expression = 'Name'; Descending = $false })
-    if ($values.Count -eq 0) {
+    if (@($values).Count -eq 0) {
         return '(none)'
     }
 
@@ -118,7 +119,7 @@ function Format-LWCompactInventorySummary {
     )
 
     $values = @($Items | Where-Object { $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_) })
-    if ($values.Count -eq 0) {
+    if (@($values).Count -eq 0) {
         return '(none)'
     }
 
@@ -144,12 +145,12 @@ function Format-LWCompactInventorySummary {
         }
     }
 
-    if ($labels.Count -le $MaxGroups) {
+    if (@($labels).Count -le $MaxGroups) {
         return ($labels -join ', ')
     }
 
     $visible = @($labels[0..($MaxGroups - 1)])
-    return ("{0} +{1} more" -f ($visible -join ', '), ($labels.Count - $MaxGroups))
+    return ("{0} +{1} more" -f ($visible -join ', '), (@($labels).Count - $MaxGroups))
 }
 
 function Get-LWBookTitle {

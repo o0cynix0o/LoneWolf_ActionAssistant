@@ -97,6 +97,28 @@ function Invoke-LWRuleSetStartingEquipment {
     }
 }
 
+function Get-LWRuleSetCombatEncounterProfile {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
+        'kai' { return (Get-LWKaiCombatEncounterProfile -State $State) }
+        'magnakai' { return (Get-LWMagnakaiCombatEncounterProfile -State $State) }
+        default { return $null }
+    }
+}
+
+function Invoke-LWRuleSetCombatScenarioRules {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][hashtable]$Scenario
+    )
+
+    switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
+        'kai' { Invoke-LWKaiCombatScenarioRules -State $State -Scenario $Scenario; return }
+        'magnakai' { Invoke-LWMagnakaiCombatScenarioRules -State $State -Scenario $Scenario; return }
+    }
+}
+
 Export-ModuleMember -Function `
     Get-LWActiveRuleSetName, `
     Get-LWActiveRuleSetVersion, `
@@ -105,4 +127,6 @@ Export-ModuleMember -Function `
     Invoke-LWRuleSetStorySectionAchievementTriggers, `
     Invoke-LWRuleSetStorySectionTransitionAchievementTriggers, `
     Invoke-LWRuleSetSectionEntryRules, `
-    Invoke-LWRuleSetStartingEquipment
+    Invoke-LWRuleSetStartingEquipment, `
+    Get-LWRuleSetCombatEncounterProfile, `
+    Invoke-LWRuleSetCombatScenarioRules
