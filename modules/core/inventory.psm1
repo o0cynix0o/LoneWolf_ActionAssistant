@@ -1364,6 +1364,23 @@ function Add-LWInventoryItem {
 
     $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
 
+    if ($Type -eq 'backpack' -and
+        -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWArrowItemNames) -Target $resolvedName)) -and
+        (Test-LWStateHasQuiver -State $script:GameState)) {
+        $currentArrows = Sync-LWQuiverArrowState -State $script:GameState
+        $capacity = Get-LWQuiverArrowCapacity
+        if (($currentArrows + $Quantity) -gt $capacity) {
+            $freeArrows = [Math]::Max(0, ($capacity - $currentArrows))
+            Write-LWWarn ("Quiver can only hold {0} more arrow{1}." -f $freeArrows, $(if ($freeArrows -eq 1) { '' } else { 's' }))
+            return
+        }
+
+        $script:GameState.Inventory.QuiverArrows = ($currentArrows + $Quantity)
+        Write-LWInfo ("Added {0} x Arrow to quiver. Now {1}." -f $Quantity, (Format-LWQuiverArrowCounter -State $script:GameState))
+        Invoke-LWMaybeAutosave
+        return
+    }
+
     if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHerbPouchItemNames) -Target $resolvedName))) {
         if (Grant-LWHerbPouch -WriteMessages) {
             Invoke-LWMaybeAutosave
@@ -1456,6 +1473,21 @@ function TryAdd-LWInventoryItemSilently {
     }
 
     $resolvedName = Get-LWCanonicalInventoryItemName -Name $Name
+
+    if ($Type -eq 'backpack' -and
+        -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWArrowItemNames) -Target $resolvedName)) -and
+        (Test-LWStateHasQuiver -State $script:GameState)) {
+        $currentArrows = Sync-LWQuiverArrowState -State $script:GameState
+        $capacity = Get-LWQuiverArrowCapacity
+        if (($currentArrows + $Quantity) -gt $capacity) {
+            $freeArrows = [Math]::Max(0, ($capacity - $currentArrows))
+            Write-LWWarn ("Quiver can only hold {0} more arrow{1}." -f $freeArrows, $(if ($freeArrows -eq 1) { '' } else { 's' }))
+            return $false
+        }
+
+        $script:GameState.Inventory.QuiverArrows = ($currentArrows + $Quantity)
+        return $true
+    }
 
     if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWHerbPouchItemNames) -Target $resolvedName))) {
         return (Grant-LWHerbPouch)

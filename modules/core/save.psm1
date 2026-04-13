@@ -144,7 +144,10 @@ function Import-LWJson {
         [string]$Path,
         [object]$Default = $null
     )
-    Set-LWModuleContext -Context (Get-LWModuleContext)
+    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    if ($null -ne $contextCommand) {
+        Set-LWModuleContext -Context (& $contextCommand)
+    }
 
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -304,7 +307,19 @@ function Show-LWSaveCatalog {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
-    $saveFiles = @($SaveFiles)
+    $saveFiles = @(
+        foreach ($entry in @($SaveFiles)) {
+            if ($null -eq $entry) {
+                continue
+            }
+
+            if ((Test-LWPropertyExists -Object $entry -Name 'FullName') -or
+                (Test-LWPropertyExists -Object $entry -Name 'Index') -or
+                (Test-LWPropertyExists -Object $entry -Name 'BookNumber')) {
+                $entry
+            }
+        }
+    )
     if ($saveFiles.Count -eq 0) {
         return
     }

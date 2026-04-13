@@ -7,6 +7,24 @@ function Set-LWModuleContext {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
 }
+
+function Get-LWModuleGameData {
+    $localGameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
+    if ($null -ne $localGameData) {
+        return $localGameData
+    }
+
+    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    if ($null -ne $contextCommand) {
+        $context = & $contextCommand
+        if ($context -is [hashtable] -and $context.ContainsKey('GameData') -and $null -ne $context.GameData) {
+            Set-Variable -Scope Script -Name GameData -Value $context.GameData -Force
+            return $context.GameData
+        }
+    }
+
+    return $null
+}
 function Format-LWSigned {
     param([int]$Value)
     if ($Value -gt 0) {
@@ -404,14 +422,15 @@ function Format-LWKaiRankLabel {
 function Get-LWMagnakaiRankTitle {
     param([int]$Level)
     Set-LWModuleContext -Context (Get-LWModuleContext)
+    $gameData = Get-LWModuleGameData
 
 
     if ($Level -le 0) {
         return $null
     }
 
-    $rankDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiRanks') -and $null -ne $script:GameData.MagnakaiRanks) {
-        @($script:GameData.MagnakaiRanks)
+    $rankDefinitions = if ($null -ne $gameData -and (Test-LWPropertyExists -Object $gameData -Name 'MagnakaiRanks') -and $null -ne $gameData.MagnakaiRanks) {
+        @($gameData.MagnakaiRanks)
     }
     else {
         @()
@@ -450,8 +469,9 @@ function Format-LWMagnakaiRankLabel {
 
 function Get-LWKnownKaiDisciplineNames {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    if ($null -ne $script:GameData -and $null -ne $script:GameData.KaiDisciplines -and @($script:GameData.KaiDisciplines).Count -gt 0) {
-        return @($script:GameData.KaiDisciplines | ForEach-Object { [string]$_.Name })
+    $gameData = Get-LWModuleGameData
+    if ($null -ne $gameData -and $null -ne $gameData.KaiDisciplines -and @($gameData.KaiDisciplines).Count -gt 0) {
+        return @($gameData.KaiDisciplines | ForEach-Object { [string]$_.Name })
     }
 
     return @('Camouflage', 'Hunting', 'Sixth Sense', 'Tracking', 'Healing', 'Weaponskill', 'Mindblast', 'Mindshield', 'Animal Kinship', 'Mind Over Matter')
@@ -459,8 +479,9 @@ function Get-LWKnownKaiDisciplineNames {
 
 function Get-LWKnownMagnakaiDisciplineNames {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    if ($null -ne $script:GameData -and $null -ne $script:GameData.MagnakaiDisciplines -and @($script:GameData.MagnakaiDisciplines).Count -gt 0) {
-        return @($script:GameData.MagnakaiDisciplines | ForEach-Object { [string]$_.Name })
+    $gameData = Get-LWModuleGameData
+    if ($null -ne $gameData -and $null -ne $gameData.MagnakaiDisciplines -and @($gameData.MagnakaiDisciplines).Count -gt 0) {
+        return @($gameData.MagnakaiDisciplines | ForEach-Object { [string]$_.Name })
     }
 
     return @('Weaponmastery', 'Animal Control', 'Curing', 'Invisibility', 'Huntmastery', 'Pathsmanship', 'Psi-surge', 'Psi-screen', 'Nexus', 'Divination')

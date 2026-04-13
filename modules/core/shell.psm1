@@ -8,6 +8,24 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWModuleGameData {
+    $localGameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
+    if ($null -ne $localGameData) {
+        return $localGameData
+    }
+
+    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    if ($null -ne $contextCommand) {
+        $context = & $contextCommand
+        if ($context -is [hashtable] -and $context.ContainsKey('GameData') -and $null -ne $context.GameData) {
+            Set-Variable -Scope Script -Name GameData -Value $context.GameData -Force
+            return $context.GameData
+        }
+    }
+
+    return $null
+}
+
 function Invoke-LWCoreEnsureErrorLogCapacity {
     param(
         [string]$LogPath,
@@ -802,10 +820,42 @@ function Invoke-LWCoreShowLoadScreen {
 
     Set-LWModuleContext -Context $Context
 
+    $catalogEntries = @()
+    foreach ($entry in @($SaveFiles)) {
+        if ($null -eq $entry) {
+            continue
+        }
+
+        if ((Test-LWPropertyExists -Object $entry -Name 'SaveFiles') -and $null -ne $entry.SaveFiles) {
+            foreach ($nestedEntry in @($entry.SaveFiles)) {
+                if ($null -ne $nestedEntry) {
+                    $catalogEntries += $nestedEntry
+                }
+            }
+            continue
+        }
+
+        $catalogEntries += $entry
+    }
+
+    $catalogEntries = @(
+        foreach ($entry in @($catalogEntries)) {
+            if ($null -eq $entry) {
+                continue
+            }
+
+            if ((Test-LWPropertyExists -Object $entry -Name 'FullName') -or
+                (Test-LWPropertyExists -Object $entry -Name 'Index') -or
+                (Test-LWPropertyExists -Object $entry -Name 'BookNumber')) {
+                $entry
+            }
+        }
+    )
+
     Write-LWBanner
     Write-LWRetroPanelHeader -Title 'Save Catalog' -AccentColor 'Cyan'
-    if (@($SaveFiles).Count -gt 0) {
-        Show-LWSaveCatalog -SaveFiles $SaveFiles
+    if (@($catalogEntries).Count -gt 0) {
+        Show-LWSaveCatalog -SaveFiles $catalogEntries
     }
     else {
         Write-LWRetroPanelTextRow -Text ("No saves found in {0} yet." -f $SaveDir) -TextColor 'DarkGray'
@@ -3866,6 +3916,9 @@ function Write-LWScreenFooterNote {
 }
 
 function Show-LWDisciplines {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    $gameData = Get-LWModuleGameData
+
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
         return
@@ -3875,14 +3928,14 @@ function Show-LWDisciplines {
     $panelTitle = if ($isMagnakai) { 'Magnakai Disciplines' } else { 'Kai Disciplines' }
     $displayDisciplines = @()
     $definitionsByName = @{}
-    $kaiDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'KaiDisciplines') -and $null -ne $script:GameData.KaiDisciplines) {
-        @($script:GameData.KaiDisciplines)
+    $kaiDefinitions = if ($null -ne $gameData -and (Test-LWPropertyExists -Object $gameData -Name 'KaiDisciplines') -and $null -ne $gameData.KaiDisciplines) {
+        @($gameData.KaiDisciplines)
     }
     else {
         @()
     }
-    $magnakaiDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiDisciplines') -and $null -ne $script:GameData.MagnakaiDisciplines) {
-        @($script:GameData.MagnakaiDisciplines)
+    $magnakaiDefinitions = if ($null -ne $gameData -and (Test-LWPropertyExists -Object $gameData -Name 'MagnakaiDisciplines') -and $null -ne $gameData.MagnakaiDisciplines) {
+        @($gameData.MagnakaiDisciplines)
     }
     else {
         @()
@@ -3967,11 +4020,11 @@ function Show-LWDisciplines {
         Write-LWRetroPanelFooter
     }
 
-    if ($isMagnakai -and $null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiLoreCircles') -and @($script:GameData.MagnakaiLoreCircles).Count -gt 0) {
+    if ($isMagnakai -and $null -ne $gameData -and (Test-LWPropertyExists -Object $gameData -Name 'MagnakaiLoreCircles') -and @($gameData.MagnakaiLoreCircles).Count -gt 0) {
         Write-LWRetroPanelHeader -Title 'Lore Circles' -AccentColor 'Magenta'
         $owned = @($magnakaiDisciplines)
         $circleRows = @()
-        foreach ($definition in @($script:GameData.MagnakaiLoreCircles | Sort-Object @{ Expression = { Get-LWLoreCircleDisplayOrder -Name ([string]$_.Name) } }, @{ Expression = { [string]$_.Name } })) {
+        foreach ($definition in @($gameData.MagnakaiLoreCircles | Sort-Object @{ Expression = { Get-LWLoreCircleDisplayOrder -Name ([string]$_.Name) } }, @{ Expression = { [string]$_.Name } })) {
             $circleRows += (Format-LWLoreCirclePanelRow -Definition $definition -OwnedDisciplines $owned)
         }
 

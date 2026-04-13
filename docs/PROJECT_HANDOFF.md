@@ -121,6 +121,16 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - latest final-pass command-surface smoke also passed in both shells:
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS7.txt`
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS51.txt`
+- latest prerelease Batch `1` foundation checks also passed in both shells:
+  - `testing/logs/PRERELEASE_PACKAGE_VALIDATION.txt`
+  - `testing/logs/COMMAND_SURFACE_PRERELEASE_PS7.txt`
+  - `testing/logs/COMMAND_SURFACE_PRERELEASE_PS51.txt`
+  - `testing/logs/SAVE_SYSTEM_PRERELEASE_PS7.txt`
+  - `testing/logs/SAVE_SYSTEM_PRERELEASE_PS51.txt`
+- Batch `1` prerelease defects fixed on `dev` include:
+  - quiver-aware `Arrow` add routing from the command surface
+  - packaged/runtime module-context recovery for `GameData` under strict mode
+  - empty save-catalog rendering on the `load` screen
 - M3 validation passed in both shells:
   - `testing/logs/M3_SCREEN_RENDER_PW7.txt`
   - `testing/logs/M3_SCREEN_RENDER_PS51.txt`

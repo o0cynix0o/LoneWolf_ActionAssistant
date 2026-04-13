@@ -8,6 +8,24 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWModuleGameData {
+    $localGameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
+    if ($null -ne $localGameData) {
+        return $localGameData
+    }
+
+    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    if ($null -ne $contextCommand) {
+        $context = & $contextCommand
+        if ($context -is [hashtable] -and $context.ContainsKey('GameData') -and $null -ne $context.GameData) {
+            Set-Variable -Scope Script -Name GameData -Value $context.GameData -Force
+            return $context.GameData
+        }
+    }
+
+    return $null
+}
+
 function Resolve-LWCoreRestrictedBowWeapon {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -565,6 +583,7 @@ function Get-LWCombatStartArguments {
 
 function Get-LWCRTValidation {
     Set-LWModuleContext -Context (Get-LWModuleContext)
+    $gameData = Get-LWModuleGameData
     $requiredRatios = -11..11
     $messages = @()
     $missingEntries = @()
@@ -572,7 +591,7 @@ function Get-LWCRTValidation {
     $usableEntryCount = 0
     $ratioKeys = @()
 
-    if ($null -eq $script:GameData.CRT) {
+    if ($null -eq $gameData -or $null -eq $gameData.CRT) {
         return [pscustomobject]@{
             Present          = $false
             IsComplete       = $false
@@ -584,7 +603,7 @@ function Get-LWCRTValidation {
         }
     }
 
-    foreach ($property in $script:GameData.CRT.PSObject.Properties) {
+    foreach ($property in $gameData.CRT.PSObject.Properties) {
         $ratioValue = 0
         if ([int]::TryParse($property.Name, [ref]$ratioValue)) {
             $ratioKeys += $ratioValue
@@ -592,7 +611,7 @@ function Get-LWCRTValidation {
     }
 
     foreach ($ratio in $requiredRatios) {
-        $ratioNode = Get-LWJsonProperty -Object $script:GameData.CRT -Name ([string]$ratio)
+        $ratioNode = Get-LWJsonProperty -Object $gameData.CRT -Name ([string]$ratio)
         if ($null -eq $ratioNode) {
             foreach ($roll in 0..9) {
                 $missingEntries += "$ratio/$roll"
@@ -691,13 +710,14 @@ function Convert-LWCRTLossValue {
 function Get-LWWeaponskillWeapon {
     param([Parameter(Mandatory = $true)][int]$Roll)
     Set-LWModuleContext -Context (Get-LWModuleContext)
+    $gameData = Get-LWModuleGameData
 
 
-    if ($null -eq $script:GameData.WeaponskillMap) {
+    if ($null -eq $gameData -or $null -eq $gameData.WeaponskillMap) {
         return $null
     }
 
-    return (Get-LWJsonProperty -Object $script:GameData.WeaponskillMap -Name ([string]$Roll))
+    return (Get-LWJsonProperty -Object $gameData.WeaponskillMap -Name ([string]$Roll))
 }
 
 function Get-LWCombatPlayerEndurancePool {
@@ -1007,14 +1027,15 @@ function Get-LWCRTResult {
         [Parameter(Mandatory = $true)][int]$Roll
     )
     Set-LWModuleContext -Context (Get-LWModuleContext)
+    $gameData = Get-LWModuleGameData
 
 
-    if ($null -eq $script:GameData.CRT) {
+    if ($null -eq $gameData -or $null -eq $gameData.CRT) {
         return $null
     }
 
     $ratioKeys = @()
-    foreach ($property in $script:GameData.CRT.PSObject.Properties) {
+    foreach ($property in $gameData.CRT.PSObject.Properties) {
         $value = 0
         if ([int]::TryParse($property.Name, [ref]$value)) {
             $ratioKeys += $value
@@ -1026,7 +1047,7 @@ function Get-LWCRTResult {
     }
 
     $ratioKey = Get-LWNearestSupportedValue -Value $Ratio -Supported $ratioKeys
-    $ratioNode = Get-LWJsonProperty -Object $script:GameData.CRT -Name ([string]$ratioKey)
+    $ratioNode = Get-LWJsonProperty -Object $gameData.CRT -Name ([string]$ratioKey)
     if ($null -eq $ratioNode) {
         return $null
     }
@@ -2915,10 +2936,11 @@ function Test-LWCombatMindforceBlockedByMindshield {
 
 function Get-LWStateCompletedLoreCircles {
     param([Parameter(Mandatory = $true)][object]$State)
+    $gameData = Get-LWModuleGameData
 
     $definitions = @()
-    if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiLoreCircles') -and $null -ne $script:GameData.MagnakaiLoreCircles) {
-        $definitions = @($script:GameData.MagnakaiLoreCircles)
+    if ($null -ne $gameData -and (Test-LWPropertyExists -Object $gameData -Name 'MagnakaiLoreCircles') -and $null -ne $gameData.MagnakaiLoreCircles) {
+        $definitions = @($gameData.MagnakaiLoreCircles)
     }
 
     $owned = @()

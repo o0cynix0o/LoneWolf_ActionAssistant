@@ -6,6 +6,13 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- prerelease Batch 1 foundation pass is now green in both shells:
+  - package and cold-start validation
+  - command-surface prerelease sweep
+  - save-system prerelease sweep
+- fixed a command-surface inventory defect where `add backpack Arrow` could add arrows to the Backpack instead of the Quiver when a `Quiver` was carried
+- fixed a packaged/runtime strict-mode regression where module-local `GameData` could be missing during load/normalize flows
+- fixed the no-save `load` screen path so an empty save catalog renders cleanly instead of crashing
 - final architecture cleanup pass completed the remaining extraction buckets from `recommendations.md`, including:
   - combat stat / weapon / archive helpers into `modules/core/combat.psm1`
   - a new `modules/core/healing.psm1`
