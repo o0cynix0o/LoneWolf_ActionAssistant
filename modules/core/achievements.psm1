@@ -3,6 +3,11 @@
 $script:LWAchievementModeAvailabilityCache = $null
 $script:LWAchievementStateSchemaVersion = 1
 $script:LWAchievementLoadBackfillVersion = 1
+$script:LWAchievementDefinitionsCache = $null
+$script:LWAchievementDefinitionsByIdCache = $null
+$script:LWAchievementContextDefinitionsCache = @{}
+$script:LWAchievementDisplayCountsCache = $null
+$script:LWAchievementBookDisplayDefinitionsCache = @{}
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
@@ -15,6 +20,21 @@ function Set-LWModuleContext {
 function Get-LWAchievementStateSchemaVersion {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     return [int]$script:LWAchievementStateSchemaVersion
+}
+
+function Clear-LWAchievementRenderCaches {
+    param([switch]$IncludeDefinitionCaches)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $script:LWAchievementDisplayCountsCache = $null
+    $script:LWAchievementModeAvailabilityCache = $null
+
+    if ($IncludeDefinitionCaches) {
+        $script:LWAchievementDefinitionsCache = $null
+        $script:LWAchievementDefinitionsByIdCache = $null
+        $script:LWAchievementContextDefinitionsCache = @{}
+        $script:LWAchievementBookDisplayDefinitionsCache = @{}
+    }
 }
 
 function Get-LWAchievementLoadBackfillVersion {
@@ -226,7 +246,7 @@ function Get-LWAchievementDefinitions {
         return @($script:LWAchievementDefinitionsCache)
     }
 
-    $script:LWAchievementDefinitionsCache = @(
+    $definitions = @(
         (New-LWAchievementDefinition -Id 'first_blood' -Name 'First Blood' -Category 'Combat' -Description 'Win your first combat.' -Backfill:$true -ModePool 'Combat'),
         (New-LWAchievementDefinition -Id 'swift_blade' -Name 'Swift Blade' -Category 'Combat' -Description 'Win a fight in a single round.' -Backfill:$true -ModePool 'Combat'),
         (New-LWAchievementDefinition -Id 'untouchable' -Name 'Untouchable' -Category 'Combat' -Description 'Win a fight without losing any Endurance.' -Backfill:$true -ModePool 'Combat'),
@@ -340,6 +360,21 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'mind_over_malice_book6' -Name 'Mind Over Malice' -Category 'Journey' -Description 'Have Psi-screen block the cursed Mindforce assault in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
 
+    $definitionsById = @{}
+    foreach ($definition in @($definitions)) {
+        if ($null -eq $definition) {
+            continue
+        }
+
+        $definitionId = [string]$definition.Id
+        if (-not [string]::IsNullOrWhiteSpace($definitionId)) {
+            $definitionsById[$definitionId] = $definition
+        }
+    }
+
+    $script:LWAchievementDefinitionsCache = @($definitions)
+    $script:LWAchievementDefinitionsByIdCache = $definitionsById
+    $script:LWAchievementBookDisplayDefinitionsCache = @{}
     return @($script:LWAchievementDefinitionsCache)
 }
 
@@ -1669,7 +1704,7 @@ function Unlock-LWAchievement {
     if (@($script:GameState.Achievements.SeenNotifications) -notcontains [string]$Definition.Id) {
         $script:GameState.Achievements.SeenNotifications = @($script:GameState.Achievements.SeenNotifications) + [string]$Definition.Id
     }
-    Clear-LWAchievementDisplayCountsCache
+    Clear-LWAchievementRenderCaches
 
     if (-not $Silent) {
         Write-LWInfo ("Achievement unlocked: {0} - {1}" -f (Get-LWAchievementDisplayNameById -Id ([string]$Definition.Id) -DefaultName ([string]$Definition.Name)), [string]$Definition.Description)
@@ -2054,6 +2089,15 @@ function Get-LWAchievementBookDisplayDefinitions {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
+    if ($BookNumber -lt 1) {
+        return @()
+    }
+
+    $cacheKey = [string]$BookNumber
+    if ($script:LWAchievementBookDisplayDefinitionsCache.ContainsKey($cacheKey)) {
+        return @($script:LWAchievementBookDisplayDefinitionsCache[$cacheKey])
+    }
+
     $completionId = switch ($BookNumber) {
         1 { 'book_one_complete' }
         2 { 'book_two_complete' }
@@ -2069,33 +2113,66 @@ function Get-LWAchievementBookDisplayDefinitions {
         $ids += $completionId
     }
 
-    return @(
-        Get-LWAchievementDefinitions |
-        Where-Object { $ids -contains [string]$_.Id }
-    )
+    if ($null -eq $script:LWAchievementDefinitionsByIdCache) {
+        [void](Get-LWAchievementDefinitions)
+    }
+
+    $definitions = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($id in @($ids)) {
+        $definitionId = [string]$id
+        if ([string]::IsNullOrWhiteSpace($definitionId)) {
+            continue
+        }
+
+        if ($script:LWAchievementDefinitionsByIdCache.ContainsKey($definitionId)) {
+            $definitions.Add($script:LWAchievementDefinitionsByIdCache[$definitionId])
+        }
+    }
+
+    $result = @($definitions.ToArray())
+    $script:LWAchievementBookDisplayDefinitionsCache[$cacheKey] = $result
+    return @($result)
 }
 
 function Show-LWAchievementOverview {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     $definitions = @(Get-LWAchievementDefinitions)
     $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
-    $availableById = $availability.AvailableById
-    $profileUnlockedCount = Get-LWAchievementUnlockedCount
+    $unlockedEntries = @($script:GameState.Achievements.Unlocked)
+    $unlockedById = @{}
+    foreach ($entry in $unlockedEntries) {
+        if ($null -eq $entry) {
+            continue
+        }
+
+        $entryId = if (Test-LWPropertyExists -Object $entry -Name 'Id') { [string]$entry.Id } else { '' }
+        if (-not [string]::IsNullOrWhiteSpace($entryId)) {
+            $unlockedById[$entryId] = $true
+        }
+    }
+
+    $profileUnlockedCount = $unlockedEntries.Count
     $profileTotalCount = @($definitions).Count
-    $eligibleUnlockedCount = Get-LWAchievementEligibleUnlockedCount
-    $eligibleCount = Get-LWAchievementEligibleCount
+    $displayCounts = Get-LWAchievementDisplayCounts
+    $eligibleUnlockedCount = [int]$displayCounts.EligibleUnlockedCount
+    $eligibleCount = [int]$displayCounts.EligibleCount
     $recent = @(Get-LWAchievementRecentUnlocks -Count 6)
     $hiddenLockedCount = @(
         @($availability.Definitions) |
         Where-Object {
             (Test-LWPropertyExists -Object $_ -Name 'Hidden') -and [bool]$_.Hidden -and
-            -not (Test-LWAchievementUnlocked -Id ([string]$_.Id))
+            -not $unlockedById.ContainsKey([string]$_.Id)
         }
     ).Count
     $currentBook = [int]$script:GameState.Character.BookNumber
     $currentBookDefinitions = @(Get-LWAchievementBookDisplayDefinitions -BookNumber $currentBook)
-    $currentBookUnlocked = @($currentBookDefinitions | Where-Object { Test-LWAchievementUnlocked -Id ([string]$_.Id) }).Count
-    $currentBookLocked = @($currentBookDefinitions | Where-Object { -not (Test-LWAchievementUnlocked -Id ([string]$_.Id)) }).Count
+    $currentBookUnlocked = 0
+    foreach ($definition in $currentBookDefinitions) {
+        if ($null -ne $definition -and $unlockedById.ContainsKey([string]$definition.Id)) {
+            $currentBookUnlocked++
+        }
+    }
+    $currentBookLocked = [Math]::Max(0, ($currentBookDefinitions.Count - $currentBookUnlocked))
 
     Write-LWRetroPanelHeader -Title 'Achievement Status' -AccentColor 'Magenta'
     Write-LWRetroPanelPairRow -LeftLabel 'Unlocked' -LeftValue ("{0} / {1}" -f $eligibleUnlockedCount, $eligibleCount) -RightLabel 'Profile Total' -RightValue ("{0} / {1}" -f $profileUnlockedCount, $profileTotalCount) -LeftColor 'White' -RightColor 'Magenta' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
@@ -2109,7 +2186,12 @@ function Show-LWAchievementOverview {
         if ($bookDefinitions.Count -eq 0) {
             continue
         }
-        $unlockedCount = @($bookDefinitions | Where-Object { Test-LWAchievementUnlocked -Id ([string]$_.Id) }).Count
+        $unlockedCount = 0
+        foreach ($definition in $bookDefinitions) {
+            if ($null -ne $definition -and $unlockedById.ContainsKey([string]$definition.Id)) {
+                $unlockedCount++
+            }
+        }
         $bookRows += [pscustomobject]@{
             Text  = ("Book {0} : {1,2} / {2,2}" -f $bookNumber, $unlockedCount, $bookDefinitions.Count)
             Color = $(if ($bookNumber -eq $currentBook) { 'Yellow' } else { 'Gray' })
@@ -2271,5 +2353,5 @@ function Show-LWAchievementsScreen {
     }
 }
 
-Export-ModuleMember -Function New-LWAchievementProgressFlags, New-LWStoryAchievementFlags, New-LWAchievementState, New-LWAchievementDefinition, Get-LWAchievementStateSchemaVersion, Get-LWAchievementLoadBackfillVersion, Get-LWAchievementDefinitions, Get-LWPhaseTwoAchievementPlans, Ensure-LWAchievementState, Rebuild-LWStoryAchievementFlagsFromState, Test-LWStoryAchievementFlag, Set-LWStoryAchievementFlag, Test-LWAchievementStoryFlag, Register-LWStoryInventoryAchievementTriggers, Test-LWStateHasTorch, Get-LWAchievementDefinitionById, Test-LWAchievementAvailableInCurrentMode, Get-LWAchievementAvailabilityReason, Get-LWAchievementDisplayNameById, Get-LWAchievementLockedDisplayName, Get-LWAchievementUnlockedDisplayName, Get-LWAchievementLockedDisplayDescription, Get-LWAchievementEligibleCount, Get-LWAchievementEligibleUnlockedCount, Get-LWAchievementDisplayCounts, Get-LWRunCombatEntries, Get-LWRunVictoryEntries, Get-LWRunTotalRounds, Get-LWAllAchievementBookSummaries, Get-LWCompletedAchievementBookSummaries, Get-LWCombatEntryPlayerLossTotal, Rebuild-LWAchievementProgressFlags, Update-LWAchievementProgressFlagsFromSummary, New-LWAchievementEvaluationContext, Test-LWAchievementSyncSuppressed, Get-LWAchievementDefinitionsForContext, Test-LWAchievementUnlocked, Unlock-LWAchievement, Get-LWMaxWeaponVictoryCount, Get-LWSommerswerdUndeadVictoryCount, Test-LWAchievementSatisfied, Get-LWAchievementProgressText, Test-LWAchievementLoadBackfillCurrent, Set-LWAchievementLoadBackfillCurrent, Sync-LWAchievements, Get-LWAchievementUnlockedCount, Get-LWAchievementAvailableCount, Get-LWAchievementRecentUnlocks, Get-LWAchievementBookDisplayDefinitions, Show-LWAchievementOverview, Show-LWAchievementUnlockedList, Show-LWAchievementLockedList, Show-LWAchievementProgressList, Show-LWAchievementPlannedList, Show-LWAchievementsScreen
+Export-ModuleMember -Function New-LWAchievementProgressFlags, New-LWStoryAchievementFlags, New-LWAchievementState, New-LWAchievementDefinition, Get-LWAchievementStateSchemaVersion, Get-LWAchievementLoadBackfillVersion, Clear-LWAchievementRenderCaches, Get-LWAchievementDefinitions, Get-LWPhaseTwoAchievementPlans, Ensure-LWAchievementState, Rebuild-LWStoryAchievementFlagsFromState, Test-LWStoryAchievementFlag, Set-LWStoryAchievementFlag, Test-LWAchievementStoryFlag, Register-LWStoryInventoryAchievementTriggers, Test-LWStateHasTorch, Get-LWAchievementDefinitionById, Test-LWAchievementAvailableInCurrentMode, Get-LWAchievementAvailabilityReason, Get-LWAchievementDisplayNameById, Get-LWAchievementLockedDisplayName, Get-LWAchievementUnlockedDisplayName, Get-LWAchievementLockedDisplayDescription, Get-LWAchievementEligibleCount, Get-LWAchievementEligibleUnlockedCount, Get-LWAchievementDisplayCounts, Get-LWRunCombatEntries, Get-LWRunVictoryEntries, Get-LWRunTotalRounds, Get-LWAllAchievementBookSummaries, Get-LWCompletedAchievementBookSummaries, Get-LWCombatEntryPlayerLossTotal, Rebuild-LWAchievementProgressFlags, Update-LWAchievementProgressFlagsFromSummary, New-LWAchievementEvaluationContext, Test-LWAchievementSyncSuppressed, Get-LWAchievementDefinitionsForContext, Test-LWAchievementUnlocked, Unlock-LWAchievement, Get-LWMaxWeaponVictoryCount, Get-LWSommerswerdUndeadVictoryCount, Test-LWAchievementSatisfied, Get-LWAchievementProgressText, Test-LWAchievementLoadBackfillCurrent, Set-LWAchievementLoadBackfillCurrent, Sync-LWAchievements, Get-LWAchievementUnlockedCount, Get-LWAchievementAvailableCount, Get-LWAchievementRecentUnlocks, Get-LWAchievementBookDisplayDefinitions, Show-LWAchievementOverview, Show-LWAchievementUnlockedList, Show-LWAchievementLockedList, Show-LWAchievementProgressList, Show-LWAchievementPlannedList, Show-LWAchievementsScreen
 

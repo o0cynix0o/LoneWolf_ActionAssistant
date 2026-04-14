@@ -1169,14 +1169,55 @@ function Show-LWInventorySlotsGridSection {
     $accentColor = Get-LWInventoryTypeColor -Type $Type
     $items = @(Get-LWInventoryItems -Type $Type)
     $leftColumnCount = [int][Math]::Ceiling([double]$capacity / 2.0)
+    $slotMapBySlot = @{}
+
+    if ($Type -eq 'backpack') {
+        foreach ($slotEntry in @(Get-LWBackpackSlotMap -Items $items)) {
+            if ($null -eq $slotEntry) {
+                continue
+            }
+
+            $slotMapBySlot[[int]$slotEntry.Slot] = $slotEntry
+        }
+    }
 
     Write-LWRetroPanelHeader -Title $title -AccentColor $accentColor
     for ($row = 1; $row -le $leftColumnCount; $row++) {
         $leftSlot = $row
         $rightSlot = $row + $leftColumnCount
-        $leftText = ("{0,2}. {1}" -f $leftSlot, (Get-LWInventorySlotDisplayText -Type $Type -Slot $leftSlot -Items $items))
+
+        if ($Type -eq 'backpack') {
+            $leftSlotEntry = if ($slotMapBySlot.ContainsKey($leftSlot)) { $slotMapBySlot[$leftSlot] } else { $null }
+            $leftSlotText = if ($null -ne $leftSlotEntry) { [string]$leftSlotEntry.DisplayText } else { '(empty)' }
+            $leftColor = if ($null -eq $leftSlotEntry) { 'DarkGray' } elseif ([bool]$leftSlotEntry.IsPrimary) { 'Gray' } else { 'DarkGray' }
+
+            if ($rightSlot -le $capacity) {
+                $rightSlotEntry = if ($slotMapBySlot.ContainsKey($rightSlot)) { $slotMapBySlot[$rightSlot] } else { $null }
+                $rightSlotText = if ($null -ne $rightSlotEntry) { [string]$rightSlotEntry.DisplayText } else { '(empty)' }
+                $rightColor = if ($null -eq $rightSlotEntry) { 'DarkGray' } elseif ([bool]$rightSlotEntry.IsPrimary) { 'Gray' } else { 'DarkGray' }
+            }
+            else {
+                $rightSlotText = ''
+                $rightColor = 'DarkGray'
+            }
+        }
+        else {
+            $leftSlotText = Get-LWInventorySlotDisplayText -Type $Type -Slot $leftSlot -Items $items
+            $leftColor = if ($leftSlotText -eq '(empty)' -or $leftSlotText -eq '(unavailable)') { 'DarkGray' } else { 'Gray' }
+
+            if ($rightSlot -le $capacity) {
+                $rightSlotText = Get-LWInventorySlotDisplayText -Type $Type -Slot $rightSlot -Items $items
+                $rightColor = if ($rightSlotText -eq '(empty)' -or $rightSlotText -eq '(unavailable)') { 'DarkGray' } else { 'Gray' }
+            }
+            else {
+                $rightSlotText = ''
+                $rightColor = 'DarkGray'
+            }
+        }
+
+        $leftText = ("{0,2}. {1}" -f $leftSlot, $leftSlotText)
         $rightText = if ($rightSlot -le $capacity) {
-            ("{0,2}. {1}" -f $rightSlot, (Get-LWInventorySlotDisplayText -Type $Type -Slot $rightSlot -Items $items))
+            ("{0,2}. {1}" -f $rightSlot, $rightSlotText)
         }
         else {
             ''
@@ -1185,8 +1226,8 @@ function Show-LWInventorySlotsGridSection {
         Write-LWRetroPanelTwoColumnRow `
             -LeftText $leftText `
             -RightText $rightText `
-            -LeftColor $(if ($leftText -like '*. (empty)' -or $leftText -like '*. (unavailable)') { 'DarkGray' } else { 'Gray' }) `
-            -RightColor $(if ([string]::IsNullOrWhiteSpace($rightText) -or $rightText -like '*. (empty)' -or $rightText -like '*. (unavailable)') { 'DarkGray' } else { 'Gray' }) `
+            -LeftColor $leftColor `
+            -RightColor $(if ([string]::IsNullOrWhiteSpace($rightText)) { 'DarkGray' } else { $rightColor }) `
             -LeftWidth 28 `
             -Gap 2
     }

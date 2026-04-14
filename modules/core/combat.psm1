@@ -3508,6 +3508,8 @@ function Get-LWMagnakaiWeaponmasteryOptions {
 function Invoke-LWCombatCommand {
     param([string[]]$Parts)
 
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
     if ($null -eq $Parts) {
         $Parts = @()
     }

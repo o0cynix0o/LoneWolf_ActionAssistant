@@ -286,7 +286,7 @@ function Invoke-LWCoreClearAchievementDisplayCountsCache {
     param([hashtable]$Context)
 
     Set-LWModuleContext -Context $Context
-    $script:LWAchievementDisplayCountsCache = $null
+    Clear-LWAchievementRenderCaches
 }
 
 function Invoke-LWCoreWarmRuntimeCaches {

@@ -89,9 +89,6 @@ $script:LastUsedSavePathFile = $script:LWBootstrap.LastUsedSavePathFile
 $script:LWErrorLogFile = $script:LWBootstrap.ErrorLogFile
 $script:GameState = $null
 $script:GameData = $null
-$script:LWAchievementDefinitionsCache = $null
-$script:LWAchievementContextDefinitionsCache = @{}
-$script:LWAchievementDisplayCountsCache = $null
 $script:LWUi = $script:LWBootstrap.UiState
 
 function Test-LWDiscipline {
@@ -1157,9 +1154,6 @@ function Get-LWModuleContext {
         LWErrorLogFile               = $script:LWErrorLogFile
         GameState                    = $script:GameState
         GameData                     = $script:GameData
-        LWAchievementDefinitionsCache = $script:LWAchievementDefinitionsCache
-        LWAchievementContextDefinitionsCache = $script:LWAchievementContextDefinitionsCache
-        LWAchievementDisplayCountsCache = $script:LWAchievementDisplayCountsCache
         LWUi                         = $script:LWUi
         CanonicalInventoryItemResolver = ${function:Get-LWCanonicalInventoryItemName}
     }

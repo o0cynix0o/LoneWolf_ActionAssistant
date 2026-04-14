@@ -6,6 +6,16 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- fixed a post-extraction performance regression where host-context rebinding could stomp achievement-module caches on every screen call
+- fixed `combat status` from the inventory flow so it rebinds combat-module state correctly and no longer writes a strict-mode error to `data/error.log`
+- optimized achievement overview rendering by:
+  - keeping achievement definition and per-book display caches module-local
+  - reusing a single unlocked-ID lookup per render
+  - avoiding repeated full-definition scans for book totals
+- optimized inventory slot-grid rendering by indexing backpack slot data once per panel instead of re-filtering the slot map for every slot
+- new lag-validation artifacts:
+  - `testing/logs/SCREEN_LAG_VALIDATION_PS7.txt`
+  - `testing/logs/SCREEN_LAG_VALIDATION_PS51.txt`
 - reduced `-Load` startup lag on campaign saves by:
   - removing duplicate load-time story-achievement rebuild work
   - adding an achievement-state schema fast path

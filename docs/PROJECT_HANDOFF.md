@@ -48,6 +48,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
 - current `dev` work is architecture hardening and dead-code cleanup after the `0.8.0` release
+- latest `dev` lag pass fixed two post-extraction regressions:
+  - achievement-screen caching was being reset by host-context rebinding
+  - `combat status` from `inv` could throw a module-context error and write to `data/error.log`
 - prerelease Batch `1-4` full-sweep validation is now green on `dev` in both shells
 - load-path performance work on `dev` now targets campaign-save startup directly instead of screen rendering
 - current measured load behavior on a copied campaign save:
@@ -63,6 +66,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS51.txt`
   - `testing/logs/LOAD_BREAKDOWN_LAGFIX_PS7.txt`
   - `testing/logs/LOAD_STARTUP_LAGFIX_REPORT.md`
+- latest screen-lag validation artifacts:
+  - `testing/logs/SCREEN_LAG_VALIDATION_PS7.txt`
+  - `testing/logs/SCREEN_LAG_VALIDATION_PS51.txt`
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
