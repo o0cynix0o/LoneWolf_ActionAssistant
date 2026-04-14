@@ -3,6 +3,7 @@ Set-StrictMode -Version Latest
 $script:LWShellHostCommandCache = @{}
 $script:LWShellHelpfulCommandsPanelCache = @{}
 $script:LWShellCampaignSummaryCache = $null
+$script:LWNotificationBufferSize = 12
 $script:LWModuleContextGeneration = -1
 
 function Set-LWModuleContext {
@@ -147,8 +148,8 @@ function Invoke-LWCoreAddNotification {
         })
 
     $existingCount = @($existing).Count
-    if ($existingCount -gt 8) {
-        $existing = @($existing[($existingCount - 8)..($existingCount - 1)])
+    if ($existingCount -gt $script:LWNotificationBufferSize) {
+        $existing = @($existing[($existingCount - $script:LWNotificationBufferSize)..($existingCount - 1)])
     }
 
     $script:LWUi.Notifications = @($existing)

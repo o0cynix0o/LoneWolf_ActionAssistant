@@ -6,6 +6,14 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- widened the shell notification buffer from `8` to `12` entries so important combat/setup notices are not pushed off-screen by later round or achievement messages
+- refreshed the post-fix screen-lag baseline in both shells and added a direct before/after comparison report:
+  - `testing/logs/SCREEN_LAG_VALIDATION_POSTFIX_PS7.txt`
+  - `testing/logs/SCREEN_LAG_VALIDATION_POSTFIX_PS51.txt`
+  - `testing/logs/SCREEN_LAG_BASELINE_COMPARISON_20260414.md`
+- reran the Books `1-3` prerelease harness after the lag/context work and finished green in both shells:
+  - `testing/logs/BOOKS_1_3_PRERELEASE_NORMAL_PS7_POSTLAG.txt`
+  - `testing/logs/BOOKS_1_3_PRERELEASE_NORMAL_PS51_POSTLAG.txt`
 - completed the remaining lag-hardening pass from `recommendations.md`, including:
   - generation-based module-context caching across host/core/ruleset modules
   - same-screen refresh gating with lighter clear behavior

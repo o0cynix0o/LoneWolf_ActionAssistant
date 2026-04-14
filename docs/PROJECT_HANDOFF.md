@@ -69,6 +69,12 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `testing/logs/LAG_HARDENING_VALIDATION_PS7.txt`
   - `testing/logs/LAG_HARDENING_VALIDATION_PS51.txt`
   - `testing/logs/LAG_HARDENING_REPORT_20260414.md`
+- refreshed post-fix screen baselines after the generation-cache/render-path work:
+  - `testing/logs/SCREEN_LAG_VALIDATION_POSTFIX_PS7.txt`
+  - `testing/logs/SCREEN_LAG_VALIDATION_POSTFIX_PS51.txt`
+  - `testing/logs/SCREEN_LAG_BASELINE_COMPARISON_20260414.md`
+- the Books `1-3` prerelease harness was rerun after the lag/context changes and now passes `29/29` in both shells
+- shell notifications now retain the last `12` entries instead of `8` so critical combat/setup notices are not displaced by later unlock/result messages
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
