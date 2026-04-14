@@ -685,19 +685,7 @@ function Invoke-LWCoreShowAchievementsScreen {
     switch ($view.ToLowerInvariant()) {
         'unlocked' { Show-LWAchievementUnlockedList }
         'locked' { Show-LWAchievementLockedList }
-        'recent' {
-            Write-LWRetroPanelHeader -Title 'Recent Unlocks' -AccentColor 'DarkYellow'
-            $entries = @(Get-LWAchievementRecentUnlocks -Count 10)
-            if ($entries.Count -eq 0) {
-                Write-LWRetroPanelTextRow -Text '(none yet)' -TextColor 'DarkGray'
-            }
-            else {
-                foreach ($entry in $entries) {
-                    Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray'
-                }
-            }
-            Write-LWRetroPanelFooter
-        }
+        'recent' { Show-LWAchievementRecentList }
         'progress' { Show-LWAchievementProgressList }
         'planned' { Show-LWAchievementPlannedList }
         default { Show-LWAchievementOverview }
@@ -2800,7 +2788,7 @@ function Show-LWCampaignMilestones {
     }
     else {
         foreach ($entry in $recentAchievements) {
-            Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray'
+            Write-LWRetroPanelWrappedKeyValueRows -Label (Get-LWAchievementUnlockedDisplayName -Entry $entry) -Value ([string]$entry.Description) -LabelColor 'White' -ValueColor 'Gray' -LabelWidth 21
         }
     }
     Write-LWRetroPanelFooter

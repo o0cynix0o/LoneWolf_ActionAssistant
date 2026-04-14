@@ -8,6 +8,7 @@ $script:LWAchievementDefinitionsByIdCache = $null
 $script:LWAchievementContextDefinitionsCache = @{}
 $script:LWAchievementDisplayCountsCache = $null
 $script:LWAchievementBookDisplayDefinitionsCache = @{}
+$script:LWAchievementBookIdMapCache = $null
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
@@ -34,6 +35,7 @@ function Clear-LWAchievementRenderCaches {
         $script:LWAchievementDefinitionsByIdCache = $null
         $script:LWAchievementContextDefinitionsCache = @{}
         $script:LWAchievementBookDisplayDefinitionsCache = @{}
+        $script:LWAchievementBookIdMapCache = $null
     }
 }
 
@@ -2134,6 +2136,148 @@ function Get-LWAchievementBookDisplayDefinitions {
     return @($result)
 }
 
+function Get-LWAchievementBookIdMap {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -ne $script:LWAchievementBookIdMapCache) {
+        return $script:LWAchievementBookIdMapCache
+    }
+
+    $map = @{}
+    foreach ($bookNumber in @(1..6)) {
+        foreach ($definition in @(Get-LWAchievementBookDisplayDefinitions -BookNumber $bookNumber)) {
+            if ($null -eq $definition) {
+                continue
+            }
+
+            $definitionId = if (Test-LWPropertyExists -Object $definition -Name 'Id') { [string]$definition.Id } else { '' }
+            if (-not [string]::IsNullOrWhiteSpace($definitionId)) {
+                $map[$definitionId] = [int]$bookNumber
+            }
+        }
+    }
+
+    $script:LWAchievementBookIdMapCache = $map
+    return $script:LWAchievementBookIdMapCache
+}
+
+function Get-LWAchievementDisplayGroups {
+    param([object[]]$Items)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $groupDefinitions = @(
+        [pscustomobject]@{ Key = 'runwide'; Title = 'Run-Wide'; BookNumber = 0; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book1'; Title = 'Book 1'; BookNumber = 1; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book2'; Title = 'Book 2'; BookNumber = 2; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book3'; Title = 'Book 3'; BookNumber = 3; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book4'; Title = 'Book 4'; BookNumber = 4; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book5'; Title = 'Book 5'; BookNumber = 5; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book6'; Title = 'Book 6'; BookNumber = 6; Items = (New-Object 'System.Collections.Generic.List[object]') }
+    )
+    $groupsByKey = @{}
+    foreach ($group in $groupDefinitions) {
+        $groupsByKey[[string]$group.Key] = $group
+    }
+
+    $bookIdMap = Get-LWAchievementBookIdMap
+    foreach ($item in @($Items)) {
+        if ($null -eq $item) {
+            continue
+        }
+
+        $achievementId = if (Test-LWPropertyExists -Object $item -Name 'Id') { [string]$item.Id } else { '' }
+        $groupKey = 'runwide'
+        if (-not [string]::IsNullOrWhiteSpace($achievementId) -and $bookIdMap.ContainsKey($achievementId)) {
+            $groupKey = ('book{0}' -f [int]$bookIdMap[$achievementId])
+        }
+
+        $groupsByKey[$groupKey].Items.Add($item)
+    }
+
+    $result = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($group in $groupDefinitions) {
+        $groupItems = @($group.Items.ToArray())
+        if ($groupItems.Count -gt 0) {
+            $result.Add([pscustomobject]@{
+                Title      = [string]$group.Title
+                BookNumber = [int]$group.BookNumber
+                Items      = $groupItems
+            })
+        }
+    }
+
+    return @($result.ToArray())
+}
+
+function Write-LWAchievementEntryRows {
+    param([object[]]$Entries)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    foreach ($entry in @($Entries)) {
+        if ($null -eq $entry) {
+            continue
+        }
+
+        $displayName = Get-LWAchievementUnlockedDisplayName -Entry $entry
+        $description = if (Test-LWPropertyExists -Object $entry -Name 'Description') { [string]$entry.Description } else { '' }
+        Write-LWRetroPanelWrappedKeyValueRows -Label $displayName -Value $description -LabelColor 'White' -ValueColor 'Gray' -LabelWidth 21
+    }
+}
+
+function Write-LWAchievementDefinitionRows {
+    param(
+        [object[]]$Definitions,
+        [switch]$IncludeProgress,
+        [switch]$IncludeReason
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    foreach ($definition in @($Definitions)) {
+        if ($null -eq $definition) {
+            continue
+        }
+
+        $displayName = Get-LWAchievementLockedDisplayName -Definition $definition
+        $displayDescription = Get-LWAchievementLockedDisplayDescription -Definition $definition
+        Write-LWRetroPanelWrappedKeyValueRows -Label $displayName -Value $displayDescription -LabelColor 'White' -ValueColor 'Gray' -LabelWidth 21
+
+        if ($IncludeProgress) {
+            $progress = Get-LWAchievementProgressText -Definition $definition
+            if (-not [string]::IsNullOrWhiteSpace($progress) -and $displayName -ne '???') {
+                Write-LWRetroPanelWrappedKeyValueRows -Label 'Progress' -Value $progress -LabelColor 'DarkGray' -ValueColor 'DarkGray' -LabelWidth 21
+            }
+        }
+
+        if ($IncludeReason) {
+            $reason = Get-LWAchievementAvailabilityReason -Definition $definition
+            if (-not [string]::IsNullOrWhiteSpace($reason)) {
+                Write-LWRetroPanelWrappedKeyValueRows -Label 'Mode Lock' -Value $reason -LabelColor 'DarkGray' -ValueColor 'DarkGray' -LabelWidth 21
+            }
+        }
+    }
+}
+
+function Show-LWAchievementRecentList {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $entries = @(Get-LWAchievementRecentUnlocks -Count 10)
+    if ($entries.Count -eq 0) {
+        Write-LWRetroPanelHeader -Title 'Recent Unlocks' -AccentColor 'DarkYellow'
+        Write-LWRetroPanelTextRow -Text '(none yet)' -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
+        return
+    }
+
+    foreach ($group in @(Get-LWAchievementDisplayGroups -Items $entries)) {
+        Write-LWRetroPanelHeader -Title ([string]$group.Title) -AccentColor 'DarkYellow'
+        Write-LWAchievementEntryRows -Entries $group.Items
+        Write-LWRetroPanelFooter
+    }
+}
+
 function Show-LWAchievementOverview {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     $definitions = @(Get-LWAchievementDefinitions)
@@ -2235,23 +2379,23 @@ function Show-LWAchievementOverview {
 
 function Show-LWAchievementUnlockedList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    Write-LWRetroPanelHeader -Title 'Unlocked Achievements' -AccentColor 'Green'
     $entries = @($script:GameState.Achievements.Unlocked)
     if ($entries.Count -eq 0) {
+        Write-LWRetroPanelHeader -Title 'Unlocked Achievements' -AccentColor 'Green'
         Write-LWRetroPanelTextRow -Text '(none yet)' -TextColor 'DarkGray'
         Write-LWRetroPanelFooter
         return
     }
 
-    foreach ($entry in $entries) {
-        Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f (Get-LWAchievementUnlockedDisplayName -Entry $entry), [string]$entry.Description) -TextColor 'Gray'
+    foreach ($group in @(Get-LWAchievementDisplayGroups -Items $entries)) {
+        Write-LWRetroPanelHeader -Title ([string]$group.Title) -AccentColor 'Green'
+        Write-LWAchievementEntryRows -Entries $group.Items
+        Write-LWRetroPanelFooter
     }
-    Write-LWRetroPanelFooter
 }
 
 function Show-LWAchievementLockedList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    Write-LWRetroPanelHeader -Title 'Locked Achievements' -AccentColor 'DarkYellow'
     $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
     $availableById = $availability.AvailableById
     $locked = @()
@@ -2267,46 +2411,40 @@ function Show-LWAchievementLockedList {
         }
     }
 
-    if ($locked.Count -eq 0) {
+    $lockedGroups = @(Get-LWAchievementDisplayGroups -Items $locked)
+    if ($lockedGroups.Count -eq 0) {
+        Write-LWRetroPanelHeader -Title 'Eligible Locked' -AccentColor 'DarkYellow'
         Write-LWRetroPanelTextRow -Text 'No eligible locked achievements remain for this run.' -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
     }
     else {
-        foreach ($definition in $locked) {
-            $progress = Get-LWAchievementProgressText -Definition $definition
-            $displayName = Get-LWAchievementLockedDisplayName -Definition $definition
-            $displayDescription = Get-LWAchievementLockedDisplayDescription -Definition $definition
-            Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f $displayName, $displayDescription) -TextColor 'Gray'
-            if (-not [string]::IsNullOrWhiteSpace($progress) -and $displayName -ne '???') {
-                Write-LWRetroPanelTextRow -Text ("progress: {0}" -f $progress) -TextColor 'DarkGray'
-            }
+        foreach ($group in $lockedGroups) {
+            Write-LWRetroPanelHeader -Title ([string]$group.Title) -AccentColor 'DarkYellow'
+            Write-LWAchievementDefinitionRows -Definitions $group.Items -IncludeProgress
+            Write-LWRetroPanelFooter
         }
     }
-    Write-LWRetroPanelFooter
 
-    Write-LWRetroPanelHeader -Title 'Disabled For This Run' -AccentColor 'DarkGray'
-    if ($disabled.Count -eq 0) {
+    $disabledGroups = @(Get-LWAchievementDisplayGroups -Items $disabled)
+    if ($disabledGroups.Count -eq 0) {
+        Write-LWRetroPanelHeader -Title 'Disabled For This Run' -AccentColor 'DarkGray'
         Write-LWRetroPanelTextRow -Text '(none)' -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
     }
     else {
-        foreach ($definition in $disabled) {
-            $reason = Get-LWAchievementAvailabilityReason -Definition $definition
-            $displayName = Get-LWAchievementLockedDisplayName -Definition $definition
-            $displayDescription = Get-LWAchievementLockedDisplayDescription -Definition $definition
-            Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f $displayName, $displayDescription) -TextColor 'Gray'
-            if (-not [string]::IsNullOrWhiteSpace($reason)) {
-                Write-LWRetroPanelTextRow -Text $reason -TextColor 'DarkGray'
-            }
+        foreach ($group in $disabledGroups) {
+            Write-LWRetroPanelHeader -Title ("Disabled {0}" -f [string]$group.Title) -AccentColor 'DarkGray'
+            Write-LWAchievementDefinitionRows -Definitions $group.Items -IncludeReason
+            Write-LWRetroPanelFooter
         }
     }
-    Write-LWRetroPanelFooter
 }
 
 function Show-LWAchievementProgressList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    Write-LWRetroPanelHeader -Title 'Achievement Progress' -AccentColor 'Cyan'
     $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
     $availableById = $availability.AvailableById
-    $anyShown = $false
+    $pendingDefinitions = New-Object 'System.Collections.Generic.List[object]'
     $disabledCount = 0
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
@@ -2322,25 +2460,39 @@ function Show-LWAchievementProgressList {
             continue
         }
 
-        $anyShown = $true
-        Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f (Get-LWAchievementLockedDisplayName -Definition $definition), $progress) -TextColor 'Gray'
+        $pendingDefinitions.Add($definition)
     }
 
-    if (-not $anyShown) {
+    $pendingGroups = @(Get-LWAchievementDisplayGroups -Items @($pendingDefinitions.ToArray()))
+    if ($pendingGroups.Count -eq 0) {
+        Write-LWRetroPanelHeader -Title 'Achievement Progress' -AccentColor 'Cyan'
         Write-LWRetroPanelTextRow -Text 'No tracked progress milestones are pending for the current run.' -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
+    }
+    else {
+        foreach ($group in $pendingGroups) {
+            Write-LWRetroPanelHeader -Title ([string]$group.Title) -AccentColor 'Cyan'
+            foreach ($definition in @($group.Items)) {
+                $progress = Get-LWAchievementProgressText -Definition $definition
+                $displayName = Get-LWAchievementLockedDisplayName -Definition $definition
+                Write-LWRetroPanelWrappedKeyValueRows -Label $displayName -Value $progress -LabelColor 'White' -ValueColor 'Gray' -LabelWidth 21
+            }
+            Write-LWRetroPanelFooter
+        }
     }
 
     if ($disabledCount -gt 0) {
+        Write-LWRetroPanelHeader -Title 'Mode Limits' -AccentColor 'DarkGray'
         Write-LWRetroPanelTextRow -Text ("{0} achievements are currently disabled by this run's mode settings." -f $disabledCount) -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
     }
-    Write-LWRetroPanelFooter
 }
 
 function Show-LWAchievementPlannedList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     Write-LWRetroPanelHeader -Title 'Planned Achievements' -AccentColor 'DarkMagenta'
     foreach ($entry in @(Get-LWPhaseTwoAchievementPlans)) {
-        Write-LWRetroPanelTextRow -Text ("{0} - {1}" -f [string]$entry.Name, [string]$entry.Description) -TextColor 'Gray'
+        Write-LWRetroPanelWrappedKeyValueRows -Label ([string]$entry.Name) -Value ([string]$entry.Description) -LabelColor 'White' -ValueColor 'Gray' -LabelWidth 21
     }
     Write-LWRetroPanelFooter
 }
@@ -2353,5 +2505,5 @@ function Show-LWAchievementsScreen {
     }
 }
 
-Export-ModuleMember -Function New-LWAchievementProgressFlags, New-LWStoryAchievementFlags, New-LWAchievementState, New-LWAchievementDefinition, Get-LWAchievementStateSchemaVersion, Get-LWAchievementLoadBackfillVersion, Clear-LWAchievementRenderCaches, Get-LWAchievementDefinitions, Get-LWPhaseTwoAchievementPlans, Ensure-LWAchievementState, Rebuild-LWStoryAchievementFlagsFromState, Test-LWStoryAchievementFlag, Set-LWStoryAchievementFlag, Test-LWAchievementStoryFlag, Register-LWStoryInventoryAchievementTriggers, Test-LWStateHasTorch, Get-LWAchievementDefinitionById, Test-LWAchievementAvailableInCurrentMode, Get-LWAchievementAvailabilityReason, Get-LWAchievementDisplayNameById, Get-LWAchievementLockedDisplayName, Get-LWAchievementUnlockedDisplayName, Get-LWAchievementLockedDisplayDescription, Get-LWAchievementEligibleCount, Get-LWAchievementEligibleUnlockedCount, Get-LWAchievementDisplayCounts, Get-LWRunCombatEntries, Get-LWRunVictoryEntries, Get-LWRunTotalRounds, Get-LWAllAchievementBookSummaries, Get-LWCompletedAchievementBookSummaries, Get-LWCombatEntryPlayerLossTotal, Rebuild-LWAchievementProgressFlags, Update-LWAchievementProgressFlagsFromSummary, New-LWAchievementEvaluationContext, Test-LWAchievementSyncSuppressed, Get-LWAchievementDefinitionsForContext, Test-LWAchievementUnlocked, Unlock-LWAchievement, Get-LWMaxWeaponVictoryCount, Get-LWSommerswerdUndeadVictoryCount, Test-LWAchievementSatisfied, Get-LWAchievementProgressText, Test-LWAchievementLoadBackfillCurrent, Set-LWAchievementLoadBackfillCurrent, Sync-LWAchievements, Get-LWAchievementUnlockedCount, Get-LWAchievementAvailableCount, Get-LWAchievementRecentUnlocks, Get-LWAchievementBookDisplayDefinitions, Show-LWAchievementOverview, Show-LWAchievementUnlockedList, Show-LWAchievementLockedList, Show-LWAchievementProgressList, Show-LWAchievementPlannedList, Show-LWAchievementsScreen
+Export-ModuleMember -Function New-LWAchievementProgressFlags, New-LWStoryAchievementFlags, New-LWAchievementState, New-LWAchievementDefinition, Get-LWAchievementStateSchemaVersion, Get-LWAchievementLoadBackfillVersion, Clear-LWAchievementRenderCaches, Get-LWAchievementDefinitions, Get-LWPhaseTwoAchievementPlans, Ensure-LWAchievementState, Rebuild-LWStoryAchievementFlagsFromState, Test-LWStoryAchievementFlag, Set-LWStoryAchievementFlag, Test-LWAchievementStoryFlag, Register-LWStoryInventoryAchievementTriggers, Test-LWStateHasTorch, Get-LWAchievementDefinitionById, Test-LWAchievementAvailableInCurrentMode, Get-LWAchievementAvailabilityReason, Get-LWAchievementDisplayNameById, Get-LWAchievementLockedDisplayName, Get-LWAchievementUnlockedDisplayName, Get-LWAchievementLockedDisplayDescription, Get-LWAchievementEligibleCount, Get-LWAchievementEligibleUnlockedCount, Get-LWAchievementDisplayCounts, Get-LWRunCombatEntries, Get-LWRunVictoryEntries, Get-LWRunTotalRounds, Get-LWAllAchievementBookSummaries, Get-LWCompletedAchievementBookSummaries, Get-LWCombatEntryPlayerLossTotal, Rebuild-LWAchievementProgressFlags, Update-LWAchievementProgressFlagsFromSummary, New-LWAchievementEvaluationContext, Test-LWAchievementSyncSuppressed, Get-LWAchievementDefinitionsForContext, Test-LWAchievementUnlocked, Unlock-LWAchievement, Get-LWMaxWeaponVictoryCount, Get-LWSommerswerdUndeadVictoryCount, Test-LWAchievementSatisfied, Get-LWAchievementProgressText, Test-LWAchievementLoadBackfillCurrent, Set-LWAchievementLoadBackfillCurrent, Sync-LWAchievements, Get-LWAchievementUnlockedCount, Get-LWAchievementAvailableCount, Get-LWAchievementRecentUnlocks, Get-LWAchievementBookDisplayDefinitions, Show-LWAchievementOverview, Show-LWAchievementRecentList, Show-LWAchievementUnlockedList, Show-LWAchievementLockedList, Show-LWAchievementProgressList, Show-LWAchievementPlannedList, Show-LWAchievementsScreen
 

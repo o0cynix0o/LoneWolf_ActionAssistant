@@ -6,6 +6,9 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- reworked the achievement sub-screens so `unlocked`, `locked`, `progress`, and `recent` are grouped into `Run-Wide` plus per-book panels instead of rendering as one long flat dump
+- converted achievement detail rows to wrapped key/value panels so long names and descriptions stay readable without truncation
+- cleaned up the campaign milestones `Recent Achievements` panel to use the same wrapped achievement row style
 - fixed a post-extraction performance regression where host-context rebinding could stomp achievement-module caches on every screen call
 - fixed `combat status` from the inventory flow so it rebinds combat-module state correctly and no longer writes a strict-mode error to `data/error.log`
 - optimized achievement overview rendering by:
