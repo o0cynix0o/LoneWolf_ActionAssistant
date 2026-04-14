@@ -9,13 +9,17 @@ $script:LWAchievementContextDefinitionsCache = @{}
 $script:LWAchievementDisplayCountsCache = $null
 $script:LWAchievementBookDisplayDefinitionsCache = @{}
 $script:LWAchievementBookIdMapCache = $null
+$script:LWModuleContextGeneration = -1
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
+    $generation = if ($Context.ContainsKey('_Generation')) { [int]$Context['_Generation'] } else { -1 }
+    if ($generation -ge 0 -and $generation -eq $script:LWModuleContextGeneration) { return }
     foreach ($key in @($Context.Keys)) {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
+    $script:LWModuleContextGeneration = $generation
 }
 
 function Get-LWAchievementStateSchemaVersion {
@@ -2397,17 +2401,22 @@ function Show-LWAchievementUnlockedList {
 function Show-LWAchievementLockedList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
+    $availableDefinitions = @($availability.Definitions)
     $availableById = $availability.AvailableById
-    $locked = @()
+    $locked = @(
+        foreach ($definition in $availableDefinitions) {
+            if (-not (Test-LWAchievementUnlocked -Id ([string]$definition.Id))) {
+                $definition
+            }
+        }
+    )
     $disabled = @()
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
-        if (-not (Test-LWAchievementUnlocked -Id ([string]$definition.Id))) {
-            if ($availableById.ContainsKey([string]$definition.Id)) {
-                $locked += $definition
-            }
-            else {
-                $disabled += $definition
-            }
+        if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
+            continue
+        }
+        if (-not $availableById.ContainsKey([string]$definition.Id)) {
+            $disabled += $definition
         }
     }
 
@@ -2443,15 +2452,10 @@ function Show-LWAchievementLockedList {
 function Show-LWAchievementProgressList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
-    $availableById = $availability.AvailableById
+    $availableDefinitions = @($availability.Definitions)
     $pendingDefinitions = New-Object 'System.Collections.Generic.List[object]'
-    $disabledCount = 0
-    foreach ($definition in @(Get-LWAchievementDefinitions)) {
+    foreach ($definition in $availableDefinitions) {
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
-            continue
-        }
-        if (-not $availableById.ContainsKey([string]$definition.Id)) {
-            $disabledCount++
             continue
         }
 
@@ -2481,6 +2485,16 @@ function Show-LWAchievementProgressList {
         }
     }
 
+    $disabledCount = @(
+        foreach ($definition in @(Get-LWAchievementDefinitions)) {
+            if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
+                continue
+            }
+            if (-not $availability.AvailableById.ContainsKey([string]$definition.Id)) {
+                $definition
+            }
+        }
+    ).Count
     if ($disabledCount -gt 0) {
         Write-LWRetroPanelHeader -Title 'Mode Limits' -AccentColor 'DarkGray'
         Write-LWRetroPanelTextRow -Text ("{0} achievements are currently disabled by this run's mode settings." -f $disabledCount) -TextColor 'DarkGray'

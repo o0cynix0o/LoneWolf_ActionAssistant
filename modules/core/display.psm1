@@ -1,5 +1,102 @@
 Set-StrictMode -Version Latest
 
+$script:LWDisplayAnsiSupport = $null
+$script:LWDisplayAnsiColorMap = @{
+    Black       = '30'
+    DarkBlue    = '34'
+    DarkGreen   = '32'
+    DarkCyan    = '36'
+    DarkRed     = '31'
+    DarkMagenta = '35'
+    DarkYellow  = '33'
+    Gray        = '37'
+    DarkGray    = '90'
+    Blue        = '94'
+    Green       = '92'
+    Cyan        = '96'
+    Red         = '91'
+    Magenta     = '95'
+    Yellow      = '93'
+    White       = '97'
+}
+
+function Test-LWDisplayAnsiSupported {
+    if ($null -ne $script:LWDisplayAnsiSupport) {
+        return [bool]$script:LWDisplayAnsiSupport
+    }
+
+    $supportsAnsi = $false
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+        try {
+            if ($null -ne $PSStyle -and $null -ne $PSStyle.OutputRendering -and [string]$PSStyle.OutputRendering -ne 'PlainText') {
+                $supportsAnsi = $true
+            }
+        }
+        catch {
+        }
+    }
+
+    if (-not $supportsAnsi) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$env:WT_SESSION) -or [string]$env:TERM_PROGRAM -eq 'vscode' -or [string]$env:ConEmuANSI -eq 'ON') {
+            $supportsAnsi = $true
+        }
+    }
+
+    $script:LWDisplayAnsiSupport = $supportsAnsi
+    return [bool]$script:LWDisplayAnsiSupport
+}
+
+function Get-LWDisplayAnsiSequence {
+    param([string]$Color = '')
+
+    if ([string]::IsNullOrWhiteSpace($Color)) {
+        return ''
+    }
+
+    $colorKey = $Color.Trim()
+    if (-not $script:LWDisplayAnsiColorMap.ContainsKey($colorKey)) {
+        return ''
+    }
+
+    return ("`e[{0}m" -f $script:LWDisplayAnsiColorMap[$colorKey])
+}
+
+function Write-LWDisplaySegmentedLine {
+    param([object[]]$Segments = @())
+
+    if (-not (Test-LWDisplayAnsiSupported)) {
+        $segmentCount = @($Segments).Count
+        for ($i = 0; $i -lt $segmentCount; $i++) {
+            $segment = $Segments[$i]
+            $text = if ($null -ne $segment -and $segment.PSObject.Properties['Text']) { [string]$segment.Text } else { '' }
+            $color = if ($null -ne $segment -and $segment.PSObject.Properties['Color'] -and -not [string]::IsNullOrWhiteSpace([string]$segment.Color)) { [string]$segment.Color } else { $null }
+            $isLast = ($i -eq ($segmentCount - 1))
+            if ([string]::IsNullOrWhiteSpace($color)) {
+                Write-Host $text -NoNewline:(-not $isLast)
+            }
+            else {
+                Write-Host $text -ForegroundColor $color -NoNewline:(-not $isLast)
+            }
+        }
+        if ($segmentCount -eq 0) {
+            Write-Host ''
+        }
+        return
+    }
+
+    $builder = New-Object System.Text.StringBuilder
+    foreach ($segment in @($Segments)) {
+        $text = if ($null -ne $segment -and $segment.PSObject.Properties['Text']) { [string]$segment.Text } else { '' }
+        $color = if ($null -ne $segment -and $segment.PSObject.Properties['Color'] -and -not [string]::IsNullOrWhiteSpace([string]$segment.Color)) { [string]$segment.Color } else { '' }
+        if (-not [string]::IsNullOrWhiteSpace($color)) {
+            [void]$builder.Append((Get-LWDisplayAnsiSequence -Color $color))
+        }
+        [void]$builder.Append($text)
+    }
+    [void]$builder.Append("`e[0m")
+    Write-Host $builder.ToString()
+}
+
 function Write-LWPanelHeader {
     param(
         [Parameter(Mandatory = $true)][string]$Title,
@@ -11,11 +108,13 @@ function Write-LWPanelHeader {
     $border = '+' + ('-' * ($innerWidth + 2)) + '+'
 
     Write-Host ''
-    Write-Host $border -ForegroundColor DarkGray
-    Write-Host '| ' -NoNewline -ForegroundColor DarkGray
-    Write-Host $Title.PadRight($innerWidth) -NoNewline -ForegroundColor $AccentColor
-    Write-Host ' |' -ForegroundColor DarkGray
-    Write-Host $border -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $border; Color = 'DarkGray' })
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = '| '; Color = 'DarkGray' }
+        [pscustomobject]@{ Text = $Title.PadRight($innerWidth); Color = $AccentColor }
+        [pscustomobject]@{ Text = ' |'; Color = 'DarkGray' }
+    )
+    Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $border; Color = 'DarkGray' })
 }
 
 function Write-LWKeyValue {
@@ -26,8 +125,10 @@ function Write-LWKeyValue {
         [string]$LabelColor = 'DarkGray'
     )
 
-    Write-Host ("  {0,-16}: " -f $Label) -NoNewline -ForegroundColor $LabelColor
-    Write-Host $Value -ForegroundColor $ValueColor
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = ("  {0,-16}: " -f $Label); Color = $LabelColor }
+        [pscustomobject]@{ Text = $Value; Color = $ValueColor }
+    )
 }
 
 function Write-LWBulletItem {
@@ -38,13 +139,15 @@ function Write-LWBulletItem {
         [string]$Bullet = '-'
     )
 
-    Write-Host "  $Bullet " -NoNewline -ForegroundColor $BulletColor
-    Write-Host $Text -ForegroundColor $TextColor
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = "  $Bullet "; Color = $BulletColor }
+        [pscustomobject]@{ Text = $Text; Color = $TextColor }
+    )
 }
 
 function Write-LWSubtle {
     param([string]$Message)
-    Write-Host $Message -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $Message; Color = 'DarkGray' })
 }
 
 function Format-LWRetroPanelCellText {
@@ -86,21 +189,21 @@ function Write-LWRetroPanelHeader {
     $line = '+' + ('-' * $leftFill) + $label + ('-' * $rightFill) + '+'
 
     Write-Host ''
-    Write-Host $line -ForegroundColor $AccentColor
+    Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $line; Color = $AccentColor })
 }
 
 function Write-LWRetroPanelFooter {
     param([int]$Width = 64)
 
     $line = '+' + ('-' * [Math]::Max(10, ($Width - 2))) + '+'
-    Write-Host $line -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $line; Color = 'DarkGray' })
 }
 
 function Write-LWRetroPanelDivider {
     param([int]$Width = 64)
 
     $line = '+' + ('-' * [Math]::Max(10, ($Width - 2))) + '+'
-    Write-Host $line -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $line; Color = 'DarkGray' })
 }
 
 function Write-LWRetroPanelKeyValueRow {
@@ -118,11 +221,12 @@ function Write-LWRetroPanelKeyValueRow {
     $valueWidth = [Math]::Max(0, ($contentWidth - $prefix.Length))
     $displayValue = Format-LWRetroPanelCellText -Text $Value -Width $valueWidth
 
-    Write-Host '|' -NoNewline -ForegroundColor DarkGray
-    Write-Host ' ' -NoNewline
-    Write-Host $prefix -NoNewline -ForegroundColor $LabelColor
-    Write-Host $displayValue -NoNewline -ForegroundColor $ValueColor
-    Write-Host ' |' -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = '| '; Color = 'DarkGray' }
+        [pscustomobject]@{ Text = $prefix; Color = $LabelColor }
+        [pscustomobject]@{ Text = $displayValue; Color = $ValueColor }
+        [pscustomobject]@{ Text = ' |'; Color = 'DarkGray' }
+    )
 }
 
 function Write-LWRetroPanelWrappedKeyValueRows {
@@ -172,13 +276,14 @@ function Write-LWRetroPanelWrappedKeyValueRows {
 
     foreach ($line in $wrappedLines) {
         $displayLine = $line.PadRight($contentWidth)
-        Write-Host '|' -NoNewline -ForegroundColor DarkGray
-        Write-Host ' ' -NoNewline
-        Write-Host $displayLine.Substring(0, [Math]::Min($prefix.Length, $displayLine.Length)) -NoNewline -ForegroundColor $LabelColor
-        if ($displayLine.Length -gt $prefix.Length) {
-            Write-Host $displayLine.Substring($prefix.Length) -NoNewline -ForegroundColor $ValueColor
-        }
-        Write-Host ' |' -ForegroundColor DarkGray
+        $labelText = $displayLine.Substring(0, [Math]::Min($prefix.Length, $displayLine.Length))
+        $valueText = if ($displayLine.Length -gt $prefix.Length) { $displayLine.Substring($prefix.Length) } else { '' }
+        Write-LWDisplaySegmentedLine -Segments @(
+            [pscustomobject]@{ Text = '| '; Color = 'DarkGray' }
+            [pscustomobject]@{ Text = $labelText; Color = $LabelColor }
+            [pscustomobject]@{ Text = $valueText; Color = $ValueColor }
+            [pscustomobject]@{ Text = ' |'; Color = 'DarkGray' }
+        )
     }
 }
 
@@ -192,10 +297,11 @@ function Write-LWRetroPanelTextRow {
     $contentWidth = [Math]::Max(10, ($Width - 4))
     $displayText = Format-LWRetroPanelCellText -Text $Text -Width $contentWidth
 
-    Write-Host '|' -NoNewline -ForegroundColor DarkGray
-    Write-Host ' ' -NoNewline
-    Write-Host $displayText -NoNewline -ForegroundColor $TextColor
-    Write-Host ' |' -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = '| '; Color = 'DarkGray' }
+        [pscustomobject]@{ Text = $displayText; Color = $TextColor }
+        [pscustomobject]@{ Text = ' |'; Color = 'DarkGray' }
+    )
 }
 
 function Write-LWRetroPanelTwoColumnRow {
@@ -224,12 +330,13 @@ function Write-LWRetroPanelTwoColumnRow {
     $leftDisplay = Format-LWRetroPanelCellText -Text $LeftText -Width $leftWidth
     $rightDisplay = Format-LWRetroPanelCellText -Text $RightText -Width $rightWidth
 
-    Write-Host '|' -NoNewline -ForegroundColor DarkGray
-    Write-Host ' ' -NoNewline
-    Write-Host $leftDisplay -NoNewline -ForegroundColor $LeftColor
-    Write-Host (' ' * $Gap) -NoNewline
-    Write-Host $rightDisplay -NoNewline -ForegroundColor $RightColor
-    Write-Host ' |' -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = '| '; Color = 'DarkGray' }
+        [pscustomobject]@{ Text = $leftDisplay; Color = $LeftColor }
+        [pscustomobject]@{ Text = (' ' * $Gap) }
+        [pscustomobject]@{ Text = $rightDisplay; Color = $RightColor }
+        [pscustomobject]@{ Text = ' |'; Color = 'DarkGray' }
+    )
 }
 
 function Write-LWRetroPanelThreeColumnRow {
@@ -282,14 +389,15 @@ function Write-LWRetroPanelThreeColumnRow {
     $middleDisplay = Format-LWRetroPanelCellText -Text $MiddleText -Width $middleWidth
     $rightDisplay = Format-LWRetroPanelCellText -Text $RightText -Width $rightWidth
 
-    Write-Host '|' -NoNewline -ForegroundColor DarkGray
-    Write-Host ' ' -NoNewline
-    Write-Host $leftDisplay -NoNewline -ForegroundColor $LeftColor
-    Write-Host (' ' * $gapWidth) -NoNewline
-    Write-Host $middleDisplay -NoNewline -ForegroundColor $MiddleColor
-    Write-Host (' ' * $gapWidth) -NoNewline
-    Write-Host $rightDisplay -NoNewline -ForegroundColor $RightColor
-    Write-Host ' |' -ForegroundColor DarkGray
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = '| '; Color = 'DarkGray' }
+        [pscustomobject]@{ Text = $leftDisplay; Color = $LeftColor }
+        [pscustomobject]@{ Text = (' ' * $gapWidth) }
+        [pscustomobject]@{ Text = $middleDisplay; Color = $MiddleColor }
+        [pscustomobject]@{ Text = (' ' * $gapWidth) }
+        [pscustomobject]@{ Text = $rightDisplay; Color = $RightColor }
+        [pscustomobject]@{ Text = ' |'; Color = 'DarkGray' }
+    )
 }
 
 function Get-LWEnduranceColor {
@@ -375,6 +483,7 @@ function Get-LWIntegrityColor {
 }
 
 Export-ModuleMember -Function `
+    Write-LWDisplaySegmentedLine, `
     Write-LWPanelHeader, `
     Write-LWKeyValue, `
     Write-LWBulletItem, `

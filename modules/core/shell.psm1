@@ -3,13 +3,17 @@ Set-StrictMode -Version Latest
 $script:LWShellHostCommandCache = @{}
 $script:LWShellHelpfulCommandsPanelCache = @{}
 $script:LWShellCampaignSummaryCache = $null
+$script:LWModuleContextGeneration = -1
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
+    $generation = if ($Context.ContainsKey('_Generation')) { [int]$Context['_Generation'] } else { -1 }
+    if ($generation -ge 0 -and $generation -eq $script:LWModuleContextGeneration) { return }
     foreach ($key in @($Context.Keys)) {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
+    $script:LWModuleContextGeneration = $generation
 }
 
 function Get-LWShellHostCommand {
@@ -160,8 +164,10 @@ function Invoke-LWCoreWriteInfo {
     Set-LWModuleContext -Context $Context
     Invoke-LWCoreAddNotification -Context $Context -Level 'Info' -Message $Message
     if (-not $script:LWUi.Enabled) {
-        Write-Host '[INFO] ' -NoNewline -ForegroundColor Cyan
-        Write-Host $Message -ForegroundColor Gray
+        Write-LWDisplaySegmentedLine -Segments @(
+            [pscustomobject]@{ Text = '[INFO] '; Color = 'Cyan' },
+            [pscustomobject]@{ Text = $Message; Color = 'Gray' }
+        )
     }
 }
 
@@ -174,8 +180,10 @@ function Invoke-LWCoreWriteWarn {
     Set-LWModuleContext -Context $Context
     Invoke-LWCoreAddNotification -Context $Context -Level 'Warn' -Message $Message
     if (-not $script:LWUi.Enabled) {
-        Write-Host '[WARN] ' -NoNewline -ForegroundColor Yellow
-        Write-Host $Message -ForegroundColor Gray
+        Write-LWDisplaySegmentedLine -Segments @(
+            [pscustomobject]@{ Text = '[WARN] '; Color = 'Yellow' },
+            [pscustomobject]@{ Text = $Message; Color = 'Gray' }
+        )
     }
 }
 
@@ -188,8 +196,10 @@ function Invoke-LWCoreWriteError {
     Set-LWModuleContext -Context $Context
     Invoke-LWCoreAddNotification -Context $Context -Level 'Error' -Message $Message
     if (-not $script:LWUi.Enabled) {
-        Write-Host '[ERROR] ' -NoNewline -ForegroundColor Red
-        Write-Host $Message -ForegroundColor Gray
+        Write-LWDisplaySegmentedLine -Segments @(
+            [pscustomobject]@{ Text = '[ERROR] '; Color = 'Red' },
+            [pscustomobject]@{ Text = $Message; Color = 'Gray' }
+        )
     }
 }
 
@@ -201,19 +211,25 @@ function Invoke-LWCoreWriteMessageLine {
 
     switch ($Level) {
         'Info' {
-            Write-Host '[INFO] ' -NoNewline -ForegroundColor Cyan
-            Write-Host $Message -ForegroundColor Gray
+            Write-LWDisplaySegmentedLine -Segments @(
+                [pscustomobject]@{ Text = '[INFO] '; Color = 'Cyan' },
+                [pscustomobject]@{ Text = $Message; Color = 'Gray' }
+            )
         }
         'Warn' {
-            Write-Host '[WARN] ' -NoNewline -ForegroundColor Yellow
-            Write-Host $Message -ForegroundColor Gray
+            Write-LWDisplaySegmentedLine -Segments @(
+                [pscustomobject]@{ Text = '[WARN] '; Color = 'Yellow' },
+                [pscustomobject]@{ Text = $Message; Color = 'Gray' }
+            )
         }
         'Error' {
-            Write-Host '[ERROR] ' -NoNewline -ForegroundColor Red
-            Write-Host $Message -ForegroundColor Gray
+            Write-LWDisplaySegmentedLine -Segments @(
+                [pscustomobject]@{ Text = '[ERROR] '; Color = 'Red' },
+                [pscustomobject]@{ Text = $Message; Color = 'Gray' }
+            )
         }
         default {
-            Write-Host $Message -ForegroundColor Gray
+            Write-LWDisplaySegmentedLine -Segments @([pscustomobject]@{ Text = $Message; Color = 'Gray' })
         }
     }
 }
@@ -299,6 +315,8 @@ function Invoke-LWCoreWarmRuntimeCaches {
     }
 
     try {
+        [void](Get-LWAchievementDefinitions)
+        [void](Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState)
         [void](Get-LWAchievementDisplayCounts)
         [void](Get-LWAchievementDefinitionsForContext -Context 'section' -State $script:GameState)
         [void](Get-LWAchievementDefinitionsForContext -Context 'healing' -State $script:GameState)
@@ -309,6 +327,8 @@ function Invoke-LWCoreWarmRuntimeCaches {
 }
 
 function Invoke-LWCoreClearScreenHost {
+    param([switch]$FullReset)
+
     $supportsAnsi = $false
 
     if ($PSVersionTable.PSVersion.Major -ge 7) {
@@ -329,7 +349,12 @@ function Invoke-LWCoreClearScreenHost {
 
     if ($supportsAnsi) {
         try {
-            Write-Host "`e[2J`e[H" -NoNewline
+            if ($FullReset) {
+                Write-Host "`e[2J`e[H" -NoNewline
+            }
+            else {
+                Write-Host "`e[H`e[0J" -NoNewline
+            }
             return
         }
         catch {
@@ -1094,7 +1119,21 @@ function Invoke-LWCoreRefreshScreen {
         return
     }
 
-    Invoke-LWCoreClearScreenHost
+    $currentScreenName = if ($null -ne $script:LWUi -and -not [string]::IsNullOrWhiteSpace([string]$script:LWUi.CurrentScreen)) {
+        [string]$script:LWUi.CurrentScreen
+    }
+    else {
+        'welcome'
+    }
+    $lastRenderedScreen = if ((Test-LWPropertyExists -Object $script:LWUi -Name 'LastRenderedScreen') -and -not [string]::IsNullOrWhiteSpace([string]$script:LWUi.LastRenderedScreen)) {
+        [string]$script:LWUi.LastRenderedScreen
+    }
+    else {
+        ''
+    }
+    $screenChanged = ($currentScreenName -ne $lastRenderedScreen)
+
+    Invoke-LWCoreClearScreenHost -FullReset:$screenChanged
 
     $script:LWUi.IsRendering = $true
     try {
@@ -1208,6 +1247,7 @@ function Invoke-LWCoreRefreshScreen {
     }
     finally {
         $script:LWUi.IsRendering = $false
+        $script:LWUi.LastRenderedScreen = $currentScreenName
         if (Test-LWPropertyExists -Object $script:LWUi -Name 'NeedsRender') {
             $script:LWUi.NeedsRender = $false
         }
@@ -2862,10 +2902,12 @@ function Write-LWCombatMeterLine {
     $meterColor = Get-LWEnduranceColor -Current $Current -Max $Max
     $meterText = Get-LWCombatMeterText -Current $Current -Max $Max
 
-    Write-Host ("  {0,-14}" -f $displayLabel) -NoNewline -ForegroundColor $LabelColor
-    Write-Host (" CS {0,-3}" -f $CombatSkill) -NoNewline -ForegroundColor Cyan
-    Write-Host (" END {0,2}/{1,-2} " -f $Current, $Max) -NoNewline -ForegroundColor $meterColor
-    Write-Host $meterText -ForegroundColor $meterColor
+    Write-LWDisplaySegmentedLine -Segments @(
+        [pscustomobject]@{ Text = ("  {0,-14}" -f $displayLabel); Color = $LabelColor },
+        [pscustomobject]@{ Text = (" CS {0,-3}" -f $CombatSkill); Color = 'Cyan' },
+        [pscustomobject]@{ Text = (" END {0,2}/{1,-2} " -f $Current, $Max); Color = $meterColor },
+        [pscustomobject]@{ Text = $meterText; Color = $meterColor }
+    )
 }
 
 function Write-LWCombatRoundLine {
@@ -2878,15 +2920,18 @@ function Write-LWCombatRoundLine {
         $crtSuffix = " -> CRT $($Round.CRTColumn)"
     }
 
-    Write-Host ("  R{0,-2}" -f $Round.Round) -NoNewline -ForegroundColor DarkYellow
-    Write-Host (" ratio {0,3}" -f (Format-LWSigned -Value ([int]$Round.Ratio))) -NoNewline -ForegroundColor (Get-LWCombatRatioColor -Ratio ([int]$Round.Ratio))
-    Write-Host ("  roll {0}{1}" -f $Round.Roll, $crtSuffix) -NoNewline -ForegroundColor Gray
-    Write-Host ("  enemy -{0}" -f $Round.EnemyLoss) -NoNewline -ForegroundColor Red
+    $segments = @(
+        [pscustomobject]@{ Text = ("  R{0,-2}" -f $Round.Round); Color = 'DarkYellow' },
+        [pscustomobject]@{ Text = (" ratio {0,3}" -f (Format-LWSigned -Value ([int]$Round.Ratio))); Color = (Get-LWCombatRatioColor -Ratio ([int]$Round.Ratio)) },
+        [pscustomobject]@{ Text = ("  roll {0}{1}" -f $Round.Roll, $crtSuffix); Color = 'Gray' },
+        [pscustomobject]@{ Text = ("  enemy -{0}" -f $Round.EnemyLoss); Color = 'Red' }
+    )
     if ((Test-LWPropertyExists -Object $Round -Name 'SpecialNote') -and -not [string]::IsNullOrWhiteSpace([string]$Round.SpecialNote)) {
-        Write-Host (" [{0}]" -f [string]$Round.SpecialNote) -NoNewline -ForegroundColor DarkYellow
+        $segments += [pscustomobject]@{ Text = (" [{0}]" -f [string]$Round.SpecialNote); Color = 'DarkYellow' }
     }
-    Write-Host ("  Lone Wolf -{0}" -f $Round.PlayerLoss) -NoNewline -ForegroundColor Red
-    Write-Host ("  END {0}/{1}" -f $Round.PlayerEnd, $Round.EnemyEnd) -ForegroundColor DarkGray
+    $segments += [pscustomobject]@{ Text = ("  Lone Wolf -{0}" -f $Round.PlayerLoss); Color = 'Red' }
+    $segments += [pscustomobject]@{ Text = ("  END {0}/{1}" -f $Round.PlayerEnd, $Round.EnemyEnd); Color = 'DarkGray' }
+    Write-LWDisplaySegmentedLine -Segments $segments
 }
 
 function Get-LWCombatRoundSummaryText {

@@ -57,6 +57,7 @@ function New-LWBootstrapConfiguration {
         UiState              = [pscustomobject]@{
             Enabled       = $false
             CurrentScreen = 'welcome'
+            LastRenderedScreen = ''
             ScreenData    = $null
             Notifications = @()
             IsRendering   = $false

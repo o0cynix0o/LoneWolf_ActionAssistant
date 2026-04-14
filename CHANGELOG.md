@@ -6,6 +6,19 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- completed the remaining lag-hardening pass from `recommendations.md`, including:
+  - generation-based module-context caching across host/core/ruleset modules
+  - same-screen refresh gating with lighter clear behavior
+  - current-save fast-path normalization during load
+  - expanded render batching for shell status lines and combat round/meter output
+  - startup cache warming for achievement definitions and mode availability
+- added `StateSchemaVersion` metadata so healthy current-format saves can skip the legacy normalize-and-repair path on future loads
+- fixed a post-lag-pass regression where shell started calling the shared batched display writer before that helper was exported from `modules/core/display.psm1`
+- validated that `combat status` from `inv` no longer writes to `data/error.log`
+- new lag-hardening artifacts:
+  - `testing/logs/LAG_HARDENING_VALIDATION_PS7.txt`
+  - `testing/logs/LAG_HARDENING_VALIDATION_PS51.txt`
+  - `testing/logs/LAG_HARDENING_REPORT_20260414.md`
 - reworked the achievement sub-screens so `unlocked`, `locked`, `progress`, and `recent` are grouped into `Run-Wide` plus per-book panels instead of rendering as one long flat dump
 - converted achievement detail rows to wrapped key/value panels so long names and descriptions stay readable without truncation
 - cleaned up the campaign milestones `Recent Achievements` panel to use the same wrapped achievement row style

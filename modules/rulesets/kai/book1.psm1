@@ -1,11 +1,16 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
+
+$script:LWModuleContextGeneration = -1
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
+    $generation = if ($Context.ContainsKey('_Generation')) { [int]$Context['_Generation'] } else { -1 }
+    if ($generation -ge 0 -and $generation -eq $script:LWModuleContextGeneration) { return }
     foreach ($key in @($Context.Keys)) {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
+    $script:LWModuleContextGeneration = $generation
 }
 
 function Get-LWBookOneStartingExtraItemDefinition {

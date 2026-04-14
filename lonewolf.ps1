@@ -89,6 +89,9 @@ $script:LastUsedSavePathFile = $script:LWBootstrap.LastUsedSavePathFile
 $script:LWErrorLogFile = $script:LWBootstrap.ErrorLogFile
 $script:GameState = $null
 $script:GameData = $null
+$script:LWContextGeneration = 0
+$script:LWContextCache = $null
+$script:LWStateSchemaVersion = 1
 $script:LWUi = $script:LWBootstrap.UiState
 
 function Test-LWDiscipline {
@@ -976,7 +979,7 @@ function Start-LWNewGameCore {
         return
     }
 
-    $script:GameState = (New-LWDefaultState)
+    Set-LWHostGameState -State (New-LWDefaultState) | Out-Null
     if ($PreserveProfile -and $null -ne $preservedAchievements) {
         $script:GameState.Achievements = $preservedAchievements
         $script:GameState.RunHistory = @($preservedRunHistory)
@@ -1062,6 +1065,7 @@ function Start-LWNewGameCore {
     Reset-LWCurrentBookStats -BookNumber $bookNumber -StartSection $startSection
     Reset-LWSectionCheckpoints -SeedCurrentSection
     Sync-LWRunIntegrityState -State $script:GameState -Reseal
+    Warm-LWRuntimeCaches
 
     Write-LWInfo ("New {0} run created." -f [string]$script:GameState.Run.Difficulty)
     if (Test-LWPermadeathEnabled) {
@@ -1116,7 +1120,7 @@ function Start-LWTerminal {
         Load-LWGame -Path $Load
     }
     else {
-        $script:GameState = (New-LWDefaultState)
+        Set-LWHostGameState -State (New-LWDefaultState) | Out-Null
         Set-LWScreen -Name 'welcome'
         Write-LWInfo 'No save loaded. Use new to create a character or load to open a save file.'
     }
@@ -1143,26 +1147,37 @@ function Start-LWTerminal {
 }
 
 function Get-LWModuleContext {
-    return @{
-        LWRootDir                    = $script:LWRootDir
-        SaveDir                      = $SaveDir
-        DataDir                      = $DataDir
-        LWAppName                    = $script:LWAppName
-        LWAppVersion                 = $script:LWAppVersion
-        LWStateVersion               = $script:LWStateVersion
-        LastUsedSavePathFile         = $script:LastUsedSavePathFile
-        LWErrorLogFile               = $script:LWErrorLogFile
-        GameState                    = $script:GameState
-        GameData                     = $script:GameData
-        LWUi                         = $script:LWUi
-        CanonicalInventoryItemResolver = ${function:Get-LWCanonicalInventoryItemName}
+    if ($null -eq $script:LWContextCache) {
+        $script:LWContextCache = @{
+            LWRootDir                      = $script:LWRootDir
+            SaveDir                        = $SaveDir
+            DataDir                        = $DataDir
+            LWAppName                      = $script:LWAppName
+            LWAppVersion                   = $script:LWAppVersion
+            LWStateVersion                 = $script:LWStateVersion
+            LastUsedSavePathFile           = $script:LastUsedSavePathFile
+            LWErrorLogFile                 = $script:LWErrorLogFile
+            GameState                      = $script:GameState
+            GameData                       = $script:GameData
+            LWUi                           = $script:LWUi
+            CanonicalInventoryItemResolver = ${function:Get-LWCanonicalInventoryItemName}
+            _Generation                    = $script:LWContextGeneration
+        }
     }
+    else {
+        $script:LWContextCache.GameState = $script:GameState
+        $script:LWContextCache.GameData = $script:GameData
+        $script:LWContextCache['_Generation'] = $script:LWContextGeneration
+    }
+
+    return $script:LWContextCache
 }
 
 function Set-LWHostGameState {
     param([object]$State)
 
     $script:GameState = $State
+    $script:LWContextGeneration++
     return $script:GameState
 }
 
@@ -1170,6 +1185,7 @@ function Set-LWHostGameData {
     param([object]$Data)
 
     $script:GameData = $Data
+    $script:LWContextGeneration++
     return $script:GameData
 }
 
@@ -1199,12 +1215,114 @@ function Sync-LWStateRefactorMetadata {
         $State.RuleSetVersion = $rulesetVersion
     }
 
+    if (-not (Test-LWPropertyExists -Object $State -Name 'StateSchemaVersion')) {
+        $State | Add-Member -Force -NotePropertyName StateSchemaVersion -NotePropertyValue $script:LWStateSchemaVersion
+    }
+    else {
+        $State.StateSchemaVersion = $script:LWStateSchemaVersion
+    }
+
     return $State
+}
+
+function Test-LWStateFastNormalizeEligible {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$SourceEngineVersion = ''
+    )
+
+    if ($null -eq $State -or [string]$SourceEngineVersion -ne $script:LWAppVersion) {
+        return $false
+    }
+
+    $requiredRootProperties = @(
+        'Character',
+        'Inventory',
+        'Combat',
+        'Settings',
+        'Run',
+        'RunHistory',
+        'Achievements',
+        'CurrentBookStats',
+        'DeathState',
+        'DeathHistory',
+        'Storage',
+        'RecoveryStash',
+        'Conditions',
+        'EquipmentBonuses',
+        'SectionCheckpoints',
+        'EngineVersion',
+        'RuleSetVersion'
+    )
+    foreach ($propertyName in $requiredRootProperties) {
+        if (-not (Test-LWPropertyExists -Object $State -Name $propertyName) -or $null -eq $State.$propertyName) {
+            return $false
+        }
+    }
+
+    $rulesetVersion = Get-LWActiveRuleSetVersion -State $State
+    if ([string]$State.RuleSetVersion -ne $rulesetVersion) {
+        return $false
+    }
+
+    if ((Test-LWPropertyExists -Object $State -Name 'StateSchemaVersion') -and $null -ne $State.StateSchemaVersion) {
+        return ([int]$State.StateSchemaVersion -ge $script:LWStateSchemaVersion)
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Achievements -Name 'SchemaVersion') -or
+        -not (Test-LWPropertyExists -Object $State.Achievements -Name 'LoadBackfillVersion') -or
+        [int]$State.Achievements.SchemaVersion -lt (Get-LWAchievementStateSchemaVersion) -or
+        [int]$State.Achievements.LoadBackfillVersion -lt (Get-LWAchievementLoadBackfillVersion)) {
+        return $false
+    }
+
+    $requiredCharacterProperties = @(
+        'MagnakaiDisciplines',
+        'WeaponmasteryWeapons',
+        'LoreCirclesCompleted',
+        'ImprovedDisciplines',
+        'LegacyKaiComplete'
+    )
+    foreach ($propertyName in $requiredCharacterProperties) {
+        if (-not (Test-LWPropertyExists -Object $State.Character -Name $propertyName) -or $null -eq $State.Character.$propertyName) {
+            return $false
+        }
+    }
+
+    $requiredInventoryProperties = @(
+        'BackpackItems',
+        'HerbPouchItems',
+        'SpecialItems',
+        'PocketSpecialItems',
+        'HasBackpack',
+        'HasHerbPouch',
+        'QuiverArrows'
+    )
+    foreach ($propertyName in $requiredInventoryProperties) {
+        if (-not (Test-LWPropertyExists -Object $State.Inventory -Name $propertyName) -or $null -eq $State.Inventory.$propertyName) {
+            return $false
+        }
+    }
+
+    $requiredCombatProperties = @(
+        'Log',
+        'SuppressShieldCombatSkillBonus',
+        'DeferredEquippedWeapon',
+        'EvadeExpiresAfterRound'
+    )
+    foreach ($propertyName in $requiredCombatProperties) {
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name $propertyName)) {
+            return $false
+        }
+    }
+
+    return $true
 }
 
 
 function Initialize-LWData {
-    $script:GameData = Invoke-LWCoreInitializeData -Context (Get-LWModuleContext)
+    Set-LWHostGameData -Data (Invoke-LWCoreInitializeData -Context (Get-LWModuleContext)) | Out-Null
+    [void](Get-LWAchievementDefinitions)
 }
 
 function Initialize-LWRuntimeShell {
@@ -1221,7 +1339,12 @@ function Normalize-LWState {
         ''
     }
 
-    $normalized = Invoke-LWCoreNormalizeState -Context (Get-LWModuleContext) -State $State
+    $normalized = if (Test-LWStateFastNormalizeEligible -State $State -SourceEngineVersion $sourceEngineVersion) {
+        $State
+    }
+    else {
+        Invoke-LWCoreNormalizeState -Context (Get-LWModuleContext) -State $State
+    }
     $normalized = Sync-LWHerbPouchState -State $normalized
 
     Ensure-LWAchievementState -State $normalized
@@ -1300,7 +1423,8 @@ function Load-LWGame {
 
     $loadedState = Invoke-LWCoreLoadGame -Context (Get-LWModuleContext) -Path $Path
     if ($null -ne $loadedState) {
-        $script:GameState = Sync-LWStateRefactorMetadata -State $loadedState
+        Set-LWHostGameState -State (Sync-LWStateRefactorMetadata -State $loadedState) | Out-Null
+        Warm-LWRuntimeCaches
         Set-LWScreen -Name (Get-LWDefaultScreen)
         if ([int]$script:GameState.Character.BookNumber -eq 6 -and -not (Test-LWDeathActive)) {
             $bookSixInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection)
@@ -1316,7 +1440,8 @@ function Load-LWGameInteractive {
 
     $loadedState = Invoke-LWCoreLoadGameInteractive -Context (Get-LWModuleContext) -Selection $Selection
     if ($null -ne $loadedState) {
-        $script:GameState = Sync-LWStateRefactorMetadata -State $loadedState
+        Set-LWHostGameState -State (Sync-LWStateRefactorMetadata -State $loadedState) | Out-Null
+        Warm-LWRuntimeCaches
         Set-LWScreen -Name (Get-LWDefaultScreen)
         if ([int]$script:GameState.Character.BookNumber -eq 6 -and -not (Test-LWDeathActive)) {
             $bookSixInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection)

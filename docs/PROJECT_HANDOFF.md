@@ -51,24 +51,24 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - latest `dev` lag pass fixed two post-extraction regressions:
   - achievement-screen caching was being reset by host-context rebinding
   - `combat status` from `inv` could throw a module-context error and write to `data/error.log`
+- the follow-up lag-hardening pass from `recommendations.md` is now in on `dev`:
+  - generation-based context caching now short-circuits repeated rebinding across host/core/ruleset modules
+  - current-format saves can fast-path load normalization instead of always paying the full repair path
+  - shell render output now batches more status and combat lines through the shared display writer
+  - same-screen refreshes now use a lighter clear path
 - prerelease Batch `1-4` full-sweep validation is now green on `dev` in both shells
 - load-path performance work on `dev` now targets campaign-save startup directly instead of screen rendering
-- current measured load behavior on a copied campaign save:
-  - first cold `pwsh` `-Load`: about `2.1s` load / `2.8s` total
-  - first cold Windows PowerShell `5.1` `-Load`: about `3.3s` load / `4.1s` total
-  - after one save under the new metadata:
-    - `pwsh`: about `1.5s` load / `2.3s` total
-    - Windows PowerShell `5.1`: about `2.4s` load / `3.2s` total
-- latest load-lag validation artifacts:
-  - `testing/logs/LOAD_STARTUP_LAGFIX_PS7.txt`
-  - `testing/logs/LOAD_STARTUP_LAGFIX_PS51.txt`
-  - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS7.txt`
-  - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS51.txt`
-  - `testing/logs/LOAD_BREAKDOWN_LAGFIX_PS7.txt`
-  - `testing/logs/LOAD_STARTUP_LAGFIX_REPORT.md`
-- latest screen-lag validation artifacts:
-  - `testing/logs/SCREEN_LAG_VALIDATION_PS7.txt`
-  - `testing/logs/SCREEN_LAG_VALIDATION_PS51.txt`
+- current measured load behavior on a copied current-format campaign save:
+  - cold `pwsh` `-Load`: about `316ms` load / `1.50s` total
+  - cold Windows PowerShell `5.1` `-Load`: about `412ms` load / `1.68s` total
+- current measured first-open hot screens on the same copied save:
+  - `sheet`: about `30ms` in `pwsh`, `27ms` in Windows PowerShell `5.1`
+  - `combat status`: about `9ms` in `pwsh`, `15ms` in Windows PowerShell `5.1`
+  - `achievements` command timing is now sub-`1ms` in the screen-sweep harness, but the full overview block still costs more real render time than lighter screens
+- latest lag validation artifacts:
+  - `testing/logs/LAG_HARDENING_VALIDATION_PS7.txt`
+  - `testing/logs/LAG_HARDENING_VALIDATION_PS51.txt`
+  - `testing/logs/LAG_HARDENING_REPORT_20260414.md`
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
