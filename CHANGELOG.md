@@ -6,6 +6,18 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- reduced `-Load` startup lag on campaign saves by:
+  - removing duplicate load-time story-achievement rebuild work
+  - adding an achievement-state schema fast path
+  - adding derived-metric caching for load-time achievement backfill
+  - persisting a load-backfill version marker so later loads of a saved run are faster
+- new load-startup validation artifacts:
+  - `testing/logs/LOAD_STARTUP_LAGFIX_PS7.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_PS51.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS7.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS51.txt`
+  - `testing/logs/LOAD_BREAKDOWN_LAGFIX_PS7.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_REPORT.md`
 - prerelease full-sweep Batches `1-4` are now green in both PowerShell `7` and Windows PowerShell `5.1`, including:
   - package validation
   - command-surface and save-system prerelease passes

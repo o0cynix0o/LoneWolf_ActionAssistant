@@ -1,6 +1,8 @@
 ﻿Set-StrictMode -Version Latest
 
 $script:LWAchievementModeAvailabilityCache = $null
+$script:LWAchievementStateSchemaVersion = 1
+$script:LWAchievementLoadBackfillVersion = 1
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
@@ -8,6 +10,16 @@ function Set-LWModuleContext {
     foreach ($key in @($Context.Keys)) {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
+}
+
+function Get-LWAchievementStateSchemaVersion {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return [int]$script:LWAchievementStateSchemaVersion
+}
+
+function Get-LWAchievementLoadBackfillVersion {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return [int]$script:LWAchievementLoadBackfillVersion
 }
 
 function New-LWAchievementProgressFlags {
@@ -171,6 +183,8 @@ function New-LWStoryAchievementFlags {
 function New-LWAchievementState {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     return [pscustomobject]@{
+        SchemaVersion     = (Get-LWAchievementStateSchemaVersion)
+        LoadBackfillVersion = 0
         Unlocked          = @()
         SeenNotifications = @()
         ProgressFlags     = (New-LWAchievementProgressFlags)
@@ -347,6 +361,21 @@ function Ensure-LWAchievementState {
         $State | Add-Member -Force -NotePropertyName Achievements -NotePropertyValue (New-LWAchievementState)
     }
 
+    $targetSchemaVersion = Get-LWAchievementStateSchemaVersion
+    $schemaVersion = 0
+    if ((Test-LWPropertyExists -Object $State.Achievements -Name 'SchemaVersion') -and $null -ne $State.Achievements.SchemaVersion) {
+        $schemaVersion = [int]$State.Achievements.SchemaVersion
+    }
+
+    if ($schemaVersion -ge $targetSchemaVersion -and
+        (Test-LWPropertyExists -Object $State.Achievements -Name 'Unlocked') -and $null -ne $State.Achievements.Unlocked -and
+        (Test-LWPropertyExists -Object $State.Achievements -Name 'SeenNotifications') -and $null -ne $State.Achievements.SeenNotifications -and
+        (Test-LWPropertyExists -Object $State.Achievements -Name 'ProgressFlags') -and $null -ne $State.Achievements.ProgressFlags -and
+        (Test-LWPropertyExists -Object $State.Achievements -Name 'StoryFlags') -and $null -ne $State.Achievements.StoryFlags -and
+        (Test-LWPropertyExists -Object $State.Achievements -Name 'LoadBackfillVersion') -and $null -ne $State.Achievements.LoadBackfillVersion) {
+        return
+    }
+
     if (-not (Test-LWPropertyExists -Object $State.Achievements -Name 'Unlocked') -or $null -eq $State.Achievements.Unlocked) {
         $State.Achievements | Add-Member -Force -NotePropertyName Unlocked -NotePropertyValue @()
     }
@@ -379,6 +408,20 @@ function Ensure-LWAchievementState {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Achievements -Name 'LoadBackfillVersion') -or $null -eq $State.Achievements.LoadBackfillVersion) {
+        $State.Achievements | Add-Member -Force -NotePropertyName LoadBackfillVersion -NotePropertyValue 0
+    }
+    else {
+        $State.Achievements.LoadBackfillVersion = [int]$State.Achievements.LoadBackfillVersion
+    }
+
+    if (-not (Test-LWPropertyExists -Object $State.Achievements -Name 'SchemaVersion') -or $null -eq $State.Achievements.SchemaVersion) {
+        $State.Achievements | Add-Member -Force -NotePropertyName SchemaVersion -NotePropertyValue $targetSchemaVersion
+    }
+    else {
+        $State.Achievements.SchemaVersion = $targetSchemaVersion
     }
 }
 
@@ -699,6 +742,30 @@ function Set-LWStoryAchievementFlag {
     }
 
     $script:GameState.Achievements.StoryFlags.$Name = [bool]$Value
+}
+
+function Test-LWAchievementLoadBackfillCurrent {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State) {
+        return $false
+    }
+
+    Ensure-LWAchievementState -State $State
+    return ([int]$State.Achievements.LoadBackfillVersion -ge (Get-LWAchievementLoadBackfillVersion))
+}
+
+function Set-LWAchievementLoadBackfillCurrent {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State) {
+        return
+    }
+
+    Ensure-LWAchievementState -State $State
+    $State.Achievements.LoadBackfillVersion = (Get-LWAchievementLoadBackfillVersion)
 }
 
 function Test-LWAchievementStoryFlag {
@@ -1172,6 +1239,149 @@ function Update-LWAchievementProgressFlagsFromSummary {
     }
 }
 
+function New-LWAchievementDerivedMetrics {
+    param(
+        [object[]]$RunEntries = @(),
+        [object[]]$RunVictories = @(),
+        [object[]]$BookSummaries = @(),
+        [object[]]$CompletedBookSummaries = @()
+    )
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $metrics = [ordered]@{
+        RunVictoryCount                 = @($RunVictories).Count
+        OneRoundVictoryCount            = 0
+        MindblastVictoryCount           = 0
+        MaxEnemyCombatSkillVictory      = 0
+        MaxEnemyEnduranceVictory        = 0
+        MaxWeaponVictoryCount           = 0
+        TotalRounds                     = 0
+        LongFightCount                  = 0
+        EasyPickingsCount               = 0
+        UndeadSommerswerdVictoryCount   = 0
+        Book1MadButcherVictory          = $false
+        Book2Priest158Victory           = $false
+        Book2NeoLinkVictory             = $false
+        MaxSectionsVisited              = 0
+        MaxVictoriesPerBook             = 0
+        HasCompletedNoRewinds           = $false
+        HasCompletedNoDeaths            = $false
+        HasCompletedNoDefeats           = $false
+        HasCompletedHard                = $false
+        HasCompletedVeteran             = $false
+        HasCompletedPermadeath          = $false
+        HasCompletedPermadeathHardVet   = $false
+    }
+
+    $weaponVictoryCounts = @{}
+    foreach ($entry in @($RunEntries)) {
+        if ($null -eq $entry) {
+            continue
+        }
+
+        if ((Test-LWPropertyExists -Object $entry -Name 'RoundCount') -and $null -ne $entry.RoundCount) {
+            $roundCount = [int]$entry.RoundCount
+            $metrics.TotalRounds += $roundCount
+            if ($roundCount -ge 5) {
+                $metrics.LongFightCount = [int]$metrics.LongFightCount + 1
+            }
+        }
+    }
+
+    foreach ($entry in @($RunVictories)) {
+        if ($null -eq $entry) {
+            continue
+        }
+
+        $bookNumber = Get-LWCombatEntryBookNumber -Entry $entry
+        $enemyName = if (Test-LWPropertyExists -Object $entry -Name 'EnemyName') { [string]$entry.EnemyName } else { '' }
+        $weaponName = if (Test-LWPropertyExists -Object $entry -Name 'Weapon') { [string]$entry.Weapon } else { '' }
+
+        if ((Test-LWPropertyExists -Object $entry -Name 'RoundCount') -and $null -ne $entry.RoundCount -and [int]$entry.RoundCount -eq 1) {
+            $metrics.OneRoundVictoryCount = [int]$metrics.OneRoundVictoryCount + 1
+        }
+        if ((Test-LWPropertyExists -Object $entry -Name 'Mindblast') -and [bool]$entry.Mindblast) {
+            $metrics.MindblastVictoryCount = [int]$metrics.MindblastVictoryCount + 1
+        }
+        if ((Test-LWPropertyExists -Object $entry -Name 'EnemyCombatSkill') -and $null -ne $entry.EnemyCombatSkill) {
+            $metrics.MaxEnemyCombatSkillVictory = [Math]::Max([int]$metrics.MaxEnemyCombatSkillVictory, [int]$entry.EnemyCombatSkill)
+        }
+        if ((Test-LWPropertyExists -Object $entry -Name 'EnemyEnduranceMax') -and $null -ne $entry.EnemyEnduranceMax) {
+            $metrics.MaxEnemyEnduranceVictory = [Math]::Max([int]$metrics.MaxEnemyEnduranceVictory, [int]$entry.EnemyEnduranceMax)
+        }
+        if ((Test-LWPropertyExists -Object $entry -Name 'CombatRatio') -and $null -ne $entry.CombatRatio -and [int]$entry.CombatRatio -ge 15) {
+            $metrics.EasyPickingsCount = [int]$metrics.EasyPickingsCount + 1
+        }
+        if (-not [string]::IsNullOrWhiteSpace($weaponName)) {
+            $weaponKey = $weaponName.ToLowerInvariant()
+            if (-not $weaponVictoryCounts.ContainsKey($weaponKey)) {
+                $weaponVictoryCounts[$weaponKey] = 0
+            }
+            $weaponVictoryCounts[$weaponKey] = [int]$weaponVictoryCounts[$weaponKey] + 1
+            $metrics.MaxWeaponVictoryCount = [Math]::Max([int]$metrics.MaxWeaponVictoryCount, [int]$weaponVictoryCounts[$weaponKey])
+        }
+        if ((Test-LWPropertyExists -Object $entry -Name 'EnemyIsUndead') -and [bool]$entry.EnemyIsUndead -and (Test-LWWeaponIsSommerswerd -Weapon $weaponName) -and $bookNumber -ge 2) {
+            $metrics.UndeadSommerswerdVictoryCount = [int]$metrics.UndeadSommerswerdVictoryCount + 1
+        }
+
+        if ($bookNumber -eq 1 -and $enemyName -ieq 'Mad Butcher') {
+            $metrics.Book1MadButcherVictory = $true
+        }
+        if ($bookNumber -eq 2 -and (Test-LWPropertyExists -Object $entry -Name 'Section') -and $null -ne $entry.Section -and [int]$entry.Section -eq 158 -and $enemyName -ieq 'Priest') {
+            $metrics.Book2Priest158Victory = $true
+        }
+        if ($bookNumber -eq 2 -and (Test-LWPropertyExists -Object $entry -Name 'Section') -and $null -ne $entry.Section -and [int]$entry.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains $enemyName) {
+            $metrics.Book2NeoLinkVictory = $true
+        }
+    }
+
+    foreach ($summary in @($BookSummaries)) {
+        if ($null -eq $summary) {
+            continue
+        }
+
+        if ((Test-LWPropertyExists -Object $summary -Name 'SectionsVisited') -and $null -ne $summary.SectionsVisited) {
+            $metrics.MaxSectionsVisited = [Math]::Max([int]$metrics.MaxSectionsVisited, [int]$summary.SectionsVisited)
+        }
+        if ((Test-LWPropertyExists -Object $summary -Name 'Victories') -and $null -ne $summary.Victories) {
+            $metrics.MaxVictoriesPerBook = [Math]::Max([int]$metrics.MaxVictoriesPerBook, [int]$summary.Victories)
+        }
+    }
+
+    foreach ($summary in @($CompletedBookSummaries)) {
+        if ($null -eq $summary) {
+            continue
+        }
+
+        $difficulty = if ((Test-LWPropertyExists -Object $summary -Name 'Difficulty') -and $null -ne $summary.Difficulty) { [string]$summary.Difficulty } else { '' }
+        $permadeath = ((Test-LWPropertyExists -Object $summary -Name 'Permadeath') -and [bool]$summary.Permadeath)
+
+        if ((Test-LWPropertyExists -Object $summary -Name 'RewindsUsed') -and $null -ne $summary.RewindsUsed -and [int]$summary.RewindsUsed -eq 0) {
+            $metrics.HasCompletedNoRewinds = $true
+        }
+        if ((Test-LWPropertyExists -Object $summary -Name 'DeathCount') -and $null -ne $summary.DeathCount -and [int]$summary.DeathCount -eq 0) {
+            $metrics.HasCompletedNoDeaths = $true
+        }
+        if ((Test-LWPropertyExists -Object $summary -Name 'Defeats') -and $null -ne $summary.Defeats -and [int]$summary.Defeats -eq 0) {
+            $metrics.HasCompletedNoDefeats = $true
+        }
+        if ($difficulty -eq 'Hard') {
+            $metrics.HasCompletedHard = $true
+        }
+        if ($difficulty -eq 'Veteran') {
+            $metrics.HasCompletedVeteran = $true
+        }
+        if ($permadeath) {
+            $metrics.HasCompletedPermadeath = $true
+        }
+        if ($permadeath -and @('Hard', 'Veteran') -contains $difficulty) {
+            $metrics.HasCompletedPermadeathHardVet = $true
+        }
+    }
+
+    return [pscustomobject]$metrics
+}
+
 function New-LWAchievementEvaluationContext {
     param([string]$Context = 'general')
     Set-LWModuleContext -Context (Get-LWModuleContext)
@@ -1205,6 +1415,13 @@ function New-LWAchievementEvaluationContext {
     }
 
     switch ($contextName) {
+        'load' {
+            $contextData.RunEntries = @(Get-LWRunCombatEntries)
+            $contextData.RunVictories = @(Get-LWRunVictoryEntries)
+            $contextData.BookSummaries = @(Get-LWAllAchievementBookSummaries)
+            $contextData.CompletedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
+            $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
+        }
         'section' {
             $contextData.BookSummaries = @(Get-LWAllAchievementBookSummaries)
             $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
@@ -1253,6 +1470,10 @@ function New-LWAchievementEvaluationContext {
             $contextData.CompletedBookSummaries = @(Get-LWCompletedAchievementBookSummaries)
             $contextData.CurrentSummary = Get-LWLiveBookStatsSummary
         }
+    }
+
+    if ($contextName -eq 'load') {
+        $contextData.Metrics = (New-LWAchievementDerivedMetrics -RunEntries @($contextData.RunEntries) -RunVictories @($contextData.RunVictories) -BookSummaries @($contextData.BookSummaries) -CompletedBookSummaries @($contextData.CompletedBookSummaries))
     }
 
     return [pscustomobject]$contextData
@@ -1382,6 +1603,13 @@ function Get-LWAchievementDefinitionsForContext {
             )
             break
         }
+        'load' {
+            $result = @(
+                $definitions |
+                Where-Object { [bool]$_.Backfill }
+            )
+            break
+        }
         default {
             $result = @($definitions)
             break
@@ -1492,21 +1720,22 @@ function Test-LWAchievementSatisfied {
     $completedBookSummaries = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'CompletedBookSummaries')) { @($EvaluationContext.CompletedBookSummaries) } else { @(Get-LWCompletedAchievementBookSummaries) }
     $currentSummary = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'CurrentSummary')) { $EvaluationContext.CurrentSummary } else { Get-LWLiveBookStatsSummary }
     $flags = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'Flags') -and $null -ne $EvaluationContext.Flags) { $EvaluationContext.Flags } else { $script:GameState.Achievements.ProgressFlags }
+    $metrics = if ($null -ne $EvaluationContext -and (Test-LWPropertyExists -Object $EvaluationContext -Name 'Metrics') -and $null -ne $EvaluationContext.Metrics) { $EvaluationContext.Metrics } else { $null }
 
     switch ([string]$Definition.Id) {
-        'first_blood' { return (@($runVictories).Count -ge 1) }
-        'swift_blade' { return (@($runVictories | Where-Object { [int]$_.RoundCount -eq 1 }).Count -ge 1) }
+        'first_blood' { return $(if ($null -ne $metrics) { [int]$metrics.RunVictoryCount -ge 1 } else { @($runVictories).Count -ge 1 }) }
+        'swift_blade' { return $(if ($null -ne $metrics) { [int]$metrics.OneRoundVictoryCount -ge 1 } else { @($runVictories | Where-Object { [int]$_.RoundCount -eq 1 }).Count -ge 1 }) }
         'untouchable' { return ([int]$flags.PerfectVictories -ge 1) }
         'against_the_odds' { return ([int]$flags.AgainstOddsVictories -ge 1) }
-        'mind_over_matter' { return (@($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Mindblast') -and $_.Mindblast }).Count -ge 1) }
-        'giant_slayer' { return (@($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'EnemyCombatSkill') -and $null -ne $_.EnemyCombatSkill -and [int]$_.EnemyCombatSkill -ge 18 }).Count -ge 1) }
-        'monster_hunter' { return (@($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'EnemyEnduranceMax') -and $null -ne $_.EnemyEnduranceMax -and [int]$_.EnemyEnduranceMax -ge 30 }).Count -ge 1) }
+        'mind_over_matter' { return $(if ($null -ne $metrics) { [int]$metrics.MindblastVictoryCount -ge 1 } else { @($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Mindblast') -and $_.Mindblast }).Count -ge 1 }) }
+        'giant_slayer' { return $(if ($null -ne $metrics) { [int]$metrics.MaxEnemyCombatSkillVictory -ge 18 } else { @($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'EnemyCombatSkill') -and $null -ne $_.EnemyCombatSkill -and [int]$_.EnemyCombatSkill -ge 18 }).Count -ge 1 }) }
+        'monster_hunter' { return $(if ($null -ne $metrics) { [int]$metrics.MaxEnemyEnduranceVictory -ge 30 } else { @($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'EnemyEnduranceMax') -and $null -ne $_.EnemyEnduranceMax -and [int]$_.EnemyEnduranceMax -ge 30 }).Count -ge 1 }) }
         'back_from_the_brink' { return ([int]$flags.BrinkVictories -ge 1) }
-        'kai_veteran' { return (@($runVictories).Count -ge 10) }
-        'weapon_master' { return ((Get-LWMaxWeaponVictoryCount) -ge 10) }
-        'seasoned_fighter' { return ((Get-LWRunTotalRounds) -ge 25) }
-        'endurance_duelist' { return (@($runEntries | Where-Object { [int]$_.RoundCount -ge 5 }).Count -ge 1) }
-        'easy_pickings' { return (@($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'CombatRatio') -and $null -ne $_.CombatRatio -and [int]$_.CombatRatio -ge 15 }).Count -ge 1) }
+        'kai_veteran' { return $(if ($null -ne $metrics) { [int]$metrics.RunVictoryCount -ge 10 } else { @($runVictories).Count -ge 10 }) }
+        'weapon_master' { return $(if ($null -ne $metrics) { [int]$metrics.MaxWeaponVictoryCount -ge 10 } else { (Get-LWMaxWeaponVictoryCount) -ge 10 }) }
+        'seasoned_fighter' { return $(if ($null -ne $metrics) { [int]$metrics.TotalRounds -ge 25 } else { (Get-LWRunTotalRounds) -ge 25 }) }
+        'endurance_duelist' { return $(if ($null -ne $metrics) { [int]$metrics.LongFightCount -ge 1 } else { @($runEntries | Where-Object { [int]$_.RoundCount -ge 5 }).Count -ge 1 }) }
+        'easy_pickings' { return $(if ($null -ne $metrics) { [int]$metrics.EasyPickingsCount -ge 1 } else { @($runVictories | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'CombatRatio') -and $null -ne $_.CombatRatio -and [int]$_.CombatRatio -ge 15 }).Count -ge 1 }) }
         'trail_survivor' { return ($null -ne $currentSummary -and [int]$currentSummary.MealsEaten -ge 1) }
         'hunters_instinct' { return ($null -ne $currentSummary -and [int]$currentSummary.MealsCoveredByHunting -ge 5) }
         'herbal_relief' { return ($null -ne $currentSummary -and [int]$currentSummary.PotionsUsed -ge 1) }
@@ -1515,32 +1744,32 @@ function Test-LWAchievementSatisfied {
         'hard_lessons' { return ($null -ne $currentSummary -and [int]$currentSummary.StarvationPenalties -ge 1) }
         'still_standing' { return (@($script:GameState.DeathHistory).Count -ge 3) }
         'deep_draught' { return ($null -ne $currentSummary -and [int]$currentSummary.ConcentratedPotionsUsed -ge 1) }
-        'pathfinder' { return (@($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'SectionsVisited') -and [int]$_.SectionsVisited -ge 25 }).Count -ge 1) }
-        'long_road' { return (@($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'SectionsVisited') -and [int]$_.SectionsVisited -ge 50 }).Count -ge 1) }
-        'no_quarter' { return (@($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Victories') -and [int]$_.Victories -ge 5 }).Count -ge 1) }
+        'pathfinder' { return $(if ($null -ne $metrics) { [int]$metrics.MaxSectionsVisited -ge 25 } else { @($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'SectionsVisited') -and [int]$_.SectionsVisited -ge 25 }).Count -ge 1 }) }
+        'long_road' { return $(if ($null -ne $metrics) { [int]$metrics.MaxSectionsVisited -ge 50 } else { @($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'SectionsVisited') -and [int]$_.SectionsVisited -ge 50 }).Count -ge 1 }) }
+        'no_quarter' { return $(if ($null -ne $metrics) { [int]$metrics.MaxVictoriesPerBook -ge 5 } else { @($bookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Victories') -and [int]$_.Victories -ge 5 }).Count -ge 1 }) }
         'sun_sword' { return ((Test-LWStateHasSommerswerd -State $script:GameState) -or @($runEntries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Weapon') -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$_.Weapon)) -and (Get-LWCombatEntryBookNumber -Entry $_) -ge 2 }).Count -ge 1) }
         'fully_armed' { return (@($script:GameState.Inventory.Weapons).Count -ge 2 -and (Get-LWStateShieldCombatSkillBonus -State $script:GameState) -ge 2) }
         'relic_hunter' { return (@($script:GameState.Inventory.SpecialItems).Count -ge 5) }
         'book_one_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 1) }
         'book_two_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 2) }
         'book_three_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 3) }
-        'grave_bane' { return ((Get-LWSommerswerdUndeadVictoryCount) -ge 1) }
-        'true_path' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'RewindsUsed') -and [int]$_.RewindsUsed -eq 0 }).Count -ge 1) }
-        'unbroken' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 }).Count -ge 1) }
-        'wolf_of_sommerlund' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Defeats') -and [int]$_.Defeats -eq 0 }).Count -ge 1) }
+        'grave_bane' { return $(if ($null -ne $metrics) { [int]$metrics.UndeadSommerswerdVictoryCount -ge 1 } else { (Get-LWSommerswerdUndeadVictoryCount) -ge 1 }) }
+        'true_path' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedNoRewinds } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'RewindsUsed') -and [int]$_.RewindsUsed -eq 0 }).Count -ge 1 }) }
+        'unbroken' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedNoDeaths } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 }).Count -ge 1 }) }
+        'wolf_of_sommerlund' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedNoDefeats } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Defeats') -and [int]$_.Defeats -eq 0 }).Count -ge 1 }) }
         'iron_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'DeathCount') -and [int]$_.DeathCount -eq 0 -and (Test-LWPropertyExists -Object $_ -Name 'RewindsUsed') -and [int]$_.RewindsUsed -eq 0 -and (Test-LWPropertyExists -Object $_ -Name 'ManualRecoveryShortcuts') -and [int]$_.ManualRecoveryShortcuts -eq 0 }).Count -ge 1) }
         'gentle_path' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Story' }).Count -ge 1) }
         'all_too_easy' { return ((Get-LWCurrentDifficulty) -eq 'Story' -and @($runVictories).Count -ge 1) }
         'bedtime_tale' { return (@($completedBookSummaries | Where-Object { [int]$_.BookNumber -eq 1 -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Story' }).Count -ge 1) }
-        'hard_road' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' }).Count -ge 1) }
+        'hard_road' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedHard } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' }).Count -ge 1 }) }
         'lean_healing' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Hard' -and (Test-LWPropertyExists -Object $_ -Name 'HealingEnduranceRestored') -and [int]$_.HealingEnduranceRestored -ge 10 }).Count -ge 1) }
-        'veteran_of_sommerlund' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
-        'by_the_text' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1) }
-        'only_one_life' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath }).Count -ge 1) }
-        'mortal_wolf' { return (@($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and @('Hard', 'Veteran') -contains [string]$_.Difficulty }).Count -ge 1) }
+        'veteran_of_sommerlund' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedVeteran } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1 }) }
+        'by_the_text' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedVeteran } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and [string]$_.Difficulty -eq 'Veteran' }).Count -ge 1 }) }
+        'only_one_life' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedPermadeath } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath }).Count -ge 1 }) }
+        'mortal_wolf' { return $(if ($null -ne $metrics) { [bool]$metrics.HasCompletedPermadeathHardVet } else { @($completedBookSummaries | Where-Object { (Test-LWPropertyExists -Object $_ -Name 'Permadeath') -and [bool]$_.Permadeath -and (Test-LWPropertyExists -Object $_ -Name 'Difficulty') -and @('Hard', 'Veteran') -contains [string]$_.Difficulty }).Count -ge 1 }) }
         'aim_for_the_bushes' { return (Test-LWAchievementStoryFlag -Name 'Book1AimForTheBushesVisited' -EvaluationContext $EvaluationContext) }
         'found_the_clubhouse' { return (Test-LWAchievementStoryFlag -Name 'Book1ClubhouseFound' -EvaluationContext $EvaluationContext) }
-        'kill_the_mad_butcher' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 1 -and [string]$_.EnemyName -ieq 'Mad Butcher' }).Count -ge 1) }
+        'kill_the_mad_butcher' { return $(if ($null -ne $metrics) { [bool]$metrics.Book1MadButcherVictory } else { @($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 1 -and [string]$_.EnemyName -ieq 'Mad Butcher' }).Count -ge 1 }) }
         'whats_in_the_box_book1' { return (Test-LWAchievementStoryFlag -Name 'Book1SilverKeyClaimed' -EvaluationContext $EvaluationContext) }
         'use_the_force' { return (Test-LWAchievementStoryFlag -Name 'Book1UseTheForcePath' -EvaluationContext $EvaluationContext) }
         'straight_to_the_throne' { return ((@($script:GameState.Character.CompletedBooks) -contains 1) -and (Test-LWAchievementStoryFlag -Name 'Book1StraightToTheThrone' -EvaluationContext $EvaluationContext)) }
@@ -1551,8 +1780,8 @@ function Test-LWAchievementSatisfied {
         'star_of_toran' { return (Test-LWAchievementStoryFlag -Name 'Book1StarOfToranClaimed' -EvaluationContext $EvaluationContext) }
         'field_medic' { return (Test-LWAchievementStoryFlag -Name 'Book1FieldMedicPath' -EvaluationContext $EvaluationContext) }
         'found_the_sommerswerd' { return (Test-LWAchievementStoryFlag -Name 'Book2SommerswerdClaimed' -EvaluationContext $EvaluationContext) }
-        'you_have_chosen_wisely' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 158 -and [string]$_.EnemyName -ieq 'Priest' }).Count -ge 1) }
-        'neo_link' { return (@($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains [string]$_.EnemyName }).Count -ge 1) }
+        'you_have_chosen_wisely' { return $(if ($null -ne $metrics) { [bool]$metrics.Book2Priest158Victory } else { @($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 158 -and [string]$_.EnemyName -ieq 'Priest' }).Count -ge 1 }) }
+        'neo_link' { return $(if ($null -ne $metrics) { [bool]$metrics.Book2NeoLinkVictory } else { @($runVictories | Where-Object { (Get-LWCombatEntryBookNumber -Entry $_) -eq 2 -and (Test-LWPropertyExists -Object $_ -Name 'Section') -and [int]$_.Section -eq 270 -and @('Ganon + Dorier', 'Ganon & Dorier', 'Ganon and Dorier') -contains [string]$_.EnemyName }).Count -ge 1 }) }
         'by_a_thread' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2ByAThreadRoute' -EvaluationContext $EvaluationContext)) }
         'skyfall' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2SkyfallRoute' -EvaluationContext $EvaluationContext)) }
         'fight_through_the_smoke' { return ((@($script:GameState.Character.CompletedBooks) -contains 2) -and (Test-LWAchievementStoryFlag -Name 'Book2FightThroughTheSmokeRoute' -EvaluationContext $EvaluationContext)) }
@@ -1758,9 +1987,6 @@ function Sync-LWAchievements {
     $evaluationContext = New-LWAchievementEvaluationContext -Context $Context
     $newUnlocks = @()
     foreach ($definition in @(Get-LWAchievementDefinitionsForContext -Context $Context -State $script:GameState)) {
-        if ([string]$Context -eq 'load' -and -not [bool]$definition.Backfill) {
-            continue
-        }
         if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
             continue
         }
@@ -1777,6 +2003,10 @@ function Sync-LWAchievements {
                 $newUnlocks += $unlocked
             }
         }
+    }
+
+    if ([string]$Context -eq 'load') {
+        Set-LWAchievementLoadBackfillCurrent -State $script:GameState
     }
 
     return @($newUnlocks)
@@ -2041,5 +2271,5 @@ function Show-LWAchievementsScreen {
     }
 }
 
-Export-ModuleMember -Function New-LWAchievementProgressFlags, New-LWStoryAchievementFlags, New-LWAchievementState, New-LWAchievementDefinition, Get-LWAchievementDefinitions, Get-LWPhaseTwoAchievementPlans, Ensure-LWAchievementState, Rebuild-LWStoryAchievementFlagsFromState, Test-LWStoryAchievementFlag, Set-LWStoryAchievementFlag, Test-LWAchievementStoryFlag, Register-LWStoryInventoryAchievementTriggers, Test-LWStateHasTorch, Get-LWAchievementDefinitionById, Test-LWAchievementAvailableInCurrentMode, Get-LWAchievementAvailabilityReason, Get-LWAchievementDisplayNameById, Get-LWAchievementLockedDisplayName, Get-LWAchievementUnlockedDisplayName, Get-LWAchievementLockedDisplayDescription, Get-LWAchievementEligibleCount, Get-LWAchievementEligibleUnlockedCount, Get-LWAchievementDisplayCounts, Get-LWRunCombatEntries, Get-LWRunVictoryEntries, Get-LWRunTotalRounds, Get-LWAllAchievementBookSummaries, Get-LWCompletedAchievementBookSummaries, Get-LWCombatEntryPlayerLossTotal, Rebuild-LWAchievementProgressFlags, Update-LWAchievementProgressFlagsFromSummary, New-LWAchievementEvaluationContext, Test-LWAchievementSyncSuppressed, Get-LWAchievementDefinitionsForContext, Test-LWAchievementUnlocked, Unlock-LWAchievement, Get-LWMaxWeaponVictoryCount, Get-LWSommerswerdUndeadVictoryCount, Test-LWAchievementSatisfied, Get-LWAchievementProgressText, Sync-LWAchievements, Get-LWAchievementUnlockedCount, Get-LWAchievementAvailableCount, Get-LWAchievementRecentUnlocks, Get-LWAchievementBookDisplayDefinitions, Show-LWAchievementOverview, Show-LWAchievementUnlockedList, Show-LWAchievementLockedList, Show-LWAchievementProgressList, Show-LWAchievementPlannedList, Show-LWAchievementsScreen
+Export-ModuleMember -Function New-LWAchievementProgressFlags, New-LWStoryAchievementFlags, New-LWAchievementState, New-LWAchievementDefinition, Get-LWAchievementStateSchemaVersion, Get-LWAchievementLoadBackfillVersion, Get-LWAchievementDefinitions, Get-LWPhaseTwoAchievementPlans, Ensure-LWAchievementState, Rebuild-LWStoryAchievementFlagsFromState, Test-LWStoryAchievementFlag, Set-LWStoryAchievementFlag, Test-LWAchievementStoryFlag, Register-LWStoryInventoryAchievementTriggers, Test-LWStateHasTorch, Get-LWAchievementDefinitionById, Test-LWAchievementAvailableInCurrentMode, Get-LWAchievementAvailabilityReason, Get-LWAchievementDisplayNameById, Get-LWAchievementLockedDisplayName, Get-LWAchievementUnlockedDisplayName, Get-LWAchievementLockedDisplayDescription, Get-LWAchievementEligibleCount, Get-LWAchievementEligibleUnlockedCount, Get-LWAchievementDisplayCounts, Get-LWRunCombatEntries, Get-LWRunVictoryEntries, Get-LWRunTotalRounds, Get-LWAllAchievementBookSummaries, Get-LWCompletedAchievementBookSummaries, Get-LWCombatEntryPlayerLossTotal, Rebuild-LWAchievementProgressFlags, Update-LWAchievementProgressFlagsFromSummary, New-LWAchievementEvaluationContext, Test-LWAchievementSyncSuppressed, Get-LWAchievementDefinitionsForContext, Test-LWAchievementUnlocked, Unlock-LWAchievement, Get-LWMaxWeaponVictoryCount, Get-LWSommerswerdUndeadVictoryCount, Test-LWAchievementSatisfied, Get-LWAchievementProgressText, Test-LWAchievementLoadBackfillCurrent, Set-LWAchievementLoadBackfillCurrent, Sync-LWAchievements, Get-LWAchievementUnlockedCount, Get-LWAchievementAvailableCount, Get-LWAchievementRecentUnlocks, Get-LWAchievementBookDisplayDefinitions, Show-LWAchievementOverview, Show-LWAchievementUnlockedList, Show-LWAchievementLockedList, Show-LWAchievementProgressList, Show-LWAchievementPlannedList, Show-LWAchievementsScreen
 

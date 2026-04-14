@@ -49,6 +49,20 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M5 Book `6` automation catch-up is complete on `main`
 - current `dev` work is architecture hardening and dead-code cleanup after the `0.8.0` release
 - prerelease Batch `1-4` full-sweep validation is now green on `dev` in both shells
+- load-path performance work on `dev` now targets campaign-save startup directly instead of screen rendering
+- current measured load behavior on a copied campaign save:
+  - first cold `pwsh` `-Load`: about `2.1s` load / `2.8s` total
+  - first cold Windows PowerShell `5.1` `-Load`: about `3.3s` load / `4.1s` total
+  - after one save under the new metadata:
+    - `pwsh`: about `1.5s` load / `2.3s` total
+    - Windows PowerShell `5.1`: about `2.4s` load / `3.2s` total
+- latest load-lag validation artifacts:
+  - `testing/logs/LOAD_STARTUP_LAGFIX_PS7.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_PS51.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS7.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_POSTSAVE_PS51.txt`
+  - `testing/logs/LOAD_BREAKDOWN_LAGFIX_PS7.txt`
+  - `testing/logs/LOAD_STARTUP_LAGFIX_REPORT.md`
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:

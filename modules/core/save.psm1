@@ -116,12 +116,14 @@ function Invoke-LWCoreLoadGame {
         Ensure-LWCurrentSectionCheckpoint
         Set-LWLastUsedSavePath -Path $Path
         Set-LWScreen -Name (Get-LWDefaultScreen)
-        Rebuild-LWStoryAchievementFlagsFromState
         if (Test-LWRunTampered) {
             $integrityNote = if (-not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityNote)) { [string]$script:GameState.Run.IntegrityNote } else { 'Locked run settings were changed outside the assistant.' }
             Write-LWWarn ("Run integrity warning: {0}" -f $integrityNote)
         }
-        $backfilled = @(Sync-LWAchievements -Context 'load' -Silent)
+        $backfilled = @()
+        if (-not (Test-LWAchievementLoadBackfillCurrent -State $script:GameState)) {
+            $backfilled = @(Sync-LWAchievements -Context 'load' -Silent)
+        }
         $backfilledCount = @($backfilled).Count
         if ($backfilledCount -gt 0) {
             Write-LWInfo ("Backfilled {0} achievement{1} from save history." -f $backfilledCount, $(if ($backfilledCount -eq 1) { '' } else { 's' }))
