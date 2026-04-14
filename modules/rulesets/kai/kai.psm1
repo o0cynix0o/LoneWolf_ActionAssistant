@@ -249,6 +249,7 @@ function Invoke-LWKaiSectionEntryRules {
     param([Parameter(Mandatory = $true)][object]$State)
 
     $script:GameState = $State
+    Set-LWModuleContext -Context (Get-LWModuleContext)
 
     if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
 
@@ -464,9 +465,9 @@ function Invoke-LWKaiSectionEntryRules {
             2 {
                 switch ($section) {
                     10 {
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed')) {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section10TicketAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Coach Ticket') {
-                                Set-LWStoryAchievementFlag -Name 'Book2CoachTicketClaimed'
+                                Set-LWStoryAchievementFlag -Name 'Book2Section10TicketAdded'
                                 Write-LWInfo 'Section 10: Coach Ticket added to Special Items.'
                             }
                             else {
@@ -500,9 +501,9 @@ function Invoke-LWKaiSectionEntryRules {
                             Write-LWInfo ('Section 40: Madin Rendalim restores all ENDURANCE lost so far.')
                         }
 
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed')) {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section40PotionAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Potent Laumspur Potion') {
-                                Set-LWStoryAchievementFlag -Name 'Book2PotentPotionClaimed'
+                                Set-LWStoryAchievementFlag -Name 'Book2Section40PotionAdded'
                                 Write-LWInfo 'Section 40: added Potent Laumspur Potion (+5 ENDURANCE after combat).'
                             }
                             else {
@@ -511,9 +512,9 @@ function Invoke-LWKaiSectionEntryRules {
                         }
                     }
                     103 {
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed')) {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section103MealAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal of Laumspur') {
-                                Set-LWStoryAchievementFlag -Name 'Book2MealOfLaumspurClaimed'
+                                Set-LWStoryAchievementFlag -Name 'Book2Section103MealAdded'
                                 Write-LWInfo 'Section 103: added Meal of Laumspur. It can satisfy a Meal and restore 3 ENDURANCE, or be used any time for 3 ENDURANCE.'
                             }
                             else {
@@ -546,9 +547,9 @@ function Invoke-LWKaiSectionEntryRules {
                         }
                     }
                     142 {
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed')) {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section142PassAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'White Pass') {
-                                Set-LWStoryAchievementFlag -Name 'Book2WhitePassClaimed'
+                                Set-LWStoryAchievementFlag -Name 'Book2Section142PassAdded'
                                 Write-LWInfo 'Section 142: White Pass added to Special Items.'
                             }
                             else {
@@ -576,9 +577,9 @@ function Invoke-LWKaiSectionEntryRules {
                         }
                     }
                     263 {
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2RedPassClaimed')) {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section263PassAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Red Pass') {
-                                Set-LWStoryAchievementFlag -Name 'Book2RedPassClaimed'
+                                Set-LWStoryAchievementFlag -Name 'Book2Section263PassAdded'
                                 Write-LWInfo 'Section 263: Red Pass added to Special Items.'
                             }
                             else {
@@ -811,26 +812,39 @@ function Invoke-LWKaiSectionEntryRules {
                         }
                     }
                     280 {
-                        $before = [int]$script:GameState.Character.EnduranceCurrent
-                        $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 1 -Source 'sectiondamage'
-                        $appliedLoss = [int]$lossResolution.AppliedLoss
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section280KeyResolved')) {
+                            Set-LWStoryAchievementFlag -Name 'Book3Section280KeyResolved'
 
-                        if ($appliedLoss -gt 0) {
-                            $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
-                            Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
-                        }
+                            $before = [int]$script:GameState.Character.EnduranceCurrent
+                            $lossResolution = Resolve-LWGameplayEnduranceLoss -Loss 1 -Source 'sectiondamage'
+                            $appliedLoss = [int]$lossResolution.AppliedLoss
 
-                        $message = 'Section 280: the Ornate Silver Key''s corrosive acid burns your hand.'
-                        if ($appliedLoss -gt 0) {
-                            $message += " Lose $appliedLoss ENDURANCE point$(if ($appliedLoss -eq 1) { '' } else { 's' })."
-                        }
-                        if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
-                            $message += " $($lossResolution.Note)"
-                        }
-                        $message += " Current Endurance: $($script:GameState.Character.EnduranceCurrent) / $($script:GameState.Character.EnduranceMax)."
-                        Write-LWInfo $message
+                            if ($appliedLoss -gt 0) {
+                                $script:GameState.Character.EnduranceCurrent = [Math]::Max(0, ($before - $appliedLoss))
+                                Add-LWBookEnduranceDelta -Delta ($script:GameState.Character.EnduranceCurrent - $before)
+                            }
 
-                        [void](Invoke-LWFatalEnduranceCheck -Cause 'The corrosive acid on the Ornate Silver Key reduced your Endurance to zero.')
+                            $message = 'Section 280: the Ornate Silver Key''s corrosive acid burns your hand.'
+                            if ($appliedLoss -gt 0) {
+                                $message += " Lose $appliedLoss ENDURANCE point$(if ($appliedLoss -eq 1) { '' } else { 's' })."
+                            }
+                            if (-not [string]::IsNullOrWhiteSpace([string]$lossResolution.Note)) {
+                                $message += " $($lossResolution.Note)"
+                            }
+                            $message += " Current Endurance: $($script:GameState.Character.EnduranceCurrent) / $($script:GameState.Character.EnduranceMax)."
+                            Write-LWInfo $message
+
+                            if (Invoke-LWFatalEnduranceCheck -Cause 'The corrosive acid on the Ornate Silver Key reduced your Endurance to zero.') {
+                                return
+                            }
+
+                            if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Ornate Silver Key') {
+                                Write-LWInfo 'Section 280: Ornate Silver Key added to Special Items.'
+                            }
+                            else {
+                                Write-LWWarn 'No room to add the Ornate Silver Key automatically. Make room and add it manually if you are keeping it.'
+                            }
+                        }
                     }
                     282 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 282 Loot' -PromptLabel 'Section 282 choice' -ContextLabel 'Section 282' -Choices (Get-LWBookThreeSection282ChoiceDefinitions) -Intro 'Section 282: take the Spear and Blue Stone Disc if you want them.'

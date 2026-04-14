@@ -66,6 +66,27 @@ function Invoke-LWCoreLoadGame {
             return
         }
 
+        $gameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
+        if ($null -eq $gameData) {
+            $initializeDataCommand = Get-Command -Name 'Initialize-LWData' -ErrorAction SilentlyContinue
+            if ($null -ne $initializeDataCommand) {
+                & $initializeDataCommand
+                $gameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
+            }
+        }
+        if ($null -eq $gameData) {
+            $coreInitializeDataCommand = Get-Command -Name 'Invoke-LWCoreInitializeData' -ErrorAction SilentlyContinue
+            if ($null -ne $coreInitializeDataCommand) {
+                $gameData = & $coreInitializeDataCommand -Context $Context
+                if ($null -ne $gameData) {
+                    Set-Variable -Scope Script -Name GameData -Value $gameData -Force
+                    if (Get-Command -Name 'Set-LWHostGameData' -ErrorAction SilentlyContinue) {
+                        Set-LWHostGameData -Data $gameData | Out-Null
+                    }
+                }
+            }
+        }
+
         $state = $raw | ConvertFrom-Json
         $script:GameState = Normalize-LWState -State $state
         if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
