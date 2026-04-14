@@ -1,5 +1,7 @@
 ﻿Set-StrictMode -Version Latest
 
+$script:LWAchievementModeAvailabilityCache = $null
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
@@ -866,6 +868,49 @@ function Test-LWAchievementAvailableInCurrentMode {
     return $true
 }
 
+function Get-LWAchievementModeAvailabilitySnapshot {
+    param([object]$State = $script:GameState)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State) {
+        return [pscustomobject]@{
+            Key           = 'no-state'
+            Definitions   = @()
+            AvailableById = @{}
+        }
+    }
+
+    $runId = if ($null -ne $State.Run -and -not [string]::IsNullOrWhiteSpace([string]$State.Run.Id)) { [string]$State.Run.Id } else { 'no-run' }
+    $difficulty = Get-LWCurrentDifficulty -State $State
+    $permadeath = if (Test-LWPermadeathEnabled -State $State) { '1' } else { '0' }
+    $integrity = if ($null -ne $State.Run -and -not [string]::IsNullOrWhiteSpace([string]$State.Run.IntegrityState)) { [string]$State.Run.IntegrityState } else { 'unknown' }
+    $cacheKey = '{0}|{1}|{2}|{3}' -f $runId, $difficulty, $permadeath, $integrity
+
+    if ($null -ne $script:LWAchievementModeAvailabilityCache -and
+        (Test-LWPropertyExists -Object $script:LWAchievementModeAvailabilityCache -Name 'Key') -and
+        [string]$script:LWAchievementModeAvailabilityCache.Key -eq $cacheKey) {
+        return $script:LWAchievementModeAvailabilityCache
+    }
+
+    $availableDefinitions = @()
+    $availableById = @{}
+    foreach ($definition in @(Get-LWAchievementDefinitions)) {
+        if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition -State $State)) {
+            continue
+        }
+
+        $availableDefinitions += $definition
+        $availableById[[string]$definition.Id] = $true
+    }
+
+    $script:LWAchievementModeAvailabilityCache = [pscustomobject]@{
+        Key           = $cacheKey
+        Definitions   = @($availableDefinitions)
+        AvailableById = $availableById
+    }
+    return $script:LWAchievementModeAvailabilityCache
+}
+
 function Get-LWAchievementAvailabilityReason {
     param(
         [Parameter(Mandatory = $true)][object]$Definition,
@@ -994,14 +1039,10 @@ function Get-LWAchievementDisplayCounts {
         return $script:LWAchievementDisplayCountsCache
     }
 
-    $eligibleCount = 0
+    $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
+    $eligibleCount = @($availability.Definitions).Count
     $eligibleUnlockedCount = 0
-    foreach ($definition in @(Get-LWAchievementDefinitions)) {
-        if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
-            continue
-        }
-
-        $eligibleCount++
+    foreach ($definition in @($availability.Definitions)) {
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
             $eligibleUnlockedCount++
         }
@@ -1268,14 +1309,7 @@ function Get-LWAchievementDefinitionsForContext {
             break
         }
         'sectionmove' {
-            $combinedIds = @(
-                ((Get-LWAchievementDefinitionsForContext -Context 'section' -State $State) | ForEach-Object { [string]$_.Id })
-                ((Get-LWAchievementDefinitionsForContext -Context 'healing' -State $State) | ForEach-Object { [string]$_.Id })
-            ) | Sort-Object -Unique
-            $result = @(
-                $definitions |
-                Where-Object { $combinedIds -contains [string]$_.Id }
-            )
+            $result = @(Get-LWAchievementDefinitionsForContext -Context 'section' -State $State)
             break
         }
         'healing' {
@@ -1814,17 +1848,18 @@ function Get-LWAchievementBookDisplayDefinitions {
 function Show-LWAchievementOverview {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     $definitions = @(Get-LWAchievementDefinitions)
+    $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
+    $availableById = $availability.AvailableById
     $profileUnlockedCount = Get-LWAchievementUnlockedCount
     $profileTotalCount = @($definitions).Count
     $eligibleUnlockedCount = Get-LWAchievementEligibleUnlockedCount
     $eligibleCount = Get-LWAchievementEligibleCount
     $recent = @(Get-LWAchievementRecentUnlocks -Count 6)
     $hiddenLockedCount = @(
-        $definitions |
+        @($availability.Definitions) |
         Where-Object {
             (Test-LWPropertyExists -Object $_ -Name 'Hidden') -and [bool]$_.Hidden -and
-            -not (Test-LWAchievementUnlocked -Id ([string]$_.Id)) -and
-            (Test-LWAchievementAvailableInCurrentMode -Definition $_)
+            -not (Test-LWAchievementUnlocked -Id ([string]$_.Id))
         }
     ).Count
     $currentBook = [int]$script:GameState.Character.BookNumber
@@ -1905,11 +1940,13 @@ function Show-LWAchievementUnlockedList {
 function Show-LWAchievementLockedList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     Write-LWRetroPanelHeader -Title 'Locked Achievements' -AccentColor 'DarkYellow'
+    $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
+    $availableById = $availability.AvailableById
     $locked = @()
     $disabled = @()
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
         if (-not (Test-LWAchievementUnlocked -Id ([string]$definition.Id))) {
-            if (Test-LWAchievementAvailableInCurrentMode -Definition $definition) {
+            if ($availableById.ContainsKey([string]$definition.Id)) {
                 $locked += $definition
             }
             else {
@@ -1955,13 +1992,15 @@ function Show-LWAchievementLockedList {
 function Show-LWAchievementProgressList {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     Write-LWRetroPanelHeader -Title 'Achievement Progress' -AccentColor 'Cyan'
+    $availability = Get-LWAchievementModeAvailabilitySnapshot -State $script:GameState
+    $availableById = $availability.AvailableById
     $anyShown = $false
     $disabledCount = 0
     foreach ($definition in @(Get-LWAchievementDefinitions)) {
         if (Test-LWAchievementUnlocked -Id ([string]$definition.Id)) {
             continue
         }
-        if (-not (Test-LWAchievementAvailableInCurrentMode -Definition $definition)) {
+        if (-not $availableById.ContainsKey([string]$definition.Id)) {
             $disabledCount++
             continue
         }

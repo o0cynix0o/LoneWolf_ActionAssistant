@@ -48,6 +48,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
 - current `dev` work is architecture hardening and dead-code cleanup after the `0.8.0` release
+- prerelease Batch `1-4` full-sweep validation is now green on `dev` in both shells
 - approved M3 visual direction:
   - `Arcade / GameFAQs Retro`
 - shared M3 style rules are now tracked in:
@@ -118,6 +119,14 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - latest post-extraction command-surface smoke passed in both shells:
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`
+- prerelease full-sweep artifacts now include:
+  - `testing/logs/BOOKS_1_3_PRERELEASE_NORMAL_PS7.txt`
+  - `testing/logs/BOOKS_1_3_PRERELEASE_NORMAL_PS51.txt`
+  - `testing/logs/BATCH4_NEWRUN_SWEEP_PS7.txt`
+  - `testing/logs/BATCH4_NEWRUN_SWEEP_PS51.txt`
+- latest lag-hardening regressions fixed on `dev`:
+  - `#41` late-bound host command caches could permanently remember missing functions and break later load/performance paths
+  - `#42` backpack layout rendering could crash on one-item collections under strict mode
 - latest final-pass command-surface smoke also passed in both shells:
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS7.txt`
   - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT3_PS51.txt`

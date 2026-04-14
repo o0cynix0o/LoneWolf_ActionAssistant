@@ -1,11 +1,34 @@
 Set-StrictMode -Version Latest
 
+$script:LWSaveHostCommandCache = @{}
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
     foreach ($key in @($Context.Keys)) {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
+}
+
+function Get-LWSaveHostCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $null
+    }
+
+    if ($script:LWSaveHostCommandCache.ContainsKey($Name)) {
+        $cachedCommand = $script:LWSaveHostCommandCache[$Name]
+        if ($null -ne $cachedCommand) {
+            return $cachedCommand
+        }
+    }
+
+    $command = Get-Command -Name $Name -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        $script:LWSaveHostCommandCache[$Name] = $command
+    }
+    return $command
 }
 
 function Invoke-LWCoreSaveGame {
@@ -68,28 +91,27 @@ function Invoke-LWCoreLoadGame {
 
         $gameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
         if ($null -eq $gameData) {
-            $initializeDataCommand = Get-Command -Name 'Initialize-LWData' -ErrorAction SilentlyContinue
+            $initializeDataCommand = Get-LWSaveHostCommand -Name 'Initialize-LWData'
             if ($null -ne $initializeDataCommand) {
                 & $initializeDataCommand
                 $gameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
             }
         }
         if ($null -eq $gameData) {
-            $coreInitializeDataCommand = Get-Command -Name 'Invoke-LWCoreInitializeData' -ErrorAction SilentlyContinue
-            if ($null -ne $coreInitializeDataCommand) {
-                $gameData = & $coreInitializeDataCommand -Context $Context
-                if ($null -ne $gameData) {
-                    Set-Variable -Scope Script -Name GameData -Value $gameData -Force
-                    if (Get-Command -Name 'Set-LWHostGameData' -ErrorAction SilentlyContinue) {
-                        Set-LWHostGameData -Data $gameData | Out-Null
-                    }
+            $gameData = Invoke-LWCoreInitializeData -Context $Context
+            if ($null -ne $gameData) {
+                Set-Variable -Scope Script -Name GameData -Value $gameData -Force
+                $setHostGameDataCommand = Get-LWSaveHostCommand -Name 'Set-LWHostGameData'
+                if ($null -ne $setHostGameDataCommand) {
+                    & $setHostGameDataCommand -Data $gameData | Out-Null
                 }
             }
         }
 
         $state = $raw | ConvertFrom-Json
         $script:GameState = Normalize-LWState -State $state
-        if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+        $setHostGameStateCommand = Get-LWSaveHostCommand -Name 'Set-LWHostGameState'
+        if ($null -ne $setHostGameStateCommand) { & $setHostGameStateCommand -State $script:GameState | Out-Null }
         $script:GameState.Settings.SavePath = $Path
         Ensure-LWCurrentSectionCheckpoint
         Set-LWLastUsedSavePath -Path $Path
@@ -165,7 +187,7 @@ function Import-LWJson {
         [string]$Path,
         [object]$Default = $null
     )
-    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    $contextCommand = Get-LWSaveHostCommand -Name 'Get-LWModuleContext'
     if ($null -ne $contextCommand) {
         Set-LWModuleContext -Context (& $contextCommand)
     }

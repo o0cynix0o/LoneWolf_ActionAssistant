@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- prerelease full-sweep Batches `1-4` are now green in both PowerShell `7` and Windows PowerShell `5.1`, including:
+  - package validation
+  - command-surface and save-system prerelease passes
+  - Books `1-6` prerelease campaign coverage
+  - NewRun difficulty sweep, achievement audit, and performance capture
+- fixed a post-optimization regression where module host-command caches could permanently remember missing late-bound functions and break later load/performance paths
+- fixed a strict-mode regression in backpack layout handling where one-item collections could collapse to scalars and crash Book `2` / Book `3` startup gear screens
+- fixed a Book `5` confiscation regression where pocket-carried confiscated items could collapse to scalars under strict mode and break summary/restore flows
+
 - prerelease Batch 1 foundation pass is now green in both shells:
   - package and cold-start validation
   - command-surface prerelease sweep

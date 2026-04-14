@@ -1,5 +1,9 @@
 Set-StrictMode -Version Latest
 
+$script:LWShellHostCommandCache = @{}
+$script:LWShellHelpfulCommandsPanelCache = @{}
+$script:LWShellCampaignSummaryCache = $null
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
@@ -8,13 +12,34 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWShellHostCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $null
+    }
+
+    if ($script:LWShellHostCommandCache.ContainsKey($Name)) {
+        $cachedCommand = $script:LWShellHostCommandCache[$Name]
+        if ($null -ne $cachedCommand) {
+            return $cachedCommand
+        }
+    }
+
+    $command = Get-Command -Name $Name -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        $script:LWShellHostCommandCache[$Name] = $command
+    }
+    return $command
+}
+
 function Get-LWModuleGameData {
     $localGameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
     if ($null -ne $localGameData) {
         return $localGameData
     }
 
-    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    $contextCommand = Get-LWShellHostCommand -Name 'Get-LWModuleContext'
     if ($null -ne $contextCommand) {
         $context = & $contextCommand
         if ($context -is [hashtable] -and $context.ContainsKey('GameData') -and $null -ne $context.GameData) {
@@ -277,7 +302,7 @@ function Invoke-LWCoreWarmRuntimeCaches {
         [void](Get-LWAchievementDisplayCounts)
         [void](Get-LWAchievementDefinitionsForContext -Context 'section' -State $script:GameState)
         [void](Get-LWAchievementDefinitionsForContext -Context 'healing' -State $script:GameState)
-        [void](Get-LWAchievementDefinitionsForContext -Context 'sectionmove' -State $script:GameState)
+        [void](Get-LWCampaignSummary)
     }
     catch {
     }
@@ -2162,6 +2187,7 @@ function Merge-LWNamedCountEntries {
 }
 
 function Get-LWCampaignBookEntries {
+    param([object]$CurrentSummary = $null)
     Set-LWModuleContext -Context (Get-LWModuleContext)
     if (-not (Test-LWHasState)) {
         return @()
@@ -2175,7 +2201,10 @@ function Get-LWCampaignBookEntries {
         }
     }
 
-    $currentSummary = Get-LWLiveBookStatsSummary
+    if ($null -eq $CurrentSummary) {
+        $CurrentSummary = Get-LWLiveBookStatsSummary
+    }
+    $currentSummary = $CurrentSummary
     if ($null -ne $currentSummary) {
         $entries += [pscustomobject]@{
             Status  = 'Current'
@@ -2239,13 +2268,116 @@ function Get-LWCampaignRunStyle {
     return 'Kai in Progress'
 }
 
+function Get-LWBookSummaryCacheSignature {
+    param([object]$Summary)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $Summary) {
+        return 'none'
+    }
+
+    $weaponUsageSignature = (@(
+        foreach ($entry in @($Summary.WeaponUsage)) {
+            '{0}:{1}' -f [string]$entry.Name, [int]$entry.Count
+        }
+    ) -join ',')
+    $weaponVictorySignature = (@(
+        foreach ($entry in @($Summary.WeaponVictories)) {
+            '{0}:{1}' -f [string]$entry.Name, [int]$entry.Count
+        }
+    ) -join ',')
+
+    $signatureFormat = '{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}|{10}|{11}|{12}|{13}|{14}|{15}|{16}|{17}|{18}|{19}|{20}|{21}|{22}|{23}|{24}|{25}|{26}|{27}|{28}|{29}|{30}|{31}|{32}|{33}|{34}|{35}|{36}|{37}|{38}|{39}|{40}'
+    return ($signatureFormat -f
+        [int]$Summary.BookNumber,
+        [int]$Summary.SuccessfulPathSections,
+        [int]$Summary.SectionsVisited,
+        [int]$Summary.UniqueSectionsVisited,
+        [int]$Summary.EnduranceLost,
+        [int]$Summary.EnduranceGained,
+        [int]$Summary.MealsEaten,
+        [int]$Summary.MealsCoveredByHunting,
+        [int]$Summary.StarvationPenalties,
+        [int]$Summary.PotionsUsed,
+        [int]$Summary.ConcentratedPotionsUsed,
+        [int]$Summary.PotionEnduranceRestored,
+        [int]$Summary.RewindsUsed,
+        [int]$Summary.ManualRecoveryShortcuts,
+        [int]$Summary.GoldGained,
+        [int]$Summary.GoldSpent,
+        [int]$Summary.HealingTriggers,
+        [int]$Summary.HealingEnduranceRestored,
+        [int]$Summary.CombatCount,
+        [int]$Summary.Victories,
+        [int]$Summary.Defeats,
+        [int]$Summary.Evades,
+        [int]$Summary.RoundsFought,
+        [int]$Summary.MindblastCombats,
+        [int]$Summary.MindblastVictories,
+        [int]$Summary.InstantDeaths,
+        [int]$Summary.CombatDeaths,
+        [int]$Summary.DeathCount,
+        [int]$Summary.HighestEnemyCombatSkillFaced,
+        [int]$Summary.HighestEnemyEnduranceFaced,
+        [int]$Summary.HighestEnemyCombatSkillDefeated,
+        [int]$Summary.HighestEnemyEnduranceDefeated,
+        [string]$Summary.FastestVictoryEnemyName,
+        [int]$Summary.FastestVictoryRounds,
+        [string]$Summary.EasiestVictoryEnemyName,
+        [string]$Summary.EasiestVictoryRatio,
+        [string]$Summary.LongestFightEnemyName,
+        [int]$Summary.LongestFightRounds,
+        [int][bool]$Summary.PartialTracking,
+        $weaponUsageSignature,
+        $weaponVictorySignature)
+}
+
+function Get-LWCampaignSummaryCacheKey {
+    param([object]$CurrentSummary = $null)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not (Test-LWHasState)) {
+        return 'no-state'
+    }
+
+    if ($null -eq $CurrentSummary) {
+        $CurrentSummary = Get-LWLiveBookStatsSummary
+    }
+
+    $runId = if ($null -ne $script:GameState.Run -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.Id)) { [string]$script:GameState.Run.Id } else { 'no-run' }
+    $integrity = if ($null -ne $script:GameState.Run -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityState)) { [string]$script:GameState.Run.IntegrityState } else { 'unknown' }
+    $combatMode = if ($null -ne $script:GameState.Settings -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Settings.CombatMode)) { [string]$script:GameState.Settings.CombatMode } else { 'unknown' }
+
+    $cacheFormat = '{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}|{10}'
+    return ($cacheFormat -f
+        $runId,
+        @($script:GameState.BookHistory).Count,
+        @($script:GameState.History).Count,
+        @($script:GameState.Achievements.Unlocked).Count,
+        @($script:GameState.Character.CompletedBooks).Count,
+        [int]$script:GameState.CurrentSection,
+        [int]$script:GameState.Character.BookNumber,
+        $integrity,
+        $combatMode,
+        [int][bool]$script:GameState.Combat.Active,
+        (Get-LWBookSummaryCacheSignature -Summary $CurrentSummary))
+}
+
 function Get-LWCampaignSummary {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     if (-not (Test-LWHasState)) {
         return $null
     }
 
-    $bookEntries = @(Get-LWCampaignBookEntries)
+    $currentSummary = Get-LWLiveBookStatsSummary
+    $cacheKey = Get-LWCampaignSummaryCacheKey -CurrentSummary $currentSummary
+    if ($null -ne $script:LWShellCampaignSummaryCache -and
+        (Test-LWPropertyExists -Object $script:LWShellCampaignSummaryCache -Name 'Key') -and
+        [string]$script:LWShellCampaignSummaryCache.Key -eq $cacheKey) {
+        return $script:LWShellCampaignSummaryCache.Summary
+    }
+
+    $bookEntries = @(Get-LWCampaignBookEntries -CurrentSummary $currentSummary)
     if ($bookEntries.Count -eq 0) {
         return $null
     }
@@ -2447,6 +2579,10 @@ function Get-LWCampaignSummary {
     }
 
     $summary | Add-Member -NotePropertyName RunStyle -NotePropertyValue (Get-LWCampaignRunStyle -Summary $summary)
+    $script:LWShellCampaignSummaryCache = [pscustomobject]@{
+        Key     = $cacheKey
+        Summary = $summary
+    }
     return $summary
 }
 
@@ -3839,7 +3975,7 @@ function Get-LWHelpfulCommandRows {
     }
 }
 
-function Show-LWHelpfulCommandsPanel {
+function Get-LWHelpfulCommandsPanelCacheEntry {
     param(
         [Parameter(Mandatory = $true)][string]$ScreenName,
         [string]$View = '',
@@ -3847,11 +3983,20 @@ function Show-LWHelpfulCommandsPanel {
         [string]$AccentColor = 'DarkYellow'
     )
 
-    $rows = @(Get-LWHelpfulCommandRows -ScreenName $ScreenName -View $View -Variant $Variant)
-    if ($rows.Count -eq 0) {
-        return
+    $screenKey = $ScreenName.Trim().ToLowerInvariant()
+    $viewKey = if ([string]::IsNullOrWhiteSpace($View)) { '' } else { $View.Trim().ToLowerInvariant() }
+    $variantKey = if ([string]::IsNullOrWhiteSpace($Variant)) { '' } else { $Variant.Trim().ToLowerInvariant() }
+    $dynamicKey = switch ($screenKey) {
+        'death' { '{0}|{1}' -f ([int](Get-LWAvailableRewindCount)), [int][bool](Test-LWPermadeathEnabled) }
+        default { '' }
+    }
+    $cacheKey = '{0}|{1}|{2}|{3}|{4}' -f $screenKey, $viewKey, $variantKey, $AccentColor, $dynamicKey
+
+    if ($script:LWShellHelpfulCommandsPanelCache.ContainsKey($cacheKey)) {
+        return $script:LWShellHelpfulCommandsPanelCache[$cacheKey]
     }
 
+    $rows = @(Get-LWHelpfulCommandRows -ScreenName $ScreenName -View $View -Variant $Variant)
     $labelWidth = 18
     foreach ($row in $rows) {
         $labelText = if ($null -eq $row.Label) { '' } else { [string]$row.Label }
@@ -3860,6 +4005,30 @@ function Show-LWHelpfulCommandsPanel {
         }
     }
     $labelWidth = [Math]::Min(24, [Math]::Max(16, $labelWidth))
+
+    $entry = [pscustomobject]@{
+        Rows       = @($rows)
+        LabelWidth = $labelWidth
+    }
+    $script:LWShellHelpfulCommandsPanelCache[$cacheKey] = $entry
+    return $entry
+}
+
+function Show-LWHelpfulCommandsPanel {
+    param(
+        [Parameter(Mandatory = $true)][string]$ScreenName,
+        [string]$View = '',
+        [string]$Variant = '',
+        [string]$AccentColor = 'DarkYellow'
+    )
+
+    $cacheEntry = Get-LWHelpfulCommandsPanelCacheEntry -ScreenName $ScreenName -View $View -Variant $Variant -AccentColor $AccentColor
+    $rows = @($cacheEntry.Rows)
+    if ($rows.Count -eq 0) {
+        return
+    }
+
+    $labelWidth = [int]$cacheEntry.LabelWidth
 
     Write-LWRetroPanelHeader -Title 'Helpful Commands' -AccentColor $AccentColor
     foreach ($row in $rows) {

@@ -1182,6 +1182,7 @@ function Sync-LWStateEquipmentBonuses {
 
 
     Ensure-LWEquipmentBonusState -State $State
+    $completedLoreCircles = @(Get-LWStateCompletedLoreCircles -State $State)
 
     $desiredChainmail = Get-LWStateChainmailEnduranceBonus -State $State
     $appliedChainmail = [int]$State.EquipmentBonuses.ChainmailEndurance
@@ -1199,16 +1200,16 @@ function Sync-LWStateEquipmentBonuses {
     $appliedDaggerOfVashna = [int]$State.EquipmentBonuses.DaggerOfVashnaEndurance
     $daggerOfVashnaDelta = $desiredDaggerOfVashna - $appliedDaggerOfVashna
 
-    $desiredLoreCircleEndurance = Get-LWStateLoreCircleEnduranceBonus -State $State
+    $desiredLoreCircleEndurance = Get-LWStateLoreCircleEnduranceBonus -State $State -CompletedCircles $completedLoreCircles
     $appliedLoreCircleEndurance = [int]$State.EquipmentBonuses.LoreCircleEndurance
     $loreCircleEnduranceDelta = $desiredLoreCircleEndurance - $appliedLoreCircleEndurance
 
     $delta = $chainmailDelta + $paddedLeatherDelta + $helmetDelta + $daggerOfVashnaDelta + $loreCircleEnduranceDelta
 
     if ($delta -eq 0) {
-        $State.EquipmentBonuses.LoreCircleCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State
+        $State.EquipmentBonuses.LoreCircleCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State -CompletedCircles $completedLoreCircles
         $State.EquipmentBonuses.LoreCircleEndurance = $desiredLoreCircleEndurance
-        $State.Character.LoreCirclesCompleted = @((Get-LWStateCompletedLoreCircles -State $State) | ForEach-Object { [string]$_.Name })
+        $State.Character.LoreCirclesCompleted = @($completedLoreCircles | ForEach-Object { [string]$_.Name })
         return
     }
 
@@ -1227,9 +1228,9 @@ function Sync-LWStateEquipmentBonuses {
     $State.EquipmentBonuses.PaddedLeatherEndurance = $desiredPaddedLeather
     $State.EquipmentBonuses.HelmetEndurance = $desiredHelmet
     $State.EquipmentBonuses.DaggerOfVashnaEndurance = $desiredDaggerOfVashna
-    $State.EquipmentBonuses.LoreCircleCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State
+    $State.EquipmentBonuses.LoreCircleCombatSkill = Get-LWStateLoreCircleCombatSkillBonus -State $State -CompletedCircles $completedLoreCircles
     $State.EquipmentBonuses.LoreCircleEndurance = $desiredLoreCircleEndurance
-    $State.Character.LoreCirclesCompleted = @((Get-LWStateCompletedLoreCircles -State $State) | ForEach-Object { [string]$_.Name })
+    $State.Character.LoreCirclesCompleted = @($completedLoreCircles | ForEach-Object { [string]$_.Name })
 
     if ($WriteMessages) {
         if ($chainmailDelta -ne 0) {

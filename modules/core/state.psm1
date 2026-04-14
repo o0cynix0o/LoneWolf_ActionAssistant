@@ -1,11 +1,34 @@
 Set-StrictMode -Version Latest
 
+$script:LWStateHostCommandCache = @{}
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
     foreach ($key in @($Context.Keys)) {
         Set-Variable -Scope Script -Name $key -Value $Context[$key] -Force
     }
+}
+
+function Get-LWStateHostCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $null
+    }
+
+    if ($script:LWStateHostCommandCache.ContainsKey($Name)) {
+        $cachedCommand = $script:LWStateHostCommandCache[$Name]
+        if ($null -ne $cachedCommand) {
+            return $cachedCommand
+        }
+    }
+
+    $command = Get-Command -Name $Name -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        $script:LWStateHostCommandCache[$Name] = $command
+    }
+    return $command
 }
 
 function Resolve-LWCoreInventoryItemName {
@@ -19,8 +42,9 @@ function Resolve-LWCoreInventoryItemName {
         return (& $CanonicalInventoryItemResolver -Name $Name)
     }
 
-    if (Get-Command -Name 'Get-LWCanonicalInventoryItemName' -ErrorAction SilentlyContinue) {
-        return (Get-LWCanonicalInventoryItemName -Name $Name)
+    $canonicalResolver = Get-LWStateHostCommand -Name 'Get-LWCanonicalInventoryItemName'
+    if ($null -ne $canonicalResolver) {
+        return (& $canonicalResolver -Name $Name)
     }
 
     return $Name.Trim()
@@ -86,15 +110,29 @@ function Invoke-LWCoreInitializeData {
         $weaponskillPath = Join-Path $DataDir 'weaponskill-map.json'
         $crtPath = Join-Path $DataDir 'crt.json'
 
+        $crt = (Import-LWJson -Path $crtPath -Default $null)
+        $crtRatioKeys = @()
+        if ($null -ne $crt) {
+            foreach ($property in $crt.PSObject.Properties) {
+                $value = 0
+                if ([int]::TryParse([string]$property.Name, [ref]$value)) {
+                    $crtRatioKeys += $value
+                }
+            }
+            $crtRatioKeys = @($crtRatioKeys | Sort-Object)
+        }
+
         $script:GameData = [pscustomobject]@{
             KaiDisciplines      = @(Import-LWJson -Path $disciplinesPath -Default @())
             MagnakaiDisciplines = @(Import-LWJson -Path $magnakaiDisciplinesPath -Default @())
             MagnakaiRanks       = @(Import-LWJson -Path $magnakaiRanksPath -Default @())
             MagnakaiLoreCircles = @(Import-LWJson -Path $magnakaiLoreCirclesPath -Default @())
             WeaponskillMap      = (Import-LWJson -Path $weaponskillPath -Default $null)
-            CRT                 = (Import-LWJson -Path $crtPath -Default $null)
+            CRT                 = $crt
+            CRTRatioKeys        = @($crtRatioKeys)
         }
-        if (Get-Command -Name 'Set-LWHostGameData' -ErrorAction SilentlyContinue) { Set-LWHostGameData -Data $script:GameData | Out-Null }
+        $setHostGameDataCommand = Get-LWStateHostCommand -Name 'Set-LWHostGameData'
+        if ($null -ne $setHostGameDataCommand) { & $setHostGameDataCommand -Data $script:GameData | Out-Null }
 
     return $script:GameData
 }
@@ -887,12 +925,14 @@ function New-LWRunArchiveEntry {
     $previousState = $script:GameState
     try {
         $script:GameState = $State
-        if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+        $setHostGameStateCommand = Get-LWStateHostCommand -Name 'Set-LWHostGameState'
+        if ($null -ne $setHostGameStateCommand) { & $setHostGameStateCommand -State $script:GameState | Out-Null }
         $campaign = Get-LWCampaignSummary
     }
     finally {
         $script:GameState = $previousState
-        if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+        $setHostGameStateCommand = Get-LWStateHostCommand -Name 'Set-LWHostGameState'
+        if ($null -ne $setHostGameStateCommand) { & $setHostGameStateCommand -State $script:GameState | Out-Null }
     }
 
     return [pscustomobject]@{
@@ -1513,7 +1553,8 @@ function Restore-LWSectionCheckpoint {
 
     $script:GameState = Normalize-LWState -State $restored
 
-    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+    $setHostGameStateCommand = Get-LWStateHostCommand -Name 'Set-LWHostGameState'
+    if ($null -ne $setHostGameStateCommand) { & $setHostGameStateCommand -State $script:GameState | Out-Null }
 }
 
 function Invoke-LWInstantDeath {

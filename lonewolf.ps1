@@ -165,12 +165,14 @@ function Test-LWStateHasDiscipline {
 
 function Resolve-LWSectionExit {
     if (-not (Test-LWHasState)) {
-        return
+        return 0
     }
 
     if ($script:GameState.SectionHealingResolved) {
-        return
+        return 0
     }
+
+    $restoredTotal = 0
 
     if ((Test-LWStateHasSectionHealing -State $script:GameState) -and -not $script:GameState.SectionHadCombat) {
         if ($script:GameState.Character.EnduranceCurrent -lt $script:GameState.Character.EnduranceMax) {
@@ -183,6 +185,7 @@ function Resolve-LWSectionExit {
             $restored = [int]$script:GameState.Character.EnduranceCurrent - $before
             Add-LWBookEnduranceDelta -Delta $restored
             if ($restored -gt 0) {
+                $restoredTotal = $restored
                 Register-LWHealingRestore -Amount $restored
                 Write-LWInfo ("{0} restores 1 Endurance for a non-combat section." -f (Get-LWSectionHealingSourceLabel -State $script:GameState))
             }
@@ -193,6 +196,7 @@ function Resolve-LWSectionExit {
     }
 
     $script:GameState.SectionHealingResolved = $true
+    return [int]$restoredTotal
 }
 
 function Set-LWSection {
@@ -211,16 +215,20 @@ function Set-LWSection {
 
     $previousSection = [int]$script:GameState.CurrentSection
     Save-LWCurrentSectionCheckpoint
+    $sectionExitHealingRestored = 0
     $previousSuppression = if (Test-Path Variable:\script:LWAchievementSyncSuppression) { $script:LWAchievementSyncSuppression } else { $null }
     $script:LWAchievementSyncSuppression = @{ section = $true; healing = $true }
     try {
-        Resolve-LWSectionExit
+        $sectionExitHealingRestored = [int](Resolve-LWSectionExit)
         Register-LWStorySectionTransitionAchievementTriggers -FromSection $previousSection -ToSection $newSection
         $script:GameState.CurrentSection = $newSection
         $script:GameState.SectionHadCombat = $false
         $script:GameState.SectionHealingResolved = $false
         Add-LWBookSectionVisit -Section $newSection
-        [void](Sync-LWAchievements -Context 'sectionmove')
+        [void](Sync-LWAchievements -Context 'section')
+        if ($sectionExitHealingRestored -gt 0) {
+            [void](Sync-LWAchievements -Context 'healing')
+        }
         if ([int]$script:GameState.Character.BookNumber -eq 5) {
             if (-not (Invoke-LWBookFiveBloodPoisoningSectionDamage -Section $newSection)) {
                 Write-LWInfo "Moved to section $newSection."
@@ -1212,12 +1220,20 @@ function Initialize-LWRuntimeShell {
 function Normalize-LWState {
     param([Parameter(Mandatory = $true)][object]$State)
 
+    $sourceEngineVersion = if ($null -ne $State -and (Test-LWPropertyExists -Object $State -Name 'EngineVersion') -and -not [string]::IsNullOrWhiteSpace([string]$State.EngineVersion)) {
+        [string]$State.EngineVersion
+    }
+    else {
+        ''
+    }
+
     $normalized = Invoke-LWCoreNormalizeState -Context (Get-LWModuleContext) -State $State
     $normalized = Sync-LWHerbPouchState -State $normalized
 
     Ensure-LWAchievementState -State $normalized
     $currentBookNumber = if ($null -ne $normalized.Character -and $null -ne $normalized.Character.BookNumber) { [int]$normalized.Character.BookNumber } else { 1 }
-    if ($currentBookNumber -ge 6) {
+    $requiresFullBookSixReconciliation = [string]::IsNullOrWhiteSpace($sourceEngineVersion) -or ($sourceEngineVersion -ne $script:LWAppVersion)
+    if ($requiresFullBookSixReconciliation -and $currentBookNumber -ge 6) {
         $visitedSections = @()
         if ($null -ne $normalized.CurrentBookStats -and (Test-LWPropertyExists -Object $normalized.CurrentBookStats -Name 'VisitedSections') -and $null -ne $normalized.CurrentBookStats.VisitedSections) {
             $visitedSections = @($normalized.CurrentBookStats.VisitedSections | ForEach-Object { [int]$_ })

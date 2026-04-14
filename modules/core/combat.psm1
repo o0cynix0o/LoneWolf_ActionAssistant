@@ -1,5 +1,7 @@
 Set-StrictMode -Version Latest
 
+$script:LWCombatHostCommandCache = @{}
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
@@ -8,13 +10,34 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWCombatHostCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $null
+    }
+
+    if ($script:LWCombatHostCommandCache.ContainsKey($Name)) {
+        $cachedCommand = $script:LWCombatHostCommandCache[$Name]
+        if ($null -ne $cachedCommand) {
+            return $cachedCommand
+        }
+    }
+
+    $command = Get-Command -Name $Name -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        $script:LWCombatHostCommandCache[$Name] = $command
+    }
+    return $command
+}
+
 function Get-LWModuleGameData {
     $localGameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
     if ($null -ne $localGameData) {
         return $localGameData
     }
 
-    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    $contextCommand = Get-LWCombatHostCommand -Name 'Get-LWModuleContext'
     if ($null -ne $contextCommand) {
         $context = & $contextCommand
         if ($context -is [hashtable] -and $context.ContainsKey('GameData') -and $null -ne $context.GameData) {
@@ -1035,10 +1058,19 @@ function Get-LWCRTResult {
     }
 
     $ratioKeys = @()
-    foreach ($property in $gameData.CRT.PSObject.Properties) {
-        $value = 0
-        if ([int]::TryParse($property.Name, [ref]$value)) {
-            $ratioKeys += $value
+    if ((Test-LWPropertyExists -Object $gameData -Name 'CRTRatioKeys') -and $null -ne $gameData.CRTRatioKeys) {
+        $ratioKeys = @($gameData.CRTRatioKeys | ForEach-Object { [int]$_ })
+    }
+    else {
+        foreach ($property in $gameData.CRT.PSObject.Properties) {
+            $value = 0
+            if ([int]::TryParse($property.Name, [ref]$value)) {
+                $ratioKeys += $value
+            }
+        }
+        $ratioKeys = @($ratioKeys | Sort-Object)
+        if ($ratioKeys.Count -gt 0) {
+            $gameData | Add-Member -Force -NotePropertyName CRTRatioKeys -NotePropertyValue @($ratioKeys)
         }
     }
 
@@ -2962,10 +2994,14 @@ function Get-LWStateCompletedLoreCircles {
 }
 
 function Get-LWStateLoreCircleCombatSkillBonus {
-    param([Parameter(Mandatory = $true)][object]$State)
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [object[]]$CompletedCircles = $null
+    )
 
     $bonus = 0
-    foreach ($circle in @(Get-LWStateCompletedLoreCircles -State $State)) {
+    $circles = if ($null -eq $CompletedCircles) { @(Get-LWStateCompletedLoreCircles -State $State) } else { @($CompletedCircles) }
+    foreach ($circle in $circles) {
         $bonus += [int]$circle.CombatSkillBonus
     }
 
@@ -2973,10 +3009,14 @@ function Get-LWStateLoreCircleCombatSkillBonus {
 }
 
 function Get-LWStateLoreCircleEnduranceBonus {
-    param([Parameter(Mandatory = $true)][object]$State)
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [object[]]$CompletedCircles = $null
+    )
 
     $bonus = 0
-    foreach ($circle in @(Get-LWStateCompletedLoreCircles -State $State)) {
+    $circles = if ($null -eq $CompletedCircles) { @(Get-LWStateCompletedLoreCircles -State $State) } else { @($CompletedCircles) }
+    foreach ($circle in $circles) {
         $bonus += [int]$circle.EnduranceBonus
     }
 

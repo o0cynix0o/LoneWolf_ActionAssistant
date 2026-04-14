@@ -1,5 +1,7 @@
 Set-StrictMode -Version Latest
 
+$script:LWCommonHostCommandCache = @{}
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
@@ -8,13 +10,34 @@ function Set-LWModuleContext {
     }
 }
 
+function Get-LWCommonHostCommand {
+    param([Parameter(Mandatory = $true)][string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return $null
+    }
+
+    if ($script:LWCommonHostCommandCache.ContainsKey($Name)) {
+        $cachedCommand = $script:LWCommonHostCommandCache[$Name]
+        if ($null -ne $cachedCommand) {
+            return $cachedCommand
+        }
+    }
+
+    $command = Get-Command -Name $Name -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        $script:LWCommonHostCommandCache[$Name] = $command
+    }
+    return $command
+}
+
 function Get-LWModuleGameData {
     $localGameData = Get-Variable -Scope Script -Name GameData -ValueOnly -ErrorAction SilentlyContinue
     if ($null -ne $localGameData) {
         return $localGameData
     }
 
-    $contextCommand = Get-Command -Name 'Get-LWModuleContext' -ErrorAction SilentlyContinue
+    $contextCommand = Get-LWCommonHostCommand -Name 'Get-LWModuleContext'
     if ($null -ne $contextCommand) {
         $context = & $contextCommand
         if ($context -is [hashtable] -and $context.ContainsKey('GameData') -and $null -ne $context.GameData) {

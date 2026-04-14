@@ -1,5 +1,8 @@
 ﻿Set-StrictMode -Version Latest
 
+$script:LWBackpackLayoutCache = $null
+$script:LWBackpackSlotSizeLookup = $null
+
 function Set-LWModuleContext {
     param([hashtable]$Context)
     if ($null -eq $Context) { return }
@@ -78,25 +81,117 @@ function Get-LWLongRopeItemNames {
     return @('Long Rope')
 }
 
+function Get-LWBackpackSlotSizeLookup {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -ne $script:LWBackpackSlotSizeLookup) {
+        return $script:LWBackpackSlotSizeLookup
+    }
+
+    $lookup = @{}
+    foreach ($name in @(
+            (Get-LWLongRopeItemNames)
+            (Get-LWMiningToolItemNames)
+            (Get-LWSleepingFursItemNames)
+            (Get-LWTowelItemNames)
+        )) {
+        $canonicalName = [string](Get-LWCanonicalInventoryItemName -Name ([string]$name))
+        if ([string]::IsNullOrWhiteSpace($canonicalName)) {
+            continue
+        }
+
+        $lookup[$canonicalName.Trim().ToLowerInvariant()] = 2
+    }
+
+    $script:LWBackpackSlotSizeLookup = $lookup
+    return $script:LWBackpackSlotSizeLookup
+}
+
+function Get-LWBackpackLayoutCacheKey {
+    param([object[]]$Items = $null)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $resolvedItems = @($(if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }))
+    if ($resolvedItems.Count -eq 0) {
+        return '[empty]'
+    }
+
+    return (@(
+            foreach ($item in $resolvedItems) {
+                [string]$item
+            }
+        ) -join "`u{241F}")
+}
+
+function Get-LWBackpackLayoutData {
+    param([object[]]$Items = $null)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $resolvedItems = @($(if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }))
+    $cacheKey = Get-LWBackpackLayoutCacheKey -Items $resolvedItems
+    if ($null -ne $script:LWBackpackLayoutCache -and
+        (Test-LWPropertyExists -Object $script:LWBackpackLayoutCache -Name 'Key') -and
+        [string]$script:LWBackpackLayoutCache.Key -eq $cacheKey) {
+        return $script:LWBackpackLayoutCache
+    }
+
+    $slotMap = New-Object 'System.Collections.Generic.List[object]'
+    $slotNumber = 1
+    $itemIndex = 0
+    foreach ($resolvedItem in @($resolvedItems)) {
+        $itemName = [string]$resolvedItem
+        $slotSize = Get-LWBackpackItemSlotSize -Name $itemName
+        $slotMap.Add([pscustomobject]@{
+                Slot        = $slotNumber
+                ItemIndex   = $itemIndex
+                ItemName    = $itemName
+                DisplayText = $(if ($slotSize -gt 1) { "$itemName [2 slots]" } else { $itemName })
+                IsPrimary   = $true
+            })
+
+        for ($extraSlot = 2; $extraSlot -le $slotSize; $extraSlot++) {
+            $slotMap.Add([pscustomobject]@{
+                    Slot        = ($slotNumber + $extraSlot - 1)
+                    ItemIndex   = $itemIndex
+                    ItemName    = $itemName
+                    DisplayText = "(occupied by $itemName)"
+                    IsPrimary   = $false
+                })
+        }
+
+        $slotNumber += $slotSize
+        $itemIndex++
+    }
+
+    $layout = [pscustomobject]@{
+        Key       = $cacheKey
+        UsedSlots = [Math]::Max(0, ($slotNumber - 1))
+        SlotMap   = @($slotMap.ToArray())
+    }
+    $script:LWBackpackLayoutCache = $layout
+    return $layout
+}
+
 function Get-LWBackpackItemSlotSize {
     param([string]$Name = '')
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
-
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWLongRopeItemNames) -Target $Name))) {
-        return 2
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return 1
     }
 
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWMiningToolItemNames) -Target $Name))) {
-        return 2
+    $lookup = Get-LWBackpackSlotSizeLookup
+    $rawKey = $Name.Trim().ToLowerInvariant()
+    if ($lookup.ContainsKey($rawKey)) {
+        return [int]$lookup[$rawKey]
     }
 
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWSleepingFursItemNames) -Target $Name))) {
-        return 2
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWTowelItemNames) -Target $Name))) {
-        return 2
+    $canonicalName = [string](Get-LWCanonicalInventoryItemName -Name $Name)
+    if (-not [string]::IsNullOrWhiteSpace($canonicalName)) {
+        $canonicalKey = $canonicalName.Trim().ToLowerInvariant()
+        if ($lookup.ContainsKey($canonicalKey)) {
+            return [int]$lookup[$canonicalKey]
+        }
     }
 
     return 1
@@ -107,13 +202,8 @@ function Get-LWBackpackOccupiedSlotCount {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
-    $resolvedItems = if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }
-    $slotCount = 0
-    foreach ($item in $resolvedItems) {
-        $slotCount += (Get-LWBackpackItemSlotSize -Name ([string]$item))
-    }
-
-    return $slotCount
+    $resolvedItems = @($(if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }))
+    return [int](Get-LWBackpackLayoutData -Items $resolvedItems).UsedSlots
 }
 
 function Get-LWInventoryUsedCapacity {
@@ -124,7 +214,7 @@ function Get-LWInventoryUsedCapacity {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
-    $resolvedItems = if ($null -eq $Items) { @(Get-LWInventoryItems -Type $Type) } else { @($Items) }
+    $resolvedItems = @($(if ($null -eq $Items) { @(Get-LWInventoryItems -Type $Type) } else { @($Items) }))
     if ($Type -eq 'backpack') {
         return (Get-LWBackpackOccupiedSlotCount -Items $resolvedItems)
     }
@@ -137,36 +227,8 @@ function Get-LWBackpackSlotMap {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
-    $resolvedItems = if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }
-    $slotMap = @()
-    $slotNumber = 1
-    $itemIndex = 0
-    foreach ($resolvedItem in @($resolvedItems)) {
-        $itemName = [string]$resolvedItem
-        $slotSize = Get-LWBackpackItemSlotSize -Name $itemName
-        $slotMap += [pscustomobject]@{
-            Slot        = $slotNumber
-            ItemIndex   = $itemIndex
-            ItemName    = $itemName
-            DisplayText = $(if ($slotSize -gt 1) { "$itemName [2 slots]" } else { $itemName })
-            IsPrimary   = $true
-        }
-
-        for ($extraSlot = 2; $extraSlot -le $slotSize; $extraSlot++) {
-            $slotMap += [pscustomobject]@{
-                Slot        = ($slotNumber + $extraSlot - 1)
-                ItemIndex   = $itemIndex
-                ItemName    = $itemName
-                DisplayText = "(occupied by $itemName)"
-                IsPrimary   = $false
-            }
-        }
-
-        $slotNumber += $slotSize
-        $itemIndex++
-    }
-
-    return @($slotMap)
+    $resolvedItems = @($(if ($null -eq $Items) { @($script:GameState.Inventory.BackpackItems) } else { @($Items) }))
+    return @((Get-LWBackpackLayoutData -Items $resolvedItems).SlotMap)
 }
 
 function Get-LWInventoryItems {
@@ -635,7 +697,14 @@ function Get-LWConfiscatedInventorySummaryText {
     $backpack = @($State.Storage.Confiscated.BackpackItems)
     $herbPouch = @($State.Storage.Confiscated.HerbPouchItems)
     $special = @($State.Storage.Confiscated.SpecialItems)
-    $pocket = if ((Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $State.Storage.Confiscated.PocketSpecialItems) { @($State.Storage.Confiscated.PocketSpecialItems) } else { @() }
+    $pocket = @(
+        if ((Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $State.Storage.Confiscated.PocketSpecialItems) {
+            @($State.Storage.Confiscated.PocketSpecialItems)
+        }
+        else {
+            @()
+        }
+    )
     $gold = if ($null -ne $State.Storage.Confiscated.GoldCrowns) { [int]$State.Storage.Confiscated.GoldCrowns } else { 0 }
 
     if ($weapons.Count -gt 0) {
@@ -744,7 +813,14 @@ function Restore-LWConfiscatedEquipment {
     $restoredHerbPouchItems = @($script:GameState.Storage.Confiscated.HerbPouchItems)
     $restoredHasHerbPouch = [bool]$script:GameState.Storage.Confiscated.HasHerbPouch
     $restoredSpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems)
-    $restoredPocketSpecialItems = if ((Test-LWPropertyExists -Object $script:GameState.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $script:GameState.Storage.Confiscated.PocketSpecialItems) { @($script:GameState.Storage.Confiscated.PocketSpecialItems) } else { @() }
+    $restoredPocketSpecialItems = @(
+        if ((Test-LWPropertyExists -Object $script:GameState.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $script:GameState.Storage.Confiscated.PocketSpecialItems) {
+            @($script:GameState.Storage.Confiscated.PocketSpecialItems)
+        }
+        else {
+            @()
+        }
+    )
     $restoredGoldCrowns = [int]$script:GameState.Storage.Confiscated.GoldCrowns
 
     Set-LWInventoryItems -Type 'weapon' -Items @($currentWeapons + $restoredWeapons)
@@ -1048,7 +1124,7 @@ function Get-LWInventorySlotDisplayText {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
-    $items = if ($null -eq $Items) { @(Get-LWInventoryItems -Type $Type) } else { @($Items) }
+    $items = @($(if ($null -eq $Items) { @(Get-LWInventoryItems -Type $Type) } else { @($Items) }))
     $items = @($items | Where-Object {
             $null -ne $_ -and -not [string]::IsNullOrWhiteSpace([string]$_)
         })
