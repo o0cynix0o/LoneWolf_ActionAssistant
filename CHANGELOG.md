@@ -13,6 +13,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
 - validated all currently implemented random-number automations across Books `1-6` in both shells with no failures:
   - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS7.txt`
   - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS51.txt`
+- fixed a follow-up refactor bug where Book `3`, section `18` could fail while resolving forced weapon loss because the ruleset helper was reading module-local state without rebinding context first
+- added a broader automation smoke harness at `testing/tmp/automation-surface-smoke.ps1`
+- validated startup gear, story/transition triggers, section-entry hooks, and combat-scenario rules across Books `1-6` in both shells with no failures:
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51.txt`
 - widened the shell notification buffer from `8` to `12` entries so important combat/setup notices are not pushed off-screen by later round or achievement messages
 - refreshed the post-fix screen-lag baseline in both shells and added a direct before/after comparison report:
   - `testing/logs/SCREEN_LAG_VALIDATION_POSTFIX_PS7.txt`

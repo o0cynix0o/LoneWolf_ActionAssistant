@@ -205,6 +205,8 @@ function Test-LWStateCanRelightTorch {
 function Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem {
     param([string]$Reason = 'You lose one Weapon or weapon-like Special Item.')
 
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
     $choices = @()
     foreach ($weapon in @(Get-LWInventoryItems -Type 'weapon')) {
         $choices += [pscustomobject]@{ Type = 'weapon'; Name = [string]$weapon; Display = ("Weapon: {0}" -f [string]$weapon) }

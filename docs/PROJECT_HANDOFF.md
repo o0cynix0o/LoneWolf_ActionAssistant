@@ -65,6 +65,13 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - current `main` random-automation validation artifacts:
   - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS7.txt`
   - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS51.txt`
+- current `main` broader automation smoke harness:
+  - `testing/tmp/automation-surface-smoke.ps1`
+- current `main` broader automation validation artifacts:
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51.txt`
+- current `main` follow-up hotfix after the broader smoke pass:
+  - Book `3`, section `18` no longer fails forced weapon-loss automation because `Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem` now rebinds ruleset module context before reading state
 - current measured load behavior on a copied current-format campaign save:
   - cold `pwsh` `-Load`: about `316ms` load / `1.50s` total
   - cold Windows PowerShell `5.1` `-Load`: about `412ms` load / `1.68s` total
