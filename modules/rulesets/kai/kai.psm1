@@ -65,6 +65,104 @@ function Invoke-LWKaiStartingEquipment {
     }
 }
 
+function Get-LWKaiSimpleSectionEffectDefinitions {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    switch ($BookNumber) {
+        1 { return (Get-LWBookOneSimpleSectionEffectDefinitions) }
+        2 { return (Get-LWBookTwoSimpleSectionEffectDefinitions) }
+        3 { return (Get-LWBookThreeSimpleSectionEffectDefinitions) }
+        4 { return (Get-LWBookFourSimpleSectionEffectDefinitions) }
+        5 { return (Get-LWBookFiveSimpleSectionEffectDefinitions) }
+        default { return @{} }
+    }
+}
+
+function Invoke-LWKaiMealRequirement {
+    param(
+        [Parameter(Mandatory = $true)][string]$ResolvedFlagName,
+        [Parameter(Mandatory = $true)][string]$NoMealFlagName,
+        [Parameter(Mandatory = $true)][string]$SectionLabel,
+        [Parameter(Mandatory = $true)][int]$Loss,
+        [Parameter(Mandatory = $true)][string]$NoMealMessagePrefix,
+        [Parameter(Mandatory = $true)][string]$FatalCause
+    )
+
+    if (Test-LWStoryAchievementFlag -Name $ResolvedFlagName) {
+        return
+    }
+
+    Write-LWRetroPanelHeader -Title ("{0} Meal Check" -f $SectionLabel) -AccentColor 'DarkYellow'
+    Write-LWRetroPanelTextRow -Text '1. Use meal rules now' -TextColor 'Gray'
+    Write-LWRetroPanelTextRow -Text ("0. Go without and lose {0} ENDURANCE" -f [int]$Loss) -TextColor 'DarkGray'
+    Write-LWRetroPanelFooter
+
+    $choice = Read-LWInt -Prompt ("{0} meal choice" -f $SectionLabel) -Default 1 -Min 0 -Max 1 -NoRefresh
+    if ($choice -eq 1) {
+        Use-LWMeal
+        Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+        return
+    }
+
+    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName $NoMealFlagName -Delta (-[int]$Loss) -MessagePrefix $NoMealMessagePrefix -FatalCause $FatalCause)
+    Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+}
+
+function Invoke-LWKaiSimpleSectionEffects {
+    param([Parameter(Mandatory = $true)][object]$State)
+
+    $definitions = Get-LWKaiSimpleSectionEffectDefinitions -BookNumber ([int]$State.Character.BookNumber)
+    if ($null -eq $definitions -or $definitions.Count -eq 0) {
+        return
+    }
+
+    $section = [int]$State.CurrentSection
+    if (-not $definitions.ContainsKey($section)) {
+        return
+    }
+
+    foreach ($definition in @($definitions[$section])) {
+        if ($null -eq $definition) {
+            continue
+        }
+
+        if ((Test-LWPropertyExists -Object $definition -Name 'RequiresMissingDiscipline') -and -not [string]::IsNullOrWhiteSpace([string]$definition.RequiresMissingDiscipline)) {
+            if (Test-LWStateHasDiscipline -State $State -Name ([string]$definition.RequiresMissingDiscipline)) {
+                continue
+            }
+        }
+
+        switch ([string]$definition.Type) {
+            'instantdeath' {
+                if (-not (Test-LWStoryAchievementFlag -Name ([string]$definition.FlagName))) {
+                    Set-LWStoryAchievementFlag -Name ([string]$definition.FlagName)
+                    Invoke-LWInstantDeath -Cause ([string]$definition.Cause)
+                    if (Test-LWDeathActive) {
+                        return
+                    }
+                }
+            }
+            'end' {
+                if ([int]$definition.Delta -ge 0) {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName ([string]$definition.FlagName) -Delta ([int]$definition.Delta) -MessagePrefix ([string]$definition.MessagePrefix))
+                }
+                else {
+                    [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName ([string]$definition.FlagName) -Delta ([int]$definition.Delta) -MessagePrefix ([string]$definition.MessagePrefix) -FatalCause ([string]$definition.FatalCause))
+                }
+                if (Test-LWDeathActive) {
+                    return
+                }
+            }
+            'meal' {
+                Invoke-LWKaiMealRequirement -ResolvedFlagName ([string]$definition.ResolvedFlagName) -NoMealFlagName ([string]$definition.NoMealFlagName) -SectionLabel ([string]$definition.SectionLabel) -Loss ([int]$definition.Loss) -NoMealMessagePrefix ([string]$definition.NoMealMessagePrefix) -FatalCause ([string]$definition.FatalCause)
+                if (Test-LWDeathActive) {
+                    return
+                }
+            }
+        }
+    }
+}
+
 function Invoke-LWKaiStorySectionAchievementTriggers {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -268,6 +366,11 @@ function Invoke-LWKaiSectionEntryRules {
 
         $bookNumber = [int]$script:GameState.Character.BookNumber
         $section = [int]$script:GameState.CurrentSection
+
+        Invoke-LWKaiSimpleSectionEffects -State $script:GameState
+        if (Test-LWDeathActive) {
+            return
+        }
 
         switch ($bookNumber) {
             1 {
@@ -1611,7 +1714,7 @@ function Invoke-LWKaiSectionEntryRules {
                         [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section350DamageApplied' -Delta -3 -MessagePrefix 'Section 350: the battle with the shadow drains you badly.' -FatalCause 'The confrontation at section 350 reduced your Endurance to zero.')
                     }
                     393 {
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section393MindAttackApplied') -and -not (Test-LWStateHasMindshield -State $script:GameState)) {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section393MindAttackApplied') -and -not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Mindshield')) {
                             Set-LWStoryAchievementFlag -Name 'Book5Section393MindAttackApplied'
                             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section393DamageApplied' -Delta -2 -MessagePrefix 'Section 393: the mental assault hits before steel is drawn.' -FatalCause 'The mental assault at section 393 reduced your Endurance to zero.')
                         }

@@ -189,6 +189,15 @@ function New-LWAutomationSmokeScenario {
     }
 }
 
+function Get-LWAutomationSmokeSectionRange {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    switch ($BookNumber) {
+        5 { return 1..400 }
+        default { return 1..350 }
+    }
+}
+
 Set-LWAutomationSmokePromptShims
 
 $startingEquipmentResults = @()
@@ -231,7 +240,7 @@ foreach ($bookNumber in 1..6) {
 
 foreach ($bookNumber in 1..6) {
     $baseState = $baseStates[[string]$bookNumber]
-    foreach ($section in 1..350) {
+    foreach ($section in (Get-LWAutomationSmokeSectionRange -BookNumber $bookNumber)) {
         $state = Copy-LWAutomationSmokeState -State $baseState
         $state.CurrentSection = $section
         $state.SectionHadCombat = $false

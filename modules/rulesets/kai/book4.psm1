@@ -180,6 +180,7 @@ function Get-LWKaiBookFourSectionRandomNumberContext {
                     $modifierNotes += 'Hunting'
                 }
             }
+            304 { $description = 'Plain random-number check.' }
             309 {
                 $description = 'Mine-ramp dash check.'
                 if (Test-LWStateHasDiscipline -State $State -Name 'Camouflage') {
@@ -187,6 +188,7 @@ function Get-LWKaiBookFourSectionRandomNumberContext {
                     $modifierNotes += 'Camouflage'
                 }
             }
+            312 { $description = 'Plain random-number check.' }
             319 { $description = 'Plain random-number check.' }
             343 {
                 $description = 'Boat-capsize avoidance check.'
@@ -212,6 +214,42 @@ function Get-LWKaiBookFourSectionRandomNumberContext {
             Bypassed        = $bypassed
             BypassReason    = $bypassReason
         }
+}
+
+function Get-LWBookFourSimpleSectionEffectDefinitions {
+    return @{
+        19  = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section019MealHandled'; NoMealFlagName = 'Book4Section019NoMealLossApplied'; SectionLabel = 'Section 19'; Loss = 3; NoMealMessagePrefix = 'Section 19: the section meal requirement is not met.'; FatalCause = 'Hunger at section 19 reduced your Endurance to zero.' })
+        126 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section126MealHandled'; NoMealFlagName = 'Book4Section126NoMealLossApplied'; SectionLabel = 'Section 126'; Loss = 3; NoMealMessagePrefix = 'Section 126: the section meal requirement is not met.'; FatalCause = 'Hunger at section 126 reduced your Endurance to zero.' })
+        129 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section129MealHandled'; NoMealFlagName = 'Book4Section129NoMealLossApplied'; SectionLabel = 'Section 129'; Loss = 3; NoMealMessagePrefix = 'Section 129: the section meal requirement is not met.'; FatalCause = 'Hunger at section 129 reduced your Endurance to zero.' })
+        139 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section139MealHandled'; NoMealFlagName = 'Book4Section139NoMealLossApplied'; SectionLabel = 'Section 139'; Loss = 3; NoMealMessagePrefix = 'Section 139: the section meal requirement is not met.'; FatalCause = 'Hunger at section 139 reduced your Endurance to zero.' })
+        141 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section141MealHandled'; NoMealFlagName = 'Book4Section141NoMealLossApplied'; SectionLabel = 'Section 141'; Loss = 3; NoMealMessagePrefix = 'Section 141: the section meal requirement is not met.'; FatalCause = 'Hunger at section 141 reduced your Endurance to zero.' })
+        165 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book4Section165EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 165: apply the section ENDURANCE loss.'; FatalCause = 'Section 165 reduced your Endurance to zero.' })
+        181 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book4Section181DeathApplied'; Cause = 'Section 181: instant death.' })
+        185 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section185MealHandled'; NoMealFlagName = 'Book4Section185NoMealLossApplied'; SectionLabel = 'Section 185'; Loss = 3; NoMealMessagePrefix = 'Section 185: the section meal requirement is not met.'; FatalCause = 'Hunger at section 185 reduced your Endurance to zero.' })
+        188 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section188MealHandled'; NoMealFlagName = 'Book4Section188NoMealLossApplied'; SectionLabel = 'Section 188'; Loss = 3; NoMealMessagePrefix = 'Section 188: the section meal requirement is not met.'; FatalCause = 'Hunger at section 188 reduced your Endurance to zero.' })
+        192 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book4Section192DeathApplied'; Cause = 'Section 192: instant death.' })
+        204 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section204MealHandled'; NoMealFlagName = 'Book4Section204NoMealLossApplied'; SectionLabel = 'Section 204'; Loss = 3; NoMealMessagePrefix = 'Section 204: the section meal requirement is not met.'; FatalCause = 'Hunger at section 204 reduced your Endurance to zero.' })
+        246 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book4Section246EnduranceHandled'; Delta = -8; MessagePrefix = 'Section 246: apply the section ENDURANCE loss.'; FatalCause = 'Section 246 reduced your Endurance to zero.' })
+        247 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section247MealHandled'; NoMealFlagName = 'Book4Section247NoMealLossApplied'; SectionLabel = 'Section 247'; Loss = 3; NoMealMessagePrefix = 'Section 247: the section meal requirement is not met.'; FatalCause = 'Hunger at section 247 reduced your Endurance to zero.' })
+        284 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book4Section284EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 284: apply the section ENDURANCE loss.'; FatalCause = 'Section 284 reduced your Endurance to zero.' })
+        324 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section324MealHandled'; NoMealFlagName = 'Book4Section324NoMealLossApplied'; SectionLabel = 'Section 324'; Loss = 3; NoMealMessagePrefix = 'Section 324: the section meal requirement is not met.'; FatalCause = 'Hunger at section 324 reduced your Endurance to zero.' })
+        339 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book4Section339MealHandled'; NoMealFlagName = 'Book4Section339NoMealLossApplied'; SectionLabel = 'Section 339'; Loss = 3; NoMealMessagePrefix = 'Section 339: the section meal requirement is not met.'; FatalCause = 'Hunger at section 339 reduced your Endurance to zero.' })
+    }
+}
+
+function Get-LWBookFourSimpleCombatRuleDefinitions {
+    return @{
+        53  = [pscustomobject]@{ CanEvade = $false; Info = 'Book 4 section 53: this fight cannot be evaded.' }
+        90  = [pscustomobject]@{ CanEvade = $false; Info = 'Book 4 section 90: this fight cannot be evaded.' }
+        108 = [pscustomobject]@{ CanEvade = $true; Info = 'Book 4 section 108: this fight can be evaded.' }
+        114 = [pscustomobject]@{ CanEvade = $false; Info = 'Book 4 section 114: this fight cannot be evaded.' }
+        125 = [pscustomobject]@{ CanEvade = $false; OneAtATime = $true; Info = 'Book 4 section 125: the Tunnel Guards attack one at a time and cannot be evaded.' }
+        133 = [pscustomobject]@{ CanEvade = $true; Info = 'Book 4 section 133: this fight can be evaded.' }
+        153 = [pscustomobject]@{ CanEvade = $false; Info = 'Book 4 section 153: this fight cannot be evaded.' }
+        260 = [pscustomobject]@{ Info = 'Book 4 section 260: stop after three rounds whether you have won or not.' }
+        285 = [pscustomobject]@{ CanEvade = $false; Info = 'Book 4 section 285: this fight cannot be evaded.' }
+        299 = [pscustomobject]@{ CanEvade = $false; Info = 'Book 4 section 299: this fight cannot be evaded.' }
+    }
 }
 
 function Apply-LWKaiBookFourStartingEquipment {
@@ -735,6 +773,8 @@ function Get-LWBookFourSectionContextAchievementIds {
 
 Export-ModuleMember -Function `
     Get-LWKaiBookFourSectionRandomNumberContext, `
+    Get-LWBookFourSimpleSectionEffectDefinitions, `
+    Get-LWBookFourSimpleCombatRuleDefinitions, `
     Apply-LWKaiBookFourStartingEquipment, `
     Get-LWBookFourStartingChoiceDefinitions, `
     Grant-LWBookFourStartingChoice, `

@@ -7,6 +7,15 @@ Set-Location $repoRoot
 
 Initialize-LWData
 
+function Get-LWRandomAutomationSmokeSectionRange {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    switch ($BookNumber) {
+        5 { return 1..400 }
+        default { return 1..350 }
+    }
+}
+
 function New-LWRandomAutomationSmokeState {
     param(
         [Parameter(Mandatory = $true)][int]$BookNumber
@@ -40,7 +49,7 @@ $results = @()
 $failures = @()
 
 foreach ($bookNumber in 1..6) {
-    foreach ($section in 1..350) {
+    foreach ($section in (Get-LWRandomAutomationSmokeSectionRange -BookNumber $bookNumber)) {
         $state = New-LWRandomAutomationSmokeState -BookNumber $bookNumber
         $state.CurrentSection = $section
         Set-LWHostGameState -State $state | Out-Null

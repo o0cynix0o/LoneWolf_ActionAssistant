@@ -309,6 +309,56 @@ function Get-LWKaiBookFiveSectionRandomNumberContext {
         }
 }
 
+function Get-LWBookFiveSimpleSectionEffectDefinitions {
+    return @{
+        22  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section022EnduranceHandled'; Delta = -8; MessagePrefix = 'Section 22: apply the section ENDURANCE loss.'; FatalCause = 'Section 22 reduced your Endurance to zero.' })
+        23  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section023EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 23: apply the section ENDURANCE loss.'; FatalCause = 'Section 23 reduced your Endurance to zero.' })
+        34  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section034EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 34: apply the section ENDURANCE loss.'; FatalCause = 'Section 34 reduced your Endurance to zero.' })
+        38  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section038EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 38: apply the section ENDURANCE loss.'; FatalCause = 'Section 38 reduced your Endurance to zero.' })
+        50  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section050EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 50: apply the section ENDURANCE loss.'; FatalCause = 'Section 50 reduced your Endurance to zero.' })
+        51  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section051EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 51: apply the section ENDURANCE loss.'; FatalCause = 'Section 51 reduced your Endurance to zero.' })
+        72  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section072EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 72: apply the section ENDURANCE loss.'; FatalCause = 'Section 72 reduced your Endurance to zero.' })
+        86  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section086EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 86: apply the section ENDURANCE loss.'; FatalCause = 'Section 86 reduced your Endurance to zero.' })
+        93  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section093EnduranceHandled'; Delta = 1; MessagePrefix = 'Section 93: apply the section ENDURANCE recovery.' })
+        127 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section127EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 127: apply the section ENDURANCE loss.'; FatalCause = 'Section 127 reduced your Endurance to zero.' })
+        137 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book5Section137MealHandled'; NoMealFlagName = 'Book5Section137NoMealLossApplied'; SectionLabel = 'Section 137'; Loss = 3; NoMealMessagePrefix = 'Section 137: the section meal requirement is not met.'; FatalCause = 'Hunger at section 137 reduced your Endurance to zero.' })
+        162 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section162EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 162: apply the section ENDURANCE loss.'; FatalCause = 'Section 162 reduced your Endurance to zero.' })
+        164 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section164EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 164: apply the section ENDURANCE loss.'; FatalCause = 'Section 164 reduced your Endurance to zero.' })
+        183 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section183EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 183: apply the section ENDURANCE loss.'; FatalCause = 'Section 183 reduced your Endurance to zero.' })
+        192 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section192EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 192: apply the section ENDURANCE loss.'; FatalCause = 'Section 192 reduced your Endurance to zero.' })
+        200 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book5Section200DeathApplied'; Cause = 'Section 200: instant death.' })
+        237 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section237EnduranceHandled'; Delta = 1; MessagePrefix = 'Section 237: apply the section ENDURANCE recovery.' })
+        238 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section238EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 238: apply the section ENDURANCE loss.'; FatalCause = 'Section 238 reduced your Endurance to zero.' })
+        251 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section251EnduranceHandled'; Delta = -6; MessagePrefix = 'Section 251: apply the section ENDURANCE loss.'; FatalCause = 'Section 251 reduced your Endurance to zero.' })
+        264 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section264EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 264: apply the section ENDURANCE loss.'; FatalCause = 'Section 264 reduced your Endurance to zero.'; RequiresMissingDiscipline = 'Mindshield' })
+        273 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section273EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 273: apply the section ENDURANCE loss.'; FatalCause = 'Section 273 reduced your Endurance to zero.' })
+        278 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section278EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 278: apply the section ENDURANCE loss.'; FatalCause = 'Section 278 reduced your Endurance to zero.' })
+        284 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section284EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 284: apply the section ENDURANCE loss.'; FatalCause = 'Section 284 reduced your Endurance to zero.' })
+        285 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section285EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 285: apply the section ENDURANCE loss.'; FatalCause = 'Section 285 reduced your Endurance to zero.' })
+        287 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section287EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 287: apply the section ENDURANCE loss.'; FatalCause = 'Section 287 reduced your Endurance to zero.' })
+        297 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section297EnduranceHandled'; Delta = -4; MessagePrefix = 'Section 297: apply the section ENDURANCE loss.'; FatalCause = 'Section 297 reduced your Endurance to zero.' })
+        320 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book5Section320MealHandled'; NoMealFlagName = 'Book5Section320NoMealLossApplied'; SectionLabel = 'Section 320'; Loss = 3; NoMealMessagePrefix = 'Section 320: the section meal requirement is not met.'; FatalCause = 'Hunger at section 320 reduced your Endurance to zero.' })
+        354 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section354EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 354: apply the section ENDURANCE loss.'; FatalCause = 'Section 354 reduced your Endurance to zero.' })
+        359 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section359EnduranceHandled'; Delta = 2; MessagePrefix = 'Section 359: apply the section ENDURANCE recovery.' })
+        368 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section368EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 368: apply the section ENDURANCE loss.'; FatalCause = 'Section 368 reduced your Endurance to zero.' })
+        369 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section369EnduranceHandled'; Delta = -6; MessagePrefix = 'Section 369: apply the section ENDURANCE loss.'; FatalCause = 'Section 369 reduced your Endurance to zero.' })
+        370 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section370EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 370: apply the section ENDURANCE loss.'; FatalCause = 'Section 370 reduced your Endurance to zero.' })
+        371 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section371EnduranceHandled'; Delta = -4; MessagePrefix = 'Section 371: apply the section ENDURANCE loss.'; FatalCause = 'Section 371 reduced your Endurance to zero.' })
+        372 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section372EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 372: apply the section ENDURANCE loss.'; FatalCause = 'Section 372 reduced your Endurance to zero.' })
+        379 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section379EnduranceHandled'; Delta = -6; MessagePrefix = 'Section 379: apply the section ENDURANCE loss.'; FatalCause = 'Section 379 reduced your Endurance to zero.' })
+        380 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section380EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 380: apply the section ENDURANCE loss.'; FatalCause = 'Section 380 reduced your Endurance to zero.' })
+        385 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book5Section385EnduranceHandled'; Delta = -12; MessagePrefix = 'Section 385: apply the section ENDURANCE loss.'; FatalCause = 'Section 385 reduced your Endurance to zero.' })
+    }
+}
+
+function Get-LWBookFiveSimpleCombatRuleDefinitions {
+    return @{
+        46  = [pscustomobject]@{ CanEvade = $false; Info = 'Book 5 section 46: this fight cannot be evaded.' }
+        166 = [pscustomobject]@{ PlayerMod = -3; Info = 'Book 5 section 166: without a shield, this fight applies -3 Combat Skill.' }
+        231 = [pscustomobject]@{ CanEvade = $false; Info = 'Book 5 section 231: this fight cannot be evaded.' }
+    }
+}
+
 function Apply-LWKaiBookFiveStartingEquipment {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -668,6 +718,8 @@ function Get-LWBookFiveSectionContextAchievementIds {
 
 Export-ModuleMember -Function `
     Get-LWKaiBookFiveSectionRandomNumberContext, `
+    Get-LWBookFiveSimpleSectionEffectDefinitions, `
+    Get-LWBookFiveSimpleCombatRuleDefinitions, `
     Apply-LWKaiBookFiveStartingEquipment, `
     Test-LWBookFiveBloodPoisoningActive, `
     Test-LWBookFiveLimbdeathActive, `

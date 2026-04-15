@@ -70,6 +70,12 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - current `main` broader automation validation artifacts:
   - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7.txt`
   - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51.txt`
+- current `main` Books `1-5` automation catch-up pass:
+  - added new Kai book-module automation definitions for deterministic section-entry effects, simple combat rules, and missing random-number context coverage
+  - widened both automation smoke harnesses so Book `5` coverage now extends through section `400`
+  - fixed a widened-smoke follow-up bug at Book `5`, section `393` where a stale `Test-LWStateHasMindshield` reference remained after the refactor
+  - recorded scope and remaining backlog in:
+    - `testing/logs/BOOKS1TO5_AUTOMATION_IMPLEMENTATION_20260415.md`
 - current `main` follow-up hotfix after the broader smoke pass:
   - Book `3`, section `18` no longer fails forced weapon-loss automation because `Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem` now rebinds ruleset module context before reading state
 - current measured load behavior on a copied current-format campaign save:

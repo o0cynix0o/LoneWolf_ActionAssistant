@@ -6,6 +6,22 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- expanded the Kai ruleset automation layer for Books `1-5` using the book-module structure instead of pushing new section logic back into `lonewolf.ps1`
+- added generic Kai section-effect execution in `modules/rulesets/kai/kai.psm1` for simple deterministic section hooks:
+  - direct `ENDURANCE` loss/recovery
+  - instant death
+  - meal-or-lose-END checks
+- added generic Kai combat-rule dispatch in `modules/rulesets/kai/combat.psm1` for simple per-section combat modifiers and restrictions
+- expanded Kai random-number context coverage in the Book `1-5` modules, including the late Book `5` section range through `400`
+- widened both automation smoke harnesses so Book `5` now validates sections `1-400` instead of stopping at `350`
+- fixed a follow-up Book `5` section `393` refactor bug where a stale `Test-LWStateHasMindshield` call could break section-entry automation after the new sweep widened coverage
+- validated the updated Books `1-6` automation surface in both shells:
+  - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS7.txt`
+  - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS51.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51.txt`
+- recorded the Books `1-5` automation implementation scope and remaining backlog in:
+  - `testing/logs/BOOKS1TO5_AUTOMATION_IMPLEMENTATION_20260415.md`
 - fixed a strict-mode crash path where `roll` could fail before section handling if the command or ruleset module had not yet materialized a local `GameState` variable
 - confirmed the fix against a copied campaign save on Book `6`, section `170`; `roll` now resolves without appending to `data/error.log`
 - proactively hardened the rest of the automation surface against the same strict-mode module-state bug by materializing `GameState`, `GameData`, and `LWUi` at module scope across core and book/ruleset modules before context rebinding occurs

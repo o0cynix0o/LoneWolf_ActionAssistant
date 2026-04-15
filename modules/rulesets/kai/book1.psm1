@@ -59,13 +59,37 @@ function Get-LWKaiBookOneSectionRandomNumberContext {
                 return (New-LWSectionRandomNumberContext -Section $section -Description 'Book 1 route-finding check.' -Modifier $modifier -ModifierNotes $notes)
             }
             default {
-                if (@(2, 7, 17, 21, 22, 36, 44, 49, 89, 158, 160, 188, 205, 226, 237, 275, 279, 294, 302, 314, 350) -contains $section) {
+                if (@(2, 7, 17, 21, 22, 36, 44, 49, 89, 158, 160, 188, 205, 226, 237, 275, 279, 294, 302, 314, 337, 350) -contains $section) {
                     return (New-LWSectionRandomNumberContext -Section $section)
                 }
             }
         }
 
         return $null
+}
+
+function Get-LWBookOneSimpleSectionEffectDefinitions {
+    return @{
+        119 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section119EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 119: apply the section ENDURANCE loss.'; FatalCause = 'Section 119 reduced your Endurance to zero.' })
+        147 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book1Section147MealHandled'; NoMealFlagName = 'Book1Section147NoMealLossApplied'; SectionLabel = 'Section 147'; Loss = 3; NoMealMessagePrefix = 'Section 147: the section meal requirement is not met.'; FatalCause = 'Hunger at section 147 reduced your Endurance to zero.' })
+        166 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section166EnduranceHandled'; Delta = -4; MessagePrefix = 'Section 166: apply the section ENDURANCE loss.'; FatalCause = 'Section 166 reduced your Endurance to zero.' })
+        203 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section203EnduranceHandled'; Delta = -10; MessagePrefix = 'Section 203: apply the section ENDURANCE loss.'; FatalCause = 'Section 203 reduced your Endurance to zero.' })
+        276 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section276EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 276: apply the section ENDURANCE loss.'; FatalCause = 'Section 276 reduced your Endurance to zero.' })
+        308 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section308EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 308: apply the section ENDURANCE loss.'; FatalCause = 'Section 308 reduced your Endurance to zero.' })
+        313 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section313EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 313: apply the section ENDURANCE loss.'; FatalCause = 'Section 313 reduced your Endurance to zero.' })
+        320 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section320EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 320: apply the section ENDURANCE loss.'; FatalCause = 'Section 320 reduced your Endurance to zero.' })
+        343 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section343EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 343: apply the section ENDURANCE loss.'; FatalCause = 'Section 343 reduced your Endurance to zero.' })
+    }
+}
+
+function Get-LWBookOneSimpleCombatRuleDefinitions {
+    return @{
+        17  = [pscustomobject]@{ PlayerMod = -1; Info = 'Book 1 section 17: the unstable footing applies -1 Combat Skill.' }
+        136 = [pscustomobject]@{ PlayerMod = 1; OneAtATime = $true; Info = 'Book 1 section 136: the higher ground grants +1 Combat Skill and the Giaks attack one at a time.' }
+        169 = [pscustomobject]@{ CanEvade = $true; EvadeAvailableAfterRound = 1; Info = 'Book 1 section 169: you may evade after the first round.' }
+        229 = [pscustomobject]@{ PlayerMod = -1; Info = 'Book 1 section 229: the choking dust applies -1 Combat Skill.' }
+        260 = [pscustomobject]@{ PlayerMod = -4; OneAtATime = $true; Info = 'Book 1 section 260: fighting bare-handed applies -4 Combat Skill and the Giaks attack one at a time.' }
+    }
 }
 
 function Apply-LWKaiBookOneStartingEquipment {
@@ -178,6 +202,8 @@ function Get-LWBookOneSectionContextAchievementIds {
 
 Export-ModuleMember -Function `
     Get-LWKaiBookOneSectionRandomNumberContext, `
+    Get-LWBookOneSimpleSectionEffectDefinitions, `
+    Get-LWBookOneSimpleCombatRuleDefinitions, `
     Apply-LWKaiBookOneStartingEquipment, `
     Get-LWBookOneSection124ChoiceDefinitions, `
     Get-LWBookOneSection255ChoiceDefinitions, `

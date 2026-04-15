@@ -50,6 +50,56 @@ function Get-LWKaiCombatEncounterProfile {
     return $null
 }
 
+function Get-LWKaiSimpleCombatRuleDefinitions {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    switch ($BookNumber) {
+        1 { return (Get-LWBookOneSimpleCombatRuleDefinitions) }
+        2 { return (Get-LWBookTwoSimpleCombatRuleDefinitions) }
+        3 { return (Get-LWBookThreeSimpleCombatRuleDefinitions) }
+        4 { return (Get-LWBookFourSimpleCombatRuleDefinitions) }
+        5 { return (Get-LWBookFiveSimpleCombatRuleDefinitions) }
+        default { return @{} }
+    }
+}
+
+function Apply-LWKaiSimpleCombatRule {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Scenario,
+        [Parameter(Mandatory = $true)][object]$Rule
+    )
+
+    if ((Test-LWPropertyExists -Object $Rule -Name 'PlayerMod') -and $null -ne $Rule.PlayerMod) {
+        $Scenario.PlayerMod = [int]$Scenario.PlayerMod + [int]$Rule.PlayerMod
+    }
+    if ((Test-LWPropertyExists -Object $Rule -Name 'CanEvade') -and $null -ne $Rule.CanEvade) {
+        $Scenario.CanEvade = [bool]$Rule.CanEvade
+    }
+    if ((Test-LWPropertyExists -Object $Rule -Name 'EvadeAvailableAfterRound') -and $null -ne $Rule.EvadeAvailableAfterRound) {
+        $Scenario.EvadeAvailableAfterRound = [int]$Rule.EvadeAvailableAfterRound
+    }
+    if ((Test-LWPropertyExists -Object $Rule -Name 'EnemyImmune') -and [bool]$Rule.EnemyImmune) {
+        $Scenario.EnemyImmune = $true
+    }
+    if ((Test-LWPropertyExists -Object $Rule -Name 'EnemyUndead') -and [bool]$Rule.EnemyUndead) {
+        $Scenario.EnemyUndead = $true
+    }
+    if ((Test-LWPropertyExists -Object $Rule -Name 'IgnorePlayerEnduranceLossRounds') -and $null -ne $Rule.IgnorePlayerEnduranceLossRounds) {
+        $Scenario.IgnorePlayerEnduranceLossRounds = [int]$Rule.IgnorePlayerEnduranceLossRounds
+    }
+
+    $notes = @()
+    if ((Test-LWPropertyExists -Object $Rule -Name 'OneAtATime') -and [bool]$Rule.OneAtATime) {
+        $notes += 'Enemies attack one at a time.'
+    }
+    if ((Test-LWPropertyExists -Object $Rule -Name 'Info') -and -not [string]::IsNullOrWhiteSpace([string]$Rule.Info)) {
+        $notes += [string]$Rule.Info
+    }
+    foreach ($note in @($notes)) {
+        Write-LWInfo $note
+    }
+}
+
 function Invoke-LWKaiCombatScenarioRules {
     param(
         [Parameter(Mandatory = $true)][object]$State,
@@ -61,6 +111,12 @@ function Invoke-LWKaiCombatScenarioRules {
     if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     $enemyName = [string]$Scenario.EnemyName
     $useQuickDefaults = [bool]$Scenario.UseQuickDefaults
+
+    $simpleRules = Get-LWKaiSimpleCombatRuleDefinitions -BookNumber ([int]$script:GameState.Character.BookNumber)
+    $section = [int]$script:GameState.CurrentSection
+    if ($null -ne $simpleRules -and $simpleRules.ContainsKey($section)) {
+        Apply-LWKaiSimpleCombatRule -Scenario $Scenario -Rule $simpleRules[$section]
+    }
 
     if ([int]$script:GameState.Character.BookNumber -eq 1 -and [int]$script:GameState.CurrentSection -eq 29 -and [string]$enemyName -ieq 'Vordak') {
         $Scenario.EnemyUndead = $true
