@@ -6,6 +6,23 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added a reusable Kai section-choice automation layer in `modules/core/shell.psm1`:
+  - shared section loot/pickup flow
+  - shared gold-reward flow
+  - shared payment-choice flow
+  - exclusive-choice support for sections that allow one option from a group
+- moved the first Books `1-2` player-choice/shop/pickup/payment sections onto that shared layer in `modules/rulesets/kai/kai.psm1`, with section definitions kept in the book modules:
+  - Book `1`: `12`, `20`, `33`, `46`, `62`, `94`, `164`, `184`, `193`, `197`, `199`, `263`, `269`, `291`, `319`
+  - Book `2`: `55`, `76`, `117`, `124`, `181`, `187`, `217`, `220`, `231`, `233`, `274`, `301`
+- kept the section-specific choice data in:
+  - `modules/rulesets/kai/book1.psm1`
+  - `modules/rulesets/kai/book2.psm1`
+- validated the new Book `1-2` choice/payment flow in both shells with a targeted smoke pass:
+  - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS7.txt`
+  - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS51.txt`
+- reran the broader automation surface smoke after the new interactive section layer and stayed green in both shells:
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7_POSTCHOICE.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51_POSTCHOICE.txt`
 - expanded the Kai ruleset automation layer for Books `1-5` using the book-module structure instead of pushing new section logic back into `lonewolf.ps1`
 - added generic Kai section-effect execution in `modules/rulesets/kai/kai.psm1` for simple deterministic section hooks:
   - direct `ENDURANCE` loss/recovery

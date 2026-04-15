@@ -218,6 +218,72 @@ function Get-LWBookTwoSection262ChoiceDefinitions {
     )
 }
 
+function Get-LWBookTwoSection055ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'broadsword_plus_one'; FlagName = 'Book2Section055BroadswordBought'; DisplayName = 'Broadsword +1'; Type = 'weapon'; Name = 'Broadsword +1'; Quantity = 1; Description = 'Broadsword +1'; GoldCost = 12 }
+    )
+}
+
+function Get-LWBookTwoSection076ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section076GoldClaimed'; DisplayName = '2 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 2; Description = '2 Gold Crowns' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section076DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' }
+    )
+}
+
+function Get-LWBookTwoSection124ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section124GoldClaimed'; DisplayName = '42 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 42; Description = '42 Gold Crowns' },
+        [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book2Section124ShortSwordClaimed'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section124DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' }
+    )
+}
+
+function Get-LWBookTwoSection181ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section181SwordBought'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section181DaggerBought'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger'; GoldCost = 2 },
+        [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book2Section181ShortSwordBought'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'warhammer'; FlagName = 'Book2Section181WarhammerBought'; DisplayName = 'Warhammer'; Type = 'weapon'; Name = 'Warhammer'; Quantity = 1; Description = 'Warhammer'; GoldCost = 6 },
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book2Section181SpearBought'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section181MaceBought'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'blanket'; FlagName = 'Book2Section181BlanketBought'; DisplayName = 'Fur Blanket'; Type = 'backpack'; Name = 'Fur Blanket'; Quantity = 1; Description = 'Fur Blanket'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book2Section181BackpackBought'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack'; GoldCost = 1 }
+    )
+}
+
+function Get-LWBookTwoSection187ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book2Section187SpearClaimed'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section187SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section187GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' }
+    )
+}
+
+function Get-LWBookTwoSection231ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section231GoldClaimed'; DisplayName = '5 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 5; Description = '5 Gold Crowns' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section231DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'seal'; FlagName = 'Book2Section231SealClaimed'; DisplayName = 'Seal of Hammerdal'; Type = 'special'; Name = 'Seal of Hammerdal'; Quantity = 1; Description = 'Seal of Hammerdal' }
+    )
+}
+
+function Get-LWBookTwoSection274ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section274GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section274SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section274MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' }
+    )
+}
+
+function Get-LWBookTwoSection301ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section301GoldClaimed'; DisplayName = '3 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 3; Description = '3 Gold Crowns' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section301DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book2Section301ShortSwordClaimed'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' }
+    )
+}
+
 function Get-LWBookTwoSection302ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section302MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
@@ -248,7 +314,15 @@ Export-ModuleMember -Function `
     Get-LWBookTwoSimpleSectionEffectDefinitions, `
     Get-LWBookTwoSimpleCombatRuleDefinitions, `
     Apply-LWKaiBookTwoStartingEquipment, `
+    Get-LWBookTwoSection055ChoiceDefinitions, `
+    Get-LWBookTwoSection076ChoiceDefinitions, `
+    Get-LWBookTwoSection124ChoiceDefinitions, `
+    Get-LWBookTwoSection181ChoiceDefinitions, `
+    Get-LWBookTwoSection187ChoiceDefinitions, `
+    Get-LWBookTwoSection231ChoiceDefinitions, `
     Get-LWBookTwoSection262ChoiceDefinitions, `
+    Get-LWBookTwoSection274ChoiceDefinitions, `
+    Get-LWBookTwoSection301ChoiceDefinitions, `
     Get-LWBookTwoSection302ChoiceDefinitions, `
     Get-LWBookTwoSectionContextAchievementIds
 

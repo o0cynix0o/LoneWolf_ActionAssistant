@@ -1273,7 +1273,44 @@ function Get-LWBookFourSectionChoiceLine {
     return (Format-LWBookFourStartingChoiceLine -Choice $Choice)
 }
 
-function Grant-LWBookFourGenericChoice {
+function Get-LWAvailableSectionChoices {
+    param([Parameter(Mandatory = $true)][object[]]$Choices)
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $claimedGroups = @(
+        foreach ($choice in @($Choices)) {
+            if ($null -eq $choice) { continue }
+            $groupName = if (Test-LWPropertyExists -Object $choice -Name 'ExclusiveGroup') { [string]$choice.ExclusiveGroup } else { '' }
+            $flagName = if (Test-LWPropertyExists -Object $choice -Name 'FlagName') { [string]$choice.FlagName } else { '' }
+            if ([string]::IsNullOrWhiteSpace($groupName) -or [string]::IsNullOrWhiteSpace($flagName)) {
+                continue
+            }
+            if (Test-LWStoryAchievementFlag -Name $flagName) {
+                $groupName
+            }
+        }
+    ) | Sort-Object -Unique
+
+    return @(
+        foreach ($choice in @($Choices)) {
+            if ($null -eq $choice) { continue }
+            $flagName = if (Test-LWPropertyExists -Object $choice -Name 'FlagName') { [string]$choice.FlagName } else { '' }
+            $groupName = if (Test-LWPropertyExists -Object $choice -Name 'ExclusiveGroup') { [string]$choice.ExclusiveGroup } else { '' }
+
+            if (-not [string]::IsNullOrWhiteSpace($flagName) -and (Test-LWStoryAchievementFlag -Name $flagName)) {
+                continue
+            }
+            if (-not [string]::IsNullOrWhiteSpace($groupName) -and ($claimedGroups -contains $groupName)) {
+                continue
+            }
+
+            $choice
+        }
+    )
+}
+
+function Grant-LWSectionGenericChoice {
     param(
         [Parameter(Mandatory = $true)][object]$Choice,
         [Parameter(Mandatory = $true)][string]$ContextLabel
@@ -1359,7 +1396,145 @@ function Grant-LWBookFourGenericChoice {
     return $true
 }
 
-function Invoke-LWBookFourChoiceTable {
+function Grant-LWBookFourGenericChoice {
+    param(
+        [Parameter(Mandatory = $true)][object]$Choice,
+        [Parameter(Mandatory = $true)][string]$ContextLabel
+    )
+
+    return (Grant-LWSectionGenericChoice -Choice $Choice -ContextLabel $ContextLabel)
+}
+
+function Invoke-LWSectionGoldReward {
+    param(
+        [Parameter(Mandatory = $true)][string]$FlagName,
+        [Parameter(Mandatory = $true)][int]$Amount,
+        [Parameter(Mandatory = $true)][string]$ContextLabel,
+        [string]$MessagePrefix = ''
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (Test-LWStoryAchievementFlag -Name $FlagName) {
+        return $false
+    }
+
+    $oldGold = [int]$script:GameState.Inventory.GoldCrowns
+    $newGold = [Math]::Min(50, ($oldGold + [int]$Amount))
+    $addedGold = $newGold - $oldGold
+    if ($addedGold -le 0) {
+        Write-LWWarn ("{0}: you cannot carry any more Gold Crowns right now." -f $ContextLabel)
+        return $false
+    }
+
+    $script:GameState.Inventory.GoldCrowns = $newGold
+    Add-LWBookGoldDelta -Delta $addedGold
+    [void](Sync-LWAchievements -Context 'gold')
+    Set-LWStoryAchievementFlag -Name $FlagName
+
+    if (-not [string]::IsNullOrWhiteSpace($MessagePrefix)) {
+        Write-LWInfo ("{0} Added {1} Gold Crown{2}." -f $MessagePrefix, $addedGold, $(if ($addedGold -eq 1) { '' } else { 's' }))
+    }
+    else {
+        Write-LWInfo ("{0}: added {1} Gold Crown{2}." -f $ContextLabel, $addedGold, $(if ($addedGold -eq 1) { '' } else { 's' }))
+    }
+
+    if ($newGold -lt ($oldGold + [int]$Amount)) {
+        Write-LWWarn ("Gold Crowns are capped at 50. Excess gold from {0} is lost." -f $ContextLabel.ToLowerInvariant())
+    }
+    return $true
+}
+
+function Invoke-LWSectionPaymentChoice {
+    param(
+        [Parameter(Mandatory = $true)][string]$Title,
+        [Parameter(Mandatory = $true)][string]$PromptLabel,
+        [Parameter(Mandatory = $true)][string]$ContextLabel,
+        [Parameter(Mandatory = $true)][object[]]$Options,
+        [string]$Intro = '',
+        [string]$ResolvedFlagName = '',
+        [string]$DeclineText = '0. Do nothing'
+    )
+
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if (-not [string]::IsNullOrWhiteSpace($ResolvedFlagName) -and (Test-LWStoryAchievementFlag -Name $ResolvedFlagName)) {
+        return $null
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($Intro)) {
+        Write-LWInfo $Intro
+    }
+
+    while ($true) {
+        Write-LWRetroPanelHeader -Title $Title -AccentColor 'DarkYellow'
+        Write-LWRetroPanelKeyValueRow -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWRetroPanelKeyValueRow -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+        Write-LWRetroPanelDivider
+
+        for ($i = 0; $i -lt @($Options).Count; $i++) {
+            $option = $Options[$i]
+            $line = [string]$option.DisplayName
+            if ((Test-LWPropertyExists -Object $option -Name 'GoldCost') -and $null -ne $option.GoldCost -and [int]$option.GoldCost -gt 0) {
+                $line = "{0} ({1} Gold Crown{2})" -f $line, [int]$option.GoldCost, $(if ([int]$option.GoldCost -eq 1) { '' } else { 's' })
+            }
+            elseif ((Test-LWPropertyExists -Object $option -Name 'SpecialItemCount') -and $null -ne $option.SpecialItemCount -and [int]$option.SpecialItemCount -gt 0) {
+                $line = "{0} ({1} Special Item{2})" -f $line, [int]$option.SpecialItemCount, $(if ([int]$option.SpecialItemCount -eq 1) { '' } else { 's' })
+            }
+            Write-LWRetroPanelTextRow -Text ("{0}. {1}" -f ($i + 1), $line) -TextColor 'Gray'
+        }
+        Write-LWRetroPanelTextRow -Text $DeclineText -TextColor 'DarkGray'
+        Write-LWRetroPanelFooter
+
+        $choiceIndex = Read-LWInt -Prompt $PromptLabel -Default 0 -Min 0 -Max @($Options).Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            return $null
+        }
+
+        $option = @($Options)[$choiceIndex - 1]
+        $goldCost = if ((Test-LWPropertyExists -Object $option -Name 'GoldCost') -and $null -ne $option.GoldCost) { [int]$option.GoldCost } else { 0 }
+        $specialItemCount = if ((Test-LWPropertyExists -Object $option -Name 'SpecialItemCount') -and $null -ne $option.SpecialItemCount) { [int]$option.SpecialItemCount } else { 0 }
+
+        if ($goldCost -gt 0) {
+            if ([int]$script:GameState.Inventory.GoldCrowns -lt $goldCost) {
+                Write-LWWarn ("{0}: you need {1} Gold Crown{2} for that option." -f $ContextLabel, $goldCost, $(if ($goldCost -eq 1) { '' } else { 's' }))
+                continue
+            }
+
+            Update-LWGold -Delta (-$goldCost)
+        }
+        elseif ($specialItemCount -gt 0) {
+            for ($lossIndex = 1; $lossIndex -le $specialItemCount; $lossIndex++) {
+                $specialItems = @((Get-LWInventoryItems -Type 'special') | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+                if ($specialItems.Count -le 0) {
+                    Write-LWWarn ("{0}: no more Special Items are available for payment." -f $ContextLabel)
+                    break
+                }
+
+                Show-LWInventorySlotsSection -Type 'special'
+                $slot = Read-LWInt -Prompt ("{0} Special Item #{1}" -f $PromptLabel, $lossIndex) -Min 1 -Max $specialItems.Count -NoRefresh
+                $lostItem = [string]$specialItems[$slot - 1]
+                [void](Remove-LWInventoryItemSilently -Type 'special' -Name $lostItem -Quantity 1)
+                Write-LWInfo ("{0}: surrendered {1}." -f $ContextLabel, $lostItem)
+            }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($ResolvedFlagName)) {
+            Set-LWStoryAchievementFlag -Name $ResolvedFlagName
+        }
+        if ((Test-LWPropertyExists -Object $option -Name 'FlagName') -and -not [string]::IsNullOrWhiteSpace([string]$option.FlagName)) {
+            Set-LWStoryAchievementFlag -Name ([string]$option.FlagName)
+        }
+
+        if ((Test-LWPropertyExists -Object $option -Name 'Message') -and -not [string]::IsNullOrWhiteSpace([string]$option.Message)) {
+            Write-LWInfo ([string]$option.Message)
+        }
+
+        return $option
+    }
+}
+
+function Invoke-LWSectionChoiceTable {
     param(
         [Parameter(Mandatory = $true)][string]$Title,
         [Parameter(Mandatory = $true)][string]$PromptLabel,
@@ -1370,7 +1545,7 @@ function Invoke-LWBookFourChoiceTable {
 
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
-    $availableChoices = @($Choices | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.FlagName) -or -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+    $availableChoices = @(Get-LWAvailableSectionChoices -Choices $Choices)
     if ($availableChoices.Count -le 0) {
         return
     }
@@ -1405,7 +1580,7 @@ function Invoke-LWBookFourChoiceTable {
 
         if ($choiceText -match '^[dD]$') {
             Remove-LWInventoryInteractive -InputParts @('drop')
-            $availableChoices = @($Choices | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.FlagName) -or -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+            $availableChoices = @(Get-LWAvailableSectionChoices -Choices $Choices)
             continue
         }
 
@@ -1420,12 +1595,24 @@ function Invoke-LWBookFourChoiceTable {
         }
 
         $choice = $availableChoices[$choiceIndex - 1]
-        if (-not (Grant-LWBookFourGenericChoice -Choice $choice -ContextLabel $ContextLabel) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
+        if (-not (Grant-LWSectionGenericChoice -Choice $choice -ContextLabel $ContextLabel) -and [string]$choice.Type -ne 'gold' -and (Read-LWYesNo -Prompt 'Review inventory and make room now?' -Default $true)) {
             Invoke-LWBookFourStartingInventoryManagement
         }
 
-        $availableChoices = @($Choices | Where-Object { [string]::IsNullOrWhiteSpace([string]$_.FlagName) -or -not (Test-LWStoryAchievementFlag -Name ([string]$_.FlagName)) })
+        $availableChoices = @(Get-LWAvailableSectionChoices -Choices $Choices)
     }
+}
+
+function Invoke-LWBookFourChoiceTable {
+    param(
+        [Parameter(Mandatory = $true)][string]$Title,
+        [Parameter(Mandatory = $true)][string]$PromptLabel,
+        [Parameter(Mandatory = $true)][string]$ContextLabel,
+        [Parameter(Mandatory = $true)][object[]]$Choices,
+        [string]$Intro = ''
+    )
+
+    Invoke-LWSectionChoiceTable -Title $Title -PromptLabel $PromptLabel -ContextLabel $ContextLabel -Choices $Choices -Intro $Intro
 }
 
 function Invoke-LWTransitionSafekeepingInventorySelection {
@@ -4376,5 +4563,5 @@ function Show-LWBookCompletionSummary {
     Write-LWRetroPanelFooter
 }
 
-Export-ModuleMember -Function Write-LWInlineWarn, Write-LWLootNoRoomWarning, Format-LWCompletedBooks, Get-LWBookCompletionQuote, Show-LWSectionGateHints, Get-LWScreenAccentColor, Get-LWScreenBannerStatusText, Get-LWInlineKeyValueText, Write-LWRetroPanelPairRow, New-LWHelpfulCommandRow, Get-LWHelpfulCommandRows, Show-LWHelpfulCommandsPanel, Get-LWCompactRunHistoryLines, Write-LWBanner, Write-LWCommandPromptHint, Write-LWScreenFooterNote, Show-LWDisciplines, Show-LWNotes, Show-LWRunDifficulty, Show-LWRunPermadeath, Show-LWHelp, Show-LWBookCompletionSummary
+Export-ModuleMember -Function Write-LWInlineWarn, Write-LWLootNoRoomWarning, Format-LWCompletedBooks, Get-LWBookCompletionQuote, Show-LWSectionGateHints, Get-LWScreenAccentColor, Get-LWScreenBannerStatusText, Get-LWInlineKeyValueText, Write-LWRetroPanelPairRow, New-LWHelpfulCommandRow, Get-LWHelpfulCommandRows, Show-LWHelpfulCommandsPanel, Get-LWCompactRunHistoryLines, Write-LWBanner, Write-LWCommandPromptHint, Write-LWScreenFooterNote, Show-LWDisciplines, Show-LWNotes, Show-LWRunDifficulty, Show-LWRunPermadeath, Show-LWHelp, Show-LWBookCompletionSummary, Get-LWAvailableSectionChoices, Grant-LWSectionGenericChoice, Invoke-LWSectionGoldReward, Invoke-LWSectionPaymentChoice, Invoke-LWSectionChoiceTable
 

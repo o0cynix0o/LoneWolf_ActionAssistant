@@ -375,6 +375,46 @@ function Invoke-LWKaiSectionEntryRules {
         switch ($bookNumber) {
             1 {
                 switch ($section) {
+                    12 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 12 Caravan' `
+                            -PromptLabel 'Section 12 choice' `
+                            -ContextLabel 'Section 12' `
+                            -ResolvedFlagName 'Book1Section12FareHandled' `
+                            -Intro 'Section 12: pay the merchant if you want the caravan ride.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Pay the merchant for the ride'
+                                    GoldCost    = 10
+                                    FlagName    = 'Book1Section12FarePaid'
+                                    Message     = 'Section 12: fare paid. Turn to 262 if you are taking the ride.'
+                                }
+                            ) `
+                            -DeclineText '0. Leave the caravan and go to 247')
+                    }
+                    20 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 20 Cottage' -PromptLabel 'Section 20 choice' -ContextLabel 'Section 20' -Choices (Get-LWBookOneSection020ChoiceDefinitions) -Intro 'Section 20: take the Backpack, Meals, and Dagger if you want them.'
+                    }
+                    33 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book1Section033GoldClaimed' -Amount 3 -ContextLabel 'Section 33')
+                    }
+                    46 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 46 Lake Crossing' `
+                            -PromptLabel 'Section 46 choice' `
+                            -ContextLabel 'Section 46' `
+                            -ResolvedFlagName 'Book1Section46FareHandled' `
+                            -Intro 'Section 46: pay the cloaked boatman if you want the lake crossing.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Pay for the crossing'
+                                    GoldCost    = 2
+                                    FlagName    = 'Book1Section46FarePaid'
+                                    Message     = 'Section 46: fare paid. Turn to 246 if you accept the crossing.'
+                                }
+                            ) `
+                            -DeclineText '0. Refuse the offer and go to 90')
+                    }
                     76 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book1VordakGem76Claimed')) {
                             $before = [int]$script:GameState.Character.EnduranceCurrent
@@ -413,12 +453,18 @@ function Invoke-LWKaiSectionEntryRules {
                             Add-LWNote -Text 'Survived the Graveyard of the Ancients'
                         }
                     }
+                    62 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 62 Body' -PromptLabel 'Section 62 choice' -ContextLabel 'Section 62' -Choices (Get-LWBookOneSection062ChoiceDefinitions) -Intro 'Section 62: take the Gold, Meals, and Sword if you want them.'
+                    }
                     82 {
                         $solnarisName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSolnarisWeaponNames) -Type 'weapon'
                         if (-not [string]::IsNullOrWhiteSpace($solnarisName)) {
                             [void](Remove-LWInventoryItemSilently -Type 'weapon' -Name $solnarisName -Quantity 1)
                             Write-LWInfo 'Section 82: Solnaris is returned to Prince Pelathar.'
                         }
+                    }
+                    94 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book1Section094GoldClaimed' -Amount 16 -ContextLabel 'Section 94')
                     }
                     113 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book1LaumspurClaimed')) {
@@ -455,6 +501,12 @@ function Invoke-LWKaiSectionEntryRules {
                     146 {
                         [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book1Section146DamageApplied' -Delta -3 -MessagePrefix 'Section 146: the ambush arrow grazes your forehead.' -FatalCause 'The ambush at section 146 reduced your Endurance to zero.')
                     }
+                    164 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 164 Reward' -PromptLabel 'Section 164 choice' -ContextLabel 'Section 164' -Choices (Get-LWBookOneSection164ChoiceDefinitions) -Intro 'Section 164: keep the Potion of Alether if you want it.'
+                    }
+                    184 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 184 Treasure' -PromptLabel 'Section 184 choice' -ContextLabel 'Section 184' -Choices (Get-LWBookOneSection184ChoiceDefinitions) -Intro 'Section 184: take the Gold, Sword, and Meals if you want them.'
+                    }
                     188 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section188Resolved')) {
                             Set-LWStoryAchievementFlag -Name 'Book1Section188Resolved'
@@ -465,6 +517,23 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                             else {
                                 [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book1Section188DamageApplied' -Delta -3 -MessagePrefix 'Section 188: the Kraan''s attack leaves both your arms badly wounded.' -FatalCause 'The Kraan assault at section 188 reduced your Endurance to zero.')
+                            }
+                        }
+                    }
+                    193 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 193 Scroll' -PromptLabel 'Section 193 choice' -ContextLabel 'Section 193' -Choices (Get-LWBookOneSection193ChoiceDefinitions) -Intro 'Section 193: keep the Scroll if you want it.'
+                    }
+                    197 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 197 Search' -PromptLabel 'Section 197 choice' -ContextLabel 'Section 197' -Choices (Get-LWBookOneSection197ChoiceDefinitions) -Intro 'Section 197: take the Short Sword and Gold if you want them.'
+                    }
+                    199 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section199MealClaimed')) {
+                            if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal') {
+                                Set-LWStoryAchievementFlag -Name 'Book1Section199MealClaimed'
+                                Write-LWInfo 'Section 199: added 1 Meal.'
+                            }
+                            else {
+                                Write-LWWarn 'No room to add the Meal automatically. Make room and add it manually if you are keeping it.'
                             }
                         }
                     }
@@ -481,14 +550,23 @@ function Invoke-LWKaiSectionEntryRules {
                     255 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 255 Reward' -PromptLabel 'Section 255 choice' -ContextLabel 'Section 255' -Choices (Get-LWBookOneSection255ChoiceDefinitions) -Intro 'Section 255: keep Solnaris if you want the prince''s broadsword.'
                     }
+                    263 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book1Section263GoldClaimed' -Amount 3 -ContextLabel 'Section 263' -MessagePrefix 'Section 263: you search the drowned Giak.')
+                    }
                     267 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 267 Saddlebag' -PromptLabel 'Section 267 choice' -ContextLabel 'Section 267' -Choices (Get-LWBookOneSection267ChoiceDefinitions) -Intro 'Section 267: keep the Message and Dagger if you want them.'
+                    }
+                    269 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book1Section269GoldClaimed' -Amount 10 -ContextLabel 'Section 269' -MessagePrefix 'Section 269: the grateful soldiers pay your reward.')
                     }
                     277 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section277BrokenWeapon')) {
                             Set-LWStoryAchievementFlag -Name 'Book1Section277BrokenWeapon'
                             Invoke-LWBookFourLoseOneWeapon -Reason 'Section 277: one Weapon is broken in the fall.'
                         }
+                    }
+                    291 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 291 Bodies' -PromptLabel 'Section 291 choice' -ContextLabel 'Section 291' -Choices (Get-LWBookOneSection291ChoiceDefinitions) -Intro 'Section 291: keep the Gold and choose either the Dagger or a Spear if you want one.'
                     }
                     236 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book1VordakGemCurseTriggered')) {
@@ -572,6 +650,9 @@ function Invoke-LWKaiSectionEntryRules {
                     315 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 315 Purse' -PromptLabel 'Section 315 choice' -ContextLabel 'Section 315' -Choices (Get-LWBookOneSection315ChoiceDefinitions) -Intro 'Section 315: take the purse contents if you want them before moving on.'
                     }
+                    319 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 319 Storeroom' -PromptLabel 'Section 319 choice' -ContextLabel 'Section 319' -Choices (Get-LWBookOneSection319ChoiceDefinitions) -Intro 'Section 319: take the Dagger and Gold if you want them.'
+                    }
                 }
             }
             2 {
@@ -623,6 +704,12 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    55 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 55 Smithy' -PromptLabel 'Section 55 choice' -ContextLabel 'Section 55' -Choices (Get-LWBookTwoSection055ChoiceDefinitions) -Intro 'Section 55: buy the Broadsword +1 if you want it before leaving the shop.'
+                    }
+                    76 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 76 Search' -PromptLabel 'Section 76 choice' -ContextLabel 'Section 76' -Choices (Get-LWBookTwoSection076ChoiceDefinitions) -Intro 'Section 76: take the Gold and Dagger if you want them.'
+                    }
                     103 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section103MealAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal of Laumspur') {
@@ -658,6 +745,32 @@ function Invoke-LWKaiSectionEntryRules {
                             [void](Invoke-LWFatalEnduranceCheck -Cause 'The shock of the Magic Spear reduced your Endurance to zero.')
                         }
                     }
+                    117 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 117 Coach Fare' `
+                            -PromptLabel 'Section 117 choice' `
+                            -ContextLabel 'Section 117' `
+                            -ResolvedFlagName 'Book2Section117FareHandled' `
+                            -Intro 'Section 117: pay for the coach only if you are taking that route.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Ride inside the coach'
+                                    GoldCost    = 3
+                                    FlagName    = 'Book2Section117InsidePaid'
+                                    Message     = 'Section 117: fare paid. Turn to 37 if you ride inside.'
+                                },
+                                [pscustomobject]@{
+                                    DisplayName = 'Ride on the roof'
+                                    GoldCost    = 1
+                                    FlagName    = 'Book2Section117RoofPaid'
+                                    Message     = 'Section 117: fare paid. Turn to 148 if you ride on the roof.'
+                                }
+                            ) `
+                            -DeclineText '0. Go on foot to 292')
+                    }
+                    124 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 124 Search' -PromptLabel 'Section 124 choice' -ContextLabel 'Section 124' -Choices (Get-LWBookTwoSection124ChoiceDefinitions) -Intro 'Section 124: take the Gold, Short Sword, and Dagger if you want them.'
+                    }
                     142 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section142PassAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'White Pass') {
@@ -668,6 +781,12 @@ function Invoke-LWKaiSectionEntryRules {
                                 Write-LWWarn 'No room to add the White Pass automatically. Make room and add it manually if needed.'
                             }
                         }
+                    }
+                    181 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 181 Shop' -PromptLabel 'Section 181 choice' -ContextLabel 'Section 181' -Choices (Get-LWBookTwoSection181ChoiceDefinitions) -Intro 'Section 181: buy any of the marked shop items you want before moving on.'
+                    }
+                    187 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 187 Search' -PromptLabel 'Section 187 choice' -ContextLabel 'Section 187' -Choices (Get-LWBookTwoSection187ChoiceDefinitions) -Intro 'Section 187: take the Spear, Sword, and Gold if you want them.'
                     }
                     196 {
                         Set-LWStoryAchievementFlag -Name 'Book2SealOfApprovalRoute'
@@ -688,6 +807,52 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    217 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 217 Directions' `
+                            -PromptLabel 'Section 217 choice' `
+                            -ContextLabel 'Section 217' `
+                            -ResolvedFlagName 'Book2Section217DirectionsHandled' `
+                            -Intro 'Section 217: pay the man only if you are buying the directions.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Pay for directions to the coach station'
+                                    GoldCost    = 1
+                                    FlagName    = 'Book2Section217DirectionsPaid'
+                                    Message     = 'Section 217: directions bought. Turn to 199 if you pay him.'
+                                }
+                            ) `
+                            -DeclineText '0. Leave the inn and go to 143')
+                    }
+                    220 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book2Section220GoldClaimed' -Amount 23 -ContextLabel 'Section 220')
+                    }
+                    231 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 231 Search' -PromptLabel 'Section 231 choice' -ContextLabel 'Section 231' -Choices (Get-LWBookTwoSection231ChoiceDefinitions) -Intro 'Section 231: take the Gold, Dagger, and Seal if you want them.'
+                    }
+                    233 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 233 Coach Fare' `
+                            -PromptLabel 'Section 233 choice' `
+                            -ContextLabel 'Section 233' `
+                            -ResolvedFlagName 'Book2Section233FareHandled' `
+                            -Intro 'Section 233: pay for the coach only if you are taking that route.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Ride inside the coach'
+                                    GoldCost    = 3
+                                    FlagName    = 'Book2Section233InsidePaid'
+                                    Message     = 'Section 233: fare paid. Turn to 37 if you ride inside.'
+                                },
+                                [pscustomobject]@{
+                                    DisplayName = 'Ride on the roof'
+                                    GoldCost    = 1
+                                    FlagName    = 'Book2Section233RoofPaid'
+                                    Message     = 'Section 233: fare paid. Turn to 148 if you ride on the roof.'
+                                }
+                            ) `
+                            -DeclineText '0. Walk instead and go to 292')
+                    }
                     263 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section263PassAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Red Pass') {
@@ -698,6 +863,9 @@ function Invoke-LWKaiSectionEntryRules {
                                 Write-LWWarn 'No room to add the Red Pass automatically. Make room and add it manually if needed.'
                             }
                         }
+                    }
+                    274 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 274 Search' -PromptLabel 'Section 274 choice' -ContextLabel 'Section 274' -Choices (Get-LWBookTwoSection274ChoiceDefinitions) -Intro 'Section 274: take the Gold, Sword, and Mace if you want them.'
                     }
                     289 {
                         if ([string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSealOfHammerdalItemNames) -Type 'special'))) {
@@ -782,6 +950,9 @@ function Invoke-LWKaiSectionEntryRules {
                     }
                     262 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 262 Storeroom' -PromptLabel 'Section 262 choice' -ContextLabel 'Section 262' -Choices (Get-LWBookTwoSection262ChoiceDefinitions) -Intro 'Section 262: take whatever you want from the storeroom before you flee.'
+                    }
+                    301 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 301 Search' -PromptLabel 'Section 301 choice' -ContextLabel 'Section 301' -Choices (Get-LWBookTwoSection301ChoiceDefinitions) -Intro 'Section 301: take the Gold, Dagger, and Short Sword if you want them.'
                     }
                     302 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 302 Watchtower' -PromptLabel 'Section 302 choice' -ContextLabel 'Section 302' -Choices (Get-LWBookTwoSection302ChoiceDefinitions) -Intro 'Section 302: take whatever you want from the watchtower quarters before you leave.'

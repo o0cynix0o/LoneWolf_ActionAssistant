@@ -76,6 +76,19 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - fixed a widened-smoke follow-up bug at Book `5`, section `393` where a stale `Test-LWStateHasMindshield` reference remained after the refactor
   - recorded scope and remaining backlog in:
     - `testing/logs/BOOKS1TO5_AUTOMATION_IMPLEMENTATION_20260415.md`
+- current `main` follow-up Books `1-2` choice-flow automation pass:
+  - added shared section-choice, gold-reward, and payment-choice helpers in `modules/core/shell.psm1`
+  - added exclusive-choice support so sections like Book `1`, section `291` can grant one weapon from a set without reopening the other exclusive option later
+  - moved the first player-choice/shop/pickup/payment slice onto the book-module path in `modules/rulesets/kai/kai.psm1`
+  - Book `1` sections now covered by the shared choice/payment layer:
+    - `12`, `20`, `33`, `46`, `62`, `94`, `164`, `184`, `193`, `197`, `199`, `263`, `269`, `291`, `319`
+  - Book `2` sections now covered by the shared choice/payment layer:
+    - `55`, `76`, `117`, `124`, `181`, `187`, `217`, `220`, `231`, `233`, `274`, `301`
+  - local validation artifacts:
+    - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS51.txt`
+    - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7_POSTCHOICE.txt`
+    - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51_POSTCHOICE.txt`
 - current `main` follow-up hotfix after the broader smoke pass:
   - Book `3`, section `18` no longer fails forced weapon-loss automation because `Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem` now rebinds ruleset module context before reading state
 - current measured load behavior on a copied current-format campaign save:

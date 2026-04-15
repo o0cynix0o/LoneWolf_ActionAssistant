@@ -155,6 +155,64 @@ function Get-LWBookOneSection124ChoiceDefinitions {
     )
 }
 
+function Get-LWBookOneSection020ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book1Section020BackpackClaimed'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book1Section020MealsClaimed'; DisplayName = '2 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 2; Description = '2 Meals' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book1Section020DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' }
+    )
+}
+
+function Get-LWBookOneSection062ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book1Section062GoldClaimed'; DisplayName = '28 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 28; Description = '28 Gold Crowns' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book1Section062MealsClaimed'; DisplayName = '3 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 3; Description = '3 Meals' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book1Section062SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' }
+    )
+}
+
+function Get-LWBookOneSection164ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'alether'; FlagName = 'Book1Section164AletherClaimed'; DisplayName = 'Potion of Alether'; Type = 'backpack'; Name = 'Alether'; Quantity = 1; Description = 'Potion of Alether' }
+    )
+}
+
+function Get-LWBookOneSection184ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book1Section184GoldClaimed'; DisplayName = '40 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 40; Description = '40 Gold Crowns' },
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book1Section184SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book1Section184MealsClaimed'; DisplayName = '4 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 4; Description = '4 Meals' }
+    )
+}
+
+function Get-LWBookOneSection193ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'scroll'; FlagName = 'Book1Section193ScrollClaimed'; DisplayName = 'Scroll'; Type = 'special'; Name = 'Scroll'; Quantity = 1; Description = 'Scroll' }
+    )
+}
+
+function Get-LWBookOneSection197ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book1Section197ShortSwordClaimed'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book1Section197GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' }
+    )
+}
+
+function Get-LWBookOneSection291ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book1Section291GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book1Section291DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger'; ExclusiveGroup = 'weapon' },
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book1Section291SpearClaimed'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear'; ExclusiveGroup = 'weapon' }
+    )
+}
+
+function Get-LWBookOneSection319ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book1Section319DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book1Section319GoldClaimed'; DisplayName = '20 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 20; Description = '20 Gold Crowns' }
+    )
+}
+
 function Get-LWBookOneSection255ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'solnaris'; FlagName = 'Book1Section255SolnarisClaimed'; DisplayName = 'Solnaris'; Type = 'weapon'; Name = 'Solnaris'; Quantity = 1; Description = 'Solnaris' }
@@ -205,10 +263,18 @@ Export-ModuleMember -Function `
     Get-LWBookOneSimpleSectionEffectDefinitions, `
     Get-LWBookOneSimpleCombatRuleDefinitions, `
     Apply-LWKaiBookOneStartingEquipment, `
+    Get-LWBookOneSection020ChoiceDefinitions, `
+    Get-LWBookOneSection062ChoiceDefinitions, `
     Get-LWBookOneSection124ChoiceDefinitions, `
+    Get-LWBookOneSection164ChoiceDefinitions, `
+    Get-LWBookOneSection184ChoiceDefinitions, `
+    Get-LWBookOneSection193ChoiceDefinitions, `
+    Get-LWBookOneSection197ChoiceDefinitions, `
+    Get-LWBookOneSection291ChoiceDefinitions, `
     Get-LWBookOneSection255ChoiceDefinitions, `
     Get-LWBookOneSection267ChoiceDefinitions, `
     Get-LWBookOneSection315ChoiceDefinitions, `
+    Get-LWBookOneSection319ChoiceDefinitions, `
     Get-LWBookOneSection347ChoiceDefinitions, `
     Get-LWBookOneSectionContextAchievementIds
 
