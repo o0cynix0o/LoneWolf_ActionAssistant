@@ -1,8 +1,10 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
+
+$script:GameState = $null
+$script:GameData = $null
+$script:LWUi = $null
 
 $script:LWModuleContextGeneration = -1
-$script:GameState = $null
-$script:LWUi = $null
 
 function Set-LWModuleContext {
     param([hashtable]$Context)

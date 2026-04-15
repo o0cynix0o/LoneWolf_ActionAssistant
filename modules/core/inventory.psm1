@@ -1,5 +1,9 @@
 ﻿Set-StrictMode -Version Latest
 
+$script:GameState = $null
+$script:GameData = $null
+$script:LWUi = $null
+
 $script:LWBackpackLayoutCache = $null
 $script:LWBackpackSlotSizeLookup = $null
 $script:LWModuleContextGeneration = -1

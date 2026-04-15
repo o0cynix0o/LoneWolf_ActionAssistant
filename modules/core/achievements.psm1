@@ -1,5 +1,9 @@
 ﻿Set-StrictMode -Version Latest
 
+$script:GameState = $null
+$script:GameData = $null
+$script:LWUi = $null
+
 $script:LWAchievementModeAvailabilityCache = $null
 $script:LWAchievementStateSchemaVersion = 1
 $script:LWAchievementLoadBackfillVersion = 1

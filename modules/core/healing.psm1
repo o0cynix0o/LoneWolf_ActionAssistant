@@ -1,4 +1,8 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
+
+$script:GameState = $null
+$script:GameData = $null
+$script:LWUi = $null
 
 $script:LWModuleContextGeneration = -1
 
@@ -13,7 +17,6 @@ function Set-LWModuleContext {
     $script:LWModuleContextGeneration = $generation
 }
 
-$script:GameState = $null
 
 function Resolve-LWHealingState {
     param([object]$State = $null)

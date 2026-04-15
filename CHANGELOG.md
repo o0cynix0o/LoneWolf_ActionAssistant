@@ -8,6 +8,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 - fixed a strict-mode crash path where `roll` could fail before section handling if the command or ruleset module had not yet materialized a local `GameState` variable
 - confirmed the fix against a copied campaign save on Book `6`, section `170`; `roll` now resolves without appending to `data/error.log`
+- proactively hardened the rest of the automation surface against the same strict-mode module-state bug by materializing `GameState`, `GameData`, and `LWUi` at module scope across core and book/ruleset modules before context rebinding occurs
+- added a reusable random-automation smoke harness at `testing/tmp/random-automation-smoke.ps1`
+- validated all currently implemented random-number automations across Books `1-6` in both shells with no failures:
+  - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS7.txt`
+  - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS51.txt`
 - widened the shell notification buffer from `8` to `12` entries so important combat/setup notices are not pushed off-screen by later round or achievement messages
 - refreshed the post-fix screen-lag baseline in both shells and added a direct before/after comparison report:
   - `testing/logs/SCREEN_LAG_VALIDATION_POSTFIX_PS7.txt`

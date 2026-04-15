@@ -1,4 +1,8 @@
-Set-StrictMode -Version Latest
+﻿Set-StrictMode -Version Latest
+
+$script:GameState = $null
+$script:GameData = $null
+$script:LWUi = $null
 
 $script:LWShellHostCommandCache = @{}
 $script:LWShellHelpfulCommandsPanelCache = @{}
