@@ -58,6 +58,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - same-screen refreshes now use a lighter clear path
 - prerelease Batch `1-4` full-sweep validation is now green on `dev` in both shells
 - load-path performance work on `dev` now targets campaign-save startup directly instead of screen rendering
+- current `main` hotfix: `roll` no longer crashes under strict mode when command/ruleset modules are invoked before a local `GameState` variable has been materialized
 - current measured load behavior on a copied current-format campaign save:
   - cold `pwsh` `-Load`: about `316ms` load / `1.50s` total
   - cold Windows PowerShell `5.1` `-Load`: about `412ms` load / `1.68s` total

@@ -1,6 +1,8 @@
 Set-StrictMode -Version Latest
 
 $script:LWModuleContextGeneration = -1
+$script:GameState = $null
+$script:LWUi = $null
 
 function Set-LWModuleContext {
     param([hashtable]$Context)
@@ -132,7 +134,8 @@ function Invoke-LWCoreCommand {
         Clear-LWModuleNotifications
         $trimmed = $InputLine.Trim()
         if ([string]::IsNullOrWhiteSpace($trimmed)) {
-            if ($script:GameState -and $script:GameState.Combat.Active) {
+            $currentState = Get-Variable -Scope Script -Name GameState -ValueOnly -ErrorAction SilentlyContinue
+            if ($null -ne $currentState -and $currentState.Combat.Active) {
                 [void](Invoke-LWCombatRound)
             }
             return $null
