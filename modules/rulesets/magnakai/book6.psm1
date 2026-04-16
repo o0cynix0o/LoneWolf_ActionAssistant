@@ -726,6 +726,118 @@ function Invoke-LWMagnakaiBookSixSection172InnRoute {
     Set-LWStoryAchievementFlag -Name 'Book6Section172Handled'
 }
 
+function Invoke-LWMagnakaiBookSixSection017RoomRoute {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section017Handled') {
+        $resolvedTarget = [int](Get-LWMagnakaiBookSixConditionValue -Name 'BookSixSection017RoomTarget' -Default 0)
+        if ($resolvedTarget -gt 0) {
+            Write-LWInfo ("Section 17: lodging already arranged. Continue to section {0}." -f $resolvedTarget)
+        }
+        return
+    }
+
+    $gold = [int]$script:GameState.Inventory.GoldCrowns
+    $roomOptions = @()
+
+    if ($gold -ge 2) {
+        $roomOptions += [pscustomobject]@{
+            Label     = 'Dormitory'
+            CostLabel = '2 Gold Crowns'
+            CostType  = 'gold'
+            Cost      = 2
+            Target    = 144
+        }
+    }
+    if ($gold -ge 3) {
+        $roomOptions += [pscustomobject]@{
+            Label     = 'Single Room (second class)'
+            CostLabel = '3 Gold Crowns'
+            CostType  = 'gold'
+            Cost      = 3
+            Target    = 202
+        }
+    }
+    if ($gold -ge 5) {
+        $roomOptions += [pscustomobject]@{
+            Label     = 'Single Room (with hot bath)'
+            CostLabel = '5 Gold Crowns'
+            CostType  = 'gold'
+            Cost      = 5
+            Target    = 251
+        }
+    }
+
+    if ($gold -lt 2) {
+        $barterItems = @()
+        foreach ($weapon in @(Get-LWInventoryItems -Type 'weapon' | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })) {
+            $barterItems += [pscustomobject]@{
+                Type  = 'weapon'
+                Name  = [string]$weapon
+                Label = ("Weapon: {0}" -f [string]$weapon)
+            }
+        }
+        foreach ($backpackItem in @(Get-LWInventoryItems -Type 'backpack' | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })) {
+            $barterItems += [pscustomobject]@{
+                Type  = 'backpack'
+                Name  = [string]$backpackItem
+                Label = ("Backpack: {0}" -f [string]$backpackItem)
+            }
+        }
+
+        if ($barterItems.Count -gt 0) {
+            $roomOptions += [pscustomobject]@{
+                Label       = 'Dormitory'
+                CostLabel   = '1 Backpack Item or Weapon'
+                CostType    = 'barter'
+                Cost        = 1
+                Target      = 144
+                BarterItems = @($barterItems)
+            }
+        }
+    }
+
+    if ($roomOptions.Count -le 0) {
+        Write-LWWarn ("Section 17: you cannot currently afford even the dormitory, and you have no Backpack Item or Weapon to trade. Gold Crowns: {0}." -f $gold)
+        return
+    }
+
+    Write-LWRetroPanelHeader -Title 'Section 17 Lodging' -AccentColor 'DarkYellow'
+    for ($i = 0; $i -lt $roomOptions.Count; $i++) {
+        $option = $roomOptions[$i]
+        Write-LWRetroPanelTextRow -Text ("{0}. {1} - {2} -> section {3}" -f ($i + 1), [string]$option.Label, [string]$option.CostLabel, [int]$option.Target) -TextColor 'Gray'
+    }
+    Write-LWRetroPanelFooter
+
+    $choiceIndex = if ($roomOptions.Count -eq 1) { 1 } else { Read-LWInt -Prompt 'Section 17 lodging choice' -Default 1 -Min 1 -Max $roomOptions.Count -NoRefresh }
+    $choice = $roomOptions[$choiceIndex - 1]
+
+    if ([string]$choice.CostType -eq 'gold') {
+        Update-LWGold -Delta (-[int]$choice.Cost)
+        Write-LWInfo ("Section 17: paid {0} for {1}." -f [string]$choice.CostLabel, [string]$choice.Label)
+    }
+    else {
+        $barterItems = @($choice.BarterItems)
+        Write-LWRetroPanelHeader -Title 'Section 17 Barter Payment' -AccentColor 'DarkYellow'
+        for ($i = 0; $i -lt $barterItems.Count; $i++) {
+            Write-LWRetroPanelTextRow -Text ("{0}. {1}" -f ($i + 1), [string]$barterItems[$i].Label) -TextColor 'Gray'
+        }
+        Write-LWRetroPanelFooter
+
+        $barterIndex = if ($barterItems.Count -eq 1) { 1 } else { Read-LWInt -Prompt 'Section 17 barter item' -Default 1 -Min 1 -Max $barterItems.Count -NoRefresh }
+        $barterChoice = $barterItems[$barterIndex - 1]
+        if (Remove-LWInventoryItemSilently -Type ([string]$barterChoice.Type) -Name ([string]$barterChoice.Name) -Quantity 1) {
+            Write-LWInfo ("Section 17: traded {0} for a night in the dormitory." -f [string]$barterChoice.Name)
+        }
+        else {
+            Write-LWWarn ("Section 17: could not remove {0} automatically. Update your inventory manually before continuing." -f [string]$barterChoice.Name)
+            return
+        }
+    }
+
+    Set-LWMagnakaiBookSixConditionValue -Name 'BookSixSection017RoomTarget' -Value ([int]$choice.Target)
+    Set-LWStoryAchievementFlag -Name 'Book6Section017Handled'
+    Write-LWInfo ("Section 17: continue to section {0}." -f [int]$choice.Target)
+}
+
 function Invoke-LWMagnakaiBookSixSection212HorseTrade {
     if (Test-LWStoryAchievementFlag -Name 'Book6Section212HorseTradeResolved') {
         return
@@ -1417,6 +1529,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
     }
 
     switch ($section) {
+        17 {
+            Invoke-LWMagnakaiBookSixSection017RoomRoute
+        }
         10 {
             Invoke-LWMagnakaiBookSixSection010TicketPrompt
         }

@@ -6,6 +6,13 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added DE/OG-aligned Book `6` section `17` lodging automation:
+  - section `17` now prompts for the three inn room choices when you can afford them and deducts the correct Gold Crowns
+  - if you cannot afford even the dormitory, the app now offers the text-supported barter path and lets you trade one Backpack Item or Weapon for the dormitory
+  - the chosen route is recorded so repeat entry does not re-run the payment flow
+  - validated locally in both shells with:
+    - `testing/logs/SECTION17_ROOM_ROUTE_PS7.txt`
+    - `testing/logs/SECTION17_ROOM_ROUTE_PS51.txt`
 - added DE Book `6` section `297` support for the Bronin Sleeve-shield:
   - section `297` now offers the DE armor-swap flow and lets you trade one carried `Helmet`, `Shield`, or `Waistcoat`
   - added `Bronin Sleeve-shield` as a supported Special Item
