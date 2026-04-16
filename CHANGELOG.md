@@ -6,6 +6,12 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- fixed Book `6` section `170` roll handling:
+  - the interactive `roll` command now passes the live current state explicitly into the random-helper pipeline instead of relying on module-local default state
+  - section `170` now matches the local OG text bonus and applies `+3` for `Weaponmastery with Bow` and `+1` for `Huntmastery`, without an extra `Silver Bow of Duadon` modifier
+  - validated in both shells with:
+    - `testing/logs/SECTION170_ROLL_FIX_PS7.txt`
+    - `testing/logs/SECTION170_ROLL_FIX_PS51.txt`
 - closed the remaining Books `1-5` automation audit gaps:
   - refreshed the local `BOOKS1TO5_AUTOMATION_AUDIT_20260415.json` output to `0` missing candidates across all five Kai books
   - Books `1-5` current coverage totals now stand at:

@@ -48,6 +48,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
 - current `dev` work is architecture hardening and dead-code cleanup after the `0.8.0` release
+- latest `main` hotfix:
+  - Book `6` section `170` `roll` now uses the live current state correctly in interactive play
+  - section `170` bonus logic now matches the local OG text (`Weaponmastery with Bow +3`, `Huntmastery +1`)
 - latest `dev` lag pass fixed two post-extraction regressions:
   - achievement-screen caching was being reset by host-context rebinding
   - `combat status` from `inv` could throw a module-context error and write to `data/error.log`

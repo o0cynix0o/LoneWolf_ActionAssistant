@@ -1156,10 +1156,6 @@ function Get-LWMagnakaiBookSixSectionRandomNumberContext {
                 $modifier += 1
                 $modifierNotes += 'Huntmastery'
             }
-            if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWSilverBowOfDuadonItemNames) -Type 'special'))) {
-                $modifier += 3
-                $modifierNotes += 'Silver Bow of Duadon'
-            }
         }
         207 {
             $description = 'Return-to-Cyrilus chance check after recovering the Bronin Warhammer.'

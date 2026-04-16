@@ -288,7 +288,8 @@ function Invoke-LWCoreCommand {
                 return $null
             }
             'roll'        {
-                Invoke-LWCurrentSectionRandomNumberCheck
+                $currentState = Get-Variable -Scope Script -Name GameState -ValueOnly -ErrorAction SilentlyContinue
+                Invoke-LWCurrentSectionRandomNumberCheck -State $currentState
                 return $null
             }
             'section'     {
