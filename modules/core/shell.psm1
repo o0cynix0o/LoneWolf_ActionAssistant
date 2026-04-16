@@ -1540,10 +1540,25 @@ function Invoke-LWSectionChoiceTable {
         [Parameter(Mandatory = $true)][string]$PromptLabel,
         [Parameter(Mandatory = $true)][string]$ContextLabel,
         [Parameter(Mandatory = $true)][object[]]$Choices,
-        [string]$Intro = ''
+        [string]$Intro = '',
+        [int]$SelectionLimit = 0
     )
 
     Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    $claimedChoiceCount = @(
+        foreach ($choice in @($Choices)) {
+            if ($null -eq $choice) { continue }
+            $flagName = if (Test-LWPropertyExists -Object $choice -Name 'FlagName') { [string]$choice.FlagName } else { '' }
+            if (-not [string]::IsNullOrWhiteSpace($flagName) -and (Test-LWStoryAchievementFlag -Name $flagName)) {
+                1
+            }
+        }
+    ).Count
+
+    if ($SelectionLimit -gt 0 -and $claimedChoiceCount -ge $SelectionLimit) {
+        return
+    }
 
     $availableChoices = @(Get-LWAvailableSectionChoices -Choices $Choices)
     if ($availableChoices.Count -le 0) {
@@ -1560,6 +1575,10 @@ function Invoke-LWSectionChoiceTable {
         Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Backpack' -Value $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }) -ValueColor 'Gray'
         Write-LWKeyValue -Label 'Special Items' -Value ("{0}/12" -f @($script:GameState.Inventory.SpecialItems).Count) -ValueColor 'Gray'
+        if ($SelectionLimit -gt 0) {
+            $remainingSelections = [Math]::Max(0, ($SelectionLimit - $claimedChoiceCount))
+            Write-LWKeyValue -Label 'Choices Left' -Value ("{0}/{1}" -f $remainingSelections, $SelectionLimit) -ValueColor 'Gray'
+        }
         Write-Host ''
 
         for ($i = 0; $i -lt $availableChoices.Count; $i++) {
@@ -1599,6 +1618,19 @@ function Invoke-LWSectionChoiceTable {
             Invoke-LWBookFourStartingInventoryManagement
         }
 
+        $claimedChoiceCount = @(
+            foreach ($claimedChoice in @($Choices)) {
+                if ($null -eq $claimedChoice) { continue }
+                $flagName = if (Test-LWPropertyExists -Object $claimedChoice -Name 'FlagName') { [string]$claimedChoice.FlagName } else { '' }
+                if (-not [string]::IsNullOrWhiteSpace($flagName) -and (Test-LWStoryAchievementFlag -Name $flagName)) {
+                    1
+                }
+            }
+        ).Count
+        if ($SelectionLimit -gt 0 -and $claimedChoiceCount -ge $SelectionLimit) {
+            break
+        }
+
         $availableChoices = @(Get-LWAvailableSectionChoices -Choices $Choices)
     }
 }
@@ -1609,10 +1641,11 @@ function Invoke-LWBookFourChoiceTable {
         [Parameter(Mandatory = $true)][string]$PromptLabel,
         [Parameter(Mandatory = $true)][string]$ContextLabel,
         [Parameter(Mandatory = $true)][object[]]$Choices,
-        [string]$Intro = ''
+        [string]$Intro = '',
+        [int]$SelectionLimit = 0
     )
 
-    Invoke-LWSectionChoiceTable -Title $Title -PromptLabel $PromptLabel -ContextLabel $ContextLabel -Choices $Choices -Intro $Intro
+    Invoke-LWSectionChoiceTable -Title $Title -PromptLabel $PromptLabel -ContextLabel $ContextLabel -Choices $Choices -Intro $Intro -SelectionLimit $SelectionLimit
 }
 
 function Invoke-LWTransitionSafekeepingInventorySelection {
@@ -3625,6 +3658,11 @@ function Show-LWSectionGateHints {
     switch ($bookNumber) {
         1 {
             switch ($section) {
+                78 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Write-LWInfo 'Section 78: the bribe route is available here if you want to spend Gold Crowns for safe passage.'
+                    }
+                }
                 23 {
                     if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGoldenKeyItemNames) -Type 'special') {
                         Write-LWInfo 'Section 23: Golden Key route is available here.'
@@ -3667,6 +3705,14 @@ function Show-LWSectionGateHints {
         }
         2 {
             switch ($section) {
+                4 {
+                    Write-LWInfo 'Section 4: the arm-wrestling route is available here if you want to gamble for Gold Crowns.'
+                }
+                39 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWCoachTicketItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 39: coach-ticket continuity is active here; you qualify for the coach-passenger inn route.'
+                    }
+                }
                 { @(59, 134, 299, 338) -contains $_ } {
                     if (Test-LWStateHasMagicSpear -State $script:GameState) {
                         Write-LWInfo ("Section {0}: Magic Spear route is available here." -f $section)
@@ -3692,24 +3738,68 @@ function Show-LWSectionGateHints {
                         Write-LWInfo 'Section 95: recovery route options are available here.'
                     }
                 }
+                130 {
+                    Write-LWInfo 'Section 130: the priest pays for your room here; no Gold deduction is required.'
+                }
+                168 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Write-LWInfo 'Section 168: you can pay 1 Gold Crown for a room if you want the inn route.'
+                    }
+                    else {
+                        Write-LWInfo 'Section 168: without 1 Gold Crown for the room, this route sends you onward without shelter.'
+                    }
+                }
+                238 {
+                    Write-LWInfo 'Section 238: the gaming-house grants one free silver token the first time you enter, and Weapons must be checked at the door.'
+                }
+                276 {
+                    if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Mindblast') {
+                        Write-LWInfo 'Section 276: Mindblast lets you bypass the arm-wrestling combat route here.'
+                    }
+                }
                 346 {
                     if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWCoachTicketItemNames) -Type 'special') {
                         Write-LWInfo 'Section 346: coach ticket continuity route is available here.'
+                    }
+                    if ((@($script:GameState.Inventory.BackpackItems | Where-Object { $_ -eq 'Meal' }).Count -gt 0) -or [int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Write-LWInfo 'Section 346: you can satisfy the forced meal here with a carried Meal or by spending 1 Gold Crown.'
+                    }
+                    if ([int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Write-LWInfo 'Section 346: if you still have 1 Gold Crown left after the meal, the room route remains available.'
                     }
                 }
             }
         }
         3 {
             switch ($section) {
+                41 {
+                    $stoneNames = @((Get-LWBlueStoneTriangleItemNames) + (Get-LWBlueStoneDiscItemNames))
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names $stoneNames -Type 'special') {
+                        Write-LWInfo 'Section 41: the Blue Stone Triangle is retained here; do not erase it.'
+                    }
+                }
                 15 {
                     $names = @('Dagger') + (Get-LWBoneSwordWeaponNames)
                     if (Test-LWStateHasInventoryItem -State $script:GameState -Names $names -Type 'weapon') {
                         Write-LWInfo 'Section 15: Dagger / Bone Sword route is available here.'
                     }
                 }
+                50 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names @('Glowing Crystal') -Type 'special') {
+                        Write-LWInfo 'Section 50: Glowing Crystal route is available here.'
+                    }
+                }
                 { @(45, 303) -contains $_ } {
                     if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWOrnateSilverKeyItemNames) -Type 'special') {
                         Write-LWInfo ("Section {0}: Ornate Silver Key route is available here." -f $section)
+                    }
+                }
+                97 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names @('Diamond') -Type 'special') {
+                        Write-LWInfo 'Section 97: Diamond distraction route is available here.'
+                    }
+                    if ([int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Write-LWInfo 'Section 97: Gold-distraction route is available here.'
                     }
                 }
                 { @(67, 104, 202) -contains $_ } {
@@ -3728,6 +3818,11 @@ function Show-LWSectionGateHints {
                         Write-LWInfo ("Section {0}: Rope route is available here." -f $section)
                     }
                 }
+                181 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -gt 0) {
+                        Write-LWInfo 'Section 181: you can retry the Gold distraction if you still want to spend more Gold Crowns.'
+                    }
+                }
                 173 {
                     if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWStoneEffigyItemNames) -Type 'special') {
                         Write-LWInfo 'Section 173: Effigy endgame route is available here.'
@@ -3744,6 +3839,33 @@ function Show-LWSectionGateHints {
                         Write-LWInfo ("Section {0}: Mindshield route is available here." -f $section)
                     }
                 }
+                349 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names @('Glowing Crystal') -Type 'special') {
+                        Write-LWInfo 'Section 349: Glowing Crystal route is available here.'
+                    }
+                }
+            }
+        }
+        4 {
+            switch ($section) {
+                { @(70, 258) -contains $_ } {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWOnyxMedallionItemNames) -Type 'special') {
+                        Write-LWInfo ("Section {0}: Onyx Medallion route is available here." -f $section)
+                    }
+                    if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Camouflage') -and @($script:GameState.Character.Disciplines).Count -ge 7) {
+                        Write-LWInfo ("Section {0}: Camouflage + Guardian route is available here." -f $section)
+                    }
+                }
+                { @(168, 246, 296) -contains $_ } {
+                    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+                        Write-LWInfo ("Section {0}: Sommerswerd route is available here." -f $section)
+                    }
+                }
+                274 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWFlaskOfHolyWaterItemNames) -Type 'backpack') {
+                        Write-LWInfo 'Section 274: Flask of Holy Water route is available here.'
+                    }
+                }
             }
         }
         5 {
@@ -3753,9 +3875,19 @@ function Show-LWSectionGateHints {
                         Write-LWInfo 'Section 31: your Firesphere or Tinderbox opens the lit-market route here.'
                     }
                 }
+                122 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGaolersKeysItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 122: Gaoler''s Keys route is available here.'
+                    }
+                }
                 137 {
                     if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Tracking') -or (Test-LWStateHasDiscipline -State $script:GameState -Name 'Sixth Sense')) {
                         Write-LWInfo 'Section 137: Tracking / Sixth Sense can guide you onto the safer route here.'
+                    }
+                }
+                212 {
+                    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+                        Write-LWInfo 'Section 212: Sommerswerd route is available here.'
                     }
                 }
                 221 {
@@ -3774,6 +3906,66 @@ function Show-LWSectionGateHints {
                 239 {
                     if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGraveweedItemNames) -Type 'backpack') {
                         Write-LWInfo 'Section 239: Tincture of Graveweed route is available here.'
+                    }
+                }
+                248 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -ge 5) {
+                        Write-LWInfo 'Section 248: you can pay 5 Gold Crowns for the merchant''s absurd waistcoat and the Tipasa lead.'
+                    }
+                }
+                256 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -ge 1) {
+                        Write-LWInfo 'Section 256: paying 1 Gold Crown keeps the questioning route open here.'
+                    }
+                }
+                264 {
+                    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+                        Write-LWInfo 'Section 264: Sommerswerd route is available here.'
+                    }
+                }
+                265 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -ge 1) {
+                        Write-LWInfo 'Section 265: paying 1 Gold Crown opens the Soushilla route from here.'
+                    }
+                }
+                276 {
+                    if ([int]$script:GameState.Inventory.GoldCrowns -ge 5) {
+                        Write-LWInfo 'Section 276: paying 5 Gold Crowns refreshes Soushilla''s memory here.'
+                    }
+                }
+                288 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book1StarOfToranClaimed') {
+                        Write-LWInfo 'Section 288: Crystal Star Pendant continuity route is available here.'
+                    }
+                }
+                289 {
+                    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+                        Write-LWInfo 'Section 289: Sommerswerd route is available here.'
+                    }
+                }
+                300 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBlackCrystalCubeItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 300: Black Crystal Cube route is available here.'
+                    }
+                }
+                319 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWOnyxMedallionItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 319: Onyx Medallion continuity is active here.'
+                    }
+                }
+                333 {
+                    if (Test-LWStateHasSommerswerd -State $script:GameState) {
+                        Write-LWInfo 'Section 333: Sommerswerd route is available here.'
+                    }
+                }
+                380 {
+                    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBlackCrystalCubeItemNames) -Type 'special') {
+                        Write-LWInfo 'Section 380: Black Crystal Cube route is available here.'
+                    }
+                }
+                382 {
+                    if (Test-LWStoryAchievementFlag -Name 'Book1StarOfToranClaimed') {
+                        Write-LWInfo 'Section 382: Crystal Star Pendant continuity route is available here.'
                     }
                 }
                 395 {

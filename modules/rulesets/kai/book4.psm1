@@ -459,6 +459,12 @@ function Get-LWBookFourSection109ChoiceDefinitions {
     )
 }
 
+function Get-LWBookFourSection102ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book4Section102MealsClaimed'; DisplayName = '2 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 2; Description = '2 Meals' }
+    )
+}
+
 function Get-LWBookFourSection152ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'sword'; FlagName = 'Book4Section152SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
@@ -482,6 +488,12 @@ function Get-LWBookFourSection231ChoiceDefinitions {
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book4Section231GoldClaimed'; DisplayName = '3 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 3; Description = '3 Gold Crowns' },
         [pscustomobject]@{ Id = 'sword'; FlagName = 'Book4Section231SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
         [pscustomobject]@{ Id = 'meal'; FlagName = 'Book4Section231MealClaimed'; DisplayName = 'Meal'; Type = 'backpack'; Name = 'Meal'; Quantity = 1; Description = 'Meal' }
+    )
+}
+
+function Get-LWBookFourSection261ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'meal'; FlagName = 'Book4Section261MealClaimed'; DisplayName = 'Meal'; Type = 'backpack'; Name = 'Meal'; Quantity = 1; Description = 'Meal' }
     )
 }
 
@@ -785,9 +797,11 @@ Export-ModuleMember -Function `
     Get-LWBookFourSection002ChoiceDefinitions, `
     Get-LWBookFourSection044ChoiceDefinitions, `
     Get-LWBookFourSection109ChoiceDefinitions, `
+    Get-LWBookFourSection102ChoiceDefinitions, `
     Get-LWBookFourSection152ChoiceDefinitions, `
     Get-LWBookFourSection230ChoiceDefinitions, `
     Get-LWBookFourSection231ChoiceDefinitions, `
+    Get-LWBookFourSection261ChoiceDefinitions, `
     Get-LWBookFourSection302ChoiceDefinitions, `
     Grant-LWBookFourSection213Choice, `
     Grant-LWBookFourSection280Choice, `

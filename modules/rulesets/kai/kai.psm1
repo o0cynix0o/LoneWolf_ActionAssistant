@@ -47,6 +47,268 @@ function Invoke-LWKaiSectionRandomNumberResolution {
         [int]$Subtotal = 0,
         [int]$AdjustedTotal = 0
     )
+
+    $script:GameState = $State
+    if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
+    if (-not (Test-LWHasState) -or $null -eq $Context) {
+        return
+    }
+
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    $section = [int]$Context.Section
+
+    switch ($bookNumber) {
+        1 {
+            switch ($section) {
+                2 {
+                    Write-LWInfo ("Section 2 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 343 } else { 276 }))
+                }
+                7 {
+                    Write-LWInfo ("Section 7 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 2) { 108 } else { 25 }))
+                }
+                17 {
+                    $nextSection = if ([int]$AdjustedTotal -eq 0) { 53 } elseif ([int]$AdjustedTotal -le 2) { 274 } else { 316 }
+                    Write-LWInfo ("Section 17 result: after the Kraan fight, turn to {0}." -f $nextSection)
+                }
+                21 {
+                    $firstRoll = if (@($Rolls).Count -ge 1) { [int]$Rolls[0] } else { 0 }
+                    $secondRoll = if (@($Rolls).Count -ge 2) { [int]$Rolls[1] } else { 0 }
+                    $thirdRoll = if (@($Rolls).Count -ge 3) { [int]$Rolls[2] } else { 0 }
+
+                    if ($firstRoll -ge 5) {
+                        Write-LWInfo 'Section 21 result: you steer clear of the morass. Turn to 189.'
+                        return
+                    }
+
+                    if ($secondRoll -gt 7) {
+                        Write-LWInfo ('Section 21 result: the bog traps your horse on roll {0}, but roll {1} lets you drag yourself free. Turn to 189.' -f $firstRoll, $secondRoll)
+                        return
+                    }
+
+                    if ($thirdRoll -eq 9) {
+                        Write-LWInfo ('Section 21 result: the bog engulfs you on rolls {0} and {1}, but the final desperate struggle succeeds. Turn to 312.' -f $firstRoll, $secondRoll)
+                        return
+                    }
+
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section021DeathApplied')) {
+                        Set-LWStoryAchievementFlag -Name 'Book1Section021DeathApplied'
+                        Invoke-LWInstantDeath -Cause 'Section 21: the bog swallows you whole.'
+                    }
+                }
+                22 {
+                    Write-LWInfo ("Section 22 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 181 } else { 145 }))
+                }
+                36 {
+                    if ([int]$AdjustedTotal -le 4) {
+                        [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book1Section036DamageApplied' -Delta -2 -MessagePrefix 'Section 36: the rotten ladder gives way beneath you.' -FatalCause 'The fall at section 36 reduced your Endurance to zero.')
+                        Write-LWInfo 'Section 36 result: you fall. Turn to 140.'
+                    }
+                    else {
+                        Write-LWInfo 'Section 36 result: you keep your footing. Turn to 323.'
+                    }
+                }
+                44 {
+                    Write-LWInfo ("Section 44 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 277 } else { 338 }))
+                }
+                49 {
+                    Write-LWInfo ("Section 49 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 339 } else { 60 }))
+                }
+                89 {
+                    $nextSection = if ([int]$AdjustedTotal -le 1) { 53 } elseif ([int]$AdjustedTotal -le 4) { 274 } else { 316 }
+                    Write-LWInfo ("Section 89 result: turn to {0}." -f $nextSection)
+                }
+                158 {
+                    if ([int]$AdjustedTotal -ge 6) {
+                        [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book1Section158SecondBoltApplied' -Delta -4 -MessagePrefix 'Section 158: the second lightning bolt strikes you in the back.' -FatalCause 'The second lightning bolt at section 158 reduced your Endurance to zero.')
+                    }
+                    else {
+                        Write-LWInfo 'Section 158 result: the second lightning bolt misses you.'
+                    }
+                    Write-LWInfo 'Section 158 result: if you survive, stagger out into daylight and turn to 106.'
+                }
+                160 {
+                    Write-LWInfo ("Section 160 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 286 } else { 10 }))
+                }
+                188 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section188Resolved')) {
+                        Set-LWStoryAchievementFlag -Name 'Book1Section188Resolved'
+                        if ([int]$AdjustedTotal -le 6) {
+                            Lose-LWBackpack -WriteMessages -Reason 'Section 188: the Kraan rips away your Backpack'
+                        }
+                        else {
+                            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book1Section188DamageApplied' -Delta -3 -MessagePrefix 'Section 188: the Kraan tears into both your arms.' -FatalCause 'The Kraan attack at section 188 reduced your Endurance to zero.')
+                        }
+                    }
+                    Write-LWInfo 'Section 188 result: run to the trees and turn to 303.'
+                }
+                205 {
+                    Write-LWInfo ("Section 205 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 181 } else { 145 }))
+                }
+                226 {
+                    Write-LWInfo ("Section 226 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 277 } else { 338 }))
+                }
+                237 {
+                    Write-LWInfo ("Section 237 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 265 } else { 72 }))
+                }
+                275 {
+                    Write-LWInfo ("Section 275 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 345 } else { 74 }))
+                }
+                279 {
+                    Write-LWInfo ("Section 279 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 6) { 112 } else { 96 }))
+                }
+                294 {
+                    $nextSection = if ([int]$AdjustedTotal -le 2) { 230 } elseif ([int]$AdjustedTotal -le 6) { 190 } else { 321 }
+                    Write-LWInfo ("Section 294 result: turn to {0}." -f $nextSection)
+                }
+                302 {
+                    Write-LWInfo ("Section 302 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 2) { 110 } else { 285 }))
+                }
+                314 {
+                    Write-LWInfo ("Section 314 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 6) { 341 } else { 98 }))
+                }
+            }
+        }
+        2 {
+            switch ($section) {
+                10 {
+                    $nextSection = if ([int]$AdjustedTotal -le 3) { 51 } elseif ([int]$AdjustedTotal -le 6) { 195 } else { 339 }
+                    Write-LWInfo ("Section 10 result: turn to {0}." -f $nextSection)
+                }
+                12 {
+                    $nextSection = if ([int]$AdjustedTotal -le 3) { 58 } elseif ([int]$AdjustedTotal -le 6) { 167 } else { 329 }
+                    Write-LWInfo ("Section 12 result: Captain Kelman''s Samor board sends you to {0}." -f $nextSection)
+                }
+                21 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section021GoldResolved')) {
+                        Set-LWStoryAchievementFlag -Name 'Book2Section021GoldResolved'
+                        $goldFound = [int]$AdjustedTotal * 3
+                        if ($goldFound -gt 0) {
+                            Update-LWGold -Delta $goldFound
+                        }
+                        Write-LWInfo ("Section 21: the crowd leaves you {0} Gold Crowns on the card table." -f $goldFound)
+                        Update-LWGold -Delta -1
+                        Write-LWInfo 'Section 21: you hand the innkeeper 1 Gold Crown for a room and then turn to 314.'
+                        Write-LWInfo 'Section 21: the card sharp''s Dagger may also be taken here if you want it.'
+                    }
+                }
+                22 {
+                    Write-LWInfo ("Section 22 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 119 } else { 341 }))
+                }
+                31 {
+                    Write-LWInfo ("Section 31 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 176 } else { 254 }))
+                }
+                45 {
+                    Write-LWInfo ("Section 45 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 7) { 311 } else { 159 }))
+                }
+                57 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section057GoldLossResolved')) {
+                        Set-LWStoryAchievementFlag -Name 'Book2Section057GoldLossResolved'
+                        Update-LWGold -Delta (-[int]$AdjustedTotal)
+                        Write-LWInfo ("Section 57: the guard knocks {0} Gold Crowns into the Rymerift." -f [int]$AdjustedTotal)
+                    }
+                    Write-LWInfo 'Section 57 result: insulted guards drag you toward section 282.'
+                }
+                81 {
+                    Write-LWInfo ("Section 81 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 260 } else { 281 }))
+                }
+                99 {
+                    Write-LWInfo ("Section 99 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 326 } else { 163 }))
+                }
+                105 {
+                    Write-LWInfo ("Section 105 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 286 } else { 120 }))
+                }
+                114 {
+                    $nextSection = if ([int]$AdjustedTotal -le 3) { 206 } elseif ([int]$AdjustedTotal -le 7) { 63 } else { 8 }
+                    Write-LWInfo ("Section 114 result: turn to {0}." -f $nextSection)
+                }
+                116 {
+                    if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section116GoldResolved')) {
+                        Set-LWStoryAchievementFlag -Name 'Book2Section116GoldResolved'
+                        Update-LWGold -Delta ([int]$AdjustedTotal)
+                        Write-LWInfo ("Section 116: the cup game wins you {0} Gold Crowns before the rogue ends the match." -f [int]$AdjustedTotal)
+                        Update-LWGold -Delta -1
+                        Write-LWInfo 'Section 116: you pay 1 Gold Crown for a room and then turn to 314.'
+                    }
+                }
+                122 {
+                    Write-LWInfo ("Section 122 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 46 } else { 112 }))
+                }
+                151 {
+                    Write-LWInfo ("Section 151 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 262 } else { 110 }))
+                }
+                152 {
+                    $nextSection = if ([int]$AdjustedTotal -le 3) { 216 } elseif ([int]$AdjustedTotal -le 6) { 49 } else { 193 }
+                    Write-LWInfo ("Section 152 result: turn to {0}." -f $nextSection)
+                }
+                169 {
+                    $nextSection = if ([int]$AdjustedTotal -le 3) { 39 } elseif ([int]$AdjustedTotal -le 6) { 249 } else { 339 }
+                    Write-LWInfo ("Section 169 result: turn to {0}." -f $nextSection)
+                }
+                175 {
+                    Write-LWInfo ("Section 175 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 53 } else { 209 }))
+                }
+                183 {
+                    Write-LWInfo ("Section 183 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 8) { 311 } else { 159 }))
+                }
+                197 {
+                    $rawRoll = if (@($Rolls).Count -gt 0) { [int]$Rolls[0] } else { [int]$AdjustedTotal }
+                    $nextSection = if ($rawRoll -eq 0) { 247 } elseif ($rawRoll -le 4) { 78 } else { 141 }
+                    Write-LWInfo ("Section 197 result: turn to {0}." -f $nextSection)
+                }
+                201 {
+                    Write-LWInfo ("Section 201 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 285 } else { 70 }))
+                }
+                210 {
+                    Write-LWInfo ("Section 210 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 275 } else { 330 }))
+                }
+                238 {
+                    Write-LWInfo 'Section 238: this roll is the Cartwheel table number for one round of play. Use your chosen stake and number to work out the result.'
+                }
+                278 {
+                    Write-LWInfo ("Section 278 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 6) { 41 } else { 180 }))
+                }
+                280 {
+                    Write-LWInfo ("Section 280 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 2 } else { 108 }))
+                }
+                300 {
+                    $nextSection = switch ([int]$AdjustedTotal) {
+                        { $_ -le 1 } { 224; break }
+                        { $_ -le 3 } { 316; break }
+                        { $_ -le 5 } { 81; break }
+                        { $_ -le 7 } { 22; break }
+                        default { 99; break }
+                    }
+                    Write-LWInfo ("Section 300 result: turn to {0}." -f $nextSection)
+                }
+                308 {
+                    if (@($Rolls).Count -lt 6) {
+                        Write-LWWarn 'Section 308 needs six rolls: two for each rival, then two for you.'
+                        return
+                    }
+                    $rivalOne = [int]$Rolls[0] + [int]$Rolls[1]
+                    $rivalTwo = [int]$Rolls[2] + [int]$Rolls[3]
+                    $player = [int]$Rolls[4] + [int]$Rolls[5]
+                    $playerPortholes = ([int]$Rolls[4] -eq 0 -and [int]$Rolls[5] -eq 0)
+                    $rivalOnePortholes = ([int]$Rolls[0] -eq 0 -and [int]$Rolls[1] -eq 0)
+                    $rivalTwoPortholes = ([int]$Rolls[2] -eq 0 -and [int]$Rolls[3] -eq 0)
+
+                    Write-LWInfo ("Section 308: rival one scores {0}, rival two scores {1}, and you score {2}." -f $rivalOne, $rivalTwo, $player)
+                    if ($playerPortholes) {
+                        Write-LWInfo 'Section 308: you rolled Portholes. That is an automatic win for the round.'
+                    }
+                    elseif ($rivalOnePortholes -or $rivalTwoPortholes) {
+                        Write-LWInfo 'Section 308: a rival rolled Portholes. You lose the round automatically.'
+                    }
+                    else {
+                        Write-LWInfo 'Section 308: compare the totals. If yours is highest, you win 6 Gold Crowns; if either rival beats you, you lose 3 Gold Crowns; ties are a wash.'
+                    }
+                }
+                316 {
+                    Write-LWInfo ("Section 316 result: turn to {0}." -f $(if ([int]$AdjustedTotal -le 4) { 107 } else { 94 }))
+                }
+            }
+        }
+    }
 }
 
 function Invoke-LWKaiStartingEquipment {
@@ -508,17 +770,7 @@ function Invoke-LWKaiSectionEntryRules {
                         Invoke-LWSectionChoiceTable -Title 'Section 184 Treasure' -PromptLabel 'Section 184 choice' -ContextLabel 'Section 184' -Choices (Get-LWBookOneSection184ChoiceDefinitions) -Intro 'Section 184: take the Gold, Sword, and Meals if you want them.'
                     }
                     188 {
-                        if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section188Resolved')) {
-                            Set-LWStoryAchievementFlag -Name 'Book1Section188Resolved'
-                            $roll = Get-LWRandomDigit
-                            Write-LWCurrentSectionRandomNumberRoll -Roll $roll
-                            if ($roll -le 6) {
-                                Lose-LWBackpack -WriteMessages -Reason 'Section 188: the Kraan rips away your Backpack'
-                            }
-                            else {
-                                [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book1Section188DamageApplied' -Delta -3 -MessagePrefix 'Section 188: the Kraan''s attack leaves both your arms badly wounded.' -FatalCause 'The Kraan assault at section 188 reduced your Endurance to zero.')
-                            }
-                        }
+                        Write-LWInfo 'Section 188: use roll here to resolve whether the Kraan steals your Backpack or wounds you.'
                     }
                     193 {
                         Invoke-LWSectionChoiceTable -Title 'Section 193 Scroll' -PromptLabel 'Section 193 choice' -ContextLabel 'Section 193' -Choices (Get-LWBookOneSection193ChoiceDefinitions) -Intro 'Section 193: keep the Scroll if you want it.'
@@ -545,6 +797,17 @@ function Invoke-LWKaiSectionEntryRules {
                             Set-LWInventoryItems -Type 'weapon' -Items @()
                             Set-LWInventoryItems -Type 'backpack' -Items @()
                             Write-LWInfo 'Section 205: all Weapons and Backpack Items are taken from you.'
+                        }
+                    }
+                    162 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book1Section162LossApplied')) {
+                            Set-LWStoryAchievementFlag -Name 'Book1Section162LossApplied'
+                            Save-LWInventoryRecoveryEntry -Type 'weapon' -Items @(Get-LWInventoryItems -Type 'weapon')
+                            Save-LWInventoryRecoveryEntry -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')
+                            Set-LWInventoryItems -Type 'weapon' -Items @()
+                            Set-LWInventoryItems -Type 'backpack' -Items @()
+                            Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+                            Write-LWInfo 'Section 162: the disguised Drakkarim tie you up and take all Weapons and Backpack Items.'
                         }
                     }
                     255 {
@@ -704,11 +967,85 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    15 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 15 Gift' -PromptLabel 'Section 15 choice' -ContextLabel 'Section 15' -Choices (Get-LWBookTwoSection015ChoiceDefinitions) -Intro 'Section 15: choose one gift from the watchtower captain if you want it.' -SelectionLimit 1
+                    }
                     55 {
                         Invoke-LWSectionChoiceTable -Title 'Section 55 Smithy' -PromptLabel 'Section 55 choice' -ContextLabel 'Section 55' -Choices (Get-LWBookTwoSection055ChoiceDefinitions) -Intro 'Section 55: buy the Broadsword +1 if you want it before leaving the shop.'
                     }
+                    58 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section058WagerLost')) {
+                            Set-LWStoryAchievementFlag -Name 'Book2Section058WagerLost'
+                            Update-LWGold -Delta -10
+                            Write-LWInfo 'Section 58: the Samor wager is lost. Deduct 10 Gold Crowns.'
+                        }
+                    }
+                    75 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 75 White Pass' `
+                            -PromptLabel 'Section 75 choice' `
+                            -ContextLabel 'Section 75' `
+                            -ResolvedFlagName 'Book2Section075PassHandled' `
+                            -Intro 'Section 75: pay only if you are signing the forms and buying the White Pass.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Sign the forms and buy the White Pass'
+                                    GoldCost    = 10
+                                    FlagName    = 'Book2Section075PassPaid'
+                                    Message     = 'Section 75: White Pass fee paid. Turn to 142 to collect the pass.'
+                                }
+                            ) `
+                            -DeclineText '0. Leave the office and go to 318')
+                    }
                     76 {
                         Invoke-LWSectionChoiceTable -Title 'Section 76 Search' -PromptLabel 'Section 76 choice' -ContextLabel 'Section 76' -Choices (Get-LWBookTwoSection076ChoiceDefinitions) -Intro 'Section 76: take the Gold and Dagger if you want them.'
+                    }
+                    72 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section072AlePaid')) {
+                            Set-LWStoryAchievementFlag -Name 'Book2Section072AlePaid'
+                            if ([int]$script:GameState.Inventory.GoldCrowns -ge 1) {
+                                Update-LWGold -Delta -1
+                                Write-LWInfo 'Section 72: 1 Gold Crown is paid for the ale.'
+                            }
+                            else {
+                                Write-LWWarn 'Section 72 assumes the ale was paid for before entry, but no Gold Crown was available to deduct.'
+                            }
+                        }
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 72 Room' `
+                            -PromptLabel 'Section 72 choice' `
+                            -ContextLabel 'Section 72' `
+                            -ResolvedFlagName 'Book2Section072RoomHandled' `
+                            -Intro 'Section 72: pay only if you want a room for the night before leaving this inn.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Buy a room for the night'
+                                    GoldCost    = 2
+                                    FlagName    = 'Book2Section072RoomPaid'
+                                    Message     = 'Section 72: room paid for. Turn to 56.'
+                                }
+                            ) `
+                            -DeclineText '0. Keep the other section options open')
+                    }
+                    79 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWSommerswerdItemNames) -Type 'special')) {
+                            if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Sommerswerd') {
+                                Set-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed'
+                                Write-LWInfo 'Section 79: Sommerswerd added to Special Items.'
+                            }
+                            else {
+                                Write-LWWarn 'No room to add the Sommerswerd automatically. Make room and add it manually if you are keeping it.'
+                            }
+                        }
+                        else {
+                            Set-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed'
+                        }
+                    }
+                    86 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 86 Fishing Boat' -PromptLabel 'Section 86 choice' -ContextLabel 'Section 86' -Choices (Get-LWBookTwoSection086ChoiceDefinitions) -Intro 'Section 86: take the Mace and Gold Crowns if you want them before returning to Stonepost Square.'
+                    }
+                    91 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 91 Merchant Thanks' -PromptLabel 'Section 91 choice' -ContextLabel 'Section 91' -Choices (Get-LWBookTwoSection091ChoiceDefinitions) -Intro 'Section 91: choose any two items from the merchant''s cargo if you want them.' -SelectionLimit 2
                     }
                     103 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section103MealAdded')) {
@@ -771,6 +1108,26 @@ function Invoke-LWKaiSectionEntryRules {
                     124 {
                         Invoke-LWSectionChoiceTable -Title 'Section 124 Search' -PromptLabel 'Section 124 choice' -ContextLabel 'Section 124' -Choices (Get-LWBookTwoSection124ChoiceDefinitions) -Intro 'Section 124: take the Gold, Short Sword, and Dagger if you want them.'
                     }
+                    132 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 132 Escape' -PromptLabel 'Section 132 choice' -ContextLabel 'Section 132' -Choices (Get-LWBookTwoSection132ChoiceDefinitions) -Intro 'Section 132: keep the Szall''s Spear if you want it before you escape.'
+                    }
+                    136 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 136 Coach Fare' `
+                            -PromptLabel 'Section 136 choice' `
+                            -ContextLabel 'Section 136' `
+                            -ResolvedFlagName 'Book2Section136FareHandled' `
+                            -Intro 'Section 136: pay for the coach only if you are buying passage to Port Bax.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Buy passage to Port Bax'
+                                    GoldCost    = 20
+                                    FlagName    = 'Book2Section136FarePaid'
+                                    Message     = 'Section 136: fare paid. Turn to 10 to collect the ticket.'
+                                }
+                            ) `
+                            -DeclineText '0. Go to the gaming-house route at 238')
+                    }
                     142 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section142PassAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'White Pass') {
@@ -779,6 +1136,17 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                             else {
                                 Write-LWWarn 'No room to add the White Pass automatically. Make room and add it manually if needed.'
+                            }
+                        }
+                    }
+                    144 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section144MealsAdded')) {
+                            if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal' -Quantity 2) {
+                                Set-LWStoryAchievementFlag -Name 'Book2Section144MealsAdded'
+                                Write-LWInfo 'Section 144: the Noodnics give you food for 2 Meals.'
+                            }
+                            else {
+                                Write-LWWarn 'No room to add the 2 Meals from section 144 automatically. Make room and add them manually if you are keeping them.'
                             }
                         }
                     }
@@ -827,6 +1195,23 @@ function Invoke-LWKaiSectionEntryRules {
                     220 {
                         [void](Invoke-LWSectionGoldReward -FlagName 'Book2Section220GoldClaimed' -Amount 23 -ContextLabel 'Section 220')
                     }
+                    226 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 226 Innkeeper' `
+                            -PromptLabel 'Section 226 choice' `
+                            -ContextLabel 'Section 226' `
+                            -ResolvedFlagName 'Book2Section226InnHandled' `
+                            -Intro 'Section 226: pay only if you are taking a room for the night.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Buy a room for the night'
+                                    GoldCost    = 2
+                                    FlagName    = 'Book2Section226RoomPaid'
+                                    Message     = 'Section 226: room paid for. Turn to 56.'
+                                }
+                            ) `
+                            -DeclineText '0. Head to the arm-wrestling contest at 276')
+                    }
                     231 {
                         Invoke-LWSectionChoiceTable -Title 'Section 231 Search' -PromptLabel 'Section 231 choice' -ContextLabel 'Section 231' -Choices (Get-LWBookTwoSection231ChoiceDefinitions) -Intro 'Section 231: take the Gold, Dagger, and Seal if you want them.'
                     }
@@ -853,6 +1238,9 @@ function Invoke-LWKaiSectionEntryRules {
                             ) `
                             -DeclineText '0. Walk instead and go to 292')
                     }
+                    260 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 260 Fishermen''s Thanks' -PromptLabel 'Section 260 choice' -ContextLabel 'Section 260' -Choices (Get-LWBookTwoSection260ChoiceDefinitions) -Intro 'Section 260: accept the gifted Sword if you want to keep it.'
+                    }
                     263 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book2Section263PassAdded')) {
                             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Red Pass') {
@@ -864,8 +1252,14 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    266 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 266 Weaponsmith' -PromptLabel 'Section 266 choice' -ContextLabel 'Section 266' -Choices (Get-LWBookTwoSection266ChoiceDefinitions) -Intro 'Section 266: buy any of the listed weapons you want before bedding down in the hay-loft.'
+                    }
                     274 {
                         Invoke-LWSectionChoiceTable -Title 'Section 274 Search' -PromptLabel 'Section 274 choice' -ContextLabel 'Section 274' -Choices (Get-LWBookTwoSection274ChoiceDefinitions) -Intro 'Section 274: take the Gold, Sword, and Mace if you want them.'
+                    }
+                    283 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 283 Trading Post' -PromptLabel 'Section 283 choice' -ContextLabel 'Section 283' -Choices (Get-LWBookTwoSection283ChoiceDefinitions) -Intro 'Section 283: buy any of the listed goods you want before leaving by the side exit.'
                     }
                     289 {
                         if ([string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWSealOfHammerdalItemNames) -Type 'special'))) {
@@ -948,14 +1342,63 @@ function Invoke-LWKaiSectionEntryRules {
                             Write-LWInfo 'Section 194: your Gold, Backpack, Weapons, and Special Items are stolen.'
                         }
                     }
+                    195 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 195 Toll Bridge' `
+                            -PromptLabel 'Section 195 choice' `
+                            -ContextLabel 'Section 195' `
+                            -ResolvedFlagName 'Book2Section195TollHandled' `
+                            -Intro 'Section 195: pay your share of the bridge toll only if you have enough money.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Pay your 1 Gold Crown toll'
+                                    GoldCost    = 1
+                                    FlagName    = 'Book2Section195TollPaid'
+                                    Message     = 'Section 195: toll paid. Continue the journey at 249.'
+                                }
+                            ) `
+                            -DeclineText '0. If you cannot pay, go to 50')
+                    }
                     262 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 262 Storeroom' -PromptLabel 'Section 262 choice' -ContextLabel 'Section 262' -Choices (Get-LWBookTwoSection262ChoiceDefinitions) -Intro 'Section 262: take whatever you want from the storeroom before you flee.'
                     }
                     301 {
                         Invoke-LWSectionChoiceTable -Title 'Section 301 Search' -PromptLabel 'Section 301 choice' -ContextLabel 'Section 301' -Choices (Get-LWBookTwoSection301ChoiceDefinitions) -Intro 'Section 301: take the Gold, Dagger, and Short Sword if you want them.'
                     }
+                    305 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book2Section305GoldClaimed' -Amount 5 -ContextLabel 'Section 305' -MessagePrefix 'Section 305: collect your winnings before you run for the coach station.')
+                    }
+                    329 {
+                        [void](Invoke-LWSectionGoldReward -FlagName 'Book2Section329GoldClaimed' -Amount 10 -ContextLabel 'Section 329' -MessagePrefix 'Section 329: Captain Kelman pays the agreed Samor winnings.')
+                    }
+                    331 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 331 Guard Search' -PromptLabel 'Section 331 choice' -ContextLabel 'Section 331' -Choices (Get-LWBookTwoSection331ChoiceDefinitions) -Intro 'Section 331: take the Sword, Dagger, and Gold if you want them before you flee.'
+                    }
                     302 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 302 Watchtower' -PromptLabel 'Section 302 choice' -ContextLabel 'Section 302' -Choices (Get-LWBookTwoSection302ChoiceDefinitions) -Intro 'Section 302: take whatever you want from the watchtower quarters before you leave.'
+                    }
+                    342 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 342 Innkeeper' `
+                            -PromptLabel 'Section 342 choice' `
+                            -ContextLabel 'Section 342' `
+                            -ResolvedFlagName 'Book2Section342InnHandled' `
+                            -Intro 'Section 342: pay only for the ale or bed you actually choose.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Buy some ale'
+                                    GoldCost    = 1
+                                    FlagName    = 'Book2Section342AlePaid'
+                                    Message     = 'Section 342: ale paid for. Turn to 72.'
+                                },
+                                [pscustomobject]@{
+                                    DisplayName = 'Stay for the night'
+                                    GoldCost    = 2
+                                    FlagName    = 'Book2Section342RoomPaid'
+                                    Message     = 'Section 342: bed paid for. Turn to 56.'
+                                }
+                            ) `
+                            -DeclineText '0. Ask about Ragadorn and go to 226')
                     }
                 }
             }
@@ -988,12 +1431,24 @@ function Invoke-LWKaiSectionEntryRules {
                     12 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 12 Expedition Gear' -PromptLabel 'Section 12 choice' -ContextLabel 'Section 12' -Choices (Get-LWBookThreeSection012ChoiceDefinitions) -Intro 'Section 12: pack your share of the expedition gear now.'
                     }
+                    16 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section016PackLossHandled')) {
+                            Set-LWStoryAchievementFlag -Name 'Book3Section016PackLossHandled'
+                            [void](Invoke-LWBookFiveLoseBackpackItems -Count 2 -Reason 'Section 16: the stone door crushes part of your Backpack kit.')
+                        }
+                    }
                     18 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section18LossApplied')) {
                             Set-LWStoryAchievementFlag -Name 'Book3Section18LossApplied'
                             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book3Section18DamageApplied' -Delta -3 -MessagePrefix 'Section 18: the Ice Demon''s freezing blast rakes your arm.' -FatalCause 'The freezing blast at section 18 reduced your Endurance to zero.')
                             Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem -Reason 'Section 18: the freezing cyclone tears your weapon away.'
                         }
+                    }
+                    25 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 25 Trophy' -PromptLabel 'Section 25 choice' -ContextLabel 'Section 25' -Choices (Get-LWBookThreeSection025ChoiceDefinitions) -Intro 'Section 25: keep the Blue Stone Triangle if you want it.'
+                    }
+                    26 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 26 Bone Weapons' -PromptLabel 'Section 26 choice' -ContextLabel 'Section 26' -Choices (Get-LWBookThreeSection026ChoiceDefinitions) -Intro 'Section 26: keep any of the bone weapons you want before deciding on the Gold Bracelet.'
                     }
                     38 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 38 Supplies' -PromptLabel 'Section 38 choice' -ContextLabel 'Section 38' -Choices (Get-LWBookThreeSection038ChoiceDefinitions) -Intro 'Section 38: search the junk-filled room for anything useful.'
@@ -1014,6 +1469,9 @@ function Invoke-LWKaiSectionEntryRules {
                                 Write-LWWarn 'Section 55: base Combat Skill is permanently reduced by 2.'
                             }
                         }
+                    }
+                    59 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 59 Trophy' -PromptLabel 'Section 59 choice' -ContextLabel 'Section 59' -Choices (Get-LWBookThreeSection059ChoiceDefinitions) -Intro 'Section 59: keep the Blue Stone Triangle if you want it.'
                     }
                     79 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section79Resolved')) {
@@ -1054,10 +1512,29 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    156 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 156 Gallowbrush' -PromptLabel 'Section 156 choice' -ContextLabel 'Section 156' -Choices (Get-LWBookThreeSection156ChoiceDefinitions) -Intro 'Section 156: keep the Potion of Gallowbrush if you want it before returning to 10.'
+                    }
+                    157 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section157PotionUsed')) {
+                            Set-LWStoryAchievementFlag -Name 'Book3Section157PotionUsed'
+                            $potionName = Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Distilled Laumspur') -Type 'backpack'
+                            if (-not [string]::IsNullOrWhiteSpace($potionName)) {
+                                [void](Remove-LWInventoryItemSilently -Type 'backpack' -Name $potionName -Quantity 1)
+                                Write-LWInfo 'Section 157: Distilled Laumspur erased after drugging the meal.'
+                            }
+                            else {
+                                Write-LWWarn 'Section 157 assumes the Distilled Laumspur vial was used here, but it was not present in Backpack items.'
+                            }
+                        }
+                    }
                     170 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section170DamageApplied')) {
                             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book3Section170DamageApplied' -Delta -6 -MessagePrefix 'Section 170: the Helghast tears at your throat before the fight begins.' -FatalCause 'The Helghast''s surprise attack at section 170 reduced your Endurance to zero.')
                         }
+                    }
+                    177 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 177 Graveweed' -PromptLabel 'Section 177 choice' -ContextLabel 'Section 177' -Choices (Get-LWBookThreeSection177ChoiceDefinitions) -Intro 'Section 177: keep the Vial of Graveweed if you want it before returning to 10.'
                     }
                     187 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section187BraceletClaimed') -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGoldBraceletItemNames) -Type 'special')) {
@@ -1070,8 +1547,17 @@ function Invoke-LWKaiSectionEntryRules {
                             }
                         }
                     }
+                    210 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 210 Bone Sword' -PromptLabel 'Section 210 choice' -ContextLabel 'Section 210' -Choices (Get-LWBookThreeSection210ChoiceDefinitions) -Intro 'Section 210: keep the Bone Sword if you want it before deciding on the Gold Bracelet.'
+                    }
+                    218 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 218 Bone Box' -PromptLabel 'Section 218 choice' -ContextLabel 'Section 218' -Choices (Get-LWBookThreeSection218ChoiceDefinitions) -Intro 'Section 218: keep the Diamond if you want it.'
+                    }
                     231 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 231 Bracelet' -PromptLabel 'Section 231 choice' -ContextLabel 'Section 231' -Choices (Get-LWBookThreeSection231ChoiceDefinitions) -Intro 'Section 231: take a Gold Bracelet if you want it.'
+                    }
+                    233 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 233 Distilled Laumspur' -PromptLabel 'Section 233 choice' -ContextLabel 'Section 233' -Choices (Get-LWBookThreeSection233ChoiceDefinitions) -Intro 'Section 233: keep the distilled Laumspur vial if you want it before returning to 10.'
                     }
                     236 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section236BraceletClaimed') -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWGoldBraceletItemNames) -Type 'special')) {
@@ -1164,6 +1650,12 @@ function Invoke-LWKaiSectionEntryRules {
                     309 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 309 Finds' -PromptLabel 'Section 309 choice' -ContextLabel 'Section 309' -Choices (Get-LWBookThreeSection309ChoiceDefinitions) -Intro 'Section 309: keep the Blue Stone Triangle and Firesphere if you want them before returning to the tunnel.'
                     }
+                    311 {
+                        Invoke-LWSectionChoiceTable -Title 'Section 311 Alether' -PromptLabel 'Section 311 choice' -ContextLabel 'Section 311' -Choices (Get-LWBookThreeSection311ChoiceDefinitions) -Intro 'Section 311: keep the Potion of Alether if you want it before returning to 10.'
+                    }
+                    316 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 316 Gold Bracelet' -PromptLabel 'Section 316 choice' -ContextLabel 'Section 316' -Choices (Get-LWBookThreeSection316ChoiceDefinitions) -Intro 'Section 316: take the Gold Bracelet if you want it before choosing your route onward.'
+                    }
                     321 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 321 Stream' -PromptLabel 'Section 321 choice' -ContextLabel 'Section 321' -Choices (Get-LWBookThreeSection321ChoiceDefinitions) -Intro 'Section 321: keep the Blue Stone Triangle if you want it before moving on.'
                     }
@@ -1174,6 +1666,9 @@ function Invoke-LWKaiSectionEntryRules {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section328DamageApplied')) {
                             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book3Section328DamageApplied' -Delta -6 -MessagePrefix 'Section 328: the Helghast tears at your throat before the fight begins.' -FatalCause 'The Helghast''s surprise attack at section 328 reduced your Endurance to zero.')
                         }
+                    }
+                    334 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 334 Crystal' -PromptLabel 'Section 334 choice' -ContextLabel 'Section 334' -Choices (Get-LWBookThreeSection334ChoiceDefinitions) -Intro 'Section 334: keep the Glowing Crystal if you want it.'
                     }
                     345 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book3Section345BraceletRemoved')) {
@@ -1310,6 +1805,22 @@ function Invoke-LWKaiSectionEntryRules {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book4Section94LossApplied')) {
                             Set-LWStoryAchievementFlag -Name 'Book4Section94LossApplied'
                             Invoke-LWBookFourBackpackLoss -Reason 'Section 94'
+                        }
+                    }
+                    102 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book4Section102LootResolved')) {
+                            Set-LWStoryAchievementFlag -Name 'Book4Section102LootResolved'
+                            $goldAdded = [Math]::Min(12, [Math]::Max(0, (50 - [int]$script:GameState.Inventory.GoldCrowns)))
+                            if ($goldAdded -gt 0) {
+                                $script:GameState.Inventory.GoldCrowns += $goldAdded
+                                Add-LWBookGoldDelta -Delta $goldAdded
+                                [void](Sync-LWAchievements -Context 'gold')
+                            }
+                            Write-LWInfo ("Section 102: collect {0} of the 12 Gold Crowns from the strangers." -f $goldAdded)
+                            if ($goldAdded -lt 12) {
+                                Write-LWWarn 'Gold Crowns are capped at 50. Excess gold from section 102 is lost.'
+                            }
+                            Invoke-LWBookFourChoiceTable -Title 'Section 102 Rations' -PromptLabel 'Section 102 choice' -ContextLabel 'Section 102' -Choices (Get-LWBookFourSection102ChoiceDefinitions) -Intro 'Section 102: take the 2 Meals if you have room to keep them.'
                         }
                     }
                     103 {
@@ -1474,6 +1985,22 @@ function Invoke-LWKaiSectionEntryRules {
                     }
                     236 {
                         [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book4Section236DamageApplied' -Delta -4 -MessagePrefix 'Section 236: a thrown knife buries itself in your arm.' -FatalCause 'The knife wound at section 236 reduced your Endurance to zero.')
+                    }
+                    261 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book4Section261LootResolved')) {
+                            Set-LWStoryAchievementFlag -Name 'Book4Section261LootResolved'
+                            $goldAdded = [Math]::Min(8, [Math]::Max(0, (50 - [int]$script:GameState.Inventory.GoldCrowns)))
+                            if ($goldAdded -gt 0) {
+                                $script:GameState.Inventory.GoldCrowns += $goldAdded
+                                Add-LWBookGoldDelta -Delta $goldAdded
+                                [void](Sync-LWAchievements -Context 'gold')
+                            }
+                            Write-LWInfo ("Section 261: collect {0} of the 8 Gold Crowns from the first corpse you search." -f $goldAdded)
+                            if ($goldAdded -lt 8) {
+                                Write-LWWarn 'Gold Crowns are capped at 50. Excess gold from section 261 is lost.'
+                            }
+                            Invoke-LWBookFourChoiceTable -Title 'Section 261 Rations' -PromptLabel 'Section 261 choice' -ContextLabel 'Section 261' -Choices (Get-LWBookFourSection261ChoiceDefinitions) -Intro 'Section 261: take the Meal if you have room before you flee.'
+                        }
                     }
                     268 {
                         Write-LWInfo 'Section 268: loot here can include Spear, Broadsword, Iron Key, Brass Key, 2 Meals, and Potion of Red Liquid.'
@@ -1753,6 +2280,9 @@ function Invoke-LWKaiSectionEntryRules {
                     52 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 52 Loot' -PromptLabel 'Section 52 choice' -ContextLabel 'Section 52' -Choices (Get-LWBookFiveSection052ChoiceDefinitions) -Intro 'Section 52: search the dead guards and keep whatever you want.'
                     }
+                    56 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 56 Jakan Case' -PromptLabel 'Section 56 choice' -ContextLabel 'Section 56' -Choices (Get-LWBookFiveSection056ChoiceDefinitions) -Intro 'Section 56: keep the Jakan Bow and the single Arrow if you want them before taking the shot.'
+                    }
                     63 {
                         if (-not (Test-LWBookFiveBloodPoisoningActive -State $script:GameState)) {
                             $script:GameState.Conditions.BookFiveBloodPoisoning = $true
@@ -1794,6 +2324,22 @@ function Invoke-LWKaiSectionEntryRules {
                     }
                     102 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 102 Armoury Loot' -PromptLabel 'Section 102 choice' -ContextLabel 'Section 102' -Choices (Get-LWBookFiveSection102ChoiceDefinitions) -Intro 'Section 102: take whatever gear you want from the armoury.'
+                    }
+                    111 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section111Resolved')) {
+                            Set-LWStoryAchievementFlag -Name 'Book5Section111Resolved'
+                            $goldAdded = [Math]::Min(3, [Math]::Max(0, (50 - [int]$script:GameState.Inventory.GoldCrowns)))
+                            if ($goldAdded -gt 0) {
+                                $script:GameState.Inventory.GoldCrowns += $goldAdded
+                                Add-LWBookGoldDelta -Delta $goldAdded
+                                [void](Sync-LWAchievements -Context 'gold')
+                            }
+                            Write-LWInfo ("Section 111: collect {0} of the 3 Gold Crowns from the armourer." -f $goldAdded)
+                            if ($goldAdded -lt 3) {
+                                Write-LWWarn 'Gold Crowns are capped at 50. Excess gold from section 111 is lost.'
+                            }
+                        }
+                        Invoke-LWBookFourChoiceTable -Title 'Section 111 Copper Key' -PromptLabel 'Section 111 choice' -ContextLabel 'Section 111' -Choices (Get-LWBookFiveSection111ChoiceDefinitions) -Intro 'Section 111: keep the Copper Key if you want it.'
                     }
                     103 {
                         [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section103RecoveryApplied' -Delta 2 -MessagePrefix 'Section 103: the soothing purple oil restores your strength.')
@@ -1849,6 +2395,40 @@ function Invoke-LWKaiSectionEntryRules {
                     255 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 255 Discovery' -PromptLabel 'Section 255 choice' -ContextLabel 'Section 255' -Choices (Get-LWBookFiveSection255ChoiceDefinitions) -Intro 'Section 255: keep the Black Crystal Cube if you want it.'
                     }
+                    248 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 248 Merchant' `
+                            -PromptLabel 'Section 248 choice' `
+                            -ContextLabel 'Section 248' `
+                            -ResolvedFlagName 'Book5Section248MerchantHandled' `
+                            -Intro 'Section 248: you only learn Tipasa''s address if you buy the waistcoat.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Buy the gaudy waistcoat'
+                                    GoldCost    = 5
+                                    FlagName    = 'Book5Section248WaistcoatPaid'
+                                    Message     = 'Section 248: the waistcoat is paid for. Turn to 328.'
+                                }
+                            ) `
+                            -DeclineText '0. Refuse the waistcoat and go to 274')
+                    }
+                    265 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 265 Begging Bowl' `
+                            -PromptLabel 'Section 265 choice' `
+                            -ContextLabel 'Section 265' `
+                            -ResolvedFlagName 'Book5Section265BeggarHandled' `
+                            -Intro 'Section 265: pay only if you want the woman to speak.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Give her 1 Gold Crown'
+                                    GoldCost    = 1
+                                    FlagName    = 'Book5Section265GoldPaid'
+                                    Message     = 'Section 265: the coin is paid. Turn to 397.'
+                                }
+                            ) `
+                            -DeclineText '0. Refuse and go to 256')
+                    }
                     270 {
                         $backpackCount = @(Get-LWInventoryItems -Type 'backpack').Count
                         if ($backpackCount -gt 0) {
@@ -1870,9 +2450,53 @@ function Invoke-LWKaiSectionEntryRules {
                     281 {
                         Invoke-LWBookFourChoiceTable -Title 'Section 281 Treasure' -PromptLabel 'Section 281 choice' -ContextLabel 'Section 281' -Choices (Get-LWBookFiveSection281ChoiceDefinitions) -Intro 'Section 281: keep the Jewelled Mace if you want it.'
                     }
+                    276 {
+                        [void](Invoke-LWSectionPaymentChoice `
+                            -Title 'Section 276 Soushilla' `
+                            -PromptLabel 'Section 276 choice' `
+                            -ContextLabel 'Section 276' `
+                            -ResolvedFlagName 'Book5Section276SoushillaHandled' `
+                            -Intro 'Section 276: Banedon has already paid one Gold Crown. You decide whether to pay the remaining five.' `
+                            -Options @(
+                                [pscustomobject]@{
+                                    DisplayName = 'Pay Soushilla 5 Gold Crowns'
+                                    GoldCost    = 5
+                                    FlagName    = 'Book5Section276GoldPaid'
+                                    Message     = 'Section 276: Soushilla takes the money and speaks. Turn to 326.'
+                                }
+                            ) `
+                            -DeclineText '0. Refuse and go to 202')
+                    }
+                    290 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 290 Black Crystal Cube' -PromptLabel 'Section 290 choice' -ContextLabel 'Section 290' -Choices (Get-LWBookFiveSection290ChoiceDefinitions) -Intro 'Section 290: keep the Black Crystal Cube if you want it before you flee the tower.'
+                    }
                     302 {
                         [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section302RecoveryApplied' -Delta 3 -MessagePrefix 'Section 302: the food and rest restore your strength.')
                         Write-LWInfo 'Section 302: if you accept the drugged ale here, move to section 392.'
+                    }
+                    310 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section310CopperKeyClaimed')) {
+                            Set-LWStoryAchievementFlag -Name 'Book5Section310CopperKeyClaimed'
+                            if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Copper Key') {
+                                Write-LWInfo 'Section 310: Copper Key added to Special Items.'
+                            }
+                            else {
+                                Write-LWWarn 'No room to add the Copper Key automatically. Make room and add it manually if you are keeping it.'
+                            }
+                        }
+                        Invoke-LWBookFourChoiceTable -Title 'Section 310 Guardroom' -PromptLabel 'Section 310 choice' -ContextLabel 'Section 310' -Choices (Get-LWBookFiveSection310ChoiceDefinitions) -Intro 'Section 310: take the Canteen of Water and Broadsword if you want them before the Drakkarim arrive.'
+                    }
+                    341 {
+                        if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section341CopperKeyClaimed')) {
+                            Set-LWStoryAchievementFlag -Name 'Book5Section341CopperKeyClaimed'
+                            if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Copper Key') {
+                                Write-LWInfo 'Section 341: Copper Key added to Special Items.'
+                            }
+                            else {
+                                Write-LWWarn 'No room to add the Copper Key automatically. Make room and add it manually if you are keeping it.'
+                            }
+                        }
+                        Invoke-LWBookFourChoiceTable -Title 'Section 341 Guardroom' -PromptLabel 'Section 341 choice' -ContextLabel 'Section 341' -Choices (Get-LWBookFiveSection341ChoiceDefinitions) -Intro 'Section 341: take the Canteen of Water and Broadsword if you want them before the enemy arrives.'
                     }
                     350 {
                         if (-not (Test-LWStoryAchievementFlag -Name 'Book5Section350SommerswerdLost')) {
@@ -1889,6 +2513,9 @@ function Invoke-LWKaiSectionEntryRules {
                             Set-LWStoryAchievementFlag -Name 'Book5Section393MindAttackApplied'
                             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book5Section393DamageApplied' -Delta -2 -MessagePrefix 'Section 393: the mental assault hits before steel is drawn.' -FatalCause 'The mental assault at section 393 reduced your Endurance to zero.')
                         }
+                    }
+                    388 {
+                        Invoke-LWBookFourChoiceTable -Title 'Section 388 Armourers'' Quarter' -PromptLabel 'Section 388 choice' -ContextLabel 'Section 388' -Choices (Get-LWBookFiveSection388ChoiceDefinitions) -Intro 'Section 388: buy any of the offered weapons you want before moving on.'
                     }
                     400 {
                         if ((Test-LWStoryAchievementFlag -Name 'Book5Section350SommerswerdLost') -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWSommerswerdItemNames) -Type 'special')) {

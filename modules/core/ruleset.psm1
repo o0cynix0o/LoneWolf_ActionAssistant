@@ -241,6 +241,8 @@ function New-LWSectionRandomNumberContext {
         [string]$Description = 'Plain random-number check.',
         [int]$Modifier = 0,
         [string[]]$ModifierNotes = @(),
+        [int]$RollCount = 1,
+        [string]$SequenceMode = 'combined',
         [bool]$ZeroCountsAsTen = $false,
         [bool]$Bypassed = $false,
         [string]$BypassReason = $null
@@ -251,6 +253,8 @@ function New-LWSectionRandomNumberContext {
         Description     = $Description
         Modifier        = $Modifier
         ModifierNotes   = @($ModifierNotes)
+        RollCount       = [Math]::Max(1, [int]$RollCount)
+        SequenceMode    = [string]$SequenceMode
         ZeroCountsAsTen = $ZeroCountsAsTen
         Bypassed        = $Bypassed
         BypassReason    = $BypassReason
@@ -324,6 +328,22 @@ function Write-LWCurrentSectionRandomNumberRollSequence {
             $effectiveRoll = 10
         }
         $effectiveRolls += $effectiveRoll
+    }
+
+    if ((Test-LWPropertyExists -Object $context -Name 'SequenceMode') -and [string]$context.SequenceMode -ieq 'independent') {
+        Write-LWInfo ("Random Number Table rolls: {0}" -f ((@($Rolls) | ForEach-Object { [int]$_ }) -join ', '))
+        if ([bool]$context.ZeroCountsAsTen -and (@($Rolls) | Where-Object { [int]$_ -eq 0 }).Count -gt 0) {
+            Write-LWInfo ("Book {0} section {1}: this sequence treats any 0 roll as 10." -f $bookNumber, [int]$context.Section)
+        }
+        if ([int]$context.Modifier -ne 0) {
+            Write-LWInfo ("Book {0} section {1} modifier {2}: {3}." -f $bookNumber, [int]$context.Section, (Format-LWSigned -Value ([int]$context.Modifier)), ($(if (@($context.ModifierNotes).Count -gt 0) { (@($context.ModifierNotes) -join '; ') } else { 'context rule' })))
+        }
+        else {
+            Write-LWInfo ("Book {0} section {1}: no automatic modifier applies." -f $bookNumber, [int]$context.Section)
+        }
+        Write-LWInfo ("Book {0} section {1}: {2}" -f $bookNumber, [int]$context.Section, [string]$context.Description)
+        Invoke-LWRuleSetSectionRandomNumberResolution -State $State -Context $context -Rolls @($Rolls) -EffectiveRolls @($effectiveRolls) -Subtotal 0 -AdjustedTotal 0
+        return
     }
 
     $subtotal = ((@($effectiveRolls) | Measure-Object -Sum).Sum)

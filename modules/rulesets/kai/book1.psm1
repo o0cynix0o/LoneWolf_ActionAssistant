@@ -45,6 +45,9 @@ function Get-LWKaiBookOneSectionRandomNumberContext {
 
         $section = [int]$State.CurrentSection
         switch ($section) {
+            21 {
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Bog crossing sequence: first roll checks the marsh, second checks the first escape attempt, and the third is only used if you sink too deep.' -RollCount 3 -SequenceMode 'independent')
+            }
             337 {
                 $modifier = 0
                 $notes = @()
@@ -59,7 +62,7 @@ function Get-LWKaiBookOneSectionRandomNumberContext {
                 return (New-LWSectionRandomNumberContext -Section $section -Description 'Book 1 route-finding check.' -Modifier $modifier -ModifierNotes $notes)
             }
             default {
-                if (@(2, 7, 17, 21, 22, 36, 44, 49, 89, 158, 160, 188, 205, 226, 237, 275, 279, 294, 302, 314, 337, 350) -contains $section) {
+                if (@(2, 7, 17, 22, 36, 44, 49, 89, 158, 160, 188, 205, 226, 237, 275, 279, 294, 302, 314, 337, 350) -contains $section) {
                     return (New-LWSectionRandomNumberContext -Section $section)
                 }
             }
@@ -72,6 +75,7 @@ function Get-LWBookOneSimpleSectionEffectDefinitions {
     return @{
         119 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section119EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 119: apply the section ENDURANCE loss.'; FatalCause = 'Section 119 reduced your Endurance to zero.' })
         147 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book1Section147MealHandled'; NoMealFlagName = 'Book1Section147NoMealLossApplied'; SectionLabel = 'Section 147'; Loss = 3; NoMealMessagePrefix = 'Section 147: the section meal requirement is not met.'; FatalCause = 'Hunger at section 147 reduced your Endurance to zero.' })
+        158 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section158FirstBoltApplied'; Delta = -6; MessagePrefix = 'Section 158: the first lightning bolt strikes you in the chest.'; FatalCause = 'The first lightning bolt at section 158 reduced your Endurance to zero.' })
         166 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section166EnduranceHandled'; Delta = -4; MessagePrefix = 'Section 166: apply the section ENDURANCE loss.'; FatalCause = 'Section 166 reduced your Endurance to zero.' })
         203 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section203EnduranceHandled'; Delta = -10; MessagePrefix = 'Section 203: apply the section ENDURANCE loss.'; FatalCause = 'Section 203 reduced your Endurance to zero.' })
         276 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book1Section276EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 276: apply the section ENDURANCE loss.'; FatalCause = 'Section 276 reduced your Endurance to zero.' })

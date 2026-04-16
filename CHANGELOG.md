@@ -6,6 +6,37 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- closed the remaining Books `1-5` automation audit gaps:
+  - refreshed the local `BOOKS1TO5_AUTOMATION_AUDIT_20260415.json` output to `0` missing candidates across all five Kai books
+  - Books `1-5` current coverage totals now stand at:
+    - Book `1`: `78/78`
+    - Book `2`: `153/153`
+    - Book `3`: `127/127`
+    - Book `4`: `130/130`
+    - Book `5`: `152/152`
+- expanded the Books `1-5` Kai automation layer in the book modules and shared Kai ruleset modules:
+  - added the remaining Book `2-5` choice/payment/inventory flows needed to close the audit
+  - added the last six deterministic instant-death hooks that were still open in the Books `1-5` audit
+  - validated the updated choice-flow harness at `70` tests with `0` failures in both shells
+- added a refreshed Book `6` automation audit script at `testing/tmp/book6_automation_refresh_audit.py`
+- refreshed the Book `6` local coverage report and confirmed the high-confidence OG automation candidates are fully covered:
+  - `77/77` covered
+  - `0` missing
+  - remaining notes are now design-review items rather than missing hooks:
+    - section `24` OG/DE drift
+    - section `112` Herb Pouch DE variant
+    - sections `207` / `276` Bronin Warhammer slot-model choice
+    - section `298` covered indirectly through the section `26` tournament combat flow
+- combined local automation coverage now stands at `717/717` high-confidence candidates covered across Books `1-6`
+- current automation validation artifacts:
+  - `testing/logs/BOOKS1TO5_AUTOMATION_AUDIT_20260415.md`
+  - `testing/logs/BOOK6_AUTOMATION_AUDIT_20260415.md`
+  - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS7.txt`
+  - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS51.txt`
+  - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS7.txt`
+  - `testing/logs/RANDOM_AUTOMATION_SMOKE_PS51.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7.txt`
+  - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51.txt`
 - added a reusable Kai section-choice automation layer in `modules/core/shell.psm1`:
   - shared section loot/pickup flow
   - shared gold-reward flow

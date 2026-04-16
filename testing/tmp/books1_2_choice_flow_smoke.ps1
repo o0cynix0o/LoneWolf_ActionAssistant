@@ -326,6 +326,18 @@ $tests = @(
         }
     }
     @{
+        Name   = 'Book2 Section 15 choose one gift'
+        Book   = 2
+        Section = 15
+        Gold   = 0
+        Texts  = @('7')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 12) -Message 'Section 15 gold gift missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons).Count -eq 0) -Message 'Section 15 should only grant the chosen gift.'
+        }
+    }
+    @{
         Name   = 'Book2 Section 76 loot'
         Book   = 2
         Section = 76
@@ -335,6 +347,78 @@ $tests = @(
             param($state)
             Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 2) -Message 'Section 76 gold missing.'
             Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Dagger' }).Count -eq 1) -Message 'Section 76 dagger missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 79 Sommerswerd'
+        Book   = 2
+        Section = 79
+        Gold   = 0
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Sommerswerd' }).Count -eq 1) -Message 'Section 79 Sommerswerd missing.'
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2SommerswerdClaimed') -Message 'Section 79 Sommerswerd flag missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 58 lost Samor wager'
+        Book   = 2
+        Section = 58
+        Gold   = 20
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 10) -Message 'Section 58 did not deduct the lost wager.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 72 ale and room'
+        Book   = 2
+        Section = 72
+        Gold   = 10
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section072AlePaid') -Message 'Section 72 ale-payment flag missing.'
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section072RoomPaid') -Message 'Section 72 room-payment flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 7) -Message 'Section 72 did not deduct ale and room costs.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 75 White Pass fee'
+        Book   = 2
+        Section = 75
+        Gold   = 15
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section075PassPaid') -Message 'Section 75 pass-payment flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 5) -Message 'Section 75 pass fee was not deducted.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 86 boat loot'
+        Book   = 2
+        Section = 86
+        Gold   = 0
+        Texts  = @('1', '1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Mace' }).Count -eq 1) -Message 'Section 86 mace missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 3) -Message 'Section 86 gold missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 91 merchant two picks'
+        Book   = 2
+        Section = 91
+        Gold   = 0
+        HasBackpack = $false
+        Texts  = @('4', '3')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStateHasBackpack -State $state) -Message 'Section 91 backpack was not restored.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Meal' }).Count -eq 2) -Message 'Section 91 meals missing.'
+            Assert-LWChoiceSmoke -Condition ((@($state.Inventory.Weapons).Count + @($state.Inventory.BackpackItems).Count + @($state.Inventory.SpecialItems).Count) -eq 2) -Message 'Section 91 exceeded the two-item choice limit.'
         }
     }
     @{
@@ -363,6 +447,39 @@ $tests = @(
         }
     }
     @{
+        Name   = 'Book2 Section 132 spear'
+        Book   = 2
+        Section = 132
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Spear' }).Count -eq 1) -Message 'Section 132 spear missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 136 coach fare'
+        Book   = 2
+        Section = 136
+        Gold   = 20
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section136FarePaid') -Message 'Section 136 fare flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 0) -Message 'Section 136 fare was not deducted.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 144 meals'
+        Book   = 2
+        Section = 144
+        Gold   = 0
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Meal' }).Count -eq 2) -Message 'Section 144 meals were not added.'
+        }
+    }
+    @{
         Name   = 'Book2 Section 181 shop'
         Book   = 2
         Section = 181
@@ -372,6 +489,18 @@ $tests = @(
             param($state)
             Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 6) -Message 'Section 181 sword cost was not deducted.'
             Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Sword' }).Count -eq 1) -Message 'Section 181 sword missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 195 toll'
+        Book   = 2
+        Section = 195
+        Gold   = 5
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section195TollPaid') -Message 'Section 195 toll flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 4) -Message 'Section 195 toll was not deducted.'
         }
     }
     @{
@@ -410,6 +539,18 @@ $tests = @(
         }
     }
     @{
+        Name   = 'Book2 Section 226 room'
+        Book   = 2
+        Section = 226
+        Gold   = 3
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section226RoomPaid') -Message 'Section 226 room flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 1) -Message 'Section 226 room cost was not deducted.'
+        }
+    }
+    @{
         Name   = 'Book2 Section 231 loot'
         Book   = 2
         Section = 231
@@ -435,6 +576,29 @@ $tests = @(
         }
     }
     @{
+        Name   = 'Book2 Section 260 sword gift'
+        Book   = 2
+        Section = 260
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Sword' }).Count -eq 1) -Message 'Section 260 sword gift missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 266 weaponsmith'
+        Book   = 2
+        Section = 266
+        Gold   = 10
+        Texts  = @('8')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Axe' }).Count -eq 1) -Message 'Section 266 axe missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 7) -Message 'Section 266 axe cost was not deducted.'
+        }
+    }
+    @{
         Name   = 'Book2 Section 274 loot'
         Book   = 2
         Section = 274
@@ -445,6 +609,18 @@ $tests = @(
             Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 6) -Message 'Section 274 gold missing.'
             Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Sword' }).Count -eq 1) -Message 'Section 274 sword missing.'
             Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Mace' }).Count -eq 1) -Message 'Section 274 mace missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 283 trading post'
+        Book   = 2
+        Section = 283
+        Gold   = 10
+        Texts  = @('6')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Gold Ring' }).Count -eq 1) -Message 'Section 283 gold ring missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 2) -Message 'Section 283 gold ring cost was not deducted.'
         }
     }
     @{
@@ -460,6 +636,340 @@ $tests = @(
             Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Short Sword' }).Count -eq 1) -Message 'Section 301 Short Sword missing.'
         }
     }
+    @{
+        Name   = 'Book2 Section 305 winnings'
+        Book   = 2
+        Section = 305
+        Gold   = 0
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 5) -Message 'Section 305 winnings missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 329 winnings'
+        Book   = 2
+        Section = 329
+        Gold   = 0
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 10) -Message 'Section 329 winnings missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 331 guard search'
+        Book   = 2
+        Section = 331
+        Gold   = 0
+        Texts  = @('1', '1', '1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Sword' }).Count -eq 1) -Message 'Section 331 sword missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Dagger' }).Count -eq 1) -Message 'Section 331 dagger missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 3) -Message 'Section 331 gold missing.'
+        }
+    }
+    @{
+        Name   = 'Book2 Section 342 bed'
+        Book   = 2
+        Section = 342
+        Gold   = 10
+        Ints   = @(2)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book2Section342RoomPaid') -Message 'Section 342 room-payment flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 8) -Message 'Section 342 room cost was not deducted.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 233 distilled laumspur'
+        Book   = 3
+        Section = 233
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Distilled Laumspur' }).Count -eq 1) -Message 'Section 233 Distilled Laumspur was not added.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Character.EnduranceCurrent -eq 25) -Message 'Section 233 should not change Endurance on entry.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 16 backpack loss'
+        Book   = 3
+        Section = 16
+        Gold   = 0
+        Arrange = {
+            param($state)
+            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Meal')
+            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Torch')
+            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Rope')
+        }
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems).Count -eq 1) -Message 'Section 16 did not destroy two Backpack Items.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 25 triangle'
+        Book   = 3
+        Section = 25
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Blue Stone Triangle' }).Count -eq 1) -Message 'Section 25 Blue Stone Triangle missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 26 bone weapons'
+        Book   = 3
+        Section = 26
+        Gold   = 0
+        Texts  = @('1', '1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Bone Sword' }).Count -eq 1) -Message 'Section 26 Bone Sword missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Dagger' }).Count -eq 1) -Message 'Section 26 Dagger missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 59 triangle'
+        Book   = 3
+        Section = 59
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Blue Stone Triangle' }).Count -eq 1) -Message 'Section 59 Blue Stone Triangle missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 156 gallowbrush'
+        Book   = 3
+        Section = 156
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Potion of Gallowbrush' }).Count -eq 1) -Message 'Section 156 Potion of Gallowbrush missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 157 distilled laumspur use'
+        Book   = 3
+        Section = 157
+        Gold   = 0
+        Arrange = {
+            param($state)
+            $state.Character.EnduranceCurrent = 10
+            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Distilled Laumspur')
+        }
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Distilled Laumspur' }).Count -eq 0) -Message 'Section 157 Distilled Laumspur was not removed.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Character.EnduranceCurrent -eq 16) -Message 'Section 157 did not restore 6 ENDURANCE.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 177 graveweed'
+        Book   = 3
+        Section = 177
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Vial of Graveweed' }).Count -eq 1) -Message 'Section 177 Vial of Graveweed missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 210 bone sword'
+        Book   = 3
+        Section = 210
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Bone Sword' }).Count -eq 1) -Message 'Section 210 Bone Sword missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 218 diamond'
+        Book   = 3
+        Section = 218
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Diamond' }).Count -eq 1) -Message 'Section 218 Diamond missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 311 alether'
+        Book   = 3
+        Section = 311
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Potion of Alether' }).Count -eq 1) -Message 'Section 311 Potion of Alether missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 316 gold bracelet'
+        Book   = 3
+        Section = 316
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Gold Bracelet' }).Count -eq 1) -Message 'Section 316 Gold Bracelet missing.'
+        }
+    }
+    @{
+        Name   = 'Book3 Section 334 glowing crystal'
+        Book   = 3
+        Section = 334
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Glowing Crystal' }).Count -eq 1) -Message 'Section 334 Glowing Crystal missing.'
+        }
+    }
+    @{
+        Name   = 'Book4 Section 102 strangers loot'
+        Book   = 4
+        Section = 102
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 12) -Message 'Section 102 gold missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Meal' }).Count -eq 2) -Message 'Section 102 meals missing.'
+        }
+    }
+    @{
+        Name   = 'Book4 Section 261 corpse loot'
+        Book   = 4
+        Section = 261
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 8) -Message 'Section 261 gold missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Meal' }).Count -eq 1) -Message 'Section 261 meal missing.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 111 armourer'
+        Book   = 5
+        Section = 111
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 3) -Message 'Section 111 gold missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Copper Key' }).Count -eq 1) -Message 'Section 111 Copper Key missing.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 56 Jakan case'
+        Book   = 5
+        Section = 56
+        Gold   = 0
+        Texts  = @('1', '1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Jakan Bow' }).Count -eq 1) -Message 'Section 56 Jakan Bow missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Arrow' }).Count -eq 1) -Message 'Section 56 Arrow missing.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 248 waistcoat payment'
+        Book   = 5
+        Section = 248
+        Gold   = 20
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book5Section248WaistcoatPaid') -Message 'Section 248 payment flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 15) -Message 'Section 248 cost was not deducted.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 265 begging bowl payment'
+        Book   = 5
+        Section = 265
+        Gold   = 20
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book5Section265GoldPaid') -Message 'Section 265 payment flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 19) -Message 'Section 265 cost was not deducted.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 276 Soushilla payment'
+        Book   = 5
+        Section = 276
+        Gold   = 20
+        Ints   = @(1)
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book5Section276GoldPaid') -Message 'Section 276 payment flag missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 15) -Message 'Section 276 cost was not deducted.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 290 cube'
+        Book   = 5
+        Section = 290
+        Gold   = 0
+        Texts  = @('1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Black Crystal Cube' }).Count -eq 1) -Message 'Section 290 Black Crystal Cube missing.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 310 guardroom'
+        Book   = 5
+        Section = 310
+        Gold   = 0
+        Texts  = @('1', '1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Copper Key' }).Count -eq 1) -Message 'Section 310 Copper Key missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Canteen of Water' }).Count -eq 1) -Message 'Section 310 Canteen of Water missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Broadsword' }).Count -eq 1) -Message 'Section 310 Broadsword missing.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 341 guardroom'
+        Book   = 5
+        Section = 341
+        Gold   = 0
+        Texts  = @('1', '1')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.SpecialItems | Where-Object { $_ -eq 'Copper Key' }).Count -eq 1) -Message 'Section 341 Copper Key missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Canteen of Water' }).Count -eq 1) -Message 'Section 341 Canteen of Water missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Broadsword' }).Count -eq 1) -Message 'Section 341 Broadsword missing.'
+        }
+    }
+    @{
+        Name   = 'Book5 Section 388 weapon market'
+        Book   = 5
+        Section = 388
+        Gold   = 20
+        Texts  = @('1', '1', '0')
+        Assert = {
+            param($state)
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Sword' }).Count -eq 1) -Message 'Section 388 Sword missing.'
+            Assert-LWChoiceSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Dagger' }).Count -eq 1) -Message 'Section 388 Dagger missing.'
+            Assert-LWChoiceSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 12) -Message 'Section 388 shop costs were not deducted correctly.'
+        }
+    }
 )
 
 $results = @()
@@ -468,6 +978,9 @@ foreach ($test in $tests) {
     $state = New-LWChoiceSmokeState -BookNumber ([int]$test.Book) -Gold ([int]$test.Gold) -HasBackpack $(if ($test.ContainsKey('HasBackpack')) { [bool]$test.HasBackpack } else { $true })
     $state.CurrentSection = [int]$test.Section
     Set-LWHostGameState -State $state | Out-Null
+    if ($test.ContainsKey('Arrange') -and $null -ne $test.Arrange) {
+        & $test.Arrange $state
+    }
     Set-LWChoiceSmokeInputQueues -Ints $(if ($test.ContainsKey('Ints')) { [int[]]$test.Ints } else { @() }) -Texts $(if ($test.ContainsKey('Texts')) { [string[]]$test.Texts } else { @() }) -YesNo $(if ($test.ContainsKey('YesNo')) { [bool[]]$test.YesNo } else { @() })
 
     try {

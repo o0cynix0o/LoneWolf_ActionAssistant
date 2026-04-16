@@ -8,8 +8,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Main script: `lonewolf.ps1`
 - Latest public release on `main`: `v0.8.0`
 - `main` remains the public release branch
-- `dev` is active again as the integration branch for post-release architecture hardening
-- M5 post-release stabilization and architecture hardening are now in progress on `dev`
+- current working branch is `main`
+- the current automation-coverage closeout work is now on `main`
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Confirmed defects should be tracked in GitHub as they are found, not cleaned up later in a batch
 - Public docs hygiene:
@@ -89,6 +89,28 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
     - `testing/logs/BOOKS1_2_CHOICE_FLOW_SMOKE_PS51.txt`
     - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS7_POSTCHOICE.txt`
     - `testing/logs/AUTOMATION_SURFACE_SMOKE_PS51_POSTCHOICE.txt`
+- current `main` Books `1-5` automation coverage is now fully closed under the refreshed local audit:
+  - Book `1`: `78/78`
+  - Book `2`: `153/153`
+  - Book `3`: `127/127`
+  - Book `4`: `130/130`
+  - Book `5`: `152/152`
+  - total Books `1-5` missing candidates: `0`
+  - local audit artifact:
+    - `testing/logs/BOOKS1TO5_AUTOMATION_AUDIT_20260415.md`
+- current `main` Book `6` automation coverage is also fully closed under the refreshed local audit:
+  - high-confidence OG automation candidates: `77/77`
+  - missing candidates: `0`
+  - remaining notes are design-review items, not missing hooks:
+    - section `24` OG versus DE drift
+    - section `112` Herb Pouch DE variant
+    - sections `207` / `276` Bronin Warhammer slot-model choice
+    - section `298` covered indirectly through the section `26` tournament combat flow
+  - local audit artifacts:
+    - `testing/logs/BOOK6_AUTOMATION_AUDIT_20260415.md`
+    - `testing/tmp/book6_automation_refresh_audit.py`
+- current combined automation coverage across Books `1-6`:
+  - `717/717` high-confidence candidates covered
 - current `main` follow-up hotfix after the broader smoke pass:
   - Book `3`, section `18` no longer fails forced weapon-loss automation because `Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem` now rebinds ruleset module context before reading state
 - current measured load behavior on a copied current-format campaign save:

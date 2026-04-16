@@ -633,6 +633,13 @@ function Get-LWBookFiveSection052ChoiceDefinitions {
     )
 }
 
+function Get-LWBookFiveSection056ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'jakan_bow'; FlagName = 'Book5Section056JakanBowClaimed'; DisplayName = 'Jakan Bow'; Type = 'weapon'; Name = 'Jakan Bow'; Quantity = 1; Description = 'Jakan Bow' },
+        [pscustomobject]@{ Id = 'arrow'; FlagName = 'Book5Section056ArrowClaimed'; DisplayName = '1 Arrow'; Type = 'backpack'; Name = 'Arrow'; Quantity = 1; Description = '1 Arrow' }
+    )
+}
+
 function Get-LWBookFiveSection100ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'copper_key'; FlagName = 'Book5Section100CopperKeyClaimed'; DisplayName = 'Copper Key'; Type = 'special'; Name = 'Copper Key'; Quantity = 1; Description = 'Copper Key' },
@@ -647,6 +654,12 @@ function Get-LWBookFiveSection102ChoiceDefinitions {
         [pscustomobject]@{ Id = 'warhammer'; FlagName = 'Book5Section102WarhammerClaimed'; DisplayName = 'Warhammer'; Type = 'weapon'; Name = 'Warhammer'; Quantity = 1; Description = 'Warhammer' },
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book5Section102GoldClaimed'; DisplayName = '6 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 6; Description = '6 Gold Crowns' },
         [pscustomobject]@{ Id = 'gaolers_keys'; FlagName = 'Book5Section102GaolersKeysClaimed'; DisplayName = 'Gaoler''s Keys'; Type = 'special'; Name = 'Gaoler''s Keys'; Quantity = 1; Description = 'Gaoler''s Keys' }
+    )
+}
+
+function Get-LWBookFiveSection111ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'copper_key'; FlagName = 'Book5Section111CopperKeyClaimed'; DisplayName = 'Copper Key'; Type = 'special'; Name = 'Copper Key'; Quantity = 1; Description = 'Copper Key' }
     )
 }
 
@@ -697,6 +710,34 @@ function Get-LWBookFiveSection255ChoiceDefinitions {
     )
 }
 
+function Get-LWBookFiveSection290ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'black_crystal_cube'; FlagName = 'Book5Section290CubeClaimed'; DisplayName = 'Black Crystal Cube'; Type = 'special'; Name = 'Black Crystal Cube'; Quantity = 1; Description = 'Black Crystal Cube' }
+    )
+}
+
+function Get-LWBookFiveSection310ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'canteen'; FlagName = 'Book5Section310CanteenClaimed'; DisplayName = 'Canteen of Water'; Type = 'backpack'; Name = 'Canteen of Water'; Quantity = 1; Description = 'Canteen of Water' },
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book5Section310BroadswordClaimed'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' }
+    )
+}
+
+function Get-LWBookFiveSection341ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'canteen'; FlagName = 'Book5Section341CanteenClaimed'; DisplayName = 'Canteen of Water'; Type = 'backpack'; Name = 'Canteen of Water'; Quantity = 1; Description = 'Canteen of Water' },
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book5Section341BroadswordClaimed'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' }
+    )
+}
+
+function Get-LWBookFiveSection388ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book5Section388SwordBought'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book5Section388DaggerBought'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book5Section388BroadswordBought'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword'; GoldCost = 9 }
+    )
+}
+
 function Get-LWBookFiveSection281ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'jewelled_mace'; FlagName = 'Book5Section281JewelledMaceClaimed'; DisplayName = 'Jewelled Mace'; Type = 'special'; Name = 'Jewelled Mace'; Quantity = 1; Description = 'Jewelled Mace' }
@@ -731,14 +772,20 @@ Export-ModuleMember -Function `
     Get-LWBookFiveSection027ChoiceDefinitions, `
     Get-LWBookFiveSection035ChoiceDefinitions, `
     Get-LWBookFiveSection052ChoiceDefinitions, `
+    Get-LWBookFiveSection056ChoiceDefinitions, `
     Get-LWBookFiveSection100ChoiceDefinitions, `
     Get-LWBookFiveSection102ChoiceDefinitions, `
+    Get-LWBookFiveSection111ChoiceDefinitions, `
     Get-LWBookFiveSection131ChoiceDefinitions, `
     Get-LWBookFiveSection154ChoiceDefinitions, `
     Get-LWBookFiveSection169ChoiceDefinitions, `
     Get-LWBookFiveSection207ChoiceDefinitions, `
     Get-LWBookFiveSection211ChoiceDefinitions, `
     Get-LWBookFiveSection255ChoiceDefinitions, `
+    Get-LWBookFiveSection290ChoiceDefinitions, `
+    Get-LWBookFiveSection310ChoiceDefinitions, `
+    Get-LWBookFiveSection341ChoiceDefinitions, `
+    Get-LWBookFiveSection388ChoiceDefinitions, `
     Get-LWBookFiveSection281ChoiceDefinitions, `
     Get-LWBookFiveSectionContextAchievementIds
 

@@ -71,8 +71,42 @@ function Get-LWKaiBookTwoSectionRandomNumberContext {
         }
 
         $section = [int]$State.CurrentSection
-        if (@(10, 12, 21, 22, 31, 45, 57, 81, 99, 105, 114, 116, 122, 151, 152, 169, 175, 183, 197, 201, 210, 238, 278, 280, 300, 308, 316, 350) -contains $section) {
-            return (New-LWSectionRandomNumberContext -Section $section)
+        switch ($section) {
+            12 {
+                $modifier = 0
+                $notes = @()
+                if (Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense') {
+                    $modifier += 2
+                    $notes += 'Sixth Sense'
+                }
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Captain Kelman''s Samor wager: 0-3 -> 58, 4-6 -> 167, 7-11 -> 329.' -Modifier $modifier -ModifierNotes $notes)
+            }
+            21 {
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Card-table winnings check. In this instance, 0 counts as 10, then the result is multiplied by 3 for the Gold Crowns left on the table.' -ZeroCountsAsTen:$true)
+            }
+            57 {
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Rymerift gold-loss check. In this instance, 0 counts as 10 Gold Crowns lost.' -ZeroCountsAsTen:$true)
+            }
+            116 {
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Cup game winnings check. Add 5 to the roll to determine the Gold Crowns won.' -Modifier 5 -ModifierNotes @('Cup game winnings'))
+            }
+            122 {
+                if (Test-LWStateHasDiscipline -State $State -Name 'Sixth Sense') {
+                    return (New-LWSectionRandomNumberContext -Section $section -Description 'Orange-door shop check.' -Bypassed:$true -BypassReason 'Sixth Sense bypasses the random check here and sends you straight to section 96.')
+                }
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Orange-door shop check: 0-4 -> 46, 5-9 -> 112.')
+            }
+            238 {
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Cartwheel gambling round. The roll is the winning table number for this round.')
+            }
+            308 {
+                return (New-LWSectionRandomNumberContext -Section $section -Description 'Portholes round: two rolls for rival one, two for rival two, then two for you.' -RollCount 6 -SequenceMode 'independent')
+            }
+            default {
+                if (@(10, 22, 31, 45, 81, 99, 105, 114, 151, 152, 169, 175, 183, 197, 201, 210, 278, 280, 300, 316, 350) -contains $section) {
+                    return (New-LWSectionRandomNumberContext -Section $section)
+                }
+            }
         }
 
         return $null
@@ -91,7 +125,9 @@ function Get-LWBookTwoSimpleSectionEffectDefinitions {
         54  = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section054DeathApplied'; Cause = 'Section 54: instant death.' })
         72  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section072EnduranceHandled'; Delta = 1; MessagePrefix = 'Section 72: apply the section ENDURANCE recovery.' })
         78  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section078EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 78: apply the section ENDURANCE loss.'; FatalCause = 'Section 78 reduced your Endurance to zero.' })
+        87  = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section087DeathApplied'; Cause = 'Section 87: the king''s bodyguard mistake you for a Helghast and cut you to pieces.' })
         108 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section108EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 108: apply the section ENDURANCE loss.'; FatalCause = 'Section 108 reduced your Endurance to zero.' })
+        126 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section126DeathApplied'; Cause = 'Section 126: forged papers are exposed and you are murdered in the gaol.' })
         127 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book2Section127MealHandled'; NoMealFlagName = 'Book2Section127NoMealLossApplied'; SectionLabel = 'Section 127'; Loss = 3; NoMealMessagePrefix = 'Section 127: the section meal requirement is not met.'; FatalCause = 'Hunger at section 127 reduced your Endurance to zero.' })
         141 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section141EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 141: apply the section ENDURANCE loss.'; FatalCause = 'Section 141 reduced your Endurance to zero.' })
         148 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book2Section148MealHandled'; NoMealFlagName = 'Book2Section148NoMealLossApplied'; SectionLabel = 'Section 148'; Loss = 3; NoMealMessagePrefix = 'Section 148: the section meal requirement is not met.'; FatalCause = 'Hunger at section 148 reduced your Endurance to zero.' })
@@ -100,13 +136,18 @@ function Get-LWBookTwoSimpleSectionEffectDefinitions {
         189 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section189EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 189: apply the section ENDURANCE loss.'; FatalCause = 'Section 189 reduced your Endurance to zero.' })
         190 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section190DeathApplied'; Cause = 'Section 190: instant death.' })
         198 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section198EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 198: apply the section ENDURANCE loss.'; FatalCause = 'Section 198 reduced your Endurance to zero.' })
+        213 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section213DeathApplied'; Cause = 'Section 213: you are assassinated in your sleep.' })
         219 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section219EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 219: apply the section ENDURANCE loss.'; FatalCause = 'Section 219 reduced your Endurance to zero.' })
         234 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section234DeathApplied'; Cause = 'Section 234: instant death.' })
+        247 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section247DeathApplied'; Cause = 'Section 247: the falling mast crushes you.' })
         258 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section258EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 258: apply the section ENDURANCE loss.'; FatalCause = 'Section 258 reduced your Endurance to zero.' })
         284 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book2Section284MealHandled'; NoMealFlagName = 'Book2Section284NoMealLossApplied'; SectionLabel = 'Section 284'; Loss = 3; NoMealMessagePrefix = 'Section 284: the section meal requirement is not met.'; FatalCause = 'Hunger at section 284 reduced your Endurance to zero.' })
+        292 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section292DeathApplied'; Cause = 'Section 292: the Ragadorn mercenaries cut you down.' })
+        304 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book2Section304DeathApplied'; Cause = 'Section 304: the Helghast kills you and steals the Seal of Hammerdal.' })
         314 = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book2Section314MealHandled'; NoMealFlagName = 'Book2Section314NoMealLossApplied'; SectionLabel = 'Section 314'; Loss = 3; NoMealMessagePrefix = 'Section 314: the section meal requirement is not met.'; FatalCause = 'Hunger at section 314 reduced your Endurance to zero.' })
         321 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section321EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 321: apply the section ENDURANCE loss.'; FatalCause = 'Section 321 reduced your Endurance to zero.' })
         330 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section330EnduranceHandled'; Delta = -5; MessagePrefix = 'Section 330: apply the section ENDURANCE loss.'; FatalCause = 'Section 330 reduced your Endurance to zero.' })
+        338 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section338FallHandled'; Delta = -2; MessagePrefix = 'Section 338: the impact with the road jars every bone in your body.'; FatalCause = 'The fall at section 338 reduced your Endurance to zero.' })
         347 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book2Section347EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 347: apply the section ENDURANCE loss.'; FatalCause = 'Section 347 reduced your Endurance to zero.' })
     }
 }
@@ -224,10 +265,40 @@ function Get-LWBookTwoSection055ChoiceDefinitions {
     )
 }
 
+function Get-LWBookTwoSection015ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book2Section015BroadswordClaimed'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword' },
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section015MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'quarterstaff'; FlagName = 'Book2Section015QuarterstaffClaimed'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'healing_potion'; FlagName = 'Book2Section015HealingPotionClaimed'; DisplayName = 'Healing Potion'; Type = 'backpack'; Name = 'Healing Potion'; Quantity = 1; Description = 'Healing Potion' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book2Section015MealsClaimed'; DisplayName = '3 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 3; Description = '3 Meals' },
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book2Section015BackpackClaimed'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section015GoldClaimed'; DisplayName = '12 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 12; Description = '12 Gold Crowns' }
+    )
+}
+
 function Get-LWBookTwoSection076ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section076GoldClaimed'; DisplayName = '2 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 2; Description = '2 Gold Crowns' },
         [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section076DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' }
+    )
+}
+
+function Get-LWBookTwoSection086ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section086MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section086GoldClaimed'; DisplayName = '3 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 3; Description = '3 Gold Crowns' }
+    )
+}
+
+function Get-LWBookTwoSection091ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'quarterstaff'; FlagName = 'Book2Section091QuarterstaffClaimed'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff' },
+        [pscustomobject]@{ Id = 'blanket'; FlagName = 'Book2Section091BlanketClaimed'; DisplayName = 'Blanket'; Type = 'backpack'; Name = 'Blanket'; Quantity = 1; Description = 'Blanket' },
+        [pscustomobject]@{ Id = 'meals'; FlagName = 'Book2Section091MealsClaimed'; DisplayName = '2 Meals'; Type = 'backpack'; Name = 'Meal'; Quantity = 2; Description = '2 Meals' },
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book2Section091BackpackClaimed'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section091DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'rope'; FlagName = 'Book2Section091RopeClaimed'; DisplayName = 'Rope'; Type = 'backpack'; Name = 'Rope'; Quantity = 1; Description = 'Rope' }
     )
 }
 
@@ -236,6 +307,12 @@ function Get-LWBookTwoSection124ChoiceDefinitions {
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section124GoldClaimed'; DisplayName = '42 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 42; Description = '42 Gold Crowns' },
         [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book2Section124ShortSwordClaimed'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' },
         [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section124DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' }
+    )
+}
+
+function Get-LWBookTwoSection132ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book2Section132SpearClaimed'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear' }
     )
 }
 
@@ -260,6 +337,12 @@ function Get-LWBookTwoSection187ChoiceDefinitions {
     )
 }
 
+function Get-LWBookTwoSection260ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section260SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' }
+    )
+}
+
 function Get-LWBookTwoSection231ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section231GoldClaimed'; DisplayName = '5 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 5; Description = '5 Gold Crowns' },
@@ -276,11 +359,46 @@ function Get-LWBookTwoSection274ChoiceDefinitions {
     )
 }
 
+function Get-LWBookTwoSection266ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section266SwordBought'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section266DaggerBought'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger'; GoldCost = 2 },
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book2Section266BroadswordBought'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword'; GoldCost = 7 },
+        [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book2Section266ShortSwordBought'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'warhammer'; FlagName = 'Book2Section266WarhammerBought'; DisplayName = 'Warhammer'; Type = 'weapon'; Name = 'Warhammer'; Quantity = 1; Description = 'Warhammer'; GoldCost = 6 },
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book2Section266SpearBought'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book2Section266MaceBought'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'axe'; FlagName = 'Book2Section266AxeBought'; DisplayName = 'Axe'; Type = 'weapon'; Name = 'Axe'; Quantity = 1; Description = 'Axe'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'quarterstaff'; FlagName = 'Book2Section266QuarterstaffBought'; DisplayName = 'Quarterstaff'; Type = 'weapon'; Name = 'Quarterstaff'; Quantity = 1; Description = 'Quarterstaff'; GoldCost = 3 }
+    )
+}
+
+function Get-LWBookTwoSection283ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section283SwordBought'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section283DaggerBought'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger'; GoldCost = 2 },
+        [pscustomobject]@{ Id = 'broadsword'; FlagName = 'Book2Section283BroadswordBought'; DisplayName = 'Broadsword'; Type = 'weapon'; Name = 'Broadsword'; Quantity = 1; Description = 'Broadsword'; GoldCost = 6 },
+        [pscustomobject]@{ Id = 'spear'; FlagName = 'Book2Section283SpearBought'; DisplayName = 'Spear'; Type = 'weapon'; Name = 'Spear'; Quantity = 1; Description = 'Spear'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'fine_food'; FlagName = 'Book2Section283MealBought'; DisplayName = 'Fine Food (1 Meal)'; Type = 'backpack'; Name = 'Meal'; Quantity = 1; Description = 'Meal'; GoldCost = 2 },
+        [pscustomobject]@{ Id = 'gold_ring'; FlagName = 'Book2Section283GoldRingBought'; DisplayName = 'Gold Ring'; Type = 'special'; Name = 'Gold Ring'; Quantity = 1; Description = 'Gold Ring'; GoldCost = 8 },
+        [pscustomobject]@{ Id = 'blanket'; FlagName = 'Book2Section283BlanketBought'; DisplayName = 'Fur Blanket'; Type = 'backpack'; Name = 'Fur Blanket'; Quantity = 1; Description = 'Fur Blanket'; GoldCost = 3 },
+        [pscustomobject]@{ Id = 'backpack'; FlagName = 'Book2Section283BackpackBought'; DisplayName = 'Backpack'; Type = 'backpack_restore'; Name = 'Backpack'; Quantity = 1; Description = 'Backpack'; GoldCost = 1 }
+    )
+}
+
 function Get-LWBookTwoSection301ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section301GoldClaimed'; DisplayName = '3 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 3; Description = '3 Gold Crowns' },
         [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section301DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
         [pscustomobject]@{ Id = 'short_sword'; FlagName = 'Book2Section301ShortSwordClaimed'; DisplayName = 'Short Sword'; Type = 'weapon'; Name = 'Short Sword'; Quantity = 1; Description = 'Short Sword' }
+    )
+}
+
+function Get-LWBookTwoSection331ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'sword'; FlagName = 'Book2Section331SwordClaimed'; DisplayName = 'Sword'; Type = 'weapon'; Name = 'Sword'; Quantity = 1; Description = 'Sword' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book2Section331DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'gold'; FlagName = 'Book2Section331GoldClaimed'; DisplayName = '3 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 3; Description = '3 Gold Crowns' }
     )
 }
 
@@ -315,14 +433,22 @@ Export-ModuleMember -Function `
     Get-LWBookTwoSimpleCombatRuleDefinitions, `
     Apply-LWKaiBookTwoStartingEquipment, `
     Get-LWBookTwoSection055ChoiceDefinitions, `
+    Get-LWBookTwoSection015ChoiceDefinitions, `
     Get-LWBookTwoSection076ChoiceDefinitions, `
+    Get-LWBookTwoSection086ChoiceDefinitions, `
+    Get-LWBookTwoSection091ChoiceDefinitions, `
     Get-LWBookTwoSection124ChoiceDefinitions, `
+    Get-LWBookTwoSection132ChoiceDefinitions, `
     Get-LWBookTwoSection181ChoiceDefinitions, `
     Get-LWBookTwoSection187ChoiceDefinitions, `
     Get-LWBookTwoSection231ChoiceDefinitions, `
+    Get-LWBookTwoSection260ChoiceDefinitions, `
     Get-LWBookTwoSection262ChoiceDefinitions, `
+    Get-LWBookTwoSection266ChoiceDefinitions, `
     Get-LWBookTwoSection274ChoiceDefinitions, `
+    Get-LWBookTwoSection283ChoiceDefinitions, `
     Get-LWBookTwoSection301ChoiceDefinitions, `
+    Get-LWBookTwoSection331ChoiceDefinitions, `
     Get-LWBookTwoSection302ChoiceDefinitions, `
     Get-LWBookTwoSectionContextAchievementIds
 

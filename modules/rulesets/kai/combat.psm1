@@ -326,6 +326,21 @@ function Invoke-LWKaiCombatScenarioRules {
         $Scenario.VictoryResolutionSection = 269
         $Scenario.VictoryResolutionNote = 'Section 88 result: victory sends you to 269.'
     }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 3 -and @(99, 304) -contains [int]$script:GameState.CurrentSection -and [string]$enemyName -ieq 'Helghast') {
+        $Scenario.EnemyUndead = $true
+        $Scenario.EnemyImmune = $true
+        $Scenario.EnemyUsesMindforce = $true
+        $Scenario.MindforceLossPerRound = 2
+        Write-LWInfo ("Book 3 section {0}: the Helghast is undead, immune to Mindblast, and its Mindforce costs 2 END per round unless Mindshield blocks it." -f [int]$script:GameState.CurrentSection)
+        if ([int]$script:GameState.CurrentSection -eq 99) {
+            $Scenario.VictoryResolutionSection = 230
+            $Scenario.VictoryResolutionNote = 'Section 99 result: victory sends you to 230.'
+        }
+        else {
+            $Scenario.VictoryResolutionSection = 20
+            $Scenario.VictoryResolutionNote = 'Section 304 result: victory sends you to 20.'
+        }
+    }
     elseif ([int]$script:GameState.Character.BookNumber -eq 3 -and [int]$script:GameState.CurrentSection -eq 106) {
         $Scenario.EnemyImmune = $true
         $Scenario.CanEvade = $true
@@ -624,6 +639,14 @@ function Invoke-LWKaiCombatScenarioRules {
             $Scenario.VictoryResolutionNote = 'Section 370 result: subduing the Itikar sends you to 267.'
         }
         Write-LWInfo ("Book 5 section {0}: double all ENDURANCE lost by the Itikar." -f [int]$script:GameState.CurrentSection)
+    }
+    elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 253 -and [string]$enemyName -ieq 'Dhorgaan') {
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWJewelledMaceItemNames) -Type 'special'))) {
+            $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 5
+            Write-LWInfo 'Book 5 section 253: Jewelled Mace grants +5 Combat Skill against the Dhorgaan.'
+        }
+        $Scenario.VictoryResolutionSection = 335
+        $Scenario.VictoryResolutionNote = 'Section 253 result: victory sends you to 335.'
     }
     elseif ([int]$script:GameState.Character.BookNumber -eq 5 -and [int]$script:GameState.CurrentSection -eq 280 -and [string]$enemyName -ieq 'Drakkar') {
         $Scenario.IgnoreFirstRoundEnduranceLoss = $true

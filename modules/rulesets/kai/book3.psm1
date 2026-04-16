@@ -139,6 +139,7 @@ function Get-LWBookThreeSimpleSectionEffectDefinitions {
     return @{
         27  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section027EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 27: apply the section ENDURANCE loss.'; FatalCause = 'Section 27 reduced your Endurance to zero.' })
         33  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section033EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 33: apply the section ENDURANCE loss.'; FatalCause = 'Section 33 reduced your Endurance to zero.' })
+        37  = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book3Section037DeathApplied'; Cause = 'Section 37: you fall into an icy fissure and die there.' })
         43  = @([pscustomobject]@{ Type = 'meal'; ResolvedFlagName = 'Book3Section043MealHandled'; NoMealFlagName = 'Book3Section043NoMealLossApplied'; SectionLabel = 'Section 43'; Loss = 1; NoMealMessagePrefix = 'Section 43: the section meal requirement is not met.'; FatalCause = 'Hunger at section 43 reduced your Endurance to zero.' })
         62  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section062EnduranceHandled'; Delta = -3; MessagePrefix = 'Section 62: apply the section ENDURANCE loss.'; FatalCause = 'Section 62 reduced your Endurance to zero.' })
         77  = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section077EnduranceHandled'; Delta = -1; MessagePrefix = 'Section 77: apply the section ENDURANCE loss.'; FatalCause = 'Section 77 reduced your Endurance to zero.' })
@@ -160,6 +161,7 @@ function Get-LWBookThreeSimpleSectionEffectDefinitions {
         251 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section251EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 251: apply the section ENDURANCE loss.'; FatalCause = 'Section 251 reduced your Endurance to zero.' })
         294 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section294EnduranceHandled'; Delta = -6; MessagePrefix = 'Section 294: apply the section ENDURANCE loss.'; FatalCause = 'Section 294 reduced your Endurance to zero.' })
         299 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section299EnduranceHandled'; Delta = -2; MessagePrefix = 'Section 299: apply the section ENDURANCE loss.'; FatalCause = 'Section 299 reduced your Endurance to zero.' })
+        331 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section331EnduranceHandled'; Delta = -4; MessagePrefix = 'Section 331: frostbite and exhaustion cost 4 ENDURANCE.'; FatalCause = 'The storm at section 331 reduced your Endurance to zero.'; RequiresMissingDiscipline = 'Healing' })
         313 = @([pscustomobject]@{ Type = 'instantdeath'; FlagName = 'Book3Section313DeathApplied'; Cause = 'Section 313: instant death.' })
         340 = @([pscustomobject]@{ Type = 'end'; FlagName = 'Book3Section340EnduranceHandled'; Delta = 6; MessagePrefix = 'Section 340: apply the section ENDURANCE recovery.' })
     }
@@ -284,15 +286,65 @@ function Get-LWBookThreeSection084ChoiceDefinitions {
     )
 }
 
+function Get-LWBookThreeSection025ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section025TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' }
+    )
+}
+
+function Get-LWBookThreeSection026ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'bone_sword'; FlagName = 'Book3Section026BoneSwordClaimed'; DisplayName = 'Bone Sword'; Type = 'weapon'; Name = 'Bone Sword'; Quantity = 1; Description = 'Bone Sword' },
+        [pscustomobject]@{ Id = 'dagger'; FlagName = 'Book3Section026DaggerClaimed'; DisplayName = 'Dagger'; Type = 'weapon'; Name = 'Dagger'; Quantity = 1; Description = 'Dagger' },
+        [pscustomobject]@{ Id = 'mace'; FlagName = 'Book3Section026MaceClaimed'; DisplayName = 'Mace'; Type = 'weapon'; Name = 'Mace'; Quantity = 1; Description = 'Mace' }
+    )
+}
+
+function Get-LWBookThreeSection059ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section059TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' }
+    )
+}
+
 function Get-LWBookThreeSection102ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'stone_effigy'; FlagName = 'Book3Section102EffigyClaimed'; DisplayName = 'Stone Effigy'; Type = 'special'; Name = 'Stone Effigy'; Quantity = 1; Description = 'Stone Effigy' }
     )
 }
 
+function Get-LWBookThreeSection156ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gallowbrush'; FlagName = 'Book3Section156GallowbrushClaimed'; DisplayName = 'Potion of Gallowbrush'; Type = 'backpack'; Name = 'Potion of Gallowbrush'; Quantity = 1; Description = 'Potion of Gallowbrush' }
+    )
+}
+
+function Get-LWBookThreeSection177ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'graveweed'; FlagName = 'Book3Section177GraveweedClaimed'; DisplayName = 'Vial of Graveweed'; Type = 'backpack'; Name = 'Vial of Graveweed'; Quantity = 1; Description = 'Vial of Graveweed' }
+    )
+}
+
+function Get-LWBookThreeSection210ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'bone_sword'; FlagName = 'Book3Section210BoneSwordClaimed'; DisplayName = 'Bone Sword'; Type = 'weapon'; Name = 'Bone Sword'; Quantity = 1; Description = 'Bone Sword' }
+    )
+}
+
+function Get-LWBookThreeSection218ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'diamond'; FlagName = 'Book3Section218DiamondClaimed'; DisplayName = 'Diamond'; Type = 'special'; Name = 'Diamond'; Quantity = 1; Description = 'Diamond' }
+    )
+}
+
 function Get-LWBookThreeSection231ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'gold_bracelet'; FlagName = 'Book3Section231BraceletClaimed'; DisplayName = 'Gold Bracelet'; Type = 'special'; Name = 'Gold Bracelet'; Quantity = 1; Description = 'Gold Bracelet' }
+    )
+}
+
+function Get-LWBookThreeSection233ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'distilled_laumspur'; FlagName = 'Book3Section233LaumspurClaimed'; DisplayName = 'Distilled Laumspur'; Type = 'backpack'; Name = 'Distilled Laumspur'; Quantity = 1; Description = 'Distilled Laumspur' }
     )
 }
 
@@ -322,9 +374,27 @@ function Get-LWBookThreeSection309ChoiceDefinitions {
     )
 }
 
+function Get-LWBookThreeSection311ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'alether'; FlagName = 'Book3Section311AletherClaimed'; DisplayName = 'Potion of Alether'; Type = 'backpack'; Name = 'Potion of Alether'; Quantity = 1; Description = 'Potion of Alether' }
+    )
+}
+
+function Get-LWBookThreeSection316ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'gold_bracelet'; FlagName = 'Book3Section316BraceletClaimed'; DisplayName = 'Gold Bracelet'; Type = 'special'; Name = 'Gold Bracelet'; Quantity = 1; Description = 'Gold Bracelet' }
+    )
+}
+
 function Get-LWBookThreeSection321ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'blue_stone_triangle'; FlagName = 'Book3Section321TriangleClaimed'; DisplayName = 'Blue Stone Triangle'; Type = 'special'; Name = 'Blue Stone Triangle'; Quantity = 1; Description = 'Blue Stone Triangle' }
+    )
+}
+
+function Get-LWBookThreeSection334ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'glowing_crystal'; FlagName = 'Book3Section334GlowingCrystalClaimed'; DisplayName = 'Glowing Crystal'; Type = 'special'; Name = 'Glowing Crystal'; Quantity = 1; Description = 'Glowing Crystal' }
     )
 }
 
@@ -356,13 +426,24 @@ Export-ModuleMember -Function `
     Get-LWBookThreeSection012ChoiceDefinitions, `
     Get-LWBookThreeSection038ChoiceDefinitions, `
     Get-LWBookThreeSection084ChoiceDefinitions, `
+    Get-LWBookThreeSection025ChoiceDefinitions, `
+    Get-LWBookThreeSection026ChoiceDefinitions, `
+    Get-LWBookThreeSection059ChoiceDefinitions, `
     Get-LWBookThreeSection102ChoiceDefinitions, `
+    Get-LWBookThreeSection156ChoiceDefinitions, `
+    Get-LWBookThreeSection177ChoiceDefinitions, `
+    Get-LWBookThreeSection210ChoiceDefinitions, `
+    Get-LWBookThreeSection218ChoiceDefinitions, `
     Get-LWBookThreeSection231ChoiceDefinitions, `
+    Get-LWBookThreeSection233ChoiceDefinitions, `
     Get-LWBookThreeSection295ChoiceDefinitions, `
     Get-LWBookThreeSection298ChoiceDefinitions, `
     Get-LWBookThreeSection282ChoiceDefinitions, `
     Get-LWBookThreeSection309ChoiceDefinitions, `
+    Get-LWBookThreeSection311ChoiceDefinitions, `
+    Get-LWBookThreeSection316ChoiceDefinitions, `
     Get-LWBookThreeSection321ChoiceDefinitions, `
+    Get-LWBookThreeSection334ChoiceDefinitions, `
     Get-LWBookThreeSectionContextAchievementIds
 
 
