@@ -51,6 +51,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - latest `main` hotfix:
   - Book `6` section `170` `roll` now uses the live current state correctly in interactive play
   - section `170` bonus logic now matches the local OG text (`Weaponmastery with Bow +3`, `Huntmastery +1`)
+- latest DE Book `6` rules add-on:
+  - section `297` now supports the DE-only `Bronin Sleeve-shield` trade flow
+  - `Bronin Sleeve-shield` is modeled as a Special Item that grants `+1 CS` and `+1 END` in physical combat when a normal shield is not currently usable
 - latest `dev` lag pass fixed two post-extraction regressions:
   - achievement-screen caching was being reset by host-context rebinding
   - `combat status` from `inv` could throw a module-context error and write to `data/error.log`

@@ -756,6 +756,7 @@ function Get-LWCombatPlayerEndurancePool {
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
+    $combatEnduranceBonus = Get-LWStateBroninSleeveShieldCombatEnduranceBonus -State $State
     $usesTarget = ((Test-LWPropertyExists -Object $State -Name 'Combat') -and
         (Test-LWPropertyExists -Object $State.Combat -Name 'UsePlayerTargetEndurance') -and
         [bool]$State.Combat.UsePlayerTargetEndurance)
@@ -765,17 +766,19 @@ function Get-LWCombatPlayerEndurancePool {
         $max = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerTargetEnduranceMax') -and $null -ne $State.Combat.PlayerTargetEnduranceMax) { [int]$State.Combat.PlayerTargetEnduranceMax } else { $current }
         return [pscustomobject]@{
             UsesTarget = $true
-            Current    = $current
-            Max        = $max
+            Current    = $current + $combatEnduranceBonus
+            Max        = $max + $combatEnduranceBonus
             Label      = 'Target'
+            CombatBonus = $combatEnduranceBonus
         }
     }
 
     return [pscustomobject]@{
         UsesTarget = $false
-        Current    = [int]$State.Character.EnduranceCurrent
-        Max        = [int]$State.Character.EnduranceMax
+        Current    = [int]$State.Character.EnduranceCurrent + $combatEnduranceBonus
+        Max        = [int]$State.Character.EnduranceMax + $combatEnduranceBonus
         Label      = 'Endurance'
+        CombatBonus = $combatEnduranceBonus
     }
 }
 
@@ -801,6 +804,12 @@ function Get-LWCombatBreakdownFromState {
         [bool]$State.Combat.SuppressShieldCombatSkillBonus -and
         (Test-LWStateHasInventoryItem -State $State -Names (Get-LWShieldItemNames))) {
         $notes += 'Shield suppressed'
+    }
+
+    $broninSleeveShieldBonus = Get-LWStateBroninSleeveShieldCombatSkillBonus -State $State
+    if ($broninSleeveShieldBonus -gt 0) {
+        $playerCombatSkill += $broninSleeveShieldBonus
+        $notes += "Bronin Sleeve-shield +$broninSleeveShieldBonus"
     }
 
     $silverHelmBonus = Get-LWStateSilverHelmCombatSkillBonus -State $State
@@ -2028,15 +2037,24 @@ function Apply-LWCombatRoundResolution {
 
 
     $script:GameState.Combat.EnemyEnduranceCurrent = $Resolution.NewEnemyEnd
+    $actualPlayerLoss = [int]$Resolution.PlayerLoss
     if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'UsePlayerTargetEndurance') -and [bool]$script:GameState.Combat.UsePlayerTargetEndurance) {
         $script:GameState.Combat.PlayerTargetEnduranceCurrent = $Resolution.NewPlayerEnd
     }
     else {
-        $script:GameState.Character.EnduranceCurrent = $Resolution.NewPlayerEnd
+        $playerPool = Get-LWCombatPlayerEndurancePool -State $script:GameState
+        $combatEnduranceBonus = if ((Test-LWPropertyExists -Object $playerPool -Name 'CombatBonus') -and $null -ne $playerPool.CombatBonus) { [int]$playerPool.CombatBonus } else { 0 }
+        $currentCharacterEndurance = [int]$script:GameState.Character.EnduranceCurrent
+        $newCharacterEndurance = [Math]::Max(0, [int]$Resolution.NewPlayerEnd - $combatEnduranceBonus)
+        if ($newCharacterEndurance -gt [int]$script:GameState.Character.EnduranceMax) {
+            $newCharacterEndurance = [int]$script:GameState.Character.EnduranceMax
+        }
+        $actualPlayerLoss = [Math]::Max(0, $currentCharacterEndurance - $newCharacterEndurance)
+        $script:GameState.Character.EnduranceCurrent = $newCharacterEndurance
     }
     $script:GameState.Combat.Log = @($script:GameState.Combat.Log) + $Resolution.LogEntry
     if ([int]$Resolution.PlayerLoss -gt 0 -and -not ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'UsePlayerTargetEndurance') -and [bool]$script:GameState.Combat.UsePlayerTargetEndurance)) {
-        Add-LWBookEnduranceDelta -Delta (-[int]$Resolution.PlayerLoss)
+        Add-LWBookEnduranceDelta -Delta (-[int]$actualPlayerLoss)
     }
 
     $equipDeferredAfterRound = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'EquipDeferredWeaponAfterRound') -and $null -ne $script:GameState.Combat.EquipDeferredWeaponAfterRound) { [int]$script:GameState.Combat.EquipDeferredWeaponAfterRound } else { 0 }

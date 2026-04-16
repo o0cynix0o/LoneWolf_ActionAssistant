@@ -794,6 +794,88 @@ function Invoke-LWMagnakaiBookSixSection220Donation {
     Set-LWStoryAchievementFlag -Name 'Book6Section220DonationHandled'
 }
 
+function Invoke-LWMagnakaiBookSixSection297BroninSleeveShieldTrade {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section297Handled') {
+        return
+    }
+
+    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBroninSleeveShieldItemNames) -Type 'special') {
+        Set-LWStoryAchievementFlag -Name 'Book6Section297Handled'
+        return
+    }
+
+    $tradeOptions = @()
+
+    $helmetItem = Get-LWMatchingStateInventoryItem -State $script:GameState -Names @((Get-LWHelmetItemNames) + (Get-LWSilverHelmItemNames)) -Type 'special'
+    if (-not [string]::IsNullOrWhiteSpace($helmetItem)) {
+        $tradeOptions += [pscustomobject]@{
+            Label = ("Helmet: {0}" -f [string]$helmetItem)
+            Name  = [string]$helmetItem
+        }
+    }
+
+    $shieldItem = Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWShieldItemNames) -Type 'special'
+    if (-not [string]::IsNullOrWhiteSpace($shieldItem)) {
+        $tradeOptions += [pscustomobject]@{
+            Label = ("Shield: {0}" -f [string]$shieldItem)
+            Name  = [string]$shieldItem
+        }
+    }
+
+    foreach ($waistcoatName in @(
+            (Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWChainmailItemNames) -Type 'special'),
+            (Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWPaddedLeatherItemNames) -Type 'special')
+        )) {
+        if (-not [string]::IsNullOrWhiteSpace($waistcoatName)) {
+            $tradeOptions += [pscustomobject]@{
+                Label = ("Waistcoat: {0}" -f [string]$waistcoatName)
+                Name  = [string]$waistcoatName
+            }
+        }
+    }
+
+    if ($tradeOptions.Count -le 0) {
+        Write-LWInfo 'Section 297: no Helmet, Shield, or Waistcoat is available to trade for the Bronin Sleeve-shield.'
+        Set-LWStoryAchievementFlag -Name 'Book6Section297Handled'
+        return
+    }
+
+    $acceptTrade = Read-LWInlineYesNo -Prompt 'Section 297: trade one Helmet, Shield, or Waistcoat for the Bronin Sleeve-shield?' -Default $true
+    if (-not $acceptTrade) {
+        Write-LWInfo 'Section 297: the Bronin Sleeve-shield is declined.'
+        Set-LWStoryAchievementFlag -Name 'Book6Section297Handled'
+        return
+    }
+
+    $choiceIndex = 1
+    if ($tradeOptions.Count -gt 1) {
+        Write-LWRetroPanelHeader -Title 'Section 297 Armor Trade' -AccentColor 'DarkYellow'
+        for ($i = 0; $i -lt $tradeOptions.Count; $i++) {
+            Write-LWRetroPanelTextRow -Text ("{0}. {1}" -f ($i + 1), [string]$tradeOptions[$i].Label) -TextColor 'Gray'
+        }
+        Write-LWRetroPanelFooter
+        $choiceIndex = Read-LWInt -Prompt 'Section 297 trade choice' -Default 1 -Min 1 -Max $tradeOptions.Count -NoRefresh
+    }
+
+    $tradedItem = [string]$tradeOptions[$choiceIndex - 1].Name
+    if (-not (Remove-LWInventoryItemSilently -Type 'special' -Name $tradedItem -Quantity 1)) {
+        Write-LWWarn ("Section 297: unable to remove {0} automatically. Please update your inventory manually." -f $tradedItem)
+        Set-LWStoryAchievementFlag -Name 'Book6Section297Handled'
+        return
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Bronin Sleeve-shield') {
+        Write-LWInfo ("Section 297: traded {0} for the Bronin Sleeve-shield." -f $tradedItem)
+        Set-LWStoryAchievementFlag -Name 'Book6BroninSleeveShieldClaimed'
+    }
+    else {
+        [void](TryAdd-LWInventoryItemSilently -Type 'special' -Name $tradedItem)
+        Write-LWWarn 'Section 297: no room to add the Bronin Sleeve-shield automatically. Your original armor has been restored.'
+    }
+
+    Set-LWStoryAchievementFlag -Name 'Book6Section297Handled'
+}
+
 function Invoke-LWMagnakaiBookSixSection245ConundrumPrompt {
     if (Test-LWStoryAchievementFlag -Name 'Book6Section245StakeRecorded') {
         return
@@ -1649,6 +1731,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                     Write-LWInfo 'Section 293: Small Silver Key should now be erased from your Action Chart.'
                 }
             }
+        }
+        297 {
+            Invoke-LWMagnakaiBookSixSection297BroninSleeveShieldTrade
         }
         301 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section301ArrowSpent')) {

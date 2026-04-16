@@ -1344,6 +1344,12 @@ function Get-LWInventoryNoteRows {
             Value = '+1 CS; +2 vs armoured; counts as Warhammer'
         }
     }
+    if (Test-LWStateHasBroninSleeveShield -State $script:GameState) {
+        $rows += [pscustomobject]@{
+            Label = 'Bronin Sleeve-shield'
+            Value = '+1 CS and +1 END in physical combat; does not stack with Shield'
+        }
+    }
     if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCaptainDValSwordWeaponNames) -Type 'weapon'))) {
         $rows += [pscustomobject]@{
             Label = 'Captain Sword'

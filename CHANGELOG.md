@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added DE Book `6` section `297` support for the Bronin Sleeve-shield:
+  - section `297` now offers the DE armor-swap flow and lets you trade one carried `Helmet`, `Shield`, or `Waistcoat`
+  - added `Bronin Sleeve-shield` as a supported Special Item
+  - `Bronin Sleeve-shield` now grants `+1 CS` and a `+1 END` combat buffer in physical combat when a normal `Shield` is not in use
+  - it does not stack with a usable `Shield`, but it still works when shield bonuses are suppressed
+  - validated locally with:
+    - `testing/logs/SECTION297_DE_SLEEVESHIELD_PS7.txt`
+    - `testing/logs/SECTION297_DE_SLEEVESHIELD_PS51.txt`
+    - `testing/logs/SECTION297_DE_SLEEVESHIELD_COMBAT_PS7.txt`
 - fixed Book `6` section `170` roll handling:
   - the interactive `roll` command now passes the live current state explicitly into the random-helper pipeline instead of relying on module-local default state
   - section `170` now matches the local OG text bonus and applies `+3` for `Weaponmastery with Bow` and `+1` for `Huntmastery`, without an extra `Silver Bow of Duadon` modifier
