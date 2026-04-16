@@ -6,6 +6,14 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- aligned Book `6` section `158` / `293` silver-key handling with the DE-facing item name:
+  - `Small Silver Key` now normalizes to `Sinede's Silver Key` on load and in inventory handling
+  - section `158` now adds `Sinede's Silver Key`
+  - section `293` now removes `Sinede's Silver Key`
+  - the `Key to Varetta` achievement text now uses the DE-facing key name
+  - validated in both shells with:
+    - `testing/logs/SECTION158_SILVERKEY_NAME_PS7.txt`
+    - `testing/logs/SECTION158_SILVERKEY_NAME_PS51.txt`
 - added DE/OG-aligned Book `6` section `17` lodging automation:
   - section `17` now prompts for the three inn room choices when you can afford them and deducts the correct Gold Crowns
   - if you cannot afford even the dormitory, the app now offers the text-supported barter path and lets you trade one Backpack Item or Weapon for the dormitory

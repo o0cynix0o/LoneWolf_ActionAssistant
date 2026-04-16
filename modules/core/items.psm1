@@ -276,7 +276,7 @@ function Get-LWTaunorWaterItemNames {
 
 function Get-LWSmallSilverKeyItemNames {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    return @('Small Silver Key')
+    return @("Sinede's Silver Key", "Sinede’s Silver Key", 'Small Silver Key')
 }
 
 function Get-LWSilverBowOfDuadonItemNames {
@@ -769,7 +769,7 @@ function Get-LWCanonicalInventoryItemName {
     foreach ($group in @(Get-LWKnownInventoryNameGroups)) {
         $match = Get-LWMatchingValue -Values @($group) -Target $trimmedName
         if (-not [string]::IsNullOrWhiteSpace($match)) {
-            return [string]$match
+            return [string]@($group)[0]
         }
     }
 

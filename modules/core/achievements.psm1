@@ -363,7 +363,7 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'jump_the_wagons' -Name 'Jump the Wagons' -Category 'Journey' -Description 'Clear the wagon jump route in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'water_bearer' -Name 'Water Bearer' -Category 'Journey' -Description 'Keep Taunor Water stored for later use in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'tekaro_cartographer' -Name 'Tekaro Cartographer' -Category 'Journey' -Description 'Claim a Map of Tekaro in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'key_to_varetta' -Name 'Key to Varetta' -Category 'Journey' -Description 'Claim the Small Silver Key in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'key_to_varetta' -Name 'Key to Varetta' -Category 'Journey' -Description "Claim Sinede's Silver Key in Book 6." -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'silver_oak_prize' -Name 'Silver Oak Prize' -Category 'Journey' -Description 'Win the Silver Bow of Duadon in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cess_to_enter' -Name 'Cess to Enter' -Category 'Journey' -Description 'Pocket a valid Cess for Amory in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cold_comfort' -Name 'Cold Comfort' -Category 'Journey' -Description 'Let Nexus save you from the frozen river in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
@@ -1998,7 +1998,7 @@ function Get-LWAchievementProgressText {
         'jump_the_wagons' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute') { 'wagon-jump route cleared' } else { 'clear the wagon-jump route in Book 6' }) }
         'water_bearer' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6TaunorWaterStored') { 'Taunor Water stored for later use' } else { 'store Taunor Water for later use in Book 6' }) }
         'tekaro_cartographer' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6MapOfTekaroClaimed') { 'Map of Tekaro claimed' } else { 'claim a Map of Tekaro in Book 6' }) }
-        'key_to_varetta' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed') { 'Small Silver Key claimed' } else { 'claim the Small Silver Key in Book 6' }) }
+        'key_to_varetta' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed') { "Sinede's Silver Key claimed" } else { "claim Sinede's Silver Key in Book 6" }) }
         'silver_oak_prize' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6SilverBowClaimed') { 'Silver Bow of Duadon claimed' } else { 'win the Silver Bow of Duadon in Book 6' }) }
         'cess_to_enter' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6CessClaimed') { 'Cess claimed' } else { 'pocket a valid Cess for Amory in Book 6' }) }
         'cold_comfort' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6Section306NexusProtected') { 'Nexus has already protected you from the cold' } else { 'reach the frozen-river route with Nexus in Book 6' }) }

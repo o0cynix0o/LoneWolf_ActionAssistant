@@ -1680,13 +1680,13 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         }
         158 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section158SilverKeyClaimed')) {
-                if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Small Silver Key') {
+                if (TryAdd-LWInventoryItemSilently -Type 'special' -Name "Sinede's Silver Key") {
                     Set-LWStoryAchievementFlag -Name 'Book6Section158SilverKeyClaimed'
                     Set-LWStoryAchievementFlag -Name 'Book6SmallSilverKeyClaimed'
-                    Write-LWInfo 'Section 158: Small Silver Key added to Special Items.'
+                    Write-LWInfo "Section 158: Sinede's Silver Key added to Special Items."
                 }
                 else {
-                    Write-LWWarn 'No room to add the Small Silver Key automatically. Make room and add it manually if needed.'
+                    Write-LWWarn "No room to add Sinede's Silver Key automatically. Make room and add it manually if needed."
                 }
             }
             Invoke-LWBookFourChoiceTable -Title 'Section 158 Cellar' -PromptLabel 'Section 158 choice' -ContextLabel 'Section 158' -Choices (Get-LWMagnakaiBookSixSection158ChoiceDefinitions) -Intro 'Section 158: take whatever cellar supplies you want before midnight.'
@@ -1839,11 +1839,11 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         293 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
-                if (Remove-LWInventoryItemSilently -Type 'special' -Name 'Small Silver Key' -Quantity 1) {
-                    Write-LWInfo 'Section 293: Small Silver Key is used to open the tomb and is erased.'
+                if (Remove-LWInventoryItemSilently -Type 'special' -Name "Sinede's Silver Key" -Quantity 1) {
+                    Write-LWInfo "Section 293: Sinede's Silver Key is used to open the tomb and is erased."
                 }
                 else {
-                    Write-LWInfo 'Section 293: Small Silver Key should now be erased from your Action Chart.'
+                    Write-LWInfo "Section 293: Sinede's Silver Key should now be erased from your Action Chart."
                 }
             }
         }
