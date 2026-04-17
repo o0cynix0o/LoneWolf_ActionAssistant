@@ -115,6 +115,17 @@ function Add-LWAutomationSmokeBaselineGear {
         [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Taunor Water')
     }
 
+    if ([int]$State.Character.BookNumber -eq 7) {
+        [void](TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Book of the Magnakai')
+        [void](TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Silver Whistle')
+        [void](TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Kazan-Oud Platinum Amulet')
+        foreach ($item in @('Sabito', 'Blanket', 'Bottle of Water', 'Red Robe', 'Fireseed')) {
+            [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name $item)
+        }
+        [void](TryAdd-LWPocketSpecialItemSilently -Name 'Power-key')
+        [void](TryAdd-LWPocketSpecialItemSilently -Name 'Gold Key')
+    }
+
     $State.Inventory.GoldCrowns = 50
     [void](Sync-LWStateEquipmentBonuses -State $State)
 }
@@ -206,7 +217,7 @@ $combatResults = @()
 $failures = @()
 $baseStates = @{}
 
-foreach ($bookNumber in 1..6) {
+foreach ($bookNumber in 1..7) {
     try {
         $startState = New-LWDefaultState
         $startState.Character.Name = 'Automation Smoke'
@@ -238,7 +249,7 @@ foreach ($bookNumber in 1..6) {
     $baseStates[[string]$bookNumber] = (New-LWAutomationSmokeState -BookNumber $bookNumber)
 }
 
-foreach ($bookNumber in 1..6) {
+foreach ($bookNumber in 1..7) {
     $baseState = $baseStates[[string]$bookNumber]
     foreach ($section in (Get-LWAutomationSmokeSectionRange -BookNumber $bookNumber)) {
         $state = Copy-LWAutomationSmokeState -State $baseState

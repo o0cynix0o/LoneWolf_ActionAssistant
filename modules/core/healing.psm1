@@ -138,8 +138,8 @@ function Test-LWStateHasSectionHealing {
         return $false
     }
 
-    $isBookSixMagnakai = ((Test-LWStateIsMagnakaiRuleset -State $State) -and [int]$State.Character.BookNumber -eq 6)
-    if (-not $isBookSixMagnakai) {
+    $isMagnakaiHealingBook = ((Test-LWStateIsMagnakaiRuleset -State $State) -and [int]$State.Character.BookNumber -ge 6)
+    if (-not $isMagnakaiHealingBook) {
         return (Test-LWStateHasDiscipline -State $State -Name 'Healing')
     }
 
@@ -147,14 +147,18 @@ function Test-LWStateHasSectionHealing {
         return $true
     }
 
-    return ((Get-LWBookSixDECuringOption -State $State) -eq 2 -and (Test-LWStateHasDiscipline -State $State -Name 'Healing'))
+    if ([int]$State.Character.BookNumber -eq 6) {
+        return ((Get-LWBookSixDECuringOption -State $State) -eq 2 -and (Test-LWStateHasDiscipline -State $State -Name 'Healing'))
+    }
+
+    return $false
 }
 
 function Get-LWSectionHealingSourceLabel {
     param([object]$State = $null)
 
     $State = Resolve-LWHealingState -State $State
-    if ($null -ne $State -and $null -ne $State.Character -and [int]$State.Character.BookNumber -eq 6 -and (Test-LWStateIsMagnakaiRuleset -State $State) -and (Test-LWStateHasDiscipline -State $State -Name 'Curing')) {
+    if ($null -ne $State -and $null -ne $State.Character -and [int]$State.Character.BookNumber -ge 6 -and (Test-LWStateIsMagnakaiRuleset -State $State) -and (Test-LWStateHasDiscipline -State $State -Name 'Curing')) {
         return 'Curing'
     }
 

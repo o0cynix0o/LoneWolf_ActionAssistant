@@ -30,6 +30,7 @@ function Get-LWMagnakaiSectionRandomNumberContext {
 
     switch ([int]$State.Character.BookNumber) {
         6 { return (Get-LWMagnakaiBookSixSectionRandomNumberContext -State $State) }
+        7 { return (Get-LWMagnakaiBookSevenSectionRandomNumberContext -State $State) }
         default { return $null }
     }
 }
@@ -50,6 +51,7 @@ function Invoke-LWMagnakaiSectionRandomNumberResolution {
 
     switch ([int]$State.Character.BookNumber) {
         6 { Invoke-LWMagnakaiBookSixSectionRandomNumberResolution -State $State -Context $Context -Rolls $Rolls -EffectiveRolls $EffectiveRolls -Subtotal $Subtotal -AdjustedTotal $AdjustedTotal; return }
+        7 { Invoke-LWMagnakaiBookSevenSectionRandomNumberResolution -State $State -Context $Context -Rolls $Rolls -EffectiveRolls $EffectiveRolls -Subtotal $Subtotal -AdjustedTotal $AdjustedTotal; return }
     }
 }
 
@@ -61,6 +63,7 @@ function Invoke-LWMagnakaiStorySectionAchievementTriggers {
 
     switch ([int]$State.Character.BookNumber) {
         6 { Invoke-LWMagnakaiBookSixStorySectionAchievementTriggers -State $State -Section $Section; return }
+        7 { Invoke-LWMagnakaiBookSevenStorySectionAchievementTriggers -State $State -Section $Section; return }
     }
 }
 
@@ -73,6 +76,7 @@ function Invoke-LWMagnakaiStorySectionTransitionAchievementTriggers {
 
     switch ([int]$State.Character.BookNumber) {
         6 { Invoke-LWMagnakaiBookSixStorySectionTransitionAchievementTriggers -State $State -FromSection $FromSection -ToSection $ToSection; return }
+        7 { Invoke-LWMagnakaiBookSevenStorySectionTransitionAchievementTriggers -State $State -FromSection $FromSection -ToSection $ToSection; return }
     }
 }
 
@@ -81,6 +85,7 @@ function Invoke-LWMagnakaiSectionEntryRules {
 
     switch ([int]$State.Character.BookNumber) {
         6 { Invoke-LWMagnakaiBookSixSectionEntryRules -State $State; return }
+        7 { Invoke-LWMagnakaiBookSevenSectionEntryRules -State $State; return }
     }
 }
 
@@ -93,6 +98,7 @@ function Invoke-LWMagnakaiStartingEquipment {
 
     switch ([int]$BookNumber) {
         6 { Apply-LWMagnakaiBookSixStartingEquipment -State $State -CarryExistingGear:$CarryExistingGear; return }
+        7 { Apply-LWMagnakaiBookSevenStartingEquipment -State $State -CarryExistingGear:$CarryExistingGear; return }
     }
 }
 

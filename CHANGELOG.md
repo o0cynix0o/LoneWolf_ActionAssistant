@@ -6,6 +6,38 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- built the full Book `7` / `Castle Death` Magnakai module and wired it into the live ruleset stack:
+  - added `modules/rulesets/magnakai/book7.psm1`
+  - implemented Book `7` startup and carry-forward handling, including the opening item-pick flow
+  - implemented Book `7` section-entry automation, random-number helpers, guided choice flows, route flags, combat hooks, and achievement triggers
+  - added Book `7` completion and route achievements:
+    - `book_seven_complete`
+    - `lorestone_bearer`
+    - `up_the_blue_beam`
+    - `throne_of_fire`
+    - `out_through_the_ash`
+    - `castle_death`
+  - validation artifacts:
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
+  - Book `7` validation standard now met:
+    - broad automation surface smoke in both shells
+    - one full Normal completion-path smoke
+    - targeted Story / Easy / Hard / Veteran / Permadeath regression checks
 - aligned Book `6` section `158` / `293` silver-key handling with the DE-facing item name:
   - `Small Silver Key` now normalizes to `Sinede's Silver Key` on load and in inventory handling
   - section `158` now adds `Sinede's Silver Key`

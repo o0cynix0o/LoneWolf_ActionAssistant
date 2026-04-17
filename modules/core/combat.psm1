@@ -186,6 +186,7 @@ function Invoke-LWCoreStartCombat {
         $specialPlayerLossAmount = 0
         $specialPlayerLossStartRound = 1
         $specialPlayerLossReason = $null
+        $playerEnduranceLossMultiplier = 1
         $ignorePlayerEnduranceLossRounds = 0
         $ignoreEnemyEnduranceLossRounds = 0
         $doubleEnemyEnduranceLoss = $false
@@ -310,6 +311,7 @@ function Invoke-LWCoreStartCombat {
             SpecialPlayerEnduranceLossAmount = $specialPlayerLossAmount
             SpecialPlayerEnduranceLossStartRound = $specialPlayerLossStartRound
             SpecialPlayerEnduranceLossReason = $specialPlayerLossReason
+            PlayerEnduranceLossMultiplier    = $playerEnduranceLossMultiplier
             IgnoreFirstRoundEnduranceLoss    = $ignoreFirstRoundEnduranceLoss
             IgnorePlayerEnduranceLossRounds  = $ignorePlayerEnduranceLossRounds
             IgnoreEnemyEnduranceLossRounds   = $ignoreEnemyEnduranceLossRounds
@@ -371,6 +373,7 @@ function Invoke-LWCoreStartCombat {
         $specialPlayerLossAmount = [int]$combatScenario.SpecialPlayerEnduranceLossAmount
         $specialPlayerLossStartRound = [int]$combatScenario.SpecialPlayerEnduranceLossStartRound
         $specialPlayerLossReason = if ([string]::IsNullOrWhiteSpace([string]$combatScenario.SpecialPlayerEnduranceLossReason)) { $null } else { [string]$combatScenario.SpecialPlayerEnduranceLossReason }
+        $playerEnduranceLossMultiplier = if ($null -eq $combatScenario.PlayerEnduranceLossMultiplier) { 1 } else { [Math]::Max(1, [int]$combatScenario.PlayerEnduranceLossMultiplier) }
         $ignoreFirstRoundEnduranceLoss = [bool]$combatScenario.IgnoreFirstRoundEnduranceLoss
         $ignorePlayerEnduranceLossRounds = [int]$combatScenario.IgnorePlayerEnduranceLossRounds
         $ignoreEnemyEnduranceLossRounds = [int]$combatScenario.IgnoreEnemyEnduranceLossRounds
@@ -494,6 +497,7 @@ function Invoke-LWCoreStartCombat {
             CombatPotionsAllowed     = $combatPotionsAllowed
             BowRestricted            = $bowRestricted
             SuppressShieldCombatSkillBonus = $suppressShieldCombatSkillBonus
+            PlayerEnduranceLossMultiplier = $playerEnduranceLossMultiplier
             PlayerCombatSkillModifier = $playerMod
             PlayerCombatSkillModifierRounds = $playerModRounds
             PlayerCombatSkillModifierAfterRounds = $playerModAfterRounds
@@ -997,6 +1001,11 @@ function Get-LWCombatBreakdownFromState {
         $specialLossStartRound = if ((Test-LWPropertyExists -Object $State.Combat -Name 'SpecialPlayerEnduranceLossStartRound') -and $null -ne $State.Combat.SpecialPlayerEnduranceLossStartRound) { [int]$State.Combat.SpecialPlayerEnduranceLossStartRound } else { 1 }
         $specialLossReason = if ((Test-LWPropertyExists -Object $State.Combat -Name 'SpecialPlayerEnduranceLossReason') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.SpecialPlayerEnduranceLossReason)) { [string]$State.Combat.SpecialPlayerEnduranceLossReason } else { 'Special hazard' }
         $notes += ("{0} -{1} END from round {2}" -f $specialLossReason, $specialLossAmount, $specialLossStartRound)
+    }
+
+    $playerLossMultiplier = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerEnduranceLossMultiplier') -and $null -ne $State.Combat.PlayerEnduranceLossMultiplier) { [Math]::Max(1, [int]$State.Combat.PlayerEnduranceLossMultiplier) } else { 1 }
+    if ($playerLossMultiplier -gt 1) {
+        $notes += ("Lone Wolf END loss x{0}" -f $playerLossMultiplier)
     }
 
     if ([bool]$State.Combat.CanEvade) {
@@ -1771,7 +1780,15 @@ function Resolve-LWCombatRound {
         }
     }
 
-    $playerLossResolution = Resolve-LWGameplayEnduranceLoss -Loss ([int]$PlayerLoss) -Source 'combat' -State $State
+    $combatPlayerLossBase = [int]$PlayerLoss
+    $playerLossMultiplier = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerEnduranceLossMultiplier') -and $null -ne $State.Combat.PlayerEnduranceLossMultiplier) { [Math]::Max(1, [int]$State.Combat.PlayerEnduranceLossMultiplier) } else { 1 }
+    $scaledPlayerLoss = $combatPlayerLossBase
+    if ($combatPlayerLossBase -gt 0 -and $playerLossMultiplier -gt 1) {
+        $scaledPlayerLoss = $combatPlayerLossBase * $playerLossMultiplier
+        $messages += ("Special rule multiplies Lone Wolf ENDURANCE loss to {0}." -f $scaledPlayerLoss)
+    }
+
+    $playerLossResolution = Resolve-LWGameplayEnduranceLoss -Loss $scaledPlayerLoss -Source 'combat' -State $State
     $baseEnemyLoss = [int]$EnemyLoss
     $enemyLossApplied = $baseEnemyLoss
     $combatPlayerLossApplied = [int]$playerLossResolution.AppliedLoss
@@ -1897,7 +1914,7 @@ function Resolve-LWCombatRound {
     }
 
     $totalPlayerLossApplied = $combatPlayerLossApplied + $mindforceAppliedLoss + $specialAppliedLoss + $psychicAppliedLoss
-    $totalPlayerLossBase = [int]$PlayerLoss + $mindforceBaseLoss + $specialBaseLoss + $psychicBaseLoss
+    $totalPlayerLossBase = $scaledPlayerLoss + $mindforceBaseLoss + $specialBaseLoss + $psychicBaseLoss
     $ignorePlayerLossRounds = if ((Test-LWPropertyExists -Object $State.Combat -Name 'IgnorePlayerEnduranceLossRounds') -and $null -ne $State.Combat.IgnorePlayerEnduranceLossRounds) { [int]$State.Combat.IgnorePlayerEnduranceLossRounds } else { 0 }
     if ([bool]$State.Combat.IgnoreFirstRoundEnduranceLoss -and $ignorePlayerLossRounds -lt 1) {
         $ignorePlayerLossRounds = 1
@@ -2233,6 +2250,10 @@ function Invoke-LWCombatRound {
         }
         if (Test-LWCombatSommerswerdUndeadDoubleDamageActive -State $script:GameState) {
             Write-LWInfo 'Enter the normal enemy END loss from the CRT. The Sommerswerd undead bonus will double it automatically.'
+        }
+        $playerLossMultiplier = if ((Test-LWPropertyExists -Object $script:GameState.Combat -Name 'PlayerEnduranceLossMultiplier') -and $null -ne $script:GameState.Combat.PlayerEnduranceLossMultiplier) { [Math]::Max(1, [int]$script:GameState.Combat.PlayerEnduranceLossMultiplier) } else { 1 }
+        if ($playerLossMultiplier -gt 1) {
+            Write-LWInfo ("Enter the normal Lone Wolf END loss from the CRT. The section rule will multiply it by {0} automatically." -f $playerLossMultiplier)
         }
         if ((Test-LWCombatUsesMindforce -State $script:GameState) -and -not (Test-LWCombatMindforceBlockedByMindshield -State $script:GameState)) {
             Write-LWInfo ("Enter the normal Lone Wolf END loss from the CRT. Mindforce will add {0} END automatically." -f (Get-LWCombatMindforceLossPerRound -State $script:GameState))
@@ -3304,6 +3325,7 @@ function New-LWCombatState {
         PlayerTargetEnduranceCurrent = 0
         PlayerTargetEnduranceMax = 0
         SuppressShieldCombatSkillBonus = $false
+        PlayerEnduranceLossMultiplier = 1
         PlayerCombatSkillModifier = 0
         PlayerCombatSkillModifierRounds = 0
         PlayerCombatSkillModifierAfterRounds = 0

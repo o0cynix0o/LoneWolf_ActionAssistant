@@ -33,7 +33,7 @@ function New-LWRandomAutomationSmokeState {
     if ($BookNumber -ge 6) {
         $state.RuleSet = 'Magnakai'
         $state.Character.LegacyKaiComplete = $true
-        $state.Character.MagnakaiRank = 3
+        $state.Character.MagnakaiRank = if ($BookNumber -ge 7) { 4 } else { 3 }
         $state.Character.MagnakaiDisciplines = @()
         $state.Character.WeaponmasteryWeapons = @()
     }
@@ -48,7 +48,7 @@ function New-LWRandomAutomationSmokeState {
 $results = @()
 $failures = @()
 
-foreach ($bookNumber in 1..6) {
+foreach ($bookNumber in 1..7) {
     foreach ($section in (Get-LWRandomAutomationSmokeSectionRange -BookNumber $bookNumber)) {
         $state = New-LWRandomAutomationSmokeState -BookNumber $bookNumber
         $state.CurrentSection = $section

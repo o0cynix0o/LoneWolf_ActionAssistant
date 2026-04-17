@@ -4,26 +4,92 @@ $script:GameState = $null
 $script:GameData = $null
 $script:LWUi = $null
 
+function Resolve-LWMagnakaiRestrictedWeapon {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [string]$EquippedWeapon = $null,
+        [Parameter(Mandatory = $true)][string[]]$RestrictedNames,
+        [string]$SectionLabel = 'This section',
+        [string]$RestrictionDescription = 'that weapon'
+    )
+
+    if ([string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values $RestrictedNames -Target ([string]$EquippedWeapon)))) {
+        return $EquippedWeapon
+    }
+
+    $fallbackWeapon = [string](
+        @(
+            $State.Inventory.Weapons | Where-Object {
+                [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values $RestrictedNames -Target ([string]$_)))
+            } | Select-Object -First 1
+        )
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($fallbackWeapon)) {
+        Write-LWWarn ("{0}: {1} cannot be used here, so you switch to {2}." -f $SectionLabel, $RestrictionDescription, $fallbackWeapon)
+        return $fallbackWeapon
+    }
+
+    Write-LWWarn ("{0}: {1} cannot be used here and no other weapon is ready, so you fight unarmed." -f $SectionLabel, $RestrictionDescription)
+    return $null
+}
+
 function Get-LWMagnakaiCombatEncounterProfile {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    if ($null -eq $State.Character -or [int]$State.Character.BookNumber -ne 6) {
+    if ($null -eq $State.Character -or [int]$State.Character.BookNumber -lt 6 -or [int]$State.Character.BookNumber -gt 7) {
         return $null
     }
 
-    switch ([int]$State.CurrentSection) {
-        26 {
-            return [pscustomobject]@{
-                SuppressKnockout = $true
+    if ([int]$State.Character.BookNumber -eq 6) {
+        switch ([int]$State.CurrentSection) {
+            26 {
+                return [pscustomobject]@{
+                    SuppressKnockout = $true
+                }
+            }
+            234 {
+                return [pscustomobject]@{
+                    EnemyName        = 'Plate-Armored Assassin'
+                    EnemyCombatSkill = 24
+                    EnemyEndurance   = 30
+                    DisableAlether   = $true
+                    InfoMessage      = 'Book 6 DE section 234 combat detected: Plate-Armored Assassin (CS 24, END 30).'
+                }
             }
         }
-        234 {
-            return [pscustomobject]@{
-                EnemyName        = 'Plate-Armored Assassin'
-                EnemyCombatSkill = 24
-                EnemyEndurance   = 30
-                DisableAlether   = $true
-                InfoMessage      = 'Book 6 DE section 234 combat detected: Plate-Armored Assassin (CS 24, END 30).'
+    }
+    elseif ([int]$State.Character.BookNumber -eq 7) {
+        switch ([int]$State.CurrentSection) {
+            8 { return [pscustomobject]@{ EnemyName = 'Hound of Death'; EnemyCombatSkill = 22; EnemyEndurance = 40 } }
+            19 { return [pscustomobject]@{ EnemyName = 'Dhax'; EnemyCombatSkill = 25; EnemyEndurance = 32 } }
+            27 { return [pscustomobject]@{ EnemyName = 'Oudakon'; EnemyCombatSkill = 20; EnemyEndurance = 29 } }
+            45 { return [pscustomobject]@{ EnemyName = 'Flood of Giant Rats'; EnemyCombatSkill = 15; EnemyEndurance = 80 } }
+            76 { return [pscustomobject]@{ EnemyName = 'Lekhor'; EnemyCombatSkill = 16; EnemyEndurance = 30 } }
+            78 { return [pscustomobject]@{ EnemyName = 'Hound of Death'; EnemyCombatSkill = 22; EnemyEndurance = 40 } }
+            93 { return [pscustomobject]@{ EnemyName = 'Trap-webs'; EnemyCombatSkill = 14; EnemyEndurance = 34 } }
+            118 { return [pscustomobject]@{ EnemyName = 'Lord Zahda'; EnemyCombatSkill = 23; EnemyEndurance = 45 } }
+            126 { return [pscustomobject]@{ EnemyName = 'Flame-man'; EnemyCombatSkill = 14; EnemyEndurance = 40 } }
+            174 { return [pscustomobject]@{ EnemyName = 'Lord Zahda'; EnemyCombatSkill = 33; EnemyEndurance = 45 } }
+            198 { return [pscustomobject]@{ EnemyName = 'Rahkos'; EnemyCombatSkill = 18; EnemyEndurance = 30 } }
+            202 { return [pscustomobject]@{ EnemyName = 'Lord Zahda'; EnemyCombatSkill = 25; EnemyEndurance = 45 } }
+            219 { return [pscustomobject]@{ EnemyName = 'Giant Hactaraton'; EnemyCombatSkill = 20; EnemyEndurance = 45 } }
+            221 { return [pscustomobject]@{ EnemyName = 'Zagothal'; EnemyCombatSkill = 29; EnemyEndurance = 28 } }
+            235 { return [pscustomobject]@{ EnemyName = 'Rahkos'; EnemyCombatSkill = 18; EnemyEndurance = 30 } }
+            245 { return [pscustomobject]@{ EnemyName = 'Hound of Death'; EnemyCombatSkill = 22; EnemyEndurance = 40 } }
+            249 { return [pscustomobject]@{ EnemyName = 'Dhax'; EnemyCombatSkill = 27; EnemyEndurance = 35 } }
+            253 { return [pscustomobject]@{ EnemyName = 'Dhax'; EnemyCombatSkill = 20; EnemyEndurance = 26 } }
+            257 { return [pscustomobject]@{ EnemyName = 'Invisible Whipmaster'; EnemyCombatSkill = 24; EnemyEndurance = 26 } }
+            299 { return [pscustomobject]@{ EnemyName = 'Dhax'; EnemyCombatSkill = 27; EnemyEndurance = 35 } }
+            301 { return [pscustomobject]@{ EnemyName = 'Giant Hactaraton'; EnemyCombatSkill = 22; EnemyEndurance = 60 } }
+            314 { return [pscustomobject]@{ EnemyName = 'Dhax'; EnemyCombatSkill = 20; EnemyEndurance = 28 } }
+            319 { return [pscustomobject]@{ EnemyName = 'Zahda Beastmen'; EnemyCombatSkill = 28; EnemyEndurance = 35 } }
+            325 {
+                return [pscustomobject]@{
+                    EnemyName        = 'Black Lakeweed'
+                    EnemyCombatSkill = 10
+                    EnemyEndurance   = 50
+                }
             }
         }
     }
@@ -42,8 +108,290 @@ function Invoke-LWMagnakaiCombatScenarioRules {
     if (Get-Command -Name 'Set-LWHostGameState' -ErrorAction SilentlyContinue) { Set-LWHostGameState -State $script:GameState | Out-Null }
     $enemyName = [string]$Scenario.EnemyName
 
-    if ([int]$script:GameState.Character.BookNumber -ne 6) {
+    $bookNumber = [int]$script:GameState.Character.BookNumber
+    if ($bookNumber -lt 6 -or $bookNumber -gt 7) {
         return
+    }
+
+    if ($bookNumber -eq 7) {
+        switch ([int]$script:GameState.CurrentSection) {
+            8 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                $Scenario.VictoryResolutionSection = 194
+                $Scenario.VictoryResolutionNote = 'Section 8 result: victory sends you to 194.'
+                Write-LWInfo 'Book 7 section 8: the Hound of Death is immune to Mindblast, but not Psi-surge.'
+                return
+            }
+            19 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 3
+                    $Scenario.PlayerModRounds = 2
+                }
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 241
+                $Scenario.EvadeResolutionNote = 'Section 19 result: after 3 rounds you may evade into the archway and turn to 241.'
+                $Scenario.VictoryResolutionSection = 141
+                $Scenario.VictoryResolutionNote = 'Section 19 result: victory sends you to 141.'
+                Write-LWInfo 'Book 7 section 19: unless you have Huntmastery, the surprise attack applies -3 Combat Skill in rounds 1-2.'
+                return
+            }
+            27 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 3
+                    $Scenario.PlayerModRounds = 3
+                }
+                if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWJewelledMaceItemNames) -Type 'special'))) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 5
+                    Write-LWInfo 'Book 7 section 27: the Jewelled Mace grants +5 Combat Skill against Oudakon.'
+                }
+                $Scenario.CanEvade = $false
+                $Scenario.VictoryResolutionSection = 5
+                $Scenario.VictoryResolutionNote = 'Section 27 result: victory sends you to 5.'
+                Write-LWInfo 'Book 7 section 27: unless you have Huntmastery, the sudden attack applies -3 Combat Skill in rounds 1-3.'
+                return
+            }
+            45 {
+                if ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') -and (Test-LWStateHasDiscipline -State $script:GameState -Name 'Curing')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 2
+                    Write-LWInfo 'Book 7 section 45: Lore-circle of Light grants +2 Combat Skill for this fight.'
+                }
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 336
+                $Scenario.EvadeResolutionNote = 'Section 45 result: after 3 rounds you may climb over the reef and turn to 336.'
+                $Scenario.VictoryResolutionSection = 283
+                $Scenario.VictoryResolutionNote = 'Section 45 result: victory sends you to 283.'
+                return
+            }
+            76 {
+                $Scenario.SuppressShieldCombatSkillBonus = $true
+                $Scenario.PlayerEnduranceLossMultiplier = 3
+                $Scenario.EquippedWeapon = Resolve-LWMagnakaiRestrictedWeapon -State $script:GameState -EquippedWeapon ([string]$Scenario.EquippedWeapon) -RestrictedNames @('Broadsword', 'Spear', 'Quarterstaff') -SectionLabel 'Book 7 section 76' -RestrictionDescription 'two-handed weapons'
+                $Scenario.VictoryResolutionSection = 296
+                $Scenario.VictoryResolutionNote = 'Section 76 result: victory sends you to 296.'
+                Write-LWInfo 'Book 7 section 76: Shield bonuses are suppressed, two-handed weapons are unusable, and venom trebles Lone Wolf ENDURANCE loss.'
+                return
+            }
+            78 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                $Scenario.VictoryResolutionSection = 341
+                $Scenario.VictoryResolutionNote = 'Section 78 result: victory sends you to 341.'
+                Write-LWInfo 'Book 7 section 78: the Hound of Death is immune to Mindblast, but not Psi-surge.'
+                return
+            }
+            93 {
+                $Scenario.EnemyImmune = $true
+                $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 4
+                $Scenario.CanEvade = $false
+                $Scenario.VictoryResolutionSection = 131
+                $Scenario.VictoryResolutionNote = 'Section 93 result: victory sends you to 131.'
+                Write-LWInfo 'Book 7 section 93: Trap-webs are immune to Mindblast and Psi-surge, and your movement is restricted by -4 Combat Skill.'
+                return
+            }
+            118 {
+                $script:GameState.Character.EnduranceCurrent = [int]$script:GameState.Character.EnduranceMax
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery') {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 2
+                }
+                $Scenario.VictoryResolutionSection = 200
+                $Scenario.VictoryResolutionNote = 'Section 118 result: victory sends you to 200.'
+                Write-LWInfo 'Book 7 section 118: the Lorestone restores you to full ENDURANCE before the duel begins.'
+                return
+            }
+            126 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus')) {
+                    $Scenario.PlayerEnduranceLossMultiplier = 2
+                    Write-LWInfo 'Book 7 section 126: the flames double Lone Wolf ENDURANCE loss unless you have Nexus.'
+                }
+                else {
+                    Write-LWInfo 'Book 7 section 126: Nexus protects you from the worst of the flames.'
+                }
+                $Scenario.VictoryResolutionSection = 147
+                $Scenario.VictoryResolutionNote = 'Section 126 result: victory sends you to 147.'
+                return
+            }
+            174 {
+                $Scenario.EnemyImmune = $true
+                $Scenario.VictoryResolutionSection = 149
+                $Scenario.VictoryResolutionNote = 'Section 174 result: victory sends you to 149.'
+                Write-LWInfo 'Book 7 section 174: Zahda with the power-staff is immune to Mindblast and Psi-surge.'
+                return
+            }
+            198 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                $Scenario.VictoryResolutionSection = 22
+                $Scenario.VictoryResolutionNote = 'Section 198 result: victory sends you to 22.'
+                Write-LWInfo 'Book 7 section 198: Rahkos is immune to Mindblast, but not Psi-surge.'
+                return
+            }
+            202 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                $Scenario.VictoryResolutionSection = 149
+                $Scenario.VictoryResolutionNote = 'Section 202 result: victory sends you to 149.'
+                Write-LWInfo 'Book 7 section 202: Zahda is immune to Mindblast, but not Psi-surge.'
+                return
+            }
+            219 {
+                $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 4
+                $Scenario.PlayerModRounds = 2
+                if (-not [string]::IsNullOrWhiteSpace([string]$Scenario.EquippedWeapon)) {
+                    $Scenario.DeferredEquippedWeapon = [string]$Scenario.EquippedWeapon
+                    $Scenario.EquipDeferredWeaponAfterRound = 2
+                    $Scenario.EquippedWeapon = $null
+                }
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Curing')) {
+                    $Scenario.PlayerEnduranceLossMultiplier = 2
+                    Write-LWInfo 'Book 7 section 219: without Curing, the Hactaraton''s venom doubles Lone Wolf ENDURANCE loss.'
+                }
+                else {
+                    Write-LWInfo 'Book 7 section 219: Curing protects you from the worst of the Hactaraton''s venom.'
+                }
+                $Scenario.VictoryResolutionSection = 21
+                $Scenario.VictoryResolutionNote = 'Section 219 result: victory sends you to 21.'
+                Write-LWInfo 'Book 7 section 219: you fight at -4 Combat Skill in rounds 1-2 and recover your weapon at the start of round 3.'
+                return
+            }
+            221 {
+                $Scenario.BowRestricted = $true
+                $Scenario.EquippedWeapon = Resolve-LWCoreRestrictedBowWeapon -State $script:GameState -EquippedWeapon ([string]$Scenario.EquippedWeapon) -SectionLabel 'Book 7 section 221'
+                $Scenario.CanEvade = $true
+                if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Invisibility') {
+                    $Scenario.EvadeAvailableAfterRound = 0
+                    $Scenario.EvadeResolutionSection = 70
+                    $Scenario.EvadeResolutionNote = 'Section 221 result: Invisibility lets you evade immediately and reach 70.'
+                    Write-LWInfo 'Book 7 section 221: Invisibility lets you evade at any time without ENDURANCE loss.'
+                }
+                else {
+                    $Scenario.EvadeAvailableAfterRound = 2
+                    $Scenario.EvadeResolutionSection = 229
+                    $Scenario.EvadeResolutionNote = 'Section 221 result: after 2 rounds you may evade into the tunnel and turn to 229.'
+                }
+                $Scenario.VictoryResolutionSection = 271
+                $Scenario.VictoryResolutionNote = 'Section 221 result: victory sends you to 271.'
+                return
+            }
+            235 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                $Scenario.VictoryResolutionSection = 22
+                $Scenario.VictoryResolutionNote = 'Section 235 result: victory sends you to 22.'
+                Write-LWInfo 'Book 7 section 235: Rahkos is immune to Mindblast, but not Psi-surge.'
+                return
+            }
+            245 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+                    $Scenario.EnemyImmune = $true
+                }
+                $Scenario.VictoryResolutionSection = 259
+                $Scenario.VictoryResolutionNote = 'Section 245 result: victory sends you to 259.'
+                Write-LWInfo 'Book 7 section 245: the Hound of Death is immune to Mindblast, but not Psi-surge.'
+                return
+            }
+            249 {
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 241
+                $Scenario.EvadeResolutionNote = 'Section 249 result: after 3 rounds you may evade into the archway and turn to 241.'
+                $Scenario.VictoryResolutionSection = 141
+                $Scenario.VictoryResolutionNote = 'Section 249 result: victory sends you to 141.'
+                return
+            }
+            253 {
+                $Scenario.BowRestricted = $true
+                $Scenario.EquippedWeapon = Resolve-LWCoreRestrictedBowWeapon -State $script:GameState -EquippedWeapon ([string]$Scenario.EquippedWeapon) -SectionLabel 'Book 7 section 253'
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeResolutionSection = 277
+                $Scenario.EvadeResolutionNote = 'Section 253 result: you may evade at any time into the archway and turn to 277.'
+                $Scenario.VictoryResolutionSection = 141
+                $Scenario.VictoryResolutionNote = 'Section 253 result: victory sends you to 141.'
+                Write-LWInfo 'Book 7 section 253: the opening Bow shot is over and you must finish the fight with another weapon.'
+                return
+            }
+            257 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 2
+                }
+                if ((Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBlanketItemNames) -Type 'backpack') -or
+                    (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWBookSevenRedRobeItemNames) -Type 'backpack') -or
+                    (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWTowelItemNames) -Type 'backpack')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 1
+                    Write-LWInfo 'Book 7 section 257: improvised protection grants +1 Combat Skill.'
+                }
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 64
+                $Scenario.EvadeResolutionNote = 'Section 257 result: after 3 rounds you may evade back along the passage to 64.'
+                $Scenario.VictoryResolutionSection = 186
+                $Scenario.VictoryResolutionNote = 'Section 257 result: victory sends you to 186.'
+                return
+            }
+            299 {
+                $Scenario.CanEvade = $false
+                $Scenario.VictoryResolutionSection = 339
+                $Scenario.VictoryResolutionNote = 'Section 299 result: victory sends you to 339.'
+                Write-LWInfo 'Book 7 section 299: with the trap at your back, this fight cannot be evaded.'
+                return
+            }
+            301 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Curing')) {
+                    $Scenario.PlayerEnduranceLossMultiplier = 2
+                    Write-LWInfo 'Book 7 section 301: without Curing, the Hactaraton''s venom doubles Lone Wolf ENDURANCE loss.'
+                }
+                else {
+                    Write-LWInfo 'Book 7 section 301: Curing protects you from the worst of the Hactaraton''s venom.'
+                }
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 4
+                $Scenario.EvadeResolutionSection = 91
+                $Scenario.EvadeResolutionNote = 'Section 301 result: after 4 rounds you may crawl into the tunnel and turn to 91.'
+                $Scenario.VictoryResolutionSection = 21
+                $Scenario.VictoryResolutionNote = 'Section 301 result: victory sends you to 21.'
+                return
+            }
+            314 {
+                $Scenario.BowRestricted = $true
+                $Scenario.EquippedWeapon = Resolve-LWCoreRestrictedBowWeapon -State $script:GameState -EquippedWeapon ([string]$Scenario.EquippedWeapon) -SectionLabel 'Book 7 section 314'
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeResolutionSection = 277
+                $Scenario.EvadeResolutionNote = 'Section 314 result: you may evade at any time into the archway and turn to 277.'
+                $Scenario.VictoryResolutionSection = 141
+                $Scenario.VictoryResolutionNote = 'Section 314 result: victory sends you to 141.'
+                Write-LWInfo 'Book 7 section 314: the opening Bow shot is over and you must finish the fight with another weapon.'
+                return
+            }
+            319 {
+                $Scenario.CanEvade = $false
+                $Scenario.VictoryResolutionSection = 56
+                $Scenario.VictoryResolutionNote = 'Section 319 result: victory sends you to 56.'
+                Write-LWInfo 'Book 7 section 319: the surviving beastmen fight together as one enemy and cannot be evaded.'
+                return
+            }
+            325 {
+                $Scenario.SpecialPlayerEnduranceLossAmount = 2
+                $Scenario.SpecialPlayerEnduranceLossStartRound = 1
+                $Scenario.SpecialPlayerEnduranceLossReason = 'Lack of air'
+                $Scenario.VictoryResolutionSection = 158
+                $Scenario.VictoryResolutionNote = 'Section 325 result: victory sends you to 158.'
+                Write-LWInfo 'Book 7 section 325: lack of air inflicts 2 ENDURANCE loss every round of combat.'
+                return
+            }
+        }
     }
 
     if ([int]$script:GameState.CurrentSection -eq 12) {

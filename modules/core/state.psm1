@@ -2264,6 +2264,7 @@ function New-LWConditionState {
 }
 
 function Test-LWHasState {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
     return ($script:GameState -and $script:GameState.Character -and -not [string]::IsNullOrWhiteSpace($script:GameState.Character.Name))
 }
 

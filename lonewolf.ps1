@@ -42,6 +42,7 @@ $script:LWKaiBook5ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulese
 $script:LWKaiCombatModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\combat.psm1'
 $script:LWKaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\kai.psm1'
 $script:LWMagnakaiBook6ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\book6.psm1'
+$script:LWMagnakaiBook7ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\book7.psm1'
 $script:LWMagnakaiCombatModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\combat.psm1'
 $script:LWMagnakaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\magnakai.psm1'
 foreach ($modulePath in @(
@@ -64,6 +65,7 @@ foreach ($modulePath in @(
         $script:LWKaiCombatModulePath,
         $script:LWKaiRulesetModulePath,
         $script:LWMagnakaiBook6ModulePath,
+        $script:LWMagnakaiBook7ModulePath,
         $script:LWMagnakaiCombatModulePath,
         $script:LWMagnakaiRulesetModulePath,
         $script:LWRulesetCoreModulePath
@@ -790,12 +792,12 @@ function Complete-LWBook {
             CharacterName = $script:GameState.Character.Name
         })
 
-    if ($currentBook -ge 6) {
+    if ($currentBook -ge 7) {
         $script:GameState.Run.Status = 'Completed'
         $script:GameState.Run.CompletedOn = (Get-Date).ToString('o')
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
         Clear-LWDeathState
-        Write-LWInfo 'Book 6 complete. The current Magnakai campaign is now complete.'
+        Write-LWInfo ("Book {0} complete. The current Magnakai campaign is now complete." -f $currentBook)
         Invoke-LWMaybeAutosave
         return
     }
@@ -867,6 +869,9 @@ function Complete-LWBook {
     }
     elseif ($nextBook -eq 6) {
         Apply-LWBookSixStartingEquipment -CarryExistingGear
+    }
+    elseif ($nextBook -eq 7) {
+        Apply-LWBookSevenStartingEquipment -CarryExistingGear
     }
 
     Invoke-LWMaybeAutosave
@@ -998,7 +1003,7 @@ function Start-LWNewGameCore {
     Set-LWScreen -Name 'sheet'
 
     $name = Read-LWText -Prompt 'Character name' -Default $defaultName
-    $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1 -Max 6
+    $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1 -Max 7
     $startSection = Read-LWInt -Prompt 'Starting section' -Default 1 -Min 1
 
     $csRoll = Get-LWRandomDigit
@@ -1019,11 +1024,12 @@ function Start-LWNewGameCore {
     if ($bookNumber -ge 6) {
         $script:GameState.RuleSet = 'Magnakai'
         $script:GameState.Character.LegacyKaiComplete = $true
-        $magnakaiDisciplines = Select-LWMagnakaiDisciplines -Count 3
+        $requiredMagnakaiCount = [Math]::Min(10, [Math]::Max(3, ($bookNumber - 3)))
+        $magnakaiDisciplines = Select-LWMagnakaiDisciplines -Count $requiredMagnakaiCount
         $script:GameState.Character.MagnakaiDisciplines = @($magnakaiDisciplines)
-        $script:GameState.Character.MagnakaiRank = 3
+        $script:GameState.Character.MagnakaiRank = $requiredMagnakaiCount
         if ($magnakaiDisciplines -contains 'Weaponmastery') {
-            $script:GameState.Character.WeaponmasteryWeapons = @(Select-LWWeaponmasteryWeapons -Count 3)
+            $script:GameState.Character.WeaponmasteryWeapons = @(Select-LWWeaponmasteryWeapons -Count $requiredMagnakaiCount)
             Write-LWInfo ("Weaponmastery selection: {0}" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
         }
         Sync-LWMagnakaiLoreCircleBonuses -State $script:GameState -WriteMessages
@@ -1058,6 +1064,9 @@ function Start-LWNewGameCore {
     }
     elseif ($bookNumber -eq 6) {
         Apply-LWBookSixStartingEquipment
+    }
+    elseif ($bookNumber -eq 7) {
+        Apply-LWBookSevenStartingEquipment
     }
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
@@ -1426,10 +1435,14 @@ function Load-LWGame {
         Set-LWHostGameState -State (Sync-LWStateRefactorMetadata -State $loadedState) | Out-Null
         Warm-LWRuntimeCaches
         Set-LWScreen -Name (Get-LWDefaultScreen)
-        if ([int]$script:GameState.Character.BookNumber -eq 6 -and -not (Test-LWDeathActive)) {
-            $bookSixInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection)
-            if (-not [string]::IsNullOrWhiteSpace($bookSixInstantDeathCause)) {
-                Invoke-LWInstantDeath -Cause $bookSixInstantDeathCause
+        if (-not (Test-LWDeathActive)) {
+            $magnakaiInstantDeathCause = $null
+            switch ([int]$script:GameState.Character.BookNumber) {
+                6 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
+                7 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSevenInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
+            }
+            if (-not [string]::IsNullOrWhiteSpace($magnakaiInstantDeathCause)) {
+                Invoke-LWInstantDeath -Cause $magnakaiInstantDeathCause
             }
         }
     }
@@ -1443,10 +1456,14 @@ function Load-LWGameInteractive {
         Set-LWHostGameState -State (Sync-LWStateRefactorMetadata -State $loadedState) | Out-Null
         Warm-LWRuntimeCaches
         Set-LWScreen -Name (Get-LWDefaultScreen)
-        if ([int]$script:GameState.Character.BookNumber -eq 6 -and -not (Test-LWDeathActive)) {
-            $bookSixInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection)
-            if (-not [string]::IsNullOrWhiteSpace($bookSixInstantDeathCause)) {
-                Invoke-LWInstantDeath -Cause $bookSixInstantDeathCause
+        if (-not (Test-LWDeathActive)) {
+            $magnakaiInstantDeathCause = $null
+            switch ([int]$script:GameState.Character.BookNumber) {
+                6 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
+                7 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSevenInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
+            }
+            if (-not [string]::IsNullOrWhiteSpace($magnakaiInstantDeathCause)) {
+                Invoke-LWInstantDeath -Cause $magnakaiInstantDeathCause
             }
         }
     }
@@ -1535,6 +1552,12 @@ function Apply-LWBookSixStartingEquipment {
     param([switch]$CarryExistingGear)
 
     Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 6 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookSevenStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 7 -CarryExistingGear:$CarryExistingGear
 }
 
 function Publish-LWScriptFunctionsToSession {

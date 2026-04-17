@@ -34,8 +34,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - optional `Permadeath`
 - Tamper-evident run integrity
 - Book-aware rule support across Books 1-6
+- Book-aware rule support across Books 1-7
 - Transition-only Special Item safekeeping beginning at the Book `4` -> `5` handoff and continuing on later book-to-book transitions
 - Project Aon baseline catch-up complete across Books 1-5, plus released Book 6 / Magnakai support
+- Book 7 / `Castle Death` is now implemented locally in the Magnakai ruleset and validated to the agreed build bar
 - The Kai ruleset campaign is complete through Book 5, and the first Magnakai transition book is now part of the public build
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
@@ -121,6 +123,37 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `717/717` high-confidence candidates covered
 - current `main` follow-up hotfix after the broader smoke pass:
   - Book `3`, section `18` no longer fails forced weapon-loss automation because `Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem` now rebinds ruleset module context before reading state
+- current `main` Book `7` implementation state:
+  - `modules/rulesets/magnakai/book7.psm1` now owns the Book `7` startup flow, section-entry automation, choice flows, random-number helpers, route flags, combat rules, and achievement triggers
+  - Book `7` startup, choice, combat, achievement, random-helper, and broad automation smokes are green in both shells
+  - Book `7` endgame route smoke is green in both shells:
+    - one full Normal completion-path smoke
+    - blue-beam completion route
+    - direct throne-duel completion route
+    - signature `349` failure route
+  - Book `7` targeted difficulty validation is green in both shells:
+    - Story damage prevention and Story-only completion gating
+    - Easy damage halving
+    - Hard Sommerswerd-halving and healing-cap behavior
+    - Veteran Sommerswerd suppression and Veteran completion gating
+    - Permadeath rewind blocking, save deletion on death, and completion gating
+  - local Book `7` validation artifacts:
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS51.txt`
+    - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
 - current measured load behavior on a copied current-format campaign save:
   - cold `pwsh` `-Load`: about `316ms` load / `1.50s` total
   - cold Windows PowerShell `5.1` `-Load`: about `412ms` load / `1.68s` total

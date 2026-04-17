@@ -5,8 +5,8 @@ $script:GameData = $null
 $script:LWUi = $null
 
 $script:LWAchievementModeAvailabilityCache = $null
-$script:LWAchievementStateSchemaVersion = 1
-$script:LWAchievementLoadBackfillVersion = 1
+$script:LWAchievementStateSchemaVersion = 2
+$script:LWAchievementLoadBackfillVersion = 2
 $script:LWAchievementDefinitionsCache = $null
 $script:LWAchievementDefinitionsByIdCache = $null
 $script:LWAchievementContextDefinitionsCache = @{}
@@ -207,6 +207,37 @@ function New-LWStoryAchievementFlags {
         Book6SmallSilverKeyClaimed  = $false
         Book6SilverBowClaimed       = $false
         Book6CessClaimed            = $false
+        Book7PowerKeyClaimed        = $false
+        Book7PlatinumAmuletClaimed  = $false
+        Book7SabitoIdentified       = $false
+        Book7DiamondClaimed         = $false
+        Book7Snake123ClueSeen       = $false
+        Book7SilverWhistleClaimed   = $false
+        Book7SilverWhistleRoute     = $false
+        Book7GoldKeyClaimed         = $false
+        Book7GoldKeyUsed            = $false
+        Book7KasinWarningHeard      = $false
+        Book7SecretPassageLearned   = $false
+        Book7JettyBoatLoreLearned   = $false
+        Book7TavigMet               = $false
+        Book7TavigRescueAttempted   = $false
+        Book7TavigSavedBriefly      = $false
+        Book7TavigWarningHeard      = $false
+        Book7WestJettyLanding       = $false
+        Book7EastBayLanding         = $false
+        Book7ZakhanRiddleSolved     = $false
+        Book7ZahdaBlueBeamPursuit   = $false
+        Book7BlueBeamRoute          = $false
+        Book7ZahdaDirectDuel        = $false
+        Book7ThroneOfFireRoute      = $false
+        Book7LorestoneTubeEscape    = $false
+        Book7LorestoneTransporterEscape = $false
+        Book7LowerLevelSafeEscape   = $false
+        Book7OutThroughTheAshRoute  = $false
+        Book7CastleDeathSeen        = $false
+        Book7CastleDeathFailureSeen = $false
+        Book7TendrilSevered         = $false
+        Book7HotTunnelSurvived      = $false
     }
 }
 
@@ -367,7 +398,23 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'silver_oak_prize' -Name 'Silver Oak Prize' -Category 'Journey' -Description 'Win the Silver Bow of Duadon in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cess_to_enter' -Name 'Cess to Enter' -Category 'Journey' -Description 'Pocket a valid Cess for Amory in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'cold_comfort' -Name 'Cold Comfort' -Category 'Journey' -Description 'Let Nexus save you from the frozen river in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'mind_over_malice_book6' -Name 'Mind Over Malice' -Category 'Journey' -Description 'Have Psi-screen block the cursed Mindforce assault in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'mind_over_malice_book6' -Name 'Mind Over Malice' -Category 'Journey' -Description 'Have Psi-screen block the cursed Mindforce assault in Book 6.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'book_seven_complete' -Name 'Book Seven Complete' -Category 'Journey' -Description 'Complete Book 7.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'lorestone_bearer' -Name 'Lorestone Bearer' -Category 'Legend' -Description 'Carry a single character through the full Books 1-7 sequence.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'riddle_of_the_zakhan' -Name 'Riddle of the Zakhan' -Category 'Journey' -Description 'Solve the Zakhan''s riddle and reach section 34 in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'heat_of_the_moment' -Name 'Heat of the Moment' -Category 'Journey' -Description 'Claim the Kazan-Oud Platinum Amulet in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'blue_breath' -Name 'Blue Breath' -Category 'Journey' -Description 'Identify Sabito and carry it into the drowned routes of Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'snake_eyes' -Name 'Snake Eyes' -Category 'Journey' -Description 'Pocket the Diamond and uncover the 123 snake clue in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'kasin_last_words' -Name 'Kasin''s Last Words' -Category 'Journey' -Description 'Hear Kasin''s warning in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'green_is_death' -Name 'Green Is Death' -Category 'Journey' -Description 'Hear Tavig''s warning in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'silent_no_more' -Name 'Silent No More' -Category 'Journey' -Description 'Use the Silver Whistle route in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'one_eye_open' -Name 'One Eye Open' -Category 'Journey' -Description 'Use the Gold Key route in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'cool_head_hot_tunnel' -Name 'Cool Head, Hot Tunnel' -Category 'Journey' -Description 'Survive the Book 7 heat tunnel through Nexus or the Platinum Amulet.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'sever_the_tendril' -Name 'Sever the Tendril' -Category 'Journey' -Description 'Use the Sommerswerd route to cut the brain-tendril in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'up_the_blue_beam' -Name 'Up the Blue Beam' -Category 'Journey' -Description 'Finish Book 7 through the blue-beam pursuit route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'throne_of_fire' -Name 'Throne of Fire' -Category 'Journey' -Description 'Finish Book 7 through the direct throne duel route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'out_through_the_ash' -Name 'Out Through the Ash' -Category 'Journey' -Description 'Finish Book 7 through the lower-level escape route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'castle_death' -Name 'Castle Death' -Category 'Journey' -Description 'Reach the signature failure ending at section 349 in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
 
     $definitionsById = @{}
@@ -450,6 +497,12 @@ function Ensure-LWAchievementState {
     }
 
     foreach ($propertyName in @('Book1AimForTheBushesVisited', 'Book1ClubhouseFound', 'Book1SilverKeyClaimed', 'Book1UseTheForcePath', 'Book1StraightToTheThrone', 'Book1RoyalRecovery', 'Book1BackWayIn', 'Book1OpenSesameRoute', 'Book1HotHandsClaimed', 'Book1StarOfToranClaimed', 'Book1FieldMedicPath', 'Book1LaumspurClaimed', 'Book1VordakGem76Claimed', 'Book1VordakGem304Claimed', 'Book1VordakGemCurseTriggered', 'Book1Section61NoteAdded', 'Book1Section255SolnarisClaimed', 'Book2CoachTicketClaimed', 'Book2WhitePassClaimed', 'Book2RedPassClaimed', 'Book2PotentPotionClaimed', 'Book2MealOfLaumspurClaimed', 'Book2ForgedPapersBought', 'Book2Section106DamageApplied', 'Book2Section313Resolved', 'Book2Section337StormLossApplied', 'Book2SommerswerdClaimed', 'Book2ByAThreadRoute', 'Book2SkyfallRoute', 'Book2FightThroughTheSmokeRoute', 'Book2StormTossedSeen', 'Book2SealOfApprovalRoute', 'Book2PapersPleasePath', 'Book3SnakePitVisited', 'Book3CliffhangerSeen', 'Book3DiamondClaimed', 'Book3SnowblindSeen', 'Book3GrossKeyClaimed', 'Book3LuckyButtonTheorySeen', 'Book3WellItWorkedOnceSeen', 'Book3FirstCellAbandoned', 'Book3CellfishPathTaken', 'Book3LoiKymarRescued', 'Book3EffigyEndgameReached', 'Book3SommerswerdEndgameUsed', 'Book3LuckyEndgameUsed', 'Book3TooSlowFailureSeen', 'Book4Section12ResupplyHandled', 'Book4Section12MealsClaimed', 'Book4Section12RopeClaimed', 'Book4Section12PotionClaimed', 'Book4Section12SwordClaimed', 'Book4Section12SpearClaimed', 'Book4Section79SuppliesClaimed', 'Book4Section94LossApplied', 'Book4BadgeOfOfficePath', 'Book4OnyxMedallionClaimed', 'Book4Section117LightPath', 'Book4Section122MindAttackApplied', 'Book4Section123SuppliesClaimed', 'Book4Section158LossApplied', 'Book4Section167RecoveryClaimed', 'Book4BackpackLost', 'Book4BackpackRecovered', 'Book4WashedAway', 'Book4Section280GoldClaimed', 'Book4Section280MealClaimed', 'Book4Section280SwordClaimed', 'Book4CaptainSwordClaimed', 'Book4PotionOfRedLiquidClaimed', 'Book4ShovelReadyClaimed', 'Book4ScrollClaimed', 'Book4TorchesWillNotLight', 'Book4LightInTheDepths', 'Book4Section272LossApplied', 'Book4SteelAgainstShadowRoute', 'Book4BlessedBeTheThrowRoute', 'Book4ScrollRoute', 'Book4Section283HolyWaterApplied', 'Book4SunBelowTheEarthRoute', 'Book4OnyxBluffRoute', 'Book4Section322RestApplied', 'Book4ReturnToSenderPath', 'Book4ChasmOfDoomSeen', 'Book4DaggerOfVashnaClaimed', 'Book5Section278DamageApplied', 'Book5Section385ExplosionApplied', 'Book6Section004LossApplied', 'Book6Section035MealsRuined', 'Book6Section040GoldClaimed', 'Book6Section040WineClaimed', 'Book6Section040MirrorClaimed', 'Book6Section048GoldClaimed', 'Book6Section048MapClaimed', 'Book6Section049CessUsed', 'Book6Section065TaunorWaterResolved', 'Book6Section106TaunorWaterResolved', 'Book6Section109MapClaimed', 'Book6Section112TaunorWaterResolved', 'Book6Section158SilverKeyClaimed', 'Book6Section158QuarterstaffClaimed', 'Book6Section158MealsClaimed', 'Book6Section158MaceClaimed', 'Book6Section158WhistleClaimed', 'Book6Section158RopeClaimed', 'Book6Section158ShortSwordClaimed', 'Book6Section190TaunorWaterResolved', 'Book6Section207Handled', 'Book6Section232RoomPaid', 'Book6Section232MealDeducted', 'Book6Section246TaunorWaterResolved', 'Book6Section252SilverBowClaimed', 'Book6Section278DamageApplied', 'Book6Section282DamageApplied', 'Book6Section293SilverKeyUsed', 'Book6Section304CessClaimed', 'Book6Section306ColdDamageApplied', 'Book6Section306NexusProtected', 'Book6Section307Handled', 'Book6Section307NoMealLossApplied', 'Book6Section310DamageApplied', 'Book6Section313DamageApplied', 'Book6Section315MindforceApplied', 'Book6Section315MindforceLossApplied', 'Book6Section315MindforceBlocked', 'Book6Section322TollPaid', 'Book6Section348WarhammerLost', 'Book6JumpTheWagonsRoute', 'Book6TaunorWaterStored', 'Book6MapOfTekaroClaimed', 'Book6SmallSilverKeyClaimed', 'Book6SilverBowClaimed', 'Book6CessClaimed')) {
+        if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
+            $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
+        }
+    }
+
+    foreach ($propertyName in @('Book7PowerKeyClaimed', 'Book7PlatinumAmuletClaimed', 'Book7SabitoIdentified', 'Book7DiamondClaimed', 'Book7Snake123ClueSeen', 'Book7SilverWhistleClaimed', 'Book7SilverWhistleRoute', 'Book7GoldKeyClaimed', 'Book7GoldKeyUsed', 'Book7KasinWarningHeard', 'Book7SecretPassageLearned', 'Book7JettyBoatLoreLearned', 'Book7TavigMet', 'Book7TavigRescueAttempted', 'Book7TavigSavedBriefly', 'Book7TavigWarningHeard', 'Book7WestJettyLanding', 'Book7EastBayLanding', 'Book7ZakhanRiddleSolved', 'Book7ZahdaBlueBeamPursuit', 'Book7BlueBeamRoute', 'Book7ZahdaDirectDuel', 'Book7ThroneOfFireRoute', 'Book7LorestoneTubeEscape', 'Book7LorestoneTransporterEscape', 'Book7LowerLevelSafeEscape', 'Book7OutThroughTheAshRoute', 'Book7CastleDeathSeen', 'Book7CastleDeathFailureSeen', 'Book7TendrilSevered', 'Book7HotTunnelSurvived')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -747,6 +800,72 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         }
         if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names (Get-LWCessItemNames) -Type 'special'))) {
             Set-LWStoryAchievementFlag -Name 'Book6CessClaimed'
+        }
+    }
+
+    if ([int]$script:GameState.Character.BookNumber -ge 7) {
+        if ($visitedSections -contains 1) { Set-LWStoryAchievementFlag -Name 'Book7PowerKeyClaimed' }
+        if ($visitedSections -contains 12) { Set-LWStoryAchievementFlag -Name 'Book7TavigMet' }
+        if ($visitedSections -contains 34) { Set-LWStoryAchievementFlag -Name 'Book7ZakhanRiddleSolved' }
+        if ($visitedSections -contains 43) { Set-LWStoryAchievementFlag -Name 'Book7SabitoIdentified' }
+        if (@(73, 333) | Where-Object { $visitedSections -contains $_ }) { Set-LWStoryAchievementFlag -Name 'Book7Snake123ClueSeen' }
+        if (@(105, 340) | Where-Object { $visitedSections -contains $_ }) {
+            Set-LWStoryAchievementFlag -Name 'Book7KasinWarningHeard'
+            Set-LWStoryAchievementFlag -Name 'Book7SecretPassageLearned'
+            Set-LWStoryAchievementFlag -Name 'Book7JettyBoatLoreLearned'
+        }
+        if ($visitedSections -contains 133) { Set-LWStoryAchievementFlag -Name 'Book7TavigWarningHeard' }
+        if ($visitedSections -contains 186 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Silver Whistle') -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book7SilverWhistleClaimed'
+        }
+        if (($visitedSections -contains 271) -or (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Gold Key'))) {
+            Set-LWStoryAchievementFlag -Name 'Book7GoldKeyClaimed'
+        }
+        if ($visitedSections -contains 291) { Set-LWStoryAchievementFlag -Name 'Book7TavigSavedBriefly' }
+        if ($visitedSections -contains 317) { Set-LWStoryAchievementFlag -Name 'Book7TendrilSevered' }
+        if ($visitedSections -contains 347) { Set-LWStoryAchievementFlag -Name 'Book7SilverWhistleRoute' }
+        if ($visitedSections -contains 349) {
+            Set-LWStoryAchievementFlag -Name 'Book7CastleDeathSeen'
+            Set-LWStoryAchievementFlag -Name 'Book7CastleDeathFailureSeen'
+        }
+        if ($visitedSections -contains 135) { Set-LWStoryAchievementFlag -Name 'Book7WestJettyLanding' }
+        if ($visitedSections -contains 288) { Set-LWStoryAchievementFlag -Name 'Book7EastBayLanding' }
+        if ($visitedSections -contains 118) {
+            Set-LWStoryAchievementFlag -Name 'Book7ZahdaBlueBeamPursuit'
+            Set-LWStoryAchievementFlag -Name 'Book7BlueBeamRoute'
+        }
+        if (@(174, 202) | Where-Object { $visitedSections -contains $_ }) {
+            Set-LWStoryAchievementFlag -Name 'Book7ZahdaDirectDuel'
+            Set-LWStoryAchievementFlag -Name 'Book7ThroneOfFireRoute'
+        }
+        if ($visitedSections -contains 250) {
+            Set-LWStoryAchievementFlag -Name 'Book7LorestoneTubeEscape'
+            Set-LWStoryAchievementFlag -Name 'Book7OutThroughTheAshRoute'
+        }
+        if ($visitedSections -contains 267) {
+            Set-LWStoryAchievementFlag -Name 'Book7LorestoneTransporterEscape'
+        }
+        if (@(315, 338) | Where-Object { $visitedSections -contains $_ }) {
+            Set-LWStoryAchievementFlag -Name 'Book7LowerLevelSafeEscape'
+            Set-LWStoryAchievementFlag -Name 'Book7OutThroughTheAshRoute'
+        }
+        if ($visitedSections -contains 324 -and ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus') -or -not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Kazan-Oud Platinum Amulet', 'Platinum Amulet') -Type 'special')))) {
+            Set-LWStoryAchievementFlag -Name 'Book7HotTunnelSurvived'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Kazan-Oud Platinum Amulet', 'Platinum Amulet') -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book7PlatinumAmuletClaimed'
+        }
+        if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Diamond')) {
+            Set-LWStoryAchievementFlag -Name 'Book7DiamondClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Silver Whistle') -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book7SilverWhistleClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Sabito', 'Blue Pills') -Type 'backpack'))) {
+            Set-LWStoryAchievementFlag -Name 'Book7SabitoIdentified'
+        }
+        if ((Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Power-key', 'Power Key')) -or (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Power-key', 'Power Key') -Type 'special')))) {
+            Set-LWStoryAchievementFlag -Name 'Book7PowerKeyClaimed'
         }
     }
 }
@@ -1879,6 +1998,22 @@ function Test-LWAchievementSatisfied {
         'cess_to_enter' { return (Test-LWAchievementStoryFlag -Name 'Book6CessClaimed' -EvaluationContext $EvaluationContext) }
         'cold_comfort' { return (Test-LWAchievementStoryFlag -Name 'Book6Section306NexusProtected' -EvaluationContext $EvaluationContext) }
         'mind_over_malice_book6' { return (Test-LWAchievementStoryFlag -Name 'Book6Section315MindforceBlocked' -EvaluationContext $EvaluationContext) }
+        'book_seven_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 7) }
+        'lorestone_bearer' { return ((@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6, 7 })).Count -ge 7) }
+        'riddle_of_the_zakhan' { return (Test-LWAchievementStoryFlag -Name 'Book7ZakhanRiddleSolved' -EvaluationContext $EvaluationContext) }
+        'heat_of_the_moment' { return (Test-LWAchievementStoryFlag -Name 'Book7PlatinumAmuletClaimed' -EvaluationContext $EvaluationContext) }
+        'blue_breath' { return (Test-LWAchievementStoryFlag -Name 'Book7SabitoIdentified' -EvaluationContext $EvaluationContext) }
+        'snake_eyes' { return ((Test-LWAchievementStoryFlag -Name 'Book7DiamondClaimed' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book7Snake123ClueSeen' -EvaluationContext $EvaluationContext)) }
+        'kasin_last_words' { return (Test-LWAchievementStoryFlag -Name 'Book7KasinWarningHeard' -EvaluationContext $EvaluationContext) }
+        'green_is_death' { return (Test-LWAchievementStoryFlag -Name 'Book7TavigWarningHeard' -EvaluationContext $EvaluationContext) }
+        'silent_no_more' { return (Test-LWAchievementStoryFlag -Name 'Book7SilverWhistleRoute' -EvaluationContext $EvaluationContext) }
+        'one_eye_open' { return (Test-LWAchievementStoryFlag -Name 'Book7GoldKeyUsed' -EvaluationContext $EvaluationContext) }
+        'cool_head_hot_tunnel' { return (Test-LWAchievementStoryFlag -Name 'Book7HotTunnelSurvived' -EvaluationContext $EvaluationContext) }
+        'sever_the_tendril' { return (Test-LWAchievementStoryFlag -Name 'Book7TendrilSevered' -EvaluationContext $EvaluationContext) }
+        'up_the_blue_beam' { return ((@($script:GameState.Character.CompletedBooks) -contains 7) -and (Test-LWAchievementStoryFlag -Name 'Book7BlueBeamRoute' -EvaluationContext $EvaluationContext)) }
+        'throne_of_fire' { return ((@($script:GameState.Character.CompletedBooks) -contains 7) -and (Test-LWAchievementStoryFlag -Name 'Book7ThroneOfFireRoute' -EvaluationContext $EvaluationContext)) }
+        'out_through_the_ash' { return ((@($script:GameState.Character.CompletedBooks) -contains 7) -and (Test-LWAchievementStoryFlag -Name 'Book7OutThroughTheAshRoute' -EvaluationContext $EvaluationContext)) }
+        'castle_death' { return (Test-LWAchievementStoryFlag -Name 'Book7CastleDeathFailureSeen' -EvaluationContext $EvaluationContext) }
         default { return $false }
     }
 }
@@ -2003,6 +2138,22 @@ function Get-LWAchievementProgressText {
         'cess_to_enter' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6CessClaimed') { 'Cess claimed' } else { 'pocket a valid Cess for Amory in Book 6' }) }
         'cold_comfort' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6Section306NexusProtected') { 'Nexus has already protected you from the cold' } else { 'reach the frozen-river route with Nexus in Book 6' }) }
         'mind_over_malice_book6' { return $(if (Test-LWStoryAchievementFlag -Name 'Book6Section315MindforceBlocked') { 'Psi-screen blocked the Mindforce assault' } else { 'reach section 315 with Psi-screen' }) }
+        'book_seven_complete' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 7) { 'Book 7 complete' } else { 'complete Book 7' }) }
+        'lorestone_bearer' { return ("{0}/7 books complete" -f (@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6, 7 }).Count)) }
+        'riddle_of_the_zakhan' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7ZakhanRiddleSolved') { 'Zakhan riddle solved' } else { 'solve the Zakhan''s riddle and reach section 34' }) }
+        'heat_of_the_moment' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7PlatinumAmuletClaimed') { 'Kazan-Oud Platinum Amulet claimed' } else { 'claim the Kazan-Oud Platinum Amulet in Book 7' }) }
+        'blue_breath' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7SabitoIdentified') { 'Sabito identified' } else { 'identify Sabito and carry it into the drowned routes of Book 7' }) }
+        'snake_eyes' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7DiamondClaimed') { 'Diamond claimed; uncover the 123 snake clue' } else { 'claim the Diamond and uncover the 123 snake clue in Book 7' }) }
+        'kasin_last_words' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7KasinWarningHeard') { 'Kasin warning heard' } else { 'hear Kasin''s warning in Book 7' }) }
+        'green_is_death' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7TavigWarningHeard') { 'Tavig warning heard' } else { 'hear Tavig''s warning in Book 7' }) }
+        'silent_no_more' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7SilverWhistleRoute') { 'Silver Whistle route completed' } else { 'use the Silver Whistle route in Book 7' }) }
+        'one_eye_open' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7GoldKeyUsed') { 'Gold Key route used' } else { 'use the Gold Key route in Book 7' }) }
+        'cool_head_hot_tunnel' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7HotTunnelSurvived') { 'heat tunnel survived safely' } else { 'survive the heat tunnel through Nexus or the Platinum Amulet' }) }
+        'sever_the_tendril' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7TendrilSevered') { 'brain-tendril severed' } else { 'use the Sommerswerd route to sever the brain-tendril in Book 7' }) }
+        'up_the_blue_beam' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7BlueBeamRoute') { 'blue-beam route found; finish Book 7' } else { 'finish Book 7 through the blue-beam pursuit route' }) }
+        'throne_of_fire' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7ThroneOfFireRoute') { 'direct duel route found; finish Book 7' } else { 'finish Book 7 through the direct throne duel route' }) }
+        'out_through_the_ash' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7OutThroughTheAshRoute') { 'lower-level escape route found; finish Book 7' } else { 'finish Book 7 through the lower-level escape route' }) }
+        'castle_death' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7CastleDeathFailureSeen') { 'signature failure ending reached' } else { 'reach the signature failure ending at section 349 in Book 7' }) }
         default { return '' }
     }
 }
@@ -2115,6 +2266,7 @@ function Get-LWAchievementBookDisplayDefinitions {
         4 { 'book_four_complete' }
         5 { 'book_five_complete' }
         6 { 'book_six_complete' }
+        7 { 'book_seven_complete' }
         default { $null }
     }
 
@@ -2152,7 +2304,7 @@ function Get-LWAchievementBookIdMap {
     }
 
     $map = @{}
-    foreach ($bookNumber in @(1..6)) {
+    foreach ($bookNumber in @(1..7)) {
         foreach ($definition in @(Get-LWAchievementBookDisplayDefinitions -BookNumber $bookNumber)) {
             if ($null -eq $definition) {
                 continue
@@ -2181,7 +2333,8 @@ function Get-LWAchievementDisplayGroups {
         [pscustomobject]@{ Key = 'book3'; Title = 'Book 3'; BookNumber = 3; Items = (New-Object 'System.Collections.Generic.List[object]') },
         [pscustomobject]@{ Key = 'book4'; Title = 'Book 4'; BookNumber = 4; Items = (New-Object 'System.Collections.Generic.List[object]') },
         [pscustomobject]@{ Key = 'book5'; Title = 'Book 5'; BookNumber = 5; Items = (New-Object 'System.Collections.Generic.List[object]') },
-        [pscustomobject]@{ Key = 'book6'; Title = 'Book 6'; BookNumber = 6; Items = (New-Object 'System.Collections.Generic.List[object]') }
+        [pscustomobject]@{ Key = 'book6'; Title = 'Book 6'; BookNumber = 6; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book7'; Title = 'Book 7'; BookNumber = 7; Items = (New-Object 'System.Collections.Generic.List[object]') }
     )
     $groupsByKey = @{}
     foreach ($group in $groupDefinitions) {
