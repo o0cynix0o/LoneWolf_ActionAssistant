@@ -14,7 +14,8 @@ Status values:
 Current top milestone focus:
 
 - `in_progress` `M5` Post-Release Stabilization And Book `7+` Planning
-- active integration branch for this work: `dev`
+- operational source-of-truth branch for this work: `main`
+- `dev` currently trails `main` and should not be treated as the active integration branch until branch strategy is reconciled
 
 ## Milestone List
 
@@ -516,29 +517,43 @@ Status:
 
 Goal:
 
-- keep the released Books `1-6` experience stable while preparing the next expansion cleanly
+- keep the released Books `1-6` experience stable while preparing the current `main` Book `7` expansion cleanly
 
 Deliverables:
 
 - post-release bug triage for the shipped Books `1-6` command surface
 - continued DE-difference cleanup found during real play
-- Book `6` OG automation catch-up across:
-  - instant-death sections
-  - fixed ENDURANCE sections
-  - Random Number helpers
-  - inventory/currency hooks
-  - combat special rules
-- Book `7` source audit planning
+- current `main` Book `6` stabilization hardening across sections `2`, `17`, `98`, `158/293`, `170`, and `297`
+- Book `7` validation and hardening across startup, choice, combat, achievements, route coverage, and difficulty behavior
+- branch/docs cleanup so public release state and current `main` state stay explicit
 - ruleset/state design notes for the next expansion step
 
 Current checkpoint:
 
+- `main` is the current operational source of truth and is `13` commits ahead of `dev` as of `2026-04-22`
 - Book `6` stabilization validation is green in both shells:
   - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS7_AUTOFIX_RERUN.md`
   - `testing/logs/BOOK6_INSTANT_DEATH_MATRIX_PS51_AUTOFIX_RERUN.md`
   - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS7_AUTOFIX_RERUN2.md`
   - `testing/logs/BOOK6_SAMPLE_ROUTE_MATRIX_PS51_AUTOFIX_RERUN2.md`
-- architecture-hardening slice now in progress on `dev`:
+- current `main` Book `7` validation is green in both shells:
+  - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS51.txt`
+  - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
+  - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
+- architecture-hardening and lag-hardening work previously tracked on `dev` is already present on `main`:
   - runtime `error.log` rotation
   - `modules/core/shell.psm1` extraction
   - ruleset combat-hook dispatch modules

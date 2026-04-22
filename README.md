@@ -1,6 +1,6 @@
 # Lone Wolf Action Assistant
 
-A PowerShell terminal companion for the **Lone Wolf** gamebooks, currently supporting the full Kai sequence and the first Magnakai book.
+A PowerShell terminal companion for the **Lone Wolf** gamebooks. The latest public release (`v0.8.0`) supports the full Kai sequence plus the first Magnakai book, and current `main` also carries unreleased Book `7` / `Castle Death` support plus recent Book `6` Definitive Edition stabilization work.
 
 This project is built to act like a digital Action Chart and play aid, not a replacement for the books. It handles the bookkeeping that tends to slow play down: character state, inventory, combat math, saves, notes, healing, book progression, stats, and achievements.
 
@@ -82,9 +82,19 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Optional Permadeath runs with tamper-evident challenge tracking
 - Transition-only Special Item safekeeping starting with the Book `4` -> `5` handoff and continuing on later book-to-book transitions
 
+## Release Status
+
+- Latest public release: `v0.8.0`
+- Released coverage: Kai Books `1-5` plus released Magnakai Book `6` support
+- Current `main` also includes unreleased Book `7` / `Castle Death` support
+- Current `main` Book `6` stabilization work includes sections `2`, `17`, `98`, `158/293`, `170`, and `297`
+- [CHANGELOG.md](./CHANGELOG.md) tracks both public release history and current `Unreleased` main-branch work
+
 ## Scope
 
-- Focused on the Kai sequence plus the first **Magnakai** ruleset transition
+- Focused on the Kai sequence plus current **Magnakai** support
+- Public release coverage currently reaches Book `6`
+- Current `main` also includes a local Book `7` / `Castle Death` implementation under stabilization
 - Intended for use alongside the books
 - Does **not** include book text
 - Designed to stay flexible when book-specific exceptions come up
@@ -96,7 +106,8 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
 - Current public release: `v0.8.0`
-- [CHANGELOG.md](./CHANGELOG.md) tracks public release history
+- Current `main` status: local Book `7` / `Castle Death` support plus recent Book `6` DE stabilization work
+- [CHANGELOG.md](./CHANGELOG.md) tracks public release history and current unreleased `main` work
 
 ## Requirements
 

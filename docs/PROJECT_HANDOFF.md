@@ -9,7 +9,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Latest public release on `main`: `v0.8.0`
 - `main` remains the public release branch
 - current working branch is `main`
-- the current automation-coverage closeout work is now on `main`
+- `main` is the operational source of truth for recovery and stabilization work
+- as of `2026-04-22`, `main` is `13` commits ahead of `dev`
+- `dev` currently trails `main` and should not be treated as the active integration source until branch strategy is reconciled
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Confirmed defects should be tracked in GitHub as they are found, not cleaned up later in a batch
 - Public docs hygiene:
@@ -33,12 +35,12 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Veteran`
   - optional `Permadeath`
 - Tamper-evident run integrity
-- Book-aware rule support across Books 1-6
-- Book-aware rule support across Books 1-7
+- released rule support across Books `1-6`
+- current `main` also contains local rule support across Books `1-7`
 - Transition-only Special Item safekeeping beginning at the Book `4` -> `5` handoff and continuing on later book-to-book transitions
 - Project Aon baseline catch-up complete across Books 1-5, plus released Book 6 / Magnakai support
-- Book 7 / `Castle Death` is now implemented locally in the Magnakai ruleset and validated to the agreed build bar
-- The Kai ruleset campaign is complete through Book 5, and the first Magnakai transition book is now part of the public build
+- Book `7` / `Castle Death` is now implemented locally in the Magnakai ruleset on current `main` and validated to the agreed build bar
+- The Kai ruleset campaign is complete through Book `5`, and released Magnakai Book `6` support is part of the public build
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
 - GitHub Project board is now live
@@ -49,7 +51,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M3 UX polish is complete and released
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
-- current `dev` work is architecture hardening and dead-code cleanup after the `0.8.0` release
+- current stabilization work on `main` is architecture hardening cleanup, recent Book `6` DE support, and Book `7` validation after the `0.8.0` release
 - latest `main` hotfix:
   - Book `6` section `170` `roll` now uses the live current state correctly in interactive play
   - section `170` bonus logic now matches the local OG text (`Weaponmastery with Bow +3`, `Huntmastery +1`)
@@ -61,16 +63,16 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - section `17` now automates the inn lodging choice flow, including the text-supported dormitory barter fallback when you cannot afford a room
   - section `297` now supports the DE-only `Bronin Sleeve-shield` trade flow
   - `Bronin Sleeve-shield` is modeled as a Special Item that grants `+1 CS` and `+1 END` in physical combat when a normal shield is not currently usable
-- latest `dev` lag pass fixed two post-extraction regressions:
+- latest lag pass now present on `main` fixed two post-extraction regressions:
   - achievement-screen caching was being reset by host-context rebinding
   - `combat status` from `inv` could throw a module-context error and write to `data/error.log`
-- the follow-up lag-hardening pass from `recommendations.md` is now in on `dev`:
+- the follow-up lag-hardening pass from `recommendations.md` is now present on `main`:
   - generation-based context caching now short-circuits repeated rebinding across host/core/ruleset modules
   - current-format saves can fast-path load normalization instead of always paying the full repair path
   - shell render output now batches more status and combat lines through the shared display writer
   - same-screen refreshes now use a lighter clear path
-- prerelease Batch `1-4` full-sweep validation is now green on `dev` in both shells
-- load-path performance work on `dev` now targets campaign-save startup directly instead of screen rendering
+- prerelease Batch `1-4` full-sweep validation remains green in both shells
+- load-path performance work now targets campaign-save startup directly instead of screen rendering
 - current `main` hotfix: `roll` no longer crashes under strict mode when command/ruleset modules are invoked before a local `GameState` variable has been materialized
 - current `main` follow-up hardening: core and ruleset/book modules now pre-materialize `GameState`, `GameData`, and `LWUi` at script scope so strict-mode evaluation cannot trip over unbound host-state variables before context rebinding
 - current `main` automation smoke harness:
@@ -214,7 +216,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - Book `4` section `12` choice handling now lives in `modules/rulesets/kai/book4.psm1`
 - Book `6` riverboat-ticket item names now live in `modules/rulesets/magnakai/book6.psm1`
 - `Book of the Magnakai` item-name helper now lives in `modules/rulesets/magnakai/magnakai.psm1`
-- latest architecture extraction slice on `dev` moved the largest remaining monolith blocks into:
+- latest architecture extraction slice now present on `main` moved the largest remaining monolith blocks into:
   - `modules/core/achievements.psm1`
   - `modules/core/items.psm1`
   - `modules/core/inventory.psm1`
@@ -244,7 +246,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `modules/core/shell.psm1`: `3554`
   - `modules/core/state.psm1`: `1967`
   - `modules/core/save.psm1`: `295`
-- latest `dev` architecture-hardening smoke passed in both shells:
+- latest architecture-hardening smoke passed in both shells:
   - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS7.txt`
   - `testing/logs/DEV_MODULE_CLEANUP_SMOKE_PS51.txt`
 - latest post-extraction command-surface smoke passed in both shells:
@@ -255,7 +257,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `testing/logs/BOOKS_1_3_PRERELEASE_NORMAL_PS51.txt`
   - `testing/logs/BATCH4_NEWRUN_SWEEP_PS7.txt`
   - `testing/logs/BATCH4_NEWRUN_SWEEP_PS51.txt`
-- latest lag-hardening regressions fixed on `dev`:
+- latest lag-hardening regressions fixed on `main`:
   - `#41` late-bound host command caches could permanently remember missing functions and break later load/performance paths
   - `#42` backpack layout rendering could crash on one-item collections under strict mode
 - latest final-pass command-surface smoke also passed in both shells:
@@ -267,7 +269,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `testing/logs/COMMAND_SURFACE_PRERELEASE_PS51.txt`
   - `testing/logs/SAVE_SYSTEM_PRERELEASE_PS7.txt`
   - `testing/logs/SAVE_SYSTEM_PRERELEASE_PS51.txt`
-- Batch `1` prerelease defects fixed on `dev` include:
+- Batch `1` prerelease defects fixed on `main` include:
   - quiver-aware `Arrow` add routing from the command surface
   - packaged/runtime module-context recovery for `GameData` under strict mode
   - empty save-catalog rendering on the `load` screen
@@ -309,7 +311,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - `modules/rulesets/kai/`
   Kai ruleset shell plus Book `1-5` modules
 - `modules/rulesets/magnakai/`
-  Magnakai ruleset shell plus Book `6`
+  Magnakai ruleset shell plus Books `6-7`
 - `data/kai-disciplines.json`
   Discipline definitions
 - `data/magnakai-disciplines.json`
@@ -545,6 +547,44 @@ Local reports:
 - `testing/logs/M2_7_COMPLETION_SUMMARY_20260403.md`
 - `testing/logs/M2_7_COMPLETION_SUMMARY_20260407.md`
 
+### Book 7
+
+- Implemented locally on current `main`
+- not yet represented as a tagged public release
+- support now includes:
+  - Book `7` startup and carry-forward handling
+  - section-entry automation, choice flows, and random-number helpers
+  - route flags, combat rules, and achievement triggers
+  - completion and route achievements
+- current local validation on `main` is green in both shells for:
+  - startup flow
+  - choice flow
+  - combat hooks
+  - achievements
+  - random-helper coverage
+  - automation surface
+  - endgame routes
+  - difficulty and permadeath behavior
+
+Local reports:
+
+- `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_COMBAT_HOOK_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_ACHIEVEMENT_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_RANDOM_AUTOMATION_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_AUTOMATION_SURFACE_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS51.txt`
+- `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
+- `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
+
 ## Existing Playtest Coverage
 
 Local reports already exist for:
@@ -555,6 +595,7 @@ Local reports already exist for:
 - Book 3 sandbox and route sweeps
 - Book 5 targeted validation and Books 1-5 campaign smoke
 - Book 6 targeted validation and Magnakai transition smoke on `main`
+- Book 7 startup/choice/combat/achievement/random/endgame/difficulty smoke on current `main`
 - fresh-character Books `1-6` full-campaign mode coverage
 - synthetic sample Book `5` -> `6` route-matrix coverage
 - current sample save/load/failure/permadeath smoke
@@ -577,6 +618,7 @@ Latest large-scale validation:
 - no campaign failures in the March 27 full validation sweep
 - additional targeted Books 1-5 campaign smoke and Book 5 validation passed in both shells
 - Book 6 targeted validation passed in both shells on `main`
+- current `main` Book `7` smoke coverage passed in both shells across startup, choice, combat, achievements, automation surface, endgame routes, and difficulty rules
 - fresh-character Books `1-6` campaigns now pass in both shells on:
   - `Story`
   - `Easy`
@@ -732,9 +774,9 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 
 ## Good Next Steps
 
-- Continue live playtesting across Books 1-6 and patch DE-specific rule differences
+- Continue live playtesting across the released Books `1-6` surface and the current `main` Book `7` paths, and patch DE-specific rule differences
 - Deepen Book `6` route reporting and strategy support as more play data comes in
-- Plan Book `7` / the next Magnakai audit once Book `6` feels stable
+- Plan the next post-Book `7` Magnakai audit once the current `main` Book `7` surface feels stable
 - Keep the handoff docs in sync as new books become implemented
 
 ## Important Cautions

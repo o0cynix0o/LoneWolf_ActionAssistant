@@ -1,6 +1,6 @@
 # Lone Wolf Terminal - Agent Handoff
 
-Last updated: 2026-04-13
+Last updated: 2026-04-22
 
 ## What This File Is For
 
@@ -19,7 +19,8 @@ For deeper project state, workflow details, and local report locations, use:
 - App version: `0.8.0`
 - Main script: `lonewolf.ps1`
 - `main` is the public release branch
-- `dev` is the active integration branch for current architecture-hardening work
+- `main` is the operational source of truth for current recovery and stabilization work
+- `dev` currently trails `main` and should not be treated as the active integration branch until branch strategy is reconciled
 - Runtime target:
   - Windows PowerShell 5.1
   - PowerShell 7
@@ -28,7 +29,8 @@ For deeper project state, workflow details, and local report locations, use:
   - use book + area labels
   - close issues when the fix lands
 - Kai ruleset support is complete through Books `1-5`
-- Magnakai support is live through Book `6`
+- released Magnakai support is live through Book `6`
+- current `main` also contains validated local Book `7` / `Castle Death` support plus recent Book `6` DE stabilization
 - M1 modular refactor is complete and pushed
 - Core modules live under:
   - `modules/core/`
@@ -56,10 +58,10 @@ That old framing is stale.
 
 The highest-value work now is:
 
-1. post-release stabilization across Books `1-6`
-2. fixing any remaining DE-specific rule differences found during live play
+1. post-release stabilization across the recent `main` surface, especially Book `6` sections `2`, `17`, `98`, `158/293`, `170`, and `297`
+2. validating and hardening current `main` Book `7` startup, choice, combat, achievement, route, and difficulty behavior
 3. keeping repo docs/workflow current
-4. preparing Book `7+` expansion cleanly
+4. preparing the eventual Book `7+` release/expansion cleanly
 
 Combat is already a shipped system.
 It still gets polish and bug fixes, but it is not the defining unfinished milestone anymore.
@@ -150,14 +152,14 @@ Meaning:
 
 ## Good Next Steps
 
-- continue Books `1-6` live playtesting
-- patch DE differences as they appear
+- continue live playtesting across the released Books `1-6` surface and current `main` Book `7` coverage
+- patch DE differences as they appear, especially in the recent Book `6` stabilization paths
 - keep `PROJECT_HANDOFF.md` and milestone docs current
-- expand to Book `7+` once Book `6` feels stable
+- keep branch/release wording explicit when public docs are updated
 
 ## Bottom Line
 
-This is now a real Books `1-6` assistant on `main`, with the Kai run complete and the first Magnakai ruleset handoff working.
+This is now a real released Books `1-6` assistant on `main`, with the Kai run complete, the first Magnakai ruleset handoff working, and unreleased Book `7` support also present on current `main`.
 
 The main job is no longer “invent the app.”
 The main job is:
@@ -165,4 +167,4 @@ The main job is:
 - maintain it cleanly
 - keep the repo current
 - respond quickly to playtest findings
-- preserve a clean path for future ruleset expansion
+- preserve a clean path from the released build to the current `main` Book `7` expansion work
