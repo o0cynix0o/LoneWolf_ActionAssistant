@@ -293,6 +293,25 @@ Invoke-LWBookSixRecentScenario -Name 'Section098WeaponShop' -Action {
     ) -Message ("Section 98 should leave 6 Gold Crowns; actual {0}." -f [int]$state.Inventory.GoldCrowns)
 }
 
+Invoke-LWBookSixRecentScenario -Name 'Section098SellQuiver' -Action {
+    $state = New-LWBookSixRecentState -Section 98 -Gold 8 -SpecialItems @('Book of the Magnakai', 'Quiver')
+    $state.Inventory.QuiverArrows = 2
+    Set-LWBookSixRecentSmokeQueues -Ints @(2, 1, 0, 0)
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section098_quiver_removed' -Condition (
+        -not (Test-LWStateHasInventoryItem -State $state -Names (Get-LWQuiverItemNames) -Type 'special')
+    ) -Message 'Section 98 should allow selling the Quiver.'
+
+    Assert-LWBookSixRecent -Name 'section098_quiver_sale_gold' -Condition (
+        [int]$state.Inventory.GoldCrowns -eq 10
+    ) -Message ("Section 98 should pay 2 Gold Crowns for a Quiver; actual {0}." -f [int]$state.Inventory.GoldCrowns)
+
+    Assert-LWBookSixRecent -Name 'section098_quiver_sale_arrows' -Condition (
+        (Get-LWQuiverArrowCount -State $state) -eq 0
+    ) -Message ("Section 98 should clear the tracked quiver arrows when the Quiver is sold; actual {0}." -f (Get-LWQuiverArrowCount -State $state))
+}
+
 Invoke-LWBookSixRecentScenario -Name 'Section158And293SilverKey' -Action {
     $section158State = New-LWBookSixRecentState -Section 158 -Gold 26 -BackpackItems @('Meal')
     Set-LWBookSixRecentSmokeQueues -Texts @('0')

@@ -1729,8 +1729,8 @@ function Remove-LWInventoryItemSilently {
         'special' { $script:GameState.Inventory.SpecialItems = @($remaining) }
     }
 
-    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWAnyQuiverItemNames) -Target $Name)) -and -not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWAnyQuiverItemNames) -Type 'special')) {
-        $script:GameState.Inventory.QuiverArrows = 0
+    if ($Type -eq 'special' -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWAnyQuiverItemNames) -Target $Name))) {
+        [void](Sync-LWQuiverArrowState -State $script:GameState)
     }
 
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages

@@ -475,7 +475,9 @@ function Get-LWMagnakaiBookSixSection098SaleDefinitions {
         [pscustomobject]@{ Type = 'weapon'; Name = 'Axe'; Price = 2 },
         [pscustomobject]@{ Type = 'weapon'; Name = 'Bow'; Price = 6 },
         [pscustomobject]@{ Type = 'weapon'; Name = 'Quarterstaff'; Price = 2 },
-        [pscustomobject]@{ Type = 'weapon'; Name = 'Sword'; Price = 3 }
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Sword'; Price = 3 },
+        [pscustomobject]@{ Type = 'special'; Name = 'Quiver'; Price = 2 },
+        [pscustomobject]@{ Type = 'special'; Name = 'Large Quiver'; Price = 4 }
     )
 }
 
@@ -617,6 +619,19 @@ function Get-LWMagnakaiBookSixSection098SaleOffers {
         }
     }
 
+    foreach ($special in @(Get-LWInventoryItems -Type 'special')) {
+        $definition = @($definitions | Where-Object { [string]$_.Type -eq 'special' -and [string]$_.Name -ieq [string]$special } | Select-Object -First 1)
+        if ($definition.Count -gt 0) {
+            $offers += [pscustomobject]@{
+                Kind          = 'special'
+                InventoryType = 'special'
+                Name          = [string]$special
+                DisplayName   = ('{0} [Special Item]' -f [string]$special)
+                Price         = [int]$definition[0].Price
+            }
+        }
+    }
+
     if ((Get-LWMagnakaiBookSixSection098SellableArrowCount) -ge 3) {
         $offers += [pscustomobject]@{
             Kind        = 'arrows'
@@ -639,7 +654,7 @@ function Invoke-LWMagnakaiBookSixSection098SaleTable {
 
         Write-LWPanelHeader -Title 'Section 98 Sale Table' -AccentColor 'DarkYellow'
         Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
-        Write-LWKeyValue -Label 'Sale Rule' -Value 'Weapons sell for 1 less; 3 Arrows sell for 1 Gold [DE]' -ValueColor 'Gray'
+        Write-LWKeyValue -Label 'Sale Rule' -Value 'Weapons and quivers sell for 1 less; 3 Arrows sell for 1 Gold [DE]' -ValueColor 'Gray'
         for ($i = 0; $i -lt $offers.Count; $i++) {
             $offer = $offers[$i]
             Write-LWBulletItem -Text ("{0}. {1} - sell for {2} Gold" -f ($i + 1), [string]$offer.DisplayName, [int]$offer.Price) -TextColor 'Gray' -BulletColor 'DarkGray'
@@ -654,6 +669,15 @@ function Invoke-LWMagnakaiBookSixSection098SaleTable {
         $offer = $offers[$choiceIndex - 1]
         switch ([string]$offer.Kind) {
             'weapon' {
+                if (-not (Remove-LWInventoryItemSilently -Type ([string]$offer.InventoryType) -Name ([string]$offer.Name) -Quantity 1)) {
+                    Write-LWWarn ("Could not remove {0}. Try again." -f [string]$offer.Name)
+                    continue
+                }
+
+                Update-LWGold -Delta ([int]$offer.Price)
+                Write-LWInfo ("Section 98: sold {0} for {1} Gold Crowns." -f [string]$offer.Name, [int]$offer.Price)
+            }
+            'special' {
                 if (-not (Remove-LWInventoryItemSilently -Type ([string]$offer.InventoryType) -Name ([string]$offer.Name) -Quantity 1)) {
                     Write-LWWarn ("Could not remove {0}. Try again." -f [string]$offer.Name)
                     continue
@@ -686,7 +710,7 @@ function Invoke-LWMagnakaiBookSixSection098Shop {
         }
 
         Write-LWBulletItem -Text '1. Buy weapons, arrows, or quivers' -TextColor 'Gray' -BulletColor 'Yellow'
-        Write-LWBulletItem -Text '2. Sell weapons or arrows' -TextColor 'Gray' -BulletColor 'DarkYellow'
+        Write-LWBulletItem -Text '2. Sell weapons, quivers, or arrows' -TextColor 'Gray' -BulletColor 'DarkYellow'
         Write-LWBulletItem -Text '0. Leave the shop' -TextColor 'Gray' -BulletColor 'DarkGray'
 
         $choice = Read-LWInt -Prompt 'Section 98 shop choice' -Default 0 -Min 0 -Max 2 -NoRefresh
