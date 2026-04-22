@@ -123,6 +123,12 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `717/717` high-confidence candidates covered
 - current `main` follow-up hotfix after the broader smoke pass:
   - Book `3`, section `18` no longer fails forced weapon-loss automation because `Invoke-LWLoseOneWeaponOrWeaponLikeSpecialItem` now rebinds ruleset module context before reading state
+- current `main` Book `6` potion-shop fix:
+  - section `2` now runs the apothecary purchase flow and supports buying all five listed potions as Backpack Items
+  - `Graveweed Concentrate` is now included in the graveweed item-name group so Book `6` route checks still recognize it after purchase
+  - local validation artifacts:
+    - `testing/logs/SECTION002_APOTHECARY_PS7.txt`
+    - `testing/logs/SECTION002_APOTHECARY_PS51.txt`
 - current `main` Book `7` implementation state:
   - `modules/rulesets/magnakai/book7.psm1` now owns the Book `7` startup flow, section-entry automation, choice flows, random-number helpers, route flags, combat rules, and achievement triggers
   - Book `7` startup, choice, combat, achievement, random-helper, and broad automation smokes are green in both shells

@@ -6,6 +6,18 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added Book `6` section `2` apothecary automation:
+  - section `2` now opens a potion-shop choice flow for:
+    - `Potion of Laumspur`
+    - `Potion of Gallowbrush`
+    - `Rendalim's Elixir`
+    - `Potion of Alether`
+    - `Graveweed Concentrate`
+  - each potion is added as a Backpack Item and deducts the correct Gold Crown cost
+  - `Graveweed Concentrate` now resolves through the existing graveweed item-name group so later route checks still recognize it
+  - validated in both shells with:
+    - `testing/logs/SECTION002_APOTHECARY_PS7.txt`
+    - `testing/logs/SECTION002_APOTHECARY_PS51.txt`
 - built the full Book `7` / `Castle Death` Magnakai module and wired it into the live ruleset stack:
   - added `modules/rulesets/magnakai/book7.psm1`
   - implemented Book `7` startup and carry-forward handling, including the opening item-pick flow

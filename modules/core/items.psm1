@@ -615,7 +615,7 @@ function Get-LWMealOfLaumspurItemNames {
 
 function Get-LWGraveweedItemNames {
     Set-LWModuleContext -Context (Get-LWModuleContext)
-    return @('Vial of Graveweed', 'Graveweed')
+    return @('Vial of Graveweed', 'Graveweed', 'Graveweed Concentrate')
 }
 
 function Get-LWMagicSpearItemNames {

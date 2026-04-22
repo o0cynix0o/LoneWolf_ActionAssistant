@@ -234,6 +234,16 @@ function Get-LWMagnakaiBookSixSection040ChoiceDefinitions {
     )
 }
 
+function Get-LWMagnakaiBookSixSection002ChoiceDefinitions {
+    return @(
+        [pscustomobject]@{ Id = 'laumspur'; FlagName = 'Book6Section002LaumspurBought'; DisplayName = 'Potion of Laumspur'; Type = 'backpack'; Name = 'Potion of Laumspur'; Quantity = 1; Description = 'Potion of Laumspur'; GoldCost = 5 },
+        [pscustomobject]@{ Id = 'gallowbrush'; FlagName = 'Book6Section002GallowbrushBought'; DisplayName = 'Potion of Gallowbrush'; Type = 'backpack'; Name = 'Potion of Gallowbrush'; Quantity = 1; Description = 'Potion of Gallowbrush'; GoldCost = 2 },
+        [pscustomobject]@{ Id = 'rendalims'; FlagName = 'Book6Section002RendalimsBought'; DisplayName = "Rendalim's Elixir"; Type = 'backpack'; Name = "Rendalim's Elixir"; Quantity = 1; Description = "Rendalim's Elixir"; GoldCost = 7 },
+        [pscustomobject]@{ Id = 'alether'; FlagName = 'Book6Section002AletherBought'; DisplayName = 'Potion of Alether'; Type = 'backpack'; Name = 'Potion of Alether'; Quantity = 1; Description = 'Potion of Alether'; GoldCost = 4 },
+        [pscustomobject]@{ Id = 'graveweed'; FlagName = 'Book6Section002GraveweedBought'; DisplayName = 'Graveweed Concentrate'; Type = 'backpack'; Name = 'Graveweed Concentrate'; Quantity = 1; Description = 'Graveweed Concentrate'; GoldCost = 4 }
+    )
+}
+
 function Get-LWMagnakaiBookSixSection048ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book6Section048GoldClaimed'; DisplayName = '5 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 5; Description = '5 Gold Crowns' },
@@ -1529,6 +1539,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
     }
 
     switch ($section) {
+        2 {
+            Invoke-LWBookFourChoiceTable -Title 'Section 2 Apothecary' -PromptLabel 'Section 2 choice' -ContextLabel 'Section 2' -Choices (Get-LWMagnakaiBookSixSection002ChoiceDefinitions) -Intro 'Section 2: the herbmaster will sell these potions as Backpack Items while you wait for the captain.'
+        }
         17 {
             Invoke-LWMagnakaiBookSixSection017RoomRoute
         }
