@@ -55,9 +55,22 @@ Before the first commit/push, this machine needs:
 - Update `README.md` when command surface or major features change.
 - Update `CHANGELOG.md` when a new public release is cut.
 - Keep GitHub labels, issue state, milestones, and wiki pages current when user-facing project state changes.
+- For book work, treat strategy-guide creation or update as part of done when route, achievement, or support coverage changes meaningfully.
+- If a new book becomes playable on current `main`, update the related wiki guide/index/support pages in the same completion sweep instead of leaving them for later.
 - Prefer the repo issue forms under `.github/ISSUE_TEMPLATE/` instead of blank freeform issues.
 - Use GitHub milestones only for top-level roadmap items; keep sub-milestones in `docs/PROJECT_MILESTONES.md`.
 - If GitHub Projects are used later, mirror the board structure documented in `docs/GITHUB_TRACKING.md`.
+
+## Book Workflow Closeout
+
+For book implementation, book hardening, or book-audit build work, close out the pass with:
+
+- code or rules updates
+- validation in Windows PowerShell `5.1` and PowerShell `7`
+- repo doc updates when project state changed
+- wiki strategy-guide and scope-page updates when player-facing book state changed
+- if the wiki repo changed locally, a separate wiki commit/push so the public pages actually update
+- GitHub issue / milestone / board hygiene where applicable
 
 ## README Sanitization Before Push
 

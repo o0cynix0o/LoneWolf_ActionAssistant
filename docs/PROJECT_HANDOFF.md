@@ -14,6 +14,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - `dev` currently trails `main` and should not be treated as the active integration source until branch strategy is reconciled
 - Repo workflow: commit and push completed Lone Wolf changes by default unless explicitly told not to
 - Confirmed defects should be tracked in GitHub as they are found, not cleaned up later in a batch
+- Strategy-guide creation/update is part of the required book-work closeout when a book's route/support surface changes
 - Public docs hygiene:
   - sanitize `README.md` before push
   - avoid personal save names, local machine notes, and private playthrough details in public docs
@@ -414,6 +415,7 @@ GitHub tracking now includes:
 - milestones
 - project board
 - wiki updates alongside repo updates
+- strategy-guide updates as part of book closeout
 
 Project board:
 
@@ -556,6 +558,9 @@ Local reports:
   - section-entry automation, choice flows, and random-number helpers
   - route flags, combat rules, and achievement triggers
   - completion and route achievements
+- current wiki state now also includes:
+  - `Strategy-Guide`
+  - `Book-7-Strategy-Guide`
 - current local validation on `main` is green in both shells for:
   - startup flow
   - choice flow
@@ -712,6 +717,7 @@ Meaning:
 - map endings and major winning route families
 - audit missing item/rule support
 - draft achievement candidates
+- identify what the eventual strategy guide will need to explain
 - write local reports in `testing/logs/`
 - summarize findings in chat
 
@@ -730,6 +736,7 @@ Meaning:
 - implement approved findings
 - validate in Windows PowerShell and PowerShell 7
 - update public docs if needed
+- draft or update the book strategy guide and related wiki scope pages
 - commit and push
 
 ### Playtest Pass
@@ -770,14 +777,16 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
    - implementation
    - playtesting
    - bug fix
-7. If a public doc changed, remember the README sanitization rules before push
+7. If the task touches a book, confirm whether the strategy guide/wiki state also needs an update
+8. If a public doc changed, remember the README sanitization rules before push
 
 ## Good Next Steps
 
 - Continue live playtesting across the released Books `1-6` surface and the current `main` Book `7` paths, and patch DE-specific rule differences
+- Keep the Book `7` strategy guide current as live playtesting sharpens the best routes
 - Deepen Book `6` route reporting and strategy support as more play data comes in
 - Plan the next post-Book `7` Magnakai audit once the current `main` Book `7` surface feels stable
-- Keep the handoff docs in sync as new books become implemented
+- Keep the handoff docs and strategy-guide workflow in sync as new books become implemented
 
 ## Important Cautions
 

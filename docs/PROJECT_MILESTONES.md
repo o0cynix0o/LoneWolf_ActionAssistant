@@ -525,7 +525,9 @@ Deliverables:
 - continued DE-difference cleanup found during real play
 - current `main` Book `6` stabilization hardening across sections `2`, `17`, `98`, `158/293`, `170`, and `297`
 - Book `7` validation and hardening across startup, choice, combat, achievements, route coverage, and difficulty behavior
+- Book `7` strategy-guide creation plus wiki scope/support cleanup
 - branch/docs cleanup so public release state and current `main` state stay explicit
+- book-work workflow cleanup so strategy-guide/wiki closeout is part of future book delivery
 - ruleset/state design notes for the next expansion step
 
 Current checkpoint:
@@ -553,6 +555,7 @@ Current checkpoint:
   - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS51.txt`
   - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
   - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
+- current `main` Book `7` strategy guide is now present in the wiki, and workflow docs now treat strategy-guide/wiki sync as part of book closeout
 - architecture-hardening and lag-hardening work previously tracked on `dev` is already present on `main`:
   - runtime `error.log` rotation
   - `modules/core/shell.psm1` extraction
@@ -581,7 +584,8 @@ When milestone work begins:
 1. change the milestone status here
 2. mention it in `docs/PROJECT_HANDOFF.md`
 3. keep validation artifacts in `testing/`
-4. only mark a milestone complete after the matching validation pass succeeds
+4. for book milestones, update strategy-guide/wiki state before calling the work current or complete
+5. only mark a milestone complete after the matching validation pass succeeds
 
 ## Validation Standard
 

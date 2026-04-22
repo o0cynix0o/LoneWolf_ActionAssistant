@@ -9,6 +9,7 @@ When the user says to keep the repo current, that means:
 - code
 - `README.md`
 - wiki
+- strategy guides and other player-facing wiki surface
 - labels
 - issue tracker
 - milestones
@@ -47,6 +48,7 @@ Book labels:
 - `book-4`
 - `book-5`
 - `book-6`
+- `book-7`
 - `cross-book`
 - `magnakai`
 
@@ -101,7 +103,7 @@ Baseline rule:
 
 Expected labels:
 
-- one specific book label such as `book-1` through `book-6`, or `cross-book`
+- one specific book label such as `book-1` through `book-7`, or `cross-book`
 - `magnakai` when ruleset-specific
 - one or two area labels such as `rules`, `combat`, `inventory`, `automation`, `ui-ux`, or `command-surface`
 - `de-diff` when the report came from a Definitive Edition difference
@@ -123,6 +125,21 @@ Use that tracker for the active Book `6` stream, but keep the same one-defect-pe
 The wiki is part of the repo’s maintained public surface.
 
 When player-facing strategy or feature behavior changes meaningfully, review the wiki as part of the update sweep.
+
+For book work, the wiki sweep should explicitly include strategy-guide state.
+
+Do not treat a book as fully current if:
+
+- the code and validation are updated
+- but the strategy guide, guide index, or related public scope pages still describe the old state
+
+At minimum, review:
+
+- the book-specific strategy guide page
+- `Strategy-Guide`
+- any scope/support/achievement pages whose public claims changed
+
+If the cloned wiki repo changed locally, commit and push that repo too so the public guide state actually lands.
 
 ## Project Board
 

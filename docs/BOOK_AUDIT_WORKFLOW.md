@@ -9,6 +9,7 @@ Use this when the task is:
 - find missing items
 - find missing rules and one-off exceptions
 - propose route/exploration/story achievements
+- draft or update player-facing strategy-guide material
 - write repeatable local reports
 
 ## Standard Request Phrases
@@ -24,6 +25,8 @@ The second means:
 - reports
 - proposal
 - implementation of approved findings
+- strategy-guide draft/update
+- wiki/public tracking sync
 - validation
 - commit and push
 
@@ -66,6 +69,14 @@ For each book, the audit should usually produce:
 - `BOOKX_ACHIEVEMENT_CANDIDATES.md`
 
 These are local working reports and normally stay in `testing/logs/`.
+
+## Expected Public Tracking Outputs
+
+When the user approves a real book build or significant book hardening, the public-tracking sweep should usually produce:
+
+- a new or updated book-specific strategy guide in the wiki
+- updates to the wiki guide index or support pages if project scope changed
+- matching repo-tracked workflow/handoff updates when the book status materially changed
 
 ## Audit Steps
 
@@ -125,7 +136,7 @@ Mark each candidate as one of:
 - missing
 - better left manual for now
 
-## 4. Compare Against The App
+### 4. Compare Against The App
 
 Check the current script and docs so the audit distinguishes:
 
@@ -135,7 +146,7 @@ Check the current script and docs so the audit distinguishes:
 
 This avoids duplicate work and keeps the report honest.
 
-## 5. Draft Achievement Candidates
+### 5. Draft Achievement Candidates
 
 Propose a first batch of:
 
@@ -150,7 +161,7 @@ Good achievement candidates are:
 - triggerable from reliable state
 - not dependent on large copied book text
 
-## 6. Write The Reports
+### 6. Write The Reports
 
 Summarize:
 
@@ -161,7 +172,9 @@ Summarize:
 
 These reports should be enough for a later chat to continue without re-reading the entire conversation.
 
-## 7. Propose The Top Build Candidates
+They should also leave enough route understanding behind to support a later strategy-guide draft without having to re-audit the whole book from scratch.
+
+### 7. Propose The Top Build Candidates
 
 Before implementation, summarize:
 
@@ -171,17 +184,28 @@ Before implementation, summarize:
 
 If a rule is unclear or too one-off, prefer calling that out instead of forcing premature automation.
 
-## 8. Implement Approved Findings
+### 8. Implement Approved Findings
 
 If the user approves build-out:
 
 - add rule/item support
 - add achievement definitions and triggers
 - update public docs if behavior changed
+- update the book strategy guide and related wiki scope pages when player-facing route/support state changed
 
 Prefer integrating with existing helpers instead of inventing one-off branches when possible.
 
-## 9. Validate In Both Shells
+### 9. Draft Or Update The Strategy Guide
+
+If the book is implemented, materially expanded, or route coverage changed enough to affect players:
+
+- create or update the book-specific strategy guide in the wiki
+- update the wiki guide index and any scope/support pages that now changed
+- keep latest public release state separate from current `main` state when they differ
+
+Strategy-guide creation is part of book closeout, not a nice-to-have follow-up.
+
+### 10. Validate In Both Shells
 
 Always run parse or targeted validation in:
 
@@ -190,7 +214,7 @@ Always run parse or targeted validation in:
 
 Where useful, add small harness checks for the new rules.
 
-## 10. Commit And Push
+### 11. Commit And Push
 
 For Lone Wolf, completed work should normally be:
 
@@ -245,5 +269,6 @@ The audit is successful when another chat can pick up the book with:
 - the item list
 - the achievement plan
 - the local report files
+- the strategy-guide status
 
 without needing the original conversation.

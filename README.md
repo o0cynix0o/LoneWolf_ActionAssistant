@@ -101,7 +101,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 ## Tracking And Support
 
-- The GitHub wiki contains route and strategy-guide material for Books `1-6`
+- The GitHub wiki contains route and strategy-guide material for the released Books `1-6`, and current `main` now also carries Book `7` / `Castle Death` guide coverage
 - GitHub issues now use issue forms for bugs, DE differences, rule gaps, UX notes, and audit/build requests
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
