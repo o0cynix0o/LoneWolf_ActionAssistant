@@ -529,6 +529,7 @@ Deliverables:
 - Book `7` strategy-guide creation plus wiki scope/support cleanup
 - branch/docs cleanup so public release state and current `main` state stay explicit
 - book-work workflow cleanup so strategy-guide/wiki closeout is part of future book delivery
+- strategy-guide house style locked to a prose-first `BradyGames` article format for future books
 - ruleset/state design notes for the next expansion step
 
 Current checkpoint:
@@ -570,6 +571,8 @@ Current checkpoint:
 - redirected startup `-Load` and portable package validation now also pass on current `main`:
   - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
 - current `main` Book `7` strategy guide is now present in the wiki, and workflow docs now treat strategy-guide/wiki sync as part of book closeout
+- the strategy-guide writing standard is now tracked in:
+  - `docs/STRATEGY_GUIDE_STYLE_GUIDE.md`
 - architecture-hardening and lag-hardening work previously tracked on `dev` is already present on `main`:
   - runtime `error.log` rotation
   - `modules/core/shell.psm1` extraction

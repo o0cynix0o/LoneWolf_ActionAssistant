@@ -78,6 +78,12 @@ When the user approves a real book build or significant book hardening, the publ
 - updates to the wiki guide index or support pages if project scope changed
 - matching repo-tracked workflow/handoff updates when the book status materially changed
 
+Use:
+
+- `docs/STRATEGY_GUIDE_STYLE_GUIDE.md`
+
+as the house style for the wiki guide itself.
+
 ## Audit Steps
 
 ### 1. Read The Book Text
@@ -202,6 +208,7 @@ If the book is implemented, materially expanded, or route coverage changed enoug
 - create or update the book-specific strategy guide in the wiki
 - update the wiki guide index and any scope/support pages that now changed
 - keep latest public release state separate from current `main` state when they differ
+- follow `docs/STRATEGY_GUIDE_STYLE_GUIDE.md` so new guides read like article-style printed strategy guides rather than audit notes
 
 Strategy-guide creation is part of book closeout, not a nice-to-have follow-up.
 
@@ -270,5 +277,6 @@ The audit is successful when another chat can pick up the book with:
 - the achievement plan
 - the local report files
 - the strategy-guide status
+- the strategy-guide style standard
 
 without needing the original conversation.

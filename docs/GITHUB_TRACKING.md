@@ -128,6 +128,17 @@ When player-facing strategy or feature behavior changes meaningfully, review the
 
 For book work, the wiki sweep should explicitly include strategy-guide state.
 
+Book-specific strategy guides should follow the house style in:
+
+- `docs/STRATEGY_GUIDE_STYLE_GUIDE.md`
+
+That means:
+
+- prose-first guide articles
+- story summaries retained
+- clear section headings
+- fewer bullet walls and audit-style note dumps
+
 Do not treat a book as fully current if:
 
 - the code and validation are updated
