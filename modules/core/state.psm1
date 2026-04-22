@@ -661,9 +661,6 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'QuiverArrows') -or $null -eq $State.Inventory.QuiverArrows) {
             $State.Inventory | Add-Member -Force -NotePropertyName QuiverArrows -NotePropertyValue 0
         }
-        else {
-            $State.Inventory.QuiverArrows = [Math]::Max(0, [Math]::Min([int]$State.Inventory.QuiverArrows, 6))
-        }
         if (-not (Test-LWPropertyExists -Object $State.Inventory -Name 'SpecialItems') -or $null -eq $State.Inventory.SpecialItems) {
             $State.Inventory.SpecialItems = @()
         }
@@ -676,6 +673,7 @@ function Invoke-LWCoreNormalizeState {
         else {
             $State.Inventory.PocketSpecialItems = @(Resolve-LWCoreInventoryItemList -Items @($State.Inventory.PocketSpecialItems) -Type 'special')
         }
+        $State.Inventory.QuiverArrows = Sync-LWQuiverArrowState -State $State
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'Log') -or $null -eq $State.Combat.Log) {
             $State.Combat.Log = @()
         }

@@ -446,6 +446,258 @@ function Invoke-LWMagnakaiBookSixSection076SaleTable {
     }
 }
 
+function Get-LWMagnakaiBookSixSection098BuyDefinitions {
+    return @(
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Broadsword'; DisplayName = 'Broadsword'; Price = 7 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Dagger'; DisplayName = 'Dagger'; Price = 2 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Short Sword'; DisplayName = 'Short Sword'; Price = 3 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Warhammer'; DisplayName = 'Warhammer'; Price = 6 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Spear'; DisplayName = 'Spear'; Price = 5 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Mace'; DisplayName = 'Mace'; Price = 4 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Axe'; DisplayName = 'Axe'; Price = 3 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Bow'; DisplayName = 'Bow'; Price = 7 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Quarterstaff'; DisplayName = 'Quarterstaff'; Price = 3 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Sword'; DisplayName = 'Sword'; Price = 4 },
+        [pscustomobject]@{ Type = 'backpack'; Name = 'Arrow'; DisplayName = '2 Arrows'; Quantity = 2; Price = 1 },
+        [pscustomobject]@{ Type = 'special'; Name = 'Quiver'; DisplayName = 'Quiver [DE]'; Price = 3; StartsEmpty = $true },
+        [pscustomobject]@{ Type = 'special'; Name = 'Large Quiver'; DisplayName = 'Large Quiver [DE]'; Price = 5; StartsEmpty = $true }
+    )
+}
+
+function Get-LWMagnakaiBookSixSection098SaleDefinitions {
+    return @(
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Broadsword'; Price = 6 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Dagger'; Price = 1 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Short Sword'; Price = 2 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Warhammer'; Price = 5 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Spear'; Price = 4 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Mace'; Price = 3 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Axe'; Price = 2 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Bow'; Price = 6 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Quarterstaff'; Price = 2 },
+        [pscustomobject]@{ Type = 'weapon'; Name = 'Sword'; Price = 3 }
+    )
+}
+
+function Get-LWMagnakaiBookSixSection098SellableArrowCount {
+    $looseArrows = 0
+    foreach ($item in @(Get-LWInventoryItems -Type 'backpack')) {
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWArrowItemNames) -Target ([string]$item)))) {
+            $looseArrows++
+        }
+    }
+
+    return ($looseArrows + (Get-LWQuiverArrowCount -State $script:GameState))
+}
+
+function Remove-LWMagnakaiBookSixSection098Arrows {
+    param([int]$Quantity = 3)
+
+    if ($Quantity -lt 1) {
+        return 0
+    }
+
+    $removed = 0
+    while ($removed -lt $Quantity) {
+        if ((Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWArrowItemNames) -Quantity 1 -Types @('backpack')) -gt 0) {
+            $removed++
+            continue
+        }
+
+        $currentQuiverArrows = Get-LWQuiverArrowCount -State $script:GameState
+        if ($currentQuiverArrows -gt 0) {
+            $script:GameState.Inventory.QuiverArrows = ($currentQuiverArrows - 1)
+            $removed++
+            continue
+        }
+
+        break
+    }
+
+    if (Test-LWStateHasQuiver -State $script:GameState) {
+        [void](Sync-LWQuiverArrowState -State $script:GameState)
+    }
+
+    return $removed
+}
+
+function Complete-LWMagnakaiBookSixSection098QuiverPurchase {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][int]$Price
+    )
+
+    $hadQuiver = Test-LWStateHasQuiver -State $script:GameState
+    $currentArrows = Sync-LWQuiverArrowState -State $script:GameState
+    if (-not (TryAdd-LWInventoryItemSilently -Type 'special' -Name $Name -Quantity 1)) {
+        return $false
+    }
+
+    if ($hadQuiver) {
+        $script:GameState.Inventory.QuiverArrows = [Math]::Min($currentArrows, (Get-LWQuiverArrowCapacity -State $script:GameState))
+    }
+    else {
+        $script:GameState.Inventory.QuiverArrows = 0
+    }
+
+    Update-LWGold -Delta (-$Price)
+    if ($hadQuiver) {
+        Write-LWInfo ("Section 98: purchased {0} for {1} Gold Crowns. Arrow capacity is now {2}." -f $Name, $Price, (Format-LWQuiverArrowCounter -State $script:GameState))
+    }
+    else {
+        Write-LWInfo ("Section 98: purchased {0} for {1} Gold Crowns. It is recorded as empty ({2})." -f $Name, $Price, (Format-LWQuiverArrowCounter -State $script:GameState))
+    }
+
+    return $true
+}
+
+function Invoke-LWMagnakaiBookSixSection098BuyTable {
+    $choices = @(Get-LWMagnakaiBookSixSection098BuyDefinitions)
+    while ($true) {
+        Write-LWPanelHeader -Title 'Section 98 Buy Table' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+        if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+            Write-LWKeyValue -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
+        }
+
+        for ($i = 0; $i -lt $choices.Count; $i++) {
+            $choice = $choices[$i]
+            Write-LWBulletItem -Text ("{0}. {1} - {2} Gold Crown{3}" -f ($i + 1), [string]$choice.DisplayName, [int]$choice.Price, $(if ([int]$choice.Price -eq 1) { '' } else { 's' })) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done buying' -TextColor 'Gray' -BulletColor 'DarkGray'
+
+        $choiceIndex = Read-LWInt -Prompt 'Section 98 buy choice' -Default 0 -Min 0 -Max $choices.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            return
+        }
+
+        $choice = $choices[$choiceIndex - 1]
+        $price = [int]$choice.Price
+        if ([int]$script:GameState.Inventory.GoldCrowns -lt $price) {
+            Write-LWInlineWarn ("You need {0} Gold Crowns for that purchase, but only have {1}." -f $price, [int]$script:GameState.Inventory.GoldCrowns)
+            continue
+        }
+
+        switch ([string]$choice.Type) {
+            'weapon' {
+                if (Add-LWWeaponWithOptionalReplace -Name ([string]$choice.Name) -PromptLabel ([string]$choice.DisplayName)) {
+                    Update-LWGold -Delta (-$price)
+                    Write-LWInfo ("Section 98: purchased {0} for {1} Gold Crowns." -f [string]$choice.DisplayName, $price)
+                }
+            }
+            'backpack' {
+                $quantity = if ((Test-LWPropertyExists -Object $choice -Name 'Quantity') -and $null -ne $choice.Quantity) { [int]$choice.Quantity } else { 1 }
+                if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name ([string]$choice.Name) -Quantity $quantity) {
+                    Update-LWGold -Delta (-$price)
+                    Write-LWInfo ("Section 98: purchased {0} for {1} Gold Crown{2}." -f [string]$choice.DisplayName, $price, $(if ($price -eq 1) { '' } else { 's' }))
+                }
+            }
+            'special' {
+                [void](Complete-LWMagnakaiBookSixSection098QuiverPurchase -Name ([string]$choice.Name) -Price $price)
+            }
+        }
+    }
+}
+
+function Get-LWMagnakaiBookSixSection098SaleOffers {
+    $definitions = @(Get-LWMagnakaiBookSixSection098SaleDefinitions)
+    $offers = @()
+
+    foreach ($weapon in @(Get-LWInventoryItems -Type 'weapon')) {
+        $definition = @($definitions | Where-Object { [string]$_.Type -eq 'weapon' -and [string]$_.Name -ieq [string]$weapon } | Select-Object -First 1)
+        if ($definition.Count -gt 0) {
+            $offers += [pscustomobject]@{
+                Kind          = 'weapon'
+                InventoryType = 'weapon'
+                Name          = [string]$weapon
+                DisplayName   = ('{0} [Weapon]' -f [string]$weapon)
+                Price         = [int]$definition[0].Price
+            }
+        }
+    }
+
+    if ((Get-LWMagnakaiBookSixSection098SellableArrowCount) -ge 3) {
+        $offers += [pscustomobject]@{
+            Kind        = 'arrows'
+            DisplayName = '3 Arrows [DE]'
+            Price       = 1
+            Quantity    = 3
+        }
+    }
+
+    return @($offers)
+}
+
+function Invoke-LWMagnakaiBookSixSection098SaleTable {
+    while ($true) {
+        $offers = @(Get-LWMagnakaiBookSixSection098SaleOffers)
+        if ($offers.Count -eq 0) {
+            Write-LWInfo 'Section 98: you have nothing this weaponsmith will buy.'
+            return
+        }
+
+        Write-LWPanelHeader -Title 'Section 98 Sale Table' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Sale Rule' -Value 'Weapons sell for 1 less; 3 Arrows sell for 1 Gold [DE]' -ValueColor 'Gray'
+        for ($i = 0; $i -lt $offers.Count; $i++) {
+            $offer = $offers[$i]
+            Write-LWBulletItem -Text ("{0}. {1} - sell for {2} Gold" -f ($i + 1), [string]$offer.DisplayName, [int]$offer.Price) -TextColor 'Gray' -BulletColor 'DarkGray'
+        }
+        Write-LWBulletItem -Text '0. Done selling' -TextColor 'Gray' -BulletColor 'DarkGray'
+
+        $choiceIndex = Read-LWInt -Prompt 'Section 98 sale choice' -Default 0 -Min 0 -Max $offers.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            return
+        }
+
+        $offer = $offers[$choiceIndex - 1]
+        switch ([string]$offer.Kind) {
+            'weapon' {
+                if (-not (Remove-LWInventoryItemSilently -Type ([string]$offer.InventoryType) -Name ([string]$offer.Name) -Quantity 1)) {
+                    Write-LWWarn ("Could not remove {0}. Try again." -f [string]$offer.Name)
+                    continue
+                }
+
+                Update-LWGold -Delta ([int]$offer.Price)
+                Write-LWInfo ("Section 98: sold {0} for {1} Gold Crowns." -f [string]$offer.Name, [int]$offer.Price)
+            }
+            'arrows' {
+                $removed = Remove-LWMagnakaiBookSixSection098Arrows -Quantity ([int]$offer.Quantity)
+                if ($removed -lt [int]$offer.Quantity) {
+                    Write-LWWarn 'Could not remove enough Arrows to complete the sale.'
+                    continue
+                }
+
+                Update-LWGold -Delta ([int]$offer.Price)
+                Write-LWInfo ("Section 98: sold {0} Arrows for {1} Gold Crown." -f [int]$offer.Quantity, [int]$offer.Price)
+            }
+        }
+    }
+}
+
+function Invoke-LWMagnakaiBookSixSection098Shop {
+    while ($true) {
+        Write-LWPanelHeader -Title 'Section 98 Weapons Shop' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Weapons' -Value ("{0}/2" -f @($script:GameState.Inventory.Weapons).Count) -ValueColor 'Gray'
+        if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+            Write-LWKeyValue -Label 'Arrows' -Value (Format-LWQuiverArrowCounter -State $script:GameState) -ValueColor 'DarkYellow'
+        }
+
+        Write-LWBulletItem -Text '1. Buy weapons, arrows, or quivers' -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text '2. Sell weapons or arrows' -TextColor 'Gray' -BulletColor 'DarkYellow'
+        Write-LWBulletItem -Text '0. Leave the shop' -TextColor 'Gray' -BulletColor 'DarkGray'
+
+        $choice = Read-LWInt -Prompt 'Section 98 shop choice' -Default 0 -Min 0 -Max 2 -NoRefresh
+        switch ($choice) {
+            0 { return }
+            1 { Invoke-LWMagnakaiBookSixSection098BuyTable }
+            2 { Invoke-LWMagnakaiBookSixSection098SaleTable }
+        }
+    }
+}
+
 function Invoke-LWMagnakaiBookSixTaunorWaterPrompt {
     param(
         [Parameter(Mandatory = $true)][string]$ResolvedFlagName,
@@ -1631,6 +1883,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 Update-LWGold -Delta 5
                 Write-LWInfo 'Section 88: recovered 5 Gold Crowns from the dead robbers.'
             }
+        }
+        98 {
+            Invoke-LWMagnakaiBookSixSection098Shop
         }
         65 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section065TaunorWaterResolved' -SectionLabel 'Section 65'

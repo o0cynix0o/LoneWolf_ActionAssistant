@@ -6,6 +6,16 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added Book `6` section `98` DE weapons-shop automation:
+  - section `98` now opens a buy/sell shop flow for the DE weapon list
+  - added DE support for:
+    - `Quiver`
+    - `Large Quiver`
+  - `Large Quiver` is now treated as a real quiver with `12` Arrow capacity
+  - section `98` buys `2 Arrows for 1 Gold Crown` and sells `3 Arrows for 1 Gold Crown` in line with the DE text
+  - validated in both shells with:
+    - `testing/logs/SECTION098_WEAPON_SHOP_PS7.txt`
+    - `testing/logs/SECTION098_WEAPON_SHOP_PS51.txt`
 - added Book `6` section `2` apothecary automation:
   - section `2` now opens a potion-shop choice flow for:
     - `Potion of Laumspur`

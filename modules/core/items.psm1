@@ -162,13 +162,30 @@ function Get-LWQuiverItemNames {
     return @('Quiver')
 }
 
+function Get-LWLargeQuiverItemNames {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return @('Large Quiver')
+}
+
+function Get-LWAnyQuiverItemNames {
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+    return @('Quiver', 'Large Quiver')
+}
+
 function Get-LWArrowItemNames {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     return @('Arrow', 'Arrows')
 }
 
 function Get-LWQuiverArrowCapacity {
+    param([object]$State = $script:GameState)
     Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if ($null -ne $State -and (Test-LWStateHasInventoryItem -State $State -Names (Get-LWLargeQuiverItemNames) -Type 'special')) {
+        return 12
+    }
+
     return 6
 }
 
@@ -181,7 +198,7 @@ function Test-LWStateHasQuiver {
         return $false
     }
 
-    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWQuiverItemNames) -Type 'special')))
+    return (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $State -Names (Get-LWAnyQuiverItemNames) -Type 'special')))
 }
 
 function Get-LWQuiverArrowCount {
@@ -202,7 +219,7 @@ function Get-LWQuiverArrowCount {
         return 0
     }
 
-    $capacity = Get-LWQuiverArrowCapacity
+    $capacity = Get-LWQuiverArrowCapacity -State $State
     return [Math]::Max(0, [Math]::Min($rawValue, $capacity))
 }
 
@@ -220,7 +237,7 @@ function Sync-LWQuiverArrowState {
     }
 
     $normalized = if (Test-LWStateHasQuiver -State $State) {
-        [Math]::Max(0, [Math]::Min([int]$State.Inventory.QuiverArrows, (Get-LWQuiverArrowCapacity)))
+        [Math]::Max(0, [Math]::Min([int]$State.Inventory.QuiverArrows, (Get-LWQuiverArrowCapacity -State $State)))
     }
     else {
         0
@@ -236,7 +253,7 @@ function Format-LWQuiverArrowCounter {
 
 
     $current = Sync-LWQuiverArrowState -State $State
-    return ("{0}/{1}" -f $current, (Get-LWQuiverArrowCapacity))
+    return ("{0}/{1}" -f $current, (Get-LWQuiverArrowCapacity -State $State))
 }
 
 function Get-LWTowelItemNames {
@@ -667,6 +684,7 @@ function Get-LWKnownInventoryNameGroups {
         (Get-LWJakanBowWeaponNames),
         (Get-LWBowWeaponNames),
         (Get-LWQuiverItemNames),
+        (Get-LWLargeQuiverItemNames),
         (Get-LWArrowItemNames),
         (Get-LWTowelItemNames),
         (Get-LWCopperKeyItemNames),
@@ -1315,5 +1333,5 @@ function Get-LWRandomDigit {
     return (Get-Random -Minimum 0 -Maximum 10)
 }
 
-Export-ModuleMember -Function Get-LWChainmailItemNames, Get-LWPaddedLeatherItemNames, Get-LWHelmetItemNames, Get-LWShieldItemNames, Get-LWBroninSleeveShieldItemNames, Get-LWSilverHelmItemNames, Get-LWMapOfSommerlundItemNames, Get-LWGoldenKeyItemNames, Get-LWSealOfHammerdalItemNames, Get-LWCoachTicketItemNames, Get-LWWhitePassItemNames, Get-LWRedPassItemNames, Get-LWVordakGemItemNames, Get-LWCrystalStarPendantItemNames, Get-LWMapOfKalteItemNames, Get-LWSilverKeyItemNames, Get-LWTombGuardianGemsItemNames, Get-LWPrincePelatharMessageItemNames, Get-LWTabletOfPerfumedSoapItemNames, Get-LWMapOfSouthlandsItemNames, Get-LWMapOfVassagoniaItemNames, Get-LWMapOfStornlandsItemNames, Get-LWOedeHerbItemNames, Get-LWBlowpipeItemNames, Get-LWSleepDartItemNames, Get-LWGaolersKeysItemNames, Get-LWJakanBowWeaponNames, Get-LWBowWeaponNames, Get-LWQuiverItemNames, Get-LWArrowItemNames, Get-LWQuiverArrowCapacity, Test-LWStateHasQuiver, Get-LWQuiverArrowCount, Sync-LWQuiverArrowState, Format-LWQuiverArrowCounter, Get-LWTowelItemNames, Get-LWCopperKeyItemNames, Get-LWHerbPadItemNames, Get-LWSilverCombItemNames, Get-LWHourglassItemNames, Get-LWMapOfTekaroItemNames, Get-LWTaunorWaterItemNames, Get-LWSmallSilverKeyItemNames, Get-LWSilverBowOfDuadonItemNames, Get-LWCessItemNames, Get-LWBottleOfWineItemNames, Get-LWMirrorItemNames, Get-LWPrismItemNames, Get-LWLarnumaOilItemNames, Get-LWRendalimsElixirItemNames, Get-LWGallowbrushItemNames, Get-LWCalacenaItemNames, Get-LWBlackSashItemNames, Get-LWBrassWhistleItemNames, Get-LWBottleOfKourshahItemNames, Get-LWBlackCrystalCubeItemNames, Get-LWJewelledMaceItemNames, Get-LWBadgeOfRankItemNames, Get-LWSpecialRationsItemNames, Get-LWOnyxMedallionItemNames, Get-LWFlaskOfHolyWaterItemNames, Get-LWScrollItemNames, Get-LWCaptainDValSwordWeaponNames, Get-LWSolnarisWeaponNames, Get-LWDaggerOfVashnaItemNames, Get-LWIronKeyItemNames, Get-LWBrassKeyItemNames, Get-LWWhipItemNames, Get-LWPotionOfRedLiquidItemNames, Get-LWMiningToolItemNames, Get-LWFiresphereItemNames, Get-LWTorchItemNames, Get-LWTinderboxItemNames, Get-LWBlanketItemNames, Get-LWHerbPouchItemNames, Get-LWHerbPouchPotionItemNames, Test-LWHerbPouchPotionItemName, Test-LWStateHasHerbPouch, Test-LWHerbPouchFeatureAvailable, Get-LWBaknarOilItemNames, Get-LWSleepingFursItemNames, Get-LWBlueStoneTriangleItemNames, Get-LWBlueStoneDiscItemNames, Get-LWStoneEffigyItemNames, Get-LWGoldBraceletItemNames, Get-LWOrnateSilverKeyItemNames, Get-LWPotionOfOrangeLiquidItemNames, Get-LWLaumspurHerbItemNames, Get-LWDrodarinWarHammerWeaponNames, Get-LWBroninWarhammerItemNames, Get-LWBroadswordPlusOneWeaponNames, Get-LWSommerswerdItemNames, Get-LWSommerswerdWeaponskillNames, Get-LWBoneSwordWeaponNames, Get-LWNonEdgeKnockoutWeaponNames, Get-LWHealingPotionItemNames, Get-LWPotentHealingPotionItemNames, Get-LWConcentratedHealingPotionItemNames, Get-LWMinorHealingPotionItemNames, Get-LWAletherPotionItemNames, Get-LWAletherBerryItemNames, Get-LWMealOfLaumspurItemNames, Get-LWGraveweedItemNames, Get-LWMagicSpearItemNames, Get-LWKnownInventoryNameGroups, Convert-LWInventoryNameToDisplayCase, Get-LWCanonicalInventoryItemName, Test-LWPotentHealingPotionName, Test-LWConcentratedHealingPotionName, Get-LWStateInventoryItems, Get-LWMatchingStateInventoryItem, Test-LWStateHasInventoryItem, Find-LWStateInventoryItemLocation, Remove-LWStateInventoryItemByNames, Get-LWStateChainmailEnduranceBonus, Get-LWStatePaddedLeatherEnduranceBonus, Get-LWStateHelmetEnduranceBonus, Get-LWStateShieldCombatSkillBonus, Get-LWStateBroninSleeveShieldCombatSkillBonus, Get-LWStateBroninSleeveShieldCombatEnduranceBonus, Get-LWStateSilverHelmCombatSkillBonus, Test-LWWeaponIsBoneSword, Test-LWWeaponIsDrodarinWarHammer, Test-LWWeaponIsBroninWarhammer, Test-LWWeaponIsBroadswordPlusOne, Test-LWWeaponIsSolnaris, Test-LWWeaponIsMagicSpear, Test-LWStateHasBoneSword, Test-LWStateHasDrodarinWarHammer, Test-LWStateHasBroninWarhammer, Test-LWStateHasBroninSleeveShield, Test-LWStateHasBroadswordPlusOne, Test-LWStateHasSolnaris, Test-LWStateHasMagicSpear, Test-LWWeaponIsCaptainDValSword, Test-LWStateHasBackpack, Test-LWStateHasFiresphere, Test-LWStateHasBaknarOilApplied, Ensure-LWEquipmentBonusState, Sync-LWStateEquipmentBonuses, Get-LWRandomDigit
+Export-ModuleMember -Function Get-LWChainmailItemNames, Get-LWPaddedLeatherItemNames, Get-LWHelmetItemNames, Get-LWShieldItemNames, Get-LWBroninSleeveShieldItemNames, Get-LWSilverHelmItemNames, Get-LWMapOfSommerlundItemNames, Get-LWGoldenKeyItemNames, Get-LWSealOfHammerdalItemNames, Get-LWCoachTicketItemNames, Get-LWWhitePassItemNames, Get-LWRedPassItemNames, Get-LWVordakGemItemNames, Get-LWCrystalStarPendantItemNames, Get-LWMapOfKalteItemNames, Get-LWSilverKeyItemNames, Get-LWTombGuardianGemsItemNames, Get-LWPrincePelatharMessageItemNames, Get-LWTabletOfPerfumedSoapItemNames, Get-LWMapOfSouthlandsItemNames, Get-LWMapOfVassagoniaItemNames, Get-LWMapOfStornlandsItemNames, Get-LWOedeHerbItemNames, Get-LWBlowpipeItemNames, Get-LWSleepDartItemNames, Get-LWGaolersKeysItemNames, Get-LWJakanBowWeaponNames, Get-LWBowWeaponNames, Get-LWQuiverItemNames, Get-LWLargeQuiverItemNames, Get-LWAnyQuiverItemNames, Get-LWArrowItemNames, Get-LWQuiverArrowCapacity, Test-LWStateHasQuiver, Get-LWQuiverArrowCount, Sync-LWQuiverArrowState, Format-LWQuiverArrowCounter, Get-LWTowelItemNames, Get-LWCopperKeyItemNames, Get-LWHerbPadItemNames, Get-LWSilverCombItemNames, Get-LWHourglassItemNames, Get-LWMapOfTekaroItemNames, Get-LWTaunorWaterItemNames, Get-LWSmallSilverKeyItemNames, Get-LWSilverBowOfDuadonItemNames, Get-LWCessItemNames, Get-LWBottleOfWineItemNames, Get-LWMirrorItemNames, Get-LWPrismItemNames, Get-LWLarnumaOilItemNames, Get-LWRendalimsElixirItemNames, Get-LWGallowbrushItemNames, Get-LWCalacenaItemNames, Get-LWBlackSashItemNames, Get-LWBrassWhistleItemNames, Get-LWBottleOfKourshahItemNames, Get-LWBlackCrystalCubeItemNames, Get-LWJewelledMaceItemNames, Get-LWBadgeOfRankItemNames, Get-LWSpecialRationsItemNames, Get-LWOnyxMedallionItemNames, Get-LWFlaskOfHolyWaterItemNames, Get-LWScrollItemNames, Get-LWCaptainDValSwordWeaponNames, Get-LWSolnarisWeaponNames, Get-LWDaggerOfVashnaItemNames, Get-LWIronKeyItemNames, Get-LWBrassKeyItemNames, Get-LWWhipItemNames, Get-LWPotionOfRedLiquidItemNames, Get-LWMiningToolItemNames, Get-LWFiresphereItemNames, Get-LWTorchItemNames, Get-LWTinderboxItemNames, Get-LWBlanketItemNames, Get-LWHerbPouchItemNames, Get-LWHerbPouchPotionItemNames, Test-LWHerbPouchPotionItemName, Test-LWStateHasHerbPouch, Test-LWHerbPouchFeatureAvailable, Get-LWBaknarOilItemNames, Get-LWSleepingFursItemNames, Get-LWBlueStoneTriangleItemNames, Get-LWBlueStoneDiscItemNames, Get-LWStoneEffigyItemNames, Get-LWGoldBraceletItemNames, Get-LWOrnateSilverKeyItemNames, Get-LWPotionOfOrangeLiquidItemNames, Get-LWLaumspurHerbItemNames, Get-LWDrodarinWarHammerWeaponNames, Get-LWBroninWarhammerItemNames, Get-LWBroadswordPlusOneWeaponNames, Get-LWSommerswerdItemNames, Get-LWSommerswerdWeaponskillNames, Get-LWBoneSwordWeaponNames, Get-LWNonEdgeKnockoutWeaponNames, Get-LWHealingPotionItemNames, Get-LWPotentHealingPotionItemNames, Get-LWConcentratedHealingPotionItemNames, Get-LWMinorHealingPotionItemNames, Get-LWAletherPotionItemNames, Get-LWAletherBerryItemNames, Get-LWMealOfLaumspurItemNames, Get-LWGraveweedItemNames, Get-LWMagicSpearItemNames, Get-LWKnownInventoryNameGroups, Convert-LWInventoryNameToDisplayCase, Get-LWCanonicalInventoryItemName, Test-LWPotentHealingPotionName, Test-LWConcentratedHealingPotionName, Get-LWStateInventoryItems, Get-LWMatchingStateInventoryItem, Test-LWStateHasInventoryItem, Find-LWStateInventoryItemLocation, Remove-LWStateInventoryItemByNames, Get-LWStateChainmailEnduranceBonus, Get-LWStatePaddedLeatherEnduranceBonus, Get-LWStateHelmetEnduranceBonus, Get-LWStateShieldCombatSkillBonus, Get-LWStateBroninSleeveShieldCombatSkillBonus, Get-LWStateBroninSleeveShieldCombatEnduranceBonus, Get-LWStateSilverHelmCombatSkillBonus, Test-LWWeaponIsBoneSword, Test-LWWeaponIsDrodarinWarHammer, Test-LWWeaponIsBroninWarhammer, Test-LWWeaponIsBroadswordPlusOne, Test-LWWeaponIsSolnaris, Test-LWWeaponIsMagicSpear, Test-LWStateHasBoneSword, Test-LWStateHasDrodarinWarHammer, Test-LWStateHasBroninWarhammer, Test-LWStateHasBroninSleeveShield, Test-LWStateHasBroadswordPlusOne, Test-LWStateHasSolnaris, Test-LWStateHasMagicSpear, Test-LWWeaponIsCaptainDValSword, Test-LWStateHasBackpack, Test-LWStateHasFiresphere, Test-LWStateHasBaknarOilApplied, Ensure-LWEquipmentBonusState, Sync-LWStateEquipmentBonuses, Get-LWRandomDigit
 

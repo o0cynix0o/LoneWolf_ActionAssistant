@@ -54,6 +54,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - Book `6` section `170` `roll` now uses the live current state correctly in interactive play
   - section `170` bonus logic now matches the local OG text (`Weaponmastery with Bow +3`, `Huntmastery +1`)
 - latest DE Book `6` rules add-on:
+  - section `2` now automates the herbmaster potion-shop flow
+  - section `98` now automates the DE weapons-shop flow, including weapon purchases, weapon resale, arrow resale, `Quiver`, and `Large Quiver`
+  - `Large Quiver` is now modeled as a real Special Item quiver with `12` Arrow capacity
   - section `158` / `293` silver-key handling now uses the DE-facing item name `Sinede's Silver Key` while preserving compatibility with older `Small Silver Key` saves
   - section `17` now automates the inn lodging choice flow, including the text-supported dormitory barter fallback when you cannot afford a room
   - section `297` now supports the DE-only `Bronin Sleeve-shield` trade flow
