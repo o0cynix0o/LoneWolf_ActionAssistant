@@ -378,6 +378,24 @@ Invoke-LWBookSixRecentScenario -Name 'Section170RollFix' -Action {
     ) -Message 'Section 170 should resolve to a +4 modifier for Bow Weaponmastery plus Huntmastery.'
 }
 
+Invoke-LWBookSixRecentScenario -Name 'Section275Cartographer' -Action {
+    $state = New-LWBookSixRecentState -Section 275 -Gold 12 -BackpackItems @('Map of Tekaro')
+    Set-LWBookSixRecentSmokeQueues -Ints @(2, 1, 1, 3, 0)
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section275_map_removed' -Condition (
+        @($state.Inventory.BackpackItems | Where-Object { [string]$_ -eq 'Map of Tekaro' }).Count -eq 0
+    ) -Message 'Section 275 should let you sell a carried Map of Tekaro.'
+
+    Assert-LWBookSixRecent -Name 'section275_map_of_luyen_added' -Condition (
+        Test-LWStateHasInventoryItem -State $state -Names (Get-LWMapOfLuyenItemNames) -Type 'backpack'
+    ) -Message 'Section 275 should let you buy the Map of Luyen.'
+
+    Assert-LWBookSixRecent -Name 'section275_gold' -Condition (
+        [int]$state.Inventory.GoldCrowns -eq 12
+    ) -Message ("Section 275 should return to the starting 12 Gold Crowns after selling Map of Tekaro for 3 and buying Map of Luyen for 3; actual {0}." -f [int]$state.Inventory.GoldCrowns)
+}
+
 Invoke-LWBookSixRecentScenario -Name 'Section297BroninSleeveShield' -Action {
     $usableState = New-LWBookSixRecentState -Section 297 -SpecialItems @('Book of the Magnakai', 'Chainmail Waistcoat')
     Set-LWBookSixRecentSmokeQueues -Ints @(1)

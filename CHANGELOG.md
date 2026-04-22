@@ -6,6 +6,16 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added Book `6` section `275` DE cartographer automation:
+  - section `275` now opens a buy/sell shop flow for:
+    - `Map of Sommerlund`
+    - `Map of Tekaro`
+    - `Map of Luyen`
+  - `Map of Luyen` is now modeled as a Backpack Item
+  - section `275` now buys back carried maps for `1` Gold Crown less than list price, matching the DE text
+  - validated in both shells via the refreshed recent-targeted Book `6` harness:
+    - `testing/logs/BOOK6_RECENT_TARGETED_PS7.txt`
+    - `testing/logs/BOOK6_RECENT_TARGETED_PS51.txt`
 - added Book `6` section `98` DE weapons-shop automation:
   - section `98` now opens a buy/sell shop flow for the DE weapon list
   - added DE support for:

@@ -59,6 +59,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - latest DE Book `6` rules add-on:
   - section `2` now automates the herbmaster potion-shop flow
   - section `98` now automates the DE weapons-shop flow, including weapon purchases, arrow purchases that can partially fill the last free Arrow slot while leaving overflow behind, weapon resale, arrow resale, and `Quiver` / `Large Quiver` resale at one Gold Crown below list price
+  - section `275` now automates the DE cartographer shop flow, including buy/sell handling for `Map of Sommerlund`, `Map of Tekaro`, and `Map of Luyen`
+  - `Map of Luyen` is now modeled as a Backpack Item
+  - section `275` map resale now follows the DE text rule of `1` Gold Crown below list price
   - `Large Quiver` is now modeled as a real Special Item quiver with `12` Arrow capacity
   - section `158` / `293` silver-key handling now uses the DE-facing item name `Sinede's Silver Key` while preserving compatibility with older `Small Silver Key` saves
   - section `17` now automates the inn lodging choice flow, including the text-supported dormitory barter fallback when you cannot afford a room
@@ -290,6 +293,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `testing/logs/BOOK6_SECTION155_COMBAT_PS51.txt`
   - `testing/logs/BOOK6_TARGETED_REGRESSION_PS7.txt`
   - `testing/logs/BOOK6_TARGETED_REGRESSION_PS51.txt`
+  - `testing/logs/BOOK6_RECENT_TARGETED_PS7.txt`
+  - `testing/logs/BOOK6_RECENT_TARGETED_PS51.txt`
 
 ## Main Repo Files
 

@@ -265,6 +265,22 @@ function Get-LWMagnakaiBookSixSection123ChoiceDefinitions {
     )
 }
 
+function Get-LWMagnakaiBookSixSection275BuyDefinitions {
+    return @(
+        [pscustomobject]@{ Name = 'Map of Sommerlund'; DisplayName = 'Map of Sommerlund'; Price = 5 },
+        [pscustomobject]@{ Name = 'Map of Tekaro'; DisplayName = 'Map of Tekaro'; Price = 4 },
+        [pscustomobject]@{ Name = 'Map of Luyen'; DisplayName = 'Map of Luyen'; Price = 3 }
+    )
+}
+
+function Get-LWMagnakaiBookSixSection275SaleDefinitions {
+    return @(
+        [pscustomobject]@{ Name = 'Map of Sommerlund'; DisplayName = 'Map of Sommerlund'; Price = 4 },
+        [pscustomobject]@{ Name = 'Map of Tekaro'; DisplayName = 'Map of Tekaro'; Price = 3 },
+        [pscustomobject]@{ Name = 'Map of Luyen'; DisplayName = 'Map of Luyen'; Price = 2 }
+    )
+}
+
 function Get-LWMagnakaiBookSixSection008ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'gold'; FlagName = 'Book6Section008GoldClaimed'; DisplayName = '10 Gold Crowns'; Type = 'gold'; Name = 'Gold Crowns'; Quantity = 10; Description = '10 Gold Crowns' },
@@ -774,6 +790,113 @@ function Invoke-LWMagnakaiBookSixSection098Shop {
             0 { return }
             1 { Invoke-LWMagnakaiBookSixSection098BuyTable }
             2 { Invoke-LWMagnakaiBookSixSection098SaleTable }
+        }
+    }
+}
+
+function Get-LWMagnakaiBookSixSection275SaleOffers {
+    $definitions = @(Get-LWMagnakaiBookSixSection275SaleDefinitions)
+    $offers = @()
+
+    foreach ($map in @(Get-LWInventoryItems -Type 'backpack')) {
+        $definition = @($definitions | Where-Object { [string]$_.Name -ieq [string]$map } | Select-Object -First 1)
+        if ($definition.Count -gt 0) {
+            $offers += [pscustomobject]@{
+                Name        = [string]$map
+                DisplayName = ('{0} [Backpack Item]' -f [string]$map)
+                Price       = [int]$definition[0].Price
+            }
+        }
+    }
+
+    return @($offers)
+}
+
+function Invoke-LWMagnakaiBookSixSection275BuyTable {
+    $choices = @(Get-LWMagnakaiBookSixSection275BuyDefinitions)
+    while ($true) {
+        Write-LWPanelHeader -Title 'Section 275 Buy Table' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack'))) -ValueColor 'Gray'
+
+        for ($i = 0; $i -lt $choices.Count; $i++) {
+            $choice = $choices[$i]
+            Write-LWBulletItem -Text ("{0}. {1} - {2} Gold Crown{3}" -f ($i + 1), [string]$choice.DisplayName, [int]$choice.Price, $(if ([int]$choice.Price -eq 1) { '' } else { 's' })) -TextColor 'Gray' -BulletColor 'Yellow'
+        }
+        Write-LWBulletItem -Text '0. Done buying' -TextColor 'Gray' -BulletColor 'DarkGray'
+
+        $choiceIndex = Read-LWInt -Prompt 'Section 275 buy choice' -Default 0 -Min 0 -Max $choices.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            return
+        }
+
+        $choice = $choices[$choiceIndex - 1]
+        $price = [int]$choice.Price
+        if ([int]$script:GameState.Inventory.GoldCrowns -lt $price) {
+            Write-LWInlineWarn ("You need {0} Gold Crowns for that purchase, but only have {1}." -f $price, [int]$script:GameState.Inventory.GoldCrowns)
+            continue
+        }
+
+        if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name ([string]$choice.Name) -Quantity 1) {
+            Update-LWGold -Delta (-$price)
+            Write-LWInfo ("Section 275: purchased {0} for {1} Gold Crown{2}." -f [string]$choice.DisplayName, $price, $(if ($price -eq 1) { '' } else { 's' }))
+        }
+    }
+}
+
+function Invoke-LWMagnakaiBookSixSection275SaleTable {
+    while ($true) {
+        $offers = @(Get-LWMagnakaiBookSixSection275SaleOffers)
+        if ($offers.Count -eq 0) {
+            Write-LWInfo 'Section 275: you have no maps this cartographer will buy.'
+            return
+        }
+
+        Write-LWPanelHeader -Title 'Section 275 Sale Table' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Sale Rule' -Value 'Maps sell for 1 less than list price [DE]' -ValueColor 'Gray'
+
+        for ($i = 0; $i -lt $offers.Count; $i++) {
+            $offer = $offers[$i]
+            Write-LWBulletItem -Text ("{0}. {1} - sell for {2} Gold" -f ($i + 1), [string]$offer.DisplayName, [int]$offer.Price) -TextColor 'Gray' -BulletColor 'DarkGray'
+        }
+        Write-LWBulletItem -Text '0. Done selling' -TextColor 'Gray' -BulletColor 'DarkGray'
+
+        $choiceIndex = Read-LWInt -Prompt 'Section 275 sale choice' -Default 0 -Min 0 -Max $offers.Count -NoRefresh
+        if ($choiceIndex -eq 0) {
+            return
+        }
+
+        $offer = $offers[$choiceIndex - 1]
+        $removed = Remove-LWInventoryItemSilently -Type 'backpack' -Name ([string]$offer.Name) -Quantity 1
+        if ($removed -lt 1) {
+            Write-LWWarn ("Could not remove {0}. Try again." -f [string]$offer.Name)
+            continue
+        }
+
+        Update-LWGold -Delta ([int]$offer.Price)
+        Write-LWInfo ("Section 275: sold {0} for {1} Gold Crowns." -f [string]$offer.Name, [int]$offer.Price)
+    }
+}
+
+function Invoke-LWMagnakaiBookSixSection275Shop {
+    while ($true) {
+        Write-LWPanelHeader -Title 'Section 275 Cartographer' -AccentColor 'DarkYellow'
+        Write-LWKeyValue -Label 'Gold Crowns' -Value ("{0}/50" -f [int]$script:GameState.Inventory.GoldCrowns) -ValueColor 'Yellow'
+        Write-LWKeyValue -Label 'Backpack' -Value ("{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack'))) -ValueColor 'Gray'
+
+        Write-LWBulletItem -Text '1. Buy maps' -TextColor 'Gray' -BulletColor 'Yellow'
+        Write-LWBulletItem -Text '2. Sell carried maps' -TextColor 'Gray' -BulletColor 'DarkYellow'
+        Write-LWBulletItem -Text '0. Leave the cartographer' -TextColor 'Gray' -BulletColor 'DarkGray'
+
+        $choice = Read-LWInt -Prompt 'Section 275 shop choice' -Default 0 -Min 0 -Max 2 -NoRefresh
+        switch ($choice) {
+            0 {
+                Write-LWInfo 'Section 275: return to the apothecary and continue to section 231.'
+                return
+            }
+            1 { Invoke-LWMagnakaiBookSixSection275BuyTable }
+            2 { Invoke-LWMagnakaiBookSixSection275SaleTable }
         }
     }
 }
@@ -2160,6 +2283,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         }
         266 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section266RecoveryApplied' -Delta 1 -MessagePrefix 'Section 266: the cool ale restores 1 ENDURANCE point.')
+        }
+        275 {
+            Invoke-LWMagnakaiBookSixSection275Shop
         }
         276 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section276Handled')) {
