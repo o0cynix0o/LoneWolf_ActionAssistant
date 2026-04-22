@@ -201,9 +201,9 @@ function Test-LWMatchingSnapshot {
     )
 
     return (
-        [bool]$Left.Exists -eq [bool]$Right.Exists -and
-        [int64]$Left.Length -eq [int64]$Right.Length -and
-        [string]$Left.LastWriteTimeUtc -eq [string]$Right.LastWriteTimeUtc
+        ([bool]$Left.Exists -eq [bool]$Right.Exists) -and
+        ([int64]$Left.Length -eq [int64]$Right.Length) -and
+        ([string]$Left.LastWriteTimeUtc -eq [string]$Right.LastWriteTimeUtc)
     )
 }
 
@@ -370,12 +370,136 @@ Invoke-LWBookSixRecentScenario -Name 'Section170RollFix' -Action {
     $explicitState = New-LWBookSixRecentState -Section 170
     $context = Get-LWSectionRandomNumberContext -State $explicitState
     $hasExpectedNotes = (
-        @($context.ModifierNotes) -contains 'Weaponmastery with Bow' -and
-        @($context.ModifierNotes) -contains 'Huntmastery'
+        (@($context.ModifierNotes) -contains 'Weaponmastery with Bow') -and
+        (@($context.ModifierNotes) -contains 'Huntmastery')
     )
     Assert-LWBookSixRecent -Name 'section170_modifier' -Condition (
         $null -ne $context -and [int]$context.Modifier -eq 4 -and $hasExpectedNotes
     ) -Message 'Section 170 should resolve to a +4 modifier for Bow Weaponmastery plus Huntmastery.'
+}
+
+Invoke-LWBookSixRecentScenario -Name 'Section016And165MapOfVaretta' -Action {
+    $state = New-LWBookSixRecentState -Section 165 -Gold 8
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section165_map_paid' -Condition (
+        [int]$state.Inventory.GoldCrowns -eq 3 -and (Test-LWStoryAchievementFlag -Name 'Book6Section165MapPaid')
+    ) -Message ("Section 165 should deduct 5 Gold Crowns and mark the payment flag; actual gold {0}." -f [int]$state.Inventory.GoldCrowns)
+
+    $state.CurrentSection = 16
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section016_map_claimed' -Condition (
+        Test-LWStateHasInventoryItem -State $state -Names (Get-LWMapOfVarettaItemNames) -Type 'special'
+    ) -Message 'Section 16 should add the Map of Varetta as a Special Item.'
+
+    Assert-LWBookSixRecent -Name 'section016_map_flag' -Condition (
+        Test-LWStoryAchievementFlag -Name 'Book6Section016MapClaimed'
+    ) -Message 'Section 16 should mark the map-claimed flag.'
+}
+
+Invoke-LWBookSixRecentScenario -Name 'Section027And304CessPurchase' -Action {
+    $state = New-LWBookSixRecentState -Section 27 -Gold 6
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section027_cess_paid' -Condition (
+        [int]$state.Inventory.GoldCrowns -eq 3 -and (Test-LWStoryAchievementFlag -Name 'Book6CessPurchasePaid')
+    ) -Message ("Section 27 should deduct 3 Gold Crowns for the Cess route; actual gold {0}." -f [int]$state.Inventory.GoldCrowns)
+
+    $state.CurrentSection = 304
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section304_cess_claimed_from_027' -Condition (
+        Test-LWStateHasInventoryItem -State $state -Names (Get-LWCessItemNames) -Type 'special'
+    ) -Message 'Section 304 should add the Cess after the section 27 payment route.'
+}
+
+Invoke-LWBookSixRecentScenario -Name 'Section273And304CessPurchase' -Action {
+    $state = New-LWBookSixRecentState -Section 273 -Gold 5
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section273_cess_paid' -Condition (
+        [int]$state.Inventory.GoldCrowns -eq 2 -and (Test-LWStoryAchievementFlag -Name 'Book6CessPurchasePaid')
+    ) -Message ("Section 273 should deduct 3 Gold Crowns for the Cess route; actual gold {0}." -f [int]$state.Inventory.GoldCrowns)
+
+    $state.CurrentSection = 304
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section304_cess_claimed_from_273' -Condition (
+        Test-LWStateHasInventoryItem -State $state -Names (Get-LWCessItemNames) -Type 'special'
+    ) -Message 'Section 304 should add the Cess after the section 273 payment route.'
+}
+
+Invoke-LWBookSixRecentScenario -Name 'Section137LevyAnd328Meal' -Action {
+    $levyState = New-LWBookSixRecentState -Section 137 -Gold 4
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $levyState
+
+    Assert-LWBookSixRecent -Name 'section137_levy_paid' -Condition (
+        [int]$levyState.Inventory.GoldCrowns -eq 1 -and (Test-LWStoryAchievementFlag -Name 'Book6Section137LevyPaid')
+    ) -Message ("Section 137 should deduct the 3 Gold Crown levy; actual gold {0}." -f [int]$levyState.Inventory.GoldCrowns)
+
+    $mealState = New-LWBookSixRecentState -Section 328 -Gold 3
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $mealState
+
+    Assert-LWBookSixRecent -Name 'section328_meal_paid' -Condition (
+        [int]$mealState.Inventory.GoldCrowns -eq 1 -and (Test-LWStoryAchievementFlag -Name 'Book6Section328MealPaid')
+    ) -Message ("Section 328 should deduct 2 Gold Crowns for the roast beef; actual gold {0}." -f [int]$mealState.Inventory.GoldCrowns)
+}
+
+Invoke-LWBookSixRecentScenario -Name 'SectionOgRouteGuidance' -Action {
+    $section096State = New-LWBookSixRecentState -Section 96 -Gold 7 -SpecialItems @('Book of the Magnakai', 'Cess')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section096State
+    Assert-LWBookSixRecent -Name 'section096_guidance_no_side_effect' -Condition (
+        ([int]$section096State.Inventory.GoldCrowns -eq 7) -and
+        (Test-LWStateHasInventoryItem -State $section096State -Names (Get-LWCessItemNames) -Type 'special')
+    ) -Message 'Section 96 guidance should not alter state.'
+
+    $section169State = New-LWBookSixRecentState -Section 169 -Gold 6 -MagnakaiDisciplines @('Weaponmastery', 'Huntmastery', 'Psi-screen')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section169State
+    Assert-LWBookSixRecent -Name 'section169_guidance_no_side_effect' -Condition (
+        [int]$section169State.Inventory.GoldCrowns -eq 6
+    ) -Message 'Section 169 guidance should not alter state.'
+
+    $section205State = New-LWBookSixRecentState -Section 205 -Gold 6 -MagnakaiDisciplines @('Huntmastery', 'Psi-screen', 'Divination')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section205State
+    Assert-LWBookSixRecent -Name 'section205_guidance_no_side_effect' -Condition (
+        [int]$section205State.Inventory.GoldCrowns -eq 6
+    ) -Message 'Section 205 guidance should not alter state.'
+
+    $section211State = New-LWBookSixRecentState -Section 211 -Gold 6 -SpecialItems @('Book of the Magnakai', 'Map of Varetta')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section211State
+    Assert-LWBookSixRecent -Name 'section211_guidance_no_side_effect' -Condition (
+        Test-LWStateHasInventoryItem -State $section211State -Names (Get-LWMapOfVarettaItemNames) -Type 'special'
+    ) -Message 'Section 211 guidance should not alter the Map of Varetta state.'
+
+    $section248State = New-LWBookSixRecentState -Section 248 -Gold 6 -MagnakaiDisciplines @('Invisibility', 'Psi-screen', 'Divination')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section248State
+    Assert-LWBookSixRecent -Name 'section248_guidance_no_side_effect' -Condition (
+        [int]$section248State.Inventory.GoldCrowns -eq 6
+    ) -Message 'Section 248 guidance should not alter state.'
+
+    $section295State = New-LWBookSixRecentState -Section 295 -Gold 6 -SpecialItems @('Book of the Magnakai', 'Sommerswerd')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section295State
+    Assert-LWBookSixRecent -Name 'section295_guidance_no_side_effect' -Condition (
+        Test-LWStateHasInventoryItem -State $section295State -Names (Get-LWSommerswerdItemNames) -Type 'special'
+    ) -Message 'Section 295 guidance should not alter the Sommerswerd state.'
+
+    $section316State = New-LWBookSixRecentState -Section 316 -Gold 5 -MagnakaiDisciplines @('Weaponmastery', 'Psi-screen', 'Divination')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section316State
+    Assert-LWBookSixRecent -Name 'section316_guidance_no_side_effect' -Condition (
+        [int]$section316State.Inventory.GoldCrowns -eq 5
+    ) -Message 'Section 316 guidance should not alter state.'
+
+    $section318State = New-LWBookSixRecentState -Section 318 -Gold 6 -MagnakaiDisciplines @('Animal Control', 'Psi-screen', 'Divination')
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section318State
+    Assert-LWBookSixRecent -Name 'section318_guidance_no_side_effect' -Condition (
+        [int]$section318State.Inventory.GoldCrowns -eq 6
+    ) -Message 'Section 318 guidance should not alter state.'
 }
 
 Invoke-LWBookSixRecentScenario -Name 'Section275Cartographer' -Action {

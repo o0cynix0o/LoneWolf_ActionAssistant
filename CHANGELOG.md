@@ -6,6 +6,16 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- broadened Book `6` OG source-language automation after the full original-text reread:
+  - added source-side payment support for the `Cess` route at sections `27` and `273` before the existing section `304` claim
+  - added the `Map of Varetta` purchase-and-claim flow across sections `165` and `16`
+  - added the missing source-side `3` Gold Crown levy deduction at section `137`
+  - added the missing source-side `2` Gold Crown meal deduction at section `328`
+  - added guidance-only automation notes for sections `96`, `169`, `205`, `211`, `248`, `295`, `316`, and `318` without changing those sections' underlying state
+  - widened the Book `6` recent-targeted smoke harness to cover the full OG follow-up slice
+  - validated in both shells via:
+    - `testing/logs/BOOK6_RECENT_TARGETED_PS7.txt`
+    - `testing/logs/BOOK6_RECENT_TARGETED_PS51.txt`
 - added Book `6` section `275` DE cartographer automation:
   - section `275` now opens a buy/sell shop flow for:
     - `Map of Sommerlund`

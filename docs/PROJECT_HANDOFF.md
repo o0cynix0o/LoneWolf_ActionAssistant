@@ -67,6 +67,12 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - section `17` now automates the inn lodging choice flow, including the text-supported dormitory barter fallback when you cannot afford a room
   - section `297` now supports the DE-only `Bronin Sleeve-shield` trade flow
   - `Bronin Sleeve-shield` is modeled as a Special Item that grants `+1 CS` and `+1 END` in physical combat when a normal shield is not currently usable
+- latest OG-source Book `6` follow-up pass now also present on `main`:
+  - section `27` and section `273` now support the source-side `3` Gold Crown `Cess` purchase before the existing section `304` item claim
+  - section `165` now supports the source-side `5` Gold Crown `Map of Varetta` purchase, and section `16` now safely marks the map claim when you reach it
+  - section `137` now deducts the source-side `3` Gold Crown Quarlen levy
+  - section `328` now deducts the source-side `2` Gold Crown roast-beef meal cost
+  - sections `96`, `169`, `205`, `211`, `248`, `295`, `316`, and `318` now surface guidance-only automation notes for the text-supported route checks found in the original book language sweep
 - latest lag pass now present on `main` fixed two post-extraction regressions:
   - achievement-screen caching was being reset by host-context rebinding
   - `combat status` from `inv` could throw a module-context error and write to `data/error.log`
@@ -128,6 +134,14 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - local audit artifacts:
     - `testing/logs/BOOK6_AUTOMATION_AUDIT_20260415.md`
     - `testing/tmp/book6_automation_refresh_audit.py`
+- current `main` broader Book `6` original-text language sweep is also recorded and now built out for the concrete follow-ups it found:
+  - source-language sweep artifact:
+    - `testing/logs/BOOK6_OG_LANGUAGE_SWEEP_20260422.md`
+  - implemented OG follow-up sections:
+    - `16`, `27`, `96`, `137`, `165`, `169`, `205`, `211`, `248`, `273`, `295`, `316`, `318`, `328`
+  - current `main` recent-targeted Book `6` harness covers that OG follow-up slice in both shells:
+    - `testing/logs/BOOK6_RECENT_TARGETED_PS7.txt`
+    - `testing/logs/BOOK6_RECENT_TARGETED_PS51.txt`
 - current combined automation coverage across Books `1-6`:
   - `717/717` high-confidence candidates covered
 - current `main` follow-up hotfix after the broader smoke pass:

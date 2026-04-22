@@ -523,7 +523,7 @@ Deliverables:
 
 - post-release bug triage for the shipped Books `1-6` command surface
 - continued DE-difference cleanup found during real play
-- current `main` Book `6` stabilization hardening across sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`
+- current `main` Book `6` stabilization hardening across sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`, plus the OG source-language follow-up slice at sections `16`, `27`, `96`, `137`, `165`, `169`, `205`, `211`, `248`, `273`, `295`, `316`, `318`, and `328`
 - Book `7` validation and hardening across startup, choice, combat, achievements, route coverage, and difficulty behavior
 - Book `7` strategy-guide creation plus wiki scope/support cleanup
 - branch/docs cleanup so public release state and current `main` state stay explicit
@@ -541,6 +541,13 @@ Current checkpoint:
   - `testing/logs/BOOK6_RECENT_TARGETED_PS7.txt`
   - `testing/logs/BOOK6_RECENT_TARGETED_PS51.txt`
 - current `main` Book `6` recent-targeted harness now also covers the missed DE section `275` cartographer flow
+- current `main` Book `6` recent-targeted harness now also covers the OG source-language follow-up slice found by the full `350`-section reread:
+  - source-side payments / claims:
+    - `16`, `27`, `137`, `165`, `273`, `328`
+  - guidance-only route notes:
+    - `96`, `169`, `205`, `211`, `248`, `295`, `316`, `318`
+  - audit artifact:
+    - `testing/logs/BOOK6_OG_LANGUAGE_SWEEP_20260422.md`
 - current `main` Book `7` validation is green in both shells:
   - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
   - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`

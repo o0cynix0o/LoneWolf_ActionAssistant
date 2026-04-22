@@ -1047,6 +1047,129 @@ function Clear-LWMagnakaiBookSixConditionValue {
     $script:GameState.Conditions.$Name = $null
 }
 
+function Test-LWMagnakaiBookSixHasLoreCircleOfFire {
+    param([object]$State = $script:GameState)
+
+    return (
+        (Test-LWStateHasDiscipline -State $State -Name 'Weaponmastery') -and
+        (Test-LWStateHasDiscipline -State $State -Name 'Huntmastery')
+    )
+}
+
+function Invoke-LWMagnakaiBookSixSection016MapClaim {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section016MapClaimed') {
+        return
+    }
+
+    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfVarettaItemNames) -Type 'special') {
+        Set-LWStoryAchievementFlag -Name 'Book6Section016MapClaimed'
+        return
+    }
+
+    if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Map of Varetta') {
+        Set-LWStoryAchievementFlag -Name 'Book6Section016MapClaimed'
+        Write-LWInfo 'Section 16: Map of Varetta added to Special Items.'
+        return
+    }
+
+    Write-LWWarn 'No room to add the Map of Varetta automatically. Make room and add it manually if needed.'
+}
+
+function Invoke-LWMagnakaiBookSixSectionCessPurchaseSource {
+    param([Parameter(Mandatory = $true)][string]$SectionLabel)
+
+    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWCessItemNames) -Type 'special') {
+        Write-LWInfo ("{0}: you already carry a Cess, so this purchase can be skipped." -f $SectionLabel)
+        return
+    }
+
+    if (Test-LWStoryAchievementFlag -Name 'Book6CessPurchasePaid') {
+        Write-LWInfo ("{0}: the 3 Gold Crown payment has already been made. Continue to section 304 to collect the Cess." -f $SectionLabel)
+        return
+    }
+
+    $goldCrowns = [int]$script:GameState.Inventory.GoldCrowns
+    if ($goldCrowns -lt 3) {
+        Write-LWWarn ("{0}: the Cess route assumes you can pay 3 Gold Crowns, but only {1} are currently recorded." -f $SectionLabel, $goldCrowns)
+        return
+    }
+
+    if (Read-LWInlineYesNo -Prompt ("{0}: pay 3 Gold Crowns for a Cess now?" -f $SectionLabel) -Default $true) {
+        Update-LWGold -Delta -3
+        Set-LWStoryAchievementFlag -Name 'Book6CessPurchasePaid'
+        Write-LWInfo ("{0}: 3 Gold Crowns paid for a Cess. Continue to section 304 to collect it." -f $SectionLabel)
+        return
+    }
+
+    Write-LWInfo ("{0}: no payment taken. Follow the original section text manually for the non-purchase branches." -f $SectionLabel)
+}
+
+function Invoke-LWMagnakaiBookSixSection137LevyPrompt {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section137LevyPaid') {
+        Write-LWInfo 'Section 137: the Quarlen levy has already been paid. Continue to section 332.'
+        return
+    }
+
+    $goldCrowns = [int]$script:GameState.Inventory.GoldCrowns
+    if ($goldCrowns -lt 3) {
+        Write-LWWarn ("Section 137: entering Quarlen by the gate route assumes you can pay the 3 Gold Crown levy, but only {0} are currently recorded." -f $goldCrowns)
+        return
+    }
+
+    if (Read-LWInlineYesNo -Prompt 'Section 137: pay the 3 Gold Crown levy now?' -Default $true) {
+        Update-LWGold -Delta -3
+        Set-LWStoryAchievementFlag -Name 'Book6Section137LevyPaid'
+        Write-LWInfo 'Section 137: 3 Gold Crowns paid to enter Quarlen. Continue to section 332.'
+        return
+    }
+
+    Write-LWInfo 'Section 137: no levy is paid. Follow the original section text manually if you ride on to section 115 instead.'
+}
+
+function Invoke-LWMagnakaiBookSixSection165MapPurchasePrompt {
+    if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfVarettaItemNames) -Type 'special') {
+        Set-LWStoryAchievementFlag -Name 'Book6Section016MapClaimed'
+        Write-LWInfo 'Section 165: you already carry the Map of Varetta, so this purchase can be skipped.'
+        return
+    }
+
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section165MapPaid') {
+        Write-LWInfo 'Section 165: the 5 Gold Crown payment has already been made. Continue to section 16 to mark the Map of Varetta.'
+        return
+    }
+
+    $goldCrowns = [int]$script:GameState.Inventory.GoldCrowns
+    if ($goldCrowns -lt 5) {
+        Write-LWWarn ("Section 165: the Map of Varetta purchase assumes you can pay 5 Gold Crowns, but only {0} are currently recorded." -f $goldCrowns)
+        return
+    }
+
+    if (Read-LWInlineYesNo -Prompt 'Section 165: pay 5 Gold Crowns for the Map of Varetta now?' -Default $true) {
+        Update-LWGold -Delta -5
+        Set-LWStoryAchievementFlag -Name 'Book6Section165MapPaid'
+        Write-LWInfo 'Section 165: 5 Gold Crowns paid for the Map of Varetta. Continue to section 16 to claim it.'
+        return
+    }
+
+    Write-LWInfo 'Section 165: no purchase is made. Follow the original section text manually if you turn away to section 262 instead.'
+}
+
+function Invoke-LWMagnakaiBookSixSection328MealPurchase {
+    if (Test-LWStoryAchievementFlag -Name 'Book6Section328MealPaid') {
+        return
+    }
+
+    $goldCrowns = [int]$script:GameState.Inventory.GoldCrowns
+    if ($goldCrowns -lt 2) {
+        Write-LWWarn ("Section 328: the roast-beef route assumes you can pay 2 Gold Crowns, but only {0} are currently recorded." -f $goldCrowns)
+        return
+    }
+
+    Update-LWGold -Delta -2
+    Set-LWStoryAchievementFlag -Name 'Book6Section328MealPaid'
+    Write-LWInfo 'Section 328: 2 Gold Crowns paid for the roast beef before continuing to section 219.'
+}
+
 function Invoke-LWMagnakaiBookSixLaumspurPrompt {
     param(
         [Parameter(Mandatory = $true)][string]$ResolvedFlagName,
@@ -1997,8 +2120,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         2 {
             Invoke-LWBookFourChoiceTable -Title 'Section 2 Apothecary' -PromptLabel 'Section 2 choice' -ContextLabel 'Section 2' -Choices (Get-LWMagnakaiBookSixSection002ChoiceDefinitions) -Intro 'Section 2: the herbmaster will sell these potions as Backpack Items while you wait for the captain.'
         }
+        16 {
+            Invoke-LWMagnakaiBookSixSection016MapClaim
+        }
         17 {
             Invoke-LWMagnakaiBookSixSection017RoomRoute
+        }
+        27 {
+            Invoke-LWMagnakaiBookSixSectionCessPurchaseSource -SectionLabel 'Section 27'
         }
         10 {
             Invoke-LWMagnakaiBookSixSection010TicketPrompt
@@ -2087,6 +2216,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 Write-LWInfo 'Section 88: recovered 5 Gold Crowns from the dead robbers.'
             }
         }
+        96 {
+            if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWCessItemNames) -Type 'special') {
+                Write-LWInfo 'Section 96: a carried Cess unlocks the Amory gate route to section 49.'
+            }
+            else {
+                Write-LWInfo 'Section 96: without a Cess, the guard turns you away to section 221.'
+            }
+        }
         98 {
             Invoke-LWMagnakaiBookSixSection098Shop
         }
@@ -2120,6 +2257,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
             else {
                 Write-LWInfo 'Section 124: without the Riverboat Ticket, this route continues to 290.'
             }
+        }
+        137 {
+            Invoke-LWMagnakaiBookSixSection137LevyPrompt
         }
         139 {
             Invoke-LWBookFourChoiceTable -Title 'Section 139 Search' -PromptLabel 'Section 139 choice' -ContextLabel 'Section 139' -Choices (Get-LWMagnakaiBookSixSection139ChoiceDefinitions) -Intro 'Section 139: keep the slain assassin''s purse and Silver Brooch if you want them.'
@@ -2177,6 +2317,17 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         164 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section164DamageApplied' -Delta -2 -MessagePrefix 'Section 164: the quarrel grazes your shoulder as you dodge aside.' -FatalCause 'The crossbow graze at section 164 reduced your Endurance to zero.')
         }
+        165 {
+            Invoke-LWMagnakaiBookSixSection165MapPurchasePrompt
+        }
+        169 {
+            if (Test-LWMagnakaiBookSixHasLoreCircleOfFire -State $script:GameState) {
+                Write-LWInfo 'Section 169: the Lore-circle of Fire route is available here. Turn to section 65 if you use it; otherwise the other branches are 222 and 285.'
+            }
+            else {
+                Write-LWInfo 'Section 169: without the Lore-circle of Fire, this section branches to 222 if you stand and fight or 285 if you flee.'
+            }
+        }
         171 {
             if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus')) {
                 [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section171ColdDamageApplied' -Delta -1 -MessagePrefix 'Section 171: the freezing river leaves you drained and numb.' -FatalCause 'The freezing river at section 171 reduced your Endurance to zero.')
@@ -2204,6 +2355,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         197 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section197DamageApplied' -Delta -2 -MessagePrefix 'Section 197: an arrow gashes your calf as you drift downstream.' -FatalCause 'The arrow wound at section 197 reduced your Endurance to zero.')
         }
+        205 {
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery') {
+                Write-LWInfo 'Section 205: Huntmastery identifies the Durenese hunting bow as the safe choice. Continue to section 60.'
+            }
+            else {
+                Write-LWInfo 'Section 205: this is the Huntmastery bow-choice route to section 60.'
+            }
+        }
         207 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section207Handled')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section207Handled'
@@ -2223,6 +2382,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         }
         212 {
             Invoke-LWMagnakaiBookSixSection212HorseTrade
+        }
+        211 {
+            if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfVarettaItemNames) -Type 'special') {
+                Write-LWInfo 'Section 211: the Map of Varetta route is available here. Turn to section 17 instead of section 104.'
+            }
+            else {
+                Write-LWInfo 'Section 211: without the Map of Varetta, this route continues to section 104.'
+            }
         }
         214 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section214KalteBowPenaltySet')) {
@@ -2266,6 +2433,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         246 {
             Invoke-LWMagnakaiBookSixTaunorWaterPrompt -ResolvedFlagName 'Book6Section246TaunorWaterResolved' -SectionLabel 'Section 246'
         }
+        248 {
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Invisibility') {
+                Write-LWInfo 'Section 248: Invisibility opens the section 322 route here; the straight retaliation route is section 201.'
+            }
+            else {
+                Write-LWInfo 'Section 248: without Invisibility, this confrontation goes to section 201 if you retaliate.'
+            }
+        }
         252 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section252SilverBowClaimed')) {
                 if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Silver Bow of Duadon') {
@@ -2283,6 +2458,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         }
         266 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section266RecoveryApplied' -Delta 1 -MessagePrefix 'Section 266: the cool ale restores 1 ENDURANCE point.')
+        }
+        273 {
+            Invoke-LWMagnakaiBookSixSectionCessPurchaseSource -SectionLabel 'Section 273'
         }
         275 {
             Invoke-LWMagnakaiBookSixSection275Shop
@@ -2319,6 +2497,14 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 else {
                     Write-LWInfo "Section 293: Sinede's Silver Key should now be erased from your Action Chart."
                 }
+            }
+        }
+        295 {
+            if (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWSommerswerdItemNames) -Type 'special') {
+                Write-LWInfo 'Section 295: the Sommerswerd route is available here. Turn to section 321 instead of the attack (257) or flight (182) branches.'
+            }
+            else {
+                Write-LWInfo 'Section 295: without the Sommerswerd, this section branches to 257 if you attack or 182 if you flee.'
             }
         }
         297 {
@@ -2405,6 +2591,25 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 }
             }
         }
+        316 {
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery') {
+                Write-LWInfo 'Section 316: Huntmastery opens the section 114 route here. Otherwise fighting goes to 282, and surrendering all current Gold Crowns leads to the fatal section 161.'
+            }
+            elseif ([int]$script:GameState.Inventory.GoldCrowns -le 0) {
+                Write-LWInfo 'Section 316: with no Gold Crowns to surrender, this ambush goes straight to the fight route at section 282.'
+            }
+            else {
+                Write-LWInfo 'Section 316: without Huntmastery, fighting goes to section 282 and surrendering all current Gold Crowns leads to the fatal section 161.'
+            }
+        }
+        318 {
+            if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                Write-LWInfo 'Section 318: Animal Control opens the safe route to section 32 here. The other branches are 349 and 4.'
+            }
+            else {
+                Write-LWInfo 'Section 318: without Animal Control, this section branches to 349 if you push through the strands or 4 if you sweep them aside with a weapon.'
+            }
+        }
         322 {
             if ([int]$script:GameState.Inventory.GoldCrowns -ge 10) {
                 if (Read-LWInlineYesNo -Prompt 'Pay the sergeant 10 Gold Crowns now?' -Default $false) {
@@ -2416,6 +2621,9 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
             else {
                 Write-LWWarn 'Section 322: you do not currently have the 10 Gold Crowns needed to pay the sergeant.'
             }
+        }
+        328 {
+            Invoke-LWMagnakaiBookSixSection328MealPurchase
         }
         348 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section348WarhammerLost')) {
