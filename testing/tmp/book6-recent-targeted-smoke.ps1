@@ -293,6 +293,25 @@ Invoke-LWBookSixRecentScenario -Name 'Section098WeaponShop' -Action {
     ) -Message ("Section 98 should leave 6 Gold Crowns; actual {0}." -f [int]$state.Inventory.GoldCrowns)
 }
 
+Invoke-LWBookSixRecentScenario -Name 'Section098PartialArrowPurchase' -Action {
+    $state = New-LWBookSixRecentState -Section 98 -Gold 3 -SpecialItems @('Book of the Magnakai', 'Quiver')
+    $state.Inventory.QuiverArrows = 5
+    Set-LWBookSixRecentSmokeQueues -Ints @(1, 11, 0, 0)
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $state
+
+    Assert-LWBookSixRecent -Name 'section098_partial_arrow_count' -Condition (
+        (Get-LWQuiverArrowCount -State $state) -eq 6
+    ) -Message ("Section 98 should fill the last quiver slot and leave the extra Arrow behind; actual {0}." -f (Get-LWQuiverArrowCount -State $state))
+
+    Assert-LWBookSixRecent -Name 'section098_partial_arrow_gold' -Condition (
+        [int]$state.Inventory.GoldCrowns -eq 2
+    ) -Message ("Section 98 should still charge 1 Gold Crown for the 2-Arrow purchase; actual {0}." -f [int]$state.Inventory.GoldCrowns)
+
+    Assert-LWBookSixRecent -Name 'section098_partial_arrow_no_backpack' -Condition (
+        @($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Arrow' }).Count -eq 0
+    ) -Message 'Section 98 should leave the overflow Arrow behind instead of adding it to Backpack Items when a quiver is present.'
+}
+
 Invoke-LWBookSixRecentScenario -Name 'Section098SellQuiver' -Action {
     $state = New-LWBookSixRecentState -Section 98 -Gold 8 -SpecialItems @('Book of the Magnakai', 'Quiver')
     $state.Inventory.QuiverArrows = 2

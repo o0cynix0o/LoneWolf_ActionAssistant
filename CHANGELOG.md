@@ -13,6 +13,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
     - `Large Quiver`
   - `Large Quiver` is now treated as a real quiver with `12` Arrow capacity
   - section `98` buys `2 Arrows for 1 Gold Crown` and sells `3 Arrows for 1 Gold Crown` in line with the DE text
+  - when a `2 Arrows for 1 Gold Crown` purchase only has room for one Arrow, the app now stores the one carried Arrow, leaves the extra behind, and still charges the full price
   - `Quiver` and `Large Quiver` now also appear in the sale table at `2` and `4` Gold Crowns respectively, matching the shop's one-less-than-list-price rule
   - validated in both shells with:
     - `testing/logs/SECTION098_WEAPON_SHOP_PS7.txt`

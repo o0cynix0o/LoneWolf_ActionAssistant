@@ -553,6 +553,59 @@ function Complete-LWMagnakaiBookSixSection098QuiverPurchase {
     return $true
 }
 
+function Complete-LWMagnakaiBookSixSection098ArrowPurchase {
+    param(
+        [Parameter(Mandatory = $true)][int]$Price,
+        [int]$Quantity = 2
+    )
+
+    if ($Quantity -lt 1) {
+        return $false
+    }
+
+    $storedQuantity = 0
+    $leftBehindQuantity = 0
+
+    if (Test-LWStateHasQuiver -State $script:GameState) {
+        $currentArrows = Sync-LWQuiverArrowState -State $script:GameState
+        $capacity = Get-LWQuiverArrowCapacity -State $script:GameState
+        $freeArrows = [Math]::Max(0, ($capacity - $currentArrows))
+        if ($freeArrows -le 0) {
+            Write-LWInlineWarn 'Your quiver has no room for more arrows.'
+            return $false
+        }
+
+        $storedQuantity = [Math]::Min($Quantity, $freeArrows)
+        $leftBehindQuantity = [Math]::Max(0, ($Quantity - $storedQuantity))
+        $script:GameState.Inventory.QuiverArrows = ($currentArrows + $storedQuantity)
+    }
+    else {
+        $capacity = Get-LWInventoryTypeCapacity -Type 'backpack'
+        $usedCapacity = Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')
+        $freeSlots = [Math]::Max(0, ([int]$capacity - [int]$usedCapacity))
+        if ($freeSlots -le 0) {
+            Write-LWInlineWarn 'You do not have enough Backpack space for more arrows.'
+            return $false
+        }
+
+        $storedQuantity = [Math]::Min($Quantity, $freeSlots)
+        $leftBehindQuantity = [Math]::Max(0, ($Quantity - $storedQuantity))
+        if (-not (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name 'Arrow' -Quantity $storedQuantity)) {
+            return $false
+        }
+    }
+
+    Update-LWGold -Delta (-$Price)
+    if ($leftBehindQuantity -gt 0) {
+        Write-LWInfo ("Section 98: purchased {0} Arrows for {1} Gold Crown{2}; only {3} could be carried, so {4} {5} left behind." -f $Quantity, $Price, $(if ($Price -eq 1) { '' } else { 's' }), $storedQuantity, $leftBehindQuantity, $(if ($leftBehindQuantity -eq 1) { 'was' } else { 'were' }))
+    }
+    else {
+        Write-LWInfo ("Section 98: purchased {0} Arrows for {1} Gold Crown{2}." -f $Quantity, $Price, $(if ($Price -eq 1) { '' } else { 's' }))
+    }
+
+    return $true
+}
+
 function Invoke-LWMagnakaiBookSixSection098BuyTable {
     $choices = @(Get-LWMagnakaiBookSixSection098BuyDefinitions)
     while ($true) {
@@ -590,7 +643,10 @@ function Invoke-LWMagnakaiBookSixSection098BuyTable {
             }
             'backpack' {
                 $quantity = if ((Test-LWPropertyExists -Object $choice -Name 'Quantity') -and $null -ne $choice.Quantity) { [int]$choice.Quantity } else { 1 }
-                if (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name ([string]$choice.Name) -Quantity $quantity) {
+                if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWArrowItemNames) -Target ([string]$choice.Name)))) {
+                    [void](Complete-LWMagnakaiBookSixSection098ArrowPurchase -Price $price -Quantity $quantity)
+                }
+                elseif (TryAdd-LWInventoryItemSilently -Type 'backpack' -Name ([string]$choice.Name) -Quantity $quantity) {
                     Update-LWGold -Delta (-$price)
                     Write-LWInfo ("Section 98: purchased {0} for {1} Gold Crown{2}." -f [string]$choice.DisplayName, $price, $(if ($price -eq 1) { '' } else { 's' }))
                 }
