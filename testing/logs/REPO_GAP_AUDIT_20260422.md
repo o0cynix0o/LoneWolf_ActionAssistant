@@ -25,6 +25,12 @@ This is a repo-state audit, not a fresh full-text reread of every unsupported bo
 - Book `7` is implemented locally on current `main` with startup, section-entry, random-helper, combat, achievement, route, and difficulty smoke coverage already present:
   - `modules/rulesets/magnakai/book7.psm1`
   - `docs/PROJECT_HANDOFF.md`
+- the stale pre-build Book `7` audit has now been replaced by a live post-build refresh:
+  - `testing/logs/BOOK7_AUTOMATION_AUDIT_20260422.md`
+- README / repo-current wording is now aligned with the recent Book `6` stabilization slice on current `main`
+- redirected startup `-Load` cleanup is now fixed on current `main`, and package validation covers it:
+  - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
+- GitHub issue `#31` is already closed, so it is no longer a repo-state gap
 
 ## Confirmed Gaps
 
@@ -38,27 +44,16 @@ This is a repo-state audit, not a fresh full-text reread of every unsupported bo
   - `modules/rulesets/magnakai/` -> `book6.psm1`, `book7.psm1`
 - No `book8.psm1` or later book-module support is present yet.
 
-### 2. The repo still lacks a post-build Book `7` automation audit
-
-- `testing/logs/BOOK7_AUTOMATION_AUDIT_20260416.md` is now stale.
-- That report still says:
-  - current Book `7` section-entry hooks in app: `0`
-  - current Book `7` book-specific coverage in app: `0`
-- Those statements predate the actual Book `7` implementation now living in `modules/rulesets/magnakai/book7.psm1`.
-- Missing follow-through:
-  - a fresh post-build Book `7` automation audit
-  - ideally a reusable Book `7` audit script similar to the Books `1-5` and Book `6` audit tooling
-
-### 3. Book `7` is implemented but not release-ready yet
+### 2. Book `7` is implemented but not release-ready yet
 
 - `docs/PROJECT_HANDOFF.md` still states that Book `7` is implemented locally on current `main` but is not yet a tagged public release.
 - `README.md` still treats `v0.8.0` as the latest public release.
 - Missing release-readiness items for a public Book `7` drop include:
   - version/release bump planning
   - final public changelog/release sweep
-  - release-package validation for the intended Book `7` public build
+  - user-led playtest closeout on the live Book `7` experience before a public build is cut
 
-### 4. Book `7` validation is strong, but it is still short of the full release bar in `docs/VALIDATION_POLICY.md`
+### 3. Book `7` validation is strong, but it is still short of the full release bar in `docs/VALIDATION_POLICY.md`
 
 - Current `main` has green Book `7` smoke coverage for:
   - startup
@@ -74,33 +69,7 @@ This is a repo-state audit, not a fresh full-text reread of every unsupported bo
   - a true full-campaign difficulty matrix rather than only targeted difficulty checks
   - explicit full-campaign permadeath completion/failure coverage if that is meant to satisfy the release bar
 
-### 5. `README.md` is no longer fully repo-current
-
-- The release-status section still says current `main` Book `6` stabilization work includes only:
-  - `2`, `17`, `98`, `158/293`, `170`, `297`
-- That list is now stale.
-- It is missing at least:
-  - section `275`
-  - the OG source-language follow-up slice built on `2026-04-22`
-- Repo-current docs in `docs/PROJECT_HANDOFF.md` and `docs/PROJECT_MILESTONES.md` are ahead of the README here.
-
-### 6. There is still a known app/harness rough edge around redirected startup `-Load`
-
-- `docs/PROJECT_HANDOFF.md` still documents that startup `-Load` under the redirected harness does not exit cleanly on its own.
-- Current wording says load/render succeeds and the harness forces cleanup after verification.
-- That means one of these is still missing:
-  - a proper runtime fix
-  - or a dedicated tracked issue if this is an accepted known limitation for now
-
-### 7. GitHub closeout is not fully caught up with repo state
-
-- Live open issues checked on `2026-04-22`:
-  - `#31` `Combat tactical summary can crash on blank note rows after command-surface actions`
-  - `#19` `Book 6 playtest stabilization tracker`
-- `#19` still makes sense as the open umbrella tracker.
-- `#31` is still open, so issue closeout is incomplete unless that defect is still reproducible on current `main`.
-
-### 8. The next-book expansion step is only sketched, not planned in detail
+### 4. The next-book expansion step is only sketched, not planned in detail
 
 - `docs/PROJECT_MILESTONES.md` still describes the next expansion only as:
   - `ruleset/state design notes for the next expansion step`
@@ -108,15 +77,9 @@ This is a repo-state audit, not a fresh full-text reread of every unsupported bo
 
 ## Recommended Next Order
 
-1. Replace the stale Book `7` automation audit with a current post-build report.
-2. Decide whether the next priority is:
-   - Book `7` release-readiness
-   - or Book `8` audit/build planning
-3. If Book `7` release-readiness is next:
-   - finish the route-and-mode validation matrix
-   - rerun `validate-release.ps1` for the intended release state
-   - sync `README.md`
-   - close any resolved GitHub issues
-4. If Book `8` is next:
-   - create a proper Book `8` audit/build artifact
-   - map route/state/item/combat surfaces before implementation starts
+1. Finish the user-led Book `7` playtest pass on current `main`.
+2. Convert any Book `7` playtest findings into targeted fixes plus rerun the affected validation slices.
+3. If Book `7` is moving to release next:
+   - finish the broader route-and-mode validation matrix
+   - do the final version/tag/changelog/release sweep
+4. Only after that, return to Book `8` audit/build planning.

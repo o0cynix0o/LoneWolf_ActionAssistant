@@ -596,6 +596,7 @@ Local reports:
 
 Local reports:
 
+- `testing/logs/BOOK7_AUTOMATION_AUDIT_20260422.md`
 - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
 - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
 - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
@@ -663,7 +664,9 @@ Latest large-scale validation:
   - command-surface smoke
   - non-permadeath failure
   - permadeath failure
-- startup `-Load` under the redirected harness still does not exit cleanly on its own, but load/render succeeds, no stderr is emitted, and the harness forces cleanup after verification
+- startup `-Load` under redirected input now exits cleanly on its own in both shells after the shared console-aware prompt-reader update
+- current portable package validation also passes on `main`, including redirected startup `-Load` smoke in both shells:
+  - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
 - the earlier interrupted long-run PowerShell `7` validator that completed `44` full campaigns remains a useful historical note, but is no longer the main M2.7 closeout evidence
 
 ## Validation Standard

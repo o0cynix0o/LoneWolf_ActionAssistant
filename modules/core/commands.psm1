@@ -491,7 +491,10 @@ function Invoke-LWCoreStartTerminal {
             $line = ''
             try {
                 Refresh-LWScreen
-                $line = Read-Host 'lw'
+                $line = Read-LWPromptLine -Prompt 'lw' -ReturnNullOnEof
+                if ($null -eq $line) {
+                    break
+                }
                 $result = Invoke-LWCommand -InputLine $line
                 if ($result -eq 'quit') {
                     break

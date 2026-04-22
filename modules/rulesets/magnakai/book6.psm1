@@ -142,8 +142,8 @@ function Select-LWMagnakaiBookSixDECuringOption {
             }
         }
 
-        $rawChoice = Read-Host 'Book 6 DE option [0]'
-        if ([string]::IsNullOrWhiteSpace($rawChoice)) {
+        $rawChoice = Read-LWPromptLine -Prompt 'Book 6 DE option [0]' -ReturnNullOnEof
+        if ($null -eq $rawChoice -or [string]::IsNullOrWhiteSpace($rawChoice)) {
             $rawChoice = '0'
         }
 

@@ -2577,7 +2577,10 @@ function Select-LWKaiDisciplines {
     try {
         while ($true) {
             Refresh-LWScreen
-            $raw = Read-Host "Enter $Count number(s) separated by commas"
+            $raw = Read-LWPromptLine -Prompt "Enter $Count number(s) separated by commas" -ReturnNullOnEof
+            if ($null -eq $raw) {
+                throw 'No redirected input remains while selecting Kai disciplines.'
+            }
             if ([string]::IsNullOrWhiteSpace($raw)) {
                 Write-LWWarn 'Please choose at least one discipline.'
                 continue

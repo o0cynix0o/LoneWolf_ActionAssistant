@@ -87,7 +87,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Latest public release: `v0.8.0`
 - Released coverage: Kai Books `1-5` plus released Magnakai Book `6` support
 - Current `main` also includes unreleased Book `7` / `Castle Death` support
-- Current `main` Book `6` stabilization work includes sections `2`, `17`, `98`, `158/293`, `170`, and `297`
+- Current `main` Book `6` stabilization work includes sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`, plus the OG source-language follow-up slice at sections `16`, `27`, `96`, `137`, `165`, `169`, `205`, `211`, `248`, `273`, `295`, `316`, `318`, and `328`
 - [CHANGELOG.md](./CHANGELOG.md) tracks both public release history and current `Unreleased` main-branch work
 
 ## Scope
@@ -106,7 +106,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
 - Current public release: `v0.8.0`
-- Current `main` status: local Book `7` / `Castle Death` support plus recent Book `6` DE stabilization work
+- Current `main` status: local Book `7` / `Castle Death` support plus recent Book `6` DE and OG-source stabilization work
 - [CHANGELOG.md](./CHANGELOG.md) tracks public release history and current unreleased `main` work
 
 ## Requirements
@@ -137,7 +137,7 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - `build-release.ps1`
   Portable release builder
 - `validate-release.ps1`
-  Portable package validator that rebuilds, extracts, and smoke-tests a disposable copy
+  Portable package validator that rebuilds, extracts, and smoke-tests a disposable copy, including redirected startup `-Load`
 - `saves/`
   JSON save files created during play
 

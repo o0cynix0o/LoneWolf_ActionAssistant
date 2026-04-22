@@ -525,6 +525,7 @@ Deliverables:
 - continued DE-difference cleanup found during real play
 - current `main` Book `6` stabilization hardening across sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`, plus the OG source-language follow-up slice at sections `16`, `27`, `96`, `137`, `165`, `169`, `205`, `211`, `248`, `273`, `295`, `316`, `318`, and `328`
 - Book `7` validation and hardening across startup, choice, combat, achievements, route coverage, and difficulty behavior
+- refreshed post-build Book `7` automation audit so repo-current reporting matches the live module on `main`
 - Book `7` strategy-guide creation plus wiki scope/support cleanup
 - branch/docs cleanup so public release state and current `main` state stay explicit
 - book-work workflow cleanup so strategy-guide/wiki closeout is part of future book delivery
@@ -549,6 +550,7 @@ Current checkpoint:
   - audit artifact:
     - `testing/logs/BOOK6_OG_LANGUAGE_SWEEP_20260422.md`
 - current `main` Book `7` validation is green in both shells:
+  - `testing/logs/BOOK7_AUTOMATION_AUDIT_20260422.md`
   - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
   - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
   - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
@@ -565,6 +567,8 @@ Current checkpoint:
   - `testing/logs/BOOK7_ENDGAME_ROUTE_SMOKE_PS51.txt`
   - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
   - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
+- redirected startup `-Load` and portable package validation now also pass on current `main`:
+  - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
 - current `main` Book `7` strategy guide is now present in the wiki, and workflow docs now treat strategy-guide/wiki sync as part of book closeout
 - architecture-hardening and lag-hardening work previously tracked on `dev` is already present on `main`:
   - runtime `error.log` rotation

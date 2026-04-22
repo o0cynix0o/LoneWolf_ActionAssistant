@@ -286,6 +286,10 @@ $launcherPs7OutPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_PS7.txt'
 $launcherPs7ErrPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_PS7.err.txt'
 $launcherCmdOutPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_CMD.txt'
 $launcherCmdErrPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_CMD.err.txt'
+$startupLoadPs7OutPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_LOAD_PS7.txt'
+$startupLoadPs7ErrPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_LOAD_PS7.err.txt'
+$startupLoadPs51OutPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_LOAD_PS51.txt'
+$startupLoadPs51ErrPath = Join-Path $OutputRoot 'PACKAGING_M4_STARTUP_LOAD_PS51.err.txt'
 
 Write-LWValidationInfo 'Running direct smoke in PowerShell 7.'
 $pwshSmoke = Invoke-LWProcess -FilePath 'pwsh.exe' -ArgumentList @(
@@ -328,8 +332,30 @@ $launcherCmd = Invoke-LWProcess -FilePath 'cmd.exe' -ArgumentList @(
     (Join-Path $runtimePackageRoot 'Start-LoneWolf.cmd')
 ) -WorkingDirectory $runtimePackageRoot -InputText "quit`r`n" -StdOutPath $launcherCmdOutPath -StdErrPath $launcherCmdErrPath
 
+Write-LWValidationInfo 'Running redirected startup -Load smoke in PowerShell 7.'
+$startupLoadPs7 = Invoke-LWProcess -FilePath 'pwsh.exe' -ArgumentList @(
+    '-NoProfile',
+    '-File',
+    (Join-Path $runtimePackageRoot 'lonewolf.ps1'),
+    '-Load',
+    $runtimeSavePath
+) -WorkingDirectory $runtimePackageRoot -InputText "sheet`r`nquit`r`n" -StdOutPath $startupLoadPs7OutPath -StdErrPath $startupLoadPs7ErrPath
+
+Write-LWValidationInfo 'Running redirected startup -Load smoke in Windows PowerShell 5.1.'
+$startupLoadPs51 = Invoke-LWProcess -FilePath 'powershell.exe' -ArgumentList @(
+    '-NoProfile',
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    (Join-Path $runtimePackageRoot 'lonewolf.ps1'),
+    '-Load',
+    $runtimeSavePath
+) -WorkingDirectory $runtimePackageRoot -InputText "sheet`r`nquit`r`n" -StdOutPath $startupLoadPs51OutPath -StdErrPath $startupLoadPs51ErrPath
+
 $pwshSummary = Get-Content -LiteralPath $pwshJsonPath -Raw | ConvertFrom-Json
 $ps51Summary = Get-Content -LiteralPath $ps51JsonPath -Raw | ConvertFrom-Json
+$startupLoadPs7Loaded = ($startupLoadPs7.StandardOut -match 'Loaded game from ')
+$startupLoadPs51Loaded = ($startupLoadPs51.StandardOut -match 'Loaded game from ')
 
 $expectedDataFiles = @(
     'kai-disciplines.json',
@@ -363,6 +389,10 @@ $result = [ordered]@{
     DirectSmokePs51ExitCode  = [int]$ps51Smoke.ExitCode
     LauncherPs7ExitCode      = [int]$launcherPs7.ExitCode
     LauncherCmdExitCode      = [int]$launcherCmd.ExitCode
+    StartupLoadPs7ExitCode   = [int]$startupLoadPs7.ExitCode
+    StartupLoadPs51ExitCode  = [int]$startupLoadPs51.ExitCode
+    StartupLoadPs7Loaded     = [bool]$startupLoadPs7Loaded
+    StartupLoadPs51Loaded    = [bool]$startupLoadPs51Loaded
     PwshSmokeSummary         = $pwshSummary
     Ps51SmokeSummary         = $ps51Summary
     RuntimeGeneratedLastSave = [bool]$runtimeGeneratedLastSave
@@ -383,6 +413,10 @@ $allClean = (
     $ps51Smoke.ExitCode -eq 0 -and
     $launcherPs7.ExitCode -eq 0 -and
     $launcherCmd.ExitCode -eq 0 -and
+    $startupLoadPs7.ExitCode -eq 0 -and
+    $startupLoadPs51.ExitCode -eq 0 -and
+    $startupLoadPs7Loaded -and
+    $startupLoadPs51Loaded -and
     [int]$pwshSummary.LoadedBook -ge 6 -and
     [int]$ps51Summary.LoadedBook -ge 6 -and
     [string]$pwshSummary.LoadedRuleSet -eq 'Magnakai' -and
@@ -420,6 +454,8 @@ $summaryLines = @(
     '',
     ('- Start-LoneWolf.ps1 via PowerShell 7 exit code: {0}' -f $launcherPs7.ExitCode),
     ('- Start-LoneWolf.cmd via cmd.exe exit code: {0}' -f $launcherCmd.ExitCode),
+    ('- Redirected startup -Load via PowerShell 7 exit code: {0}; loaded save = {1}' -f $startupLoadPs7.ExitCode, [bool]$startupLoadPs7Loaded),
+    ('- Redirected startup -Load via Windows PowerShell 5.1 exit code: {0}; loaded save = {1}' -f $startupLoadPs51.ExitCode, [bool]$startupLoadPs51Loaded),
     '',
     '## Artifacts',
     '',
@@ -431,6 +467,10 @@ $summaryLines = @(
     '- `testing/logs/PACKAGING_M4_STARTUP_PS7.err.txt`',
     '- `testing/logs/PACKAGING_M4_STARTUP_CMD.txt`',
     '- `testing/logs/PACKAGING_M4_STARTUP_CMD.err.txt`',
+    '- `testing/logs/PACKAGING_M4_STARTUP_LOAD_PS7.txt`',
+    '- `testing/logs/PACKAGING_M4_STARTUP_LOAD_PS7.err.txt`',
+    '- `testing/logs/PACKAGING_M4_STARTUP_LOAD_PS51.txt`',
+    '- `testing/logs/PACKAGING_M4_STARTUP_LOAD_PS51.err.txt`',
     '- `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.json`'
 )
 

@@ -547,6 +547,42 @@ function Get-LWCurrentRankLabel {
 
 Export-ModuleMember -Function Get-LWKaiRankTitle, Format-LWKaiRankLabel, Get-LWMagnakaiRankTitle, Format-LWMagnakaiRankLabel, Get-LWKnownKaiDisciplineNames, Get-LWKnownMagnakaiDisciplineNames, Test-LWStateIsMagnakaiRuleset, Get-LWCurrentRankLabel
 
+function Read-LWPromptLine {
+    param(
+        [string]$Prompt = '',
+        [switch]$ReturnNullOnEof
+    )
+
+    $inputRedirected = $false
+    try {
+        $inputRedirected = [Console]::IsInputRedirected
+    }
+    catch {
+        $inputRedirected = $false
+    }
+
+    if ($inputRedirected) {
+        $line = $null
+        try {
+            $line = [Console]::In.ReadLine()
+        }
+        catch {
+            if ($ReturnNullOnEof) {
+                return $null
+            }
+            throw
+        }
+
+        if ($null -eq $line -and -not $ReturnNullOnEof) {
+            throw 'No redirected input remains for this prompt.'
+        }
+
+        return $line
+    }
+
+    return (Read-Host $Prompt)
+}
+
 function Read-LWYesNo {
     param(
         [Parameter(Mandatory = $true)]
@@ -557,9 +593,9 @@ function Read-LWYesNo {
     while ($true) {
         Refresh-LWScreen
         $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
-        $raw = Read-Host "$Prompt $suffix"
+        $raw = Read-LWPromptLine -Prompt "$Prompt $suffix" -ReturnNullOnEof
 
-        if ([string]::IsNullOrWhiteSpace($raw)) {
+        if ($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) {
             return $Default
         }
 
@@ -582,9 +618,9 @@ function Read-LWInlineYesNo {
 
     while ($true) {
         $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
-        $raw = Read-Host "$Prompt $suffix"
+        $raw = Read-LWPromptLine -Prompt "$Prompt $suffix" -ReturnNullOnEof
 
-        if ([string]::IsNullOrWhiteSpace($raw)) {
+        if ($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) {
             return $Default
         }
 
@@ -613,10 +649,13 @@ function Read-LWInt {
             Refresh-LWScreen
         }
         $label = if ($null -ne $Default) { "$Prompt [$Default]" } else { $Prompt }
-        $raw = Read-Host $label
+        $raw = Read-LWPromptLine -Prompt $label -ReturnNullOnEof
 
-        if ([string]::IsNullOrWhiteSpace($raw) -and $null -ne $Default) {
+        if (($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) -and $null -ne $Default) {
             return [int]$Default
+        }
+        if ($null -eq $raw) {
+            throw "No redirected input remains for numeric prompt '$Prompt'."
         }
 
         $value = 0
@@ -651,8 +690,8 @@ function Read-LWText {
         Refresh-LWScreen
     }
     $label = if ([string]::IsNullOrWhiteSpace($Default)) { $Prompt } else { "$Prompt [$Default]" }
-    $raw = Read-Host $label
-    if ([string]::IsNullOrWhiteSpace($raw)) {
+    $raw = Read-LWPromptLine -Prompt $label -ReturnNullOnEof
+    if ($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) {
         return $Default
     }
     return $raw.Trim()
@@ -687,5 +726,5 @@ function Get-LWSafeFileName {
     return ($Name -replace '[^A-Za-z0-9_-]', '_')
 }
 
-Export-ModuleMember -Function Read-LWYesNo, Read-LWInlineYesNo, Read-LWInt, Read-LWText, Get-LWMatchingValue, Get-LWSafeFileName, Get-LWModeAchievementPoolLabel
+Export-ModuleMember -Function Read-LWPromptLine, Read-LWYesNo, Read-LWInlineYesNo, Read-LWInt, Read-LWText, Get-LWMatchingValue, Get-LWSafeFileName, Get-LWModeAchievementPoolLabel
 

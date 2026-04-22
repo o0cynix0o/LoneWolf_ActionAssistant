@@ -6,6 +6,14 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- hardened redirected console-input handling:
+  - added a console-aware shared prompt reader so redirected sessions can consume EOF cleanly instead of hanging at `Read-Host`
+  - startup `-Load` sessions now exit cleanly under redirected input in both PowerShell `7` and Windows PowerShell `5.1`
+  - portable package validation now includes redirected startup `-Load` smoke in both shells
+  - validated via:
+    - `testing/logs/PACKAGING_M4_VALIDATION_SUMMARY.md`
+    - `testing/logs/PACKAGING_M4_STARTUP_LOAD_PS7.txt`
+    - `testing/logs/PACKAGING_M4_STARTUP_LOAD_PS51.txt`
 - broadened Book `6` OG source-language automation after the full original-text reread:
   - added source-side payment support for the `Cess` route at sections `27` and `273` before the existing section `304` claim
   - added the `Map of Varetta` purchase-and-claim flow across sections `165` and `16`
