@@ -270,6 +270,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `testing/logs/COMMAND_SURFACE_PRERELEASE_PS51.txt`
   - `testing/logs/SAVE_SYSTEM_PRERELEASE_PS7.txt`
   - `testing/logs/SAVE_SYSTEM_PRERELEASE_PS51.txt`
+- latest prerelease command-surface rerun on `2026-04-22` is also green in both shells after refreshing the harness expectations for canonical potion naming:
+  - harness: `testing/tmp/prerelease-command-surface.ps1`
+  - `testing/logs/COMMAND_SURFACE_PRERELEASE_PS7.txt`
+  - `testing/logs/COMMAND_SURFACE_PRERELEASE_PS51.txt`
 - Batch `1` prerelease defects fixed on `main` include:
   - quiver-aware `Arrow` add routing from the command surface
   - packaged/runtime module-context recovery for `GameData` under strict mode
