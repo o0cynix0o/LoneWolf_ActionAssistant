@@ -562,6 +562,39 @@ Invoke-LWBookSixRecentScenario -Name 'SectionOgRouteGuidance' -Action {
     ) -Message 'Section 318 guidance should not alter state.'
 }
 
+Invoke-LWBookSixRecentScenario -Name 'Section344DakomydCombat' -Action {
+    $section344State = New-LWBookSixRecentState -Section 344 -MagnakaiDisciplines @('Psi-surge', 'Weaponmastery', 'Psi-screen') -SpecialItems @('Book of the Magnakai', 'Sommerswerd')
+    $section344State.Run = (New-LWRunState -Difficulty 'Veteran' -Permadeath:$false)
+    Set-LWHostGameState -State $section344State | Out-Null
+    Set-LWBookSixRecentSmokeQueues -YesNo @($true, $true, $false)
+    $started344Combat = Start-LWCombat -Arguments @('Dakomyd', '25', '50')
+
+    Assert-LWBookSixRecent -Name 'section344_combat_started' -Condition (
+        $started344Combat -and [bool]$section344State.Combat.Active
+    ) -Message 'Section 344 should start combat successfully.'
+
+    Assert-LWBookSixRecent -Name 'section344_enemy_immune' -Condition (
+        [bool]$section344State.Combat.EnemyImmuneToMindblast -and -not [bool]$section344State.Combat.UseMindblast
+    ) -Message 'Section 344 should block Psi-surge and Mindblast against the Dakomyd.'
+
+    Assert-LWBookSixRecent -Name 'section344_sommerswerd_allowed' -Condition (
+        [string]$section344State.Combat.EquippedWeapon -eq 'Sommerswerd' -and -not [bool]$section344State.Combat.SommerswerdSuppressed
+    ) -Message 'Section 344 should allow the Sommerswerd in Veteran mode when the text explicitly permits it.'
+
+    Assert-LWBookSixRecent -Name 'section344_threshold_registered' -Condition (
+        [int]$section344State.Combat.EnemyEnduranceThreshold -eq 25 -and
+        [int]$section344State.Combat.EnemyEnduranceThresholdSection -eq 310
+    ) -Message 'Section 344 should register the Dakomyd threshold jump to section 310.'
+
+    $section344Resolution = Resolve-LWCombatRound -State $section344State -Roll 5 -EnemyLoss 25 -PlayerLoss 0
+
+    Assert-LWBookSixRecent -Name 'section344_threshold_resolution' -Condition (
+        [string]$section344Resolution.Outcome -eq 'Special' -and
+        [int]$section344Resolution.NewEnemyEnd -eq 25 -and
+        [int]$section344Resolution.SpecialResolutionSection -eq 310
+    ) -Message 'Section 344 should stop combat and route to section 310 once Dakomyd reaches 25 ENDURANCE or less.'
+}
+
 Invoke-LWBookSixRecentScenario -Name 'Section275Cartographer' -Action {
     $state = New-LWBookSixRecentState -Section 275 -Gold 12 -BackpackItems @('Map of Tekaro')
     Set-LWBookSixRecentSmokeQueues -Ints @(2, 1, 1, 3, 0)
