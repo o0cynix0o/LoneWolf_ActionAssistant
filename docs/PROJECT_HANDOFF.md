@@ -64,7 +64,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - `Map of Luyen` is now modeled as a Backpack Item
   - section `275` map resale now follows the DE text rule of `1` Gold Crown below list price
   - `Large Quiver` is now modeled as a real Special Item quiver with `12` Arrow capacity
-  - section `158` / `293` silver-key handling now uses the DE-facing item name `Sinede's Silver Key` while preserving compatibility with older `Small Silver Key` saves
+  - section `158` / `200` / `293` silver-key handling now uses the DE-facing item name `Sinede's Silver Key`, erases the key at section `200` when you insert it into the tomb lock, and keeps section `293` as a save-compatibility fallback for older `Small Silver Key` runs
   - section `17` now automates the inn lodging choice flow, including the text-supported dormitory barter fallback when you cannot afford a room
   - section `297` now supports the DE-only `Bronin Sleeve-shield` trade flow
   - `Bronin Sleeve-shield` is modeled as a Special Item that grants `+1 CS` and `+1 END` in physical combat when a normal shield is not currently usable

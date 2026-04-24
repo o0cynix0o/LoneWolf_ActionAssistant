@@ -2355,6 +2355,17 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         197 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book6Section197DamageApplied' -Delta -2 -MessagePrefix 'Section 197: an arrow gashes your calf as you drift downstream.' -FatalCause 'The arrow wound at section 197 reduced your Endurance to zero.')
         }
+        200 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
+                if ((Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWSmallSilverKeyItemNames) -Types @('special')) -gt 0) {
+                    Write-LWInfo "Section 200: Sinede's Silver Key is inserted into the tomb lock and erased."
+                }
+                else {
+                    Write-LWInfo "Section 200: Sinede's Silver Key should now be erased from your Action Chart."
+                }
+            }
+        }
         205 {
             if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery') {
                 Write-LWInfo 'Section 205: Huntmastery identifies the Durenese hunting bow as the safe choice. Continue to section 60.'
@@ -2491,11 +2502,11 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
         293 {
             if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed')) {
                 Set-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
-                if (Remove-LWInventoryItemSilently -Type 'special' -Name "Sinede's Silver Key" -Quantity 1) {
-                    Write-LWInfo "Section 293: Sinede's Silver Key is used to open the tomb and is erased."
+                if ((Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWSmallSilverKeyItemNames) -Types @('special')) -gt 0) {
+                    Write-LWInfo "Section 293: Sinede's Silver Key is erased here as a save-compatibility fallback."
                 }
                 else {
-                    Write-LWInfo "Section 293: Sinede's Silver Key should now be erased from your Action Chart."
+                    Write-LWInfo "Section 293: Sinede's Silver Key should already be erased from your Action Chart."
                 }
             }
         }

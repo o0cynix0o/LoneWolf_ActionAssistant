@@ -763,8 +763,9 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         if ($visitedSections -contains 274) {
             Set-LWStoryAchievementFlag -Name 'Book6JumpTheWagonsRoute'
         }
-        if ($visitedSections -contains 293) {
+        if (@(200, 293) | Where-Object { $visitedSections -contains $_ }) {
             Set-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
+            [void](Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWSmallSilverKeyItemNames) -Types @('special'))
         }
         if ($visitedSections -contains 304) {
             Set-LWStoryAchievementFlag -Name 'Book6Section304CessClaimed'

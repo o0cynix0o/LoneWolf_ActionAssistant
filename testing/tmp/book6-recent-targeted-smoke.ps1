@@ -331,7 +331,7 @@ Invoke-LWBookSixRecentScenario -Name 'Section098SellQuiver' -Action {
     ) -Message ("Section 98 should clear the tracked quiver arrows when the Quiver is sold; actual {0}." -f (Get-LWQuiverArrowCount -State $state))
 }
 
-Invoke-LWBookSixRecentScenario -Name 'Section158And293SilverKey' -Action {
+Invoke-LWBookSixRecentScenario -Name 'Section158200And293SilverKey' -Action {
     $section158State = New-LWBookSixRecentState -Section 158 -Gold 26 -BackpackItems @('Meal')
     Set-LWBookSixRecentSmokeQueues -Texts @('0')
     Invoke-LWMagnakaiBookSixSectionEntryRules -State $section158State
@@ -340,13 +340,38 @@ Invoke-LWBookSixRecentScenario -Name 'Section158And293SilverKey' -Action {
         Test-LWStateHasInventoryItem -State $section158State -Names (Get-LWSmallSilverKeyItemNames) -Type 'special'
     ) -Message 'Section 158 should add Sinede''s Silver Key using the DE-facing item-name group.'
 
+    $section200State = New-LWBookSixRecentState -Section 200 -SpecialItems @('Book of the Magnakai', 'Small Silver Key')
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $section200State
+
+    Assert-LWBookSixRecent -Name 'section200_key_removed' -Condition (
+        -not (Test-LWStateHasInventoryItem -State $section200State -Names (Get-LWSmallSilverKeyItemNames) -Type 'special')
+    ) -Message 'Section 200 should erase Sinede''s Silver Key as soon as the tomb lock is used.'
+
+    Assert-LWBookSixRecent -Name 'section200_flag' -Condition (
+        Test-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
+    ) -Message 'Section 200 should mark the silver-key-used flag.'
+
+    $rebuildState = New-LWBookSixRecentState -Section 310 -SpecialItems @('Book of the Magnakai', 'Small Silver Key')
+    $rebuildState.CurrentBookStats.VisitedSections = @(158, 200, 310)
+    Set-LWHostGameState -State $rebuildState | Out-Null
+    Rebuild-LWStoryAchievementFlagsFromState
+
+    Assert-LWBookSixRecent -Name 'section200_rebuild_key_removed' -Condition (
+        -not (Test-LWStateHasInventoryItem -State $rebuildState -Names (Get-LWSmallSilverKeyItemNames) -Type 'special')
+    ) -Message 'Visited section 200 should remove the key during story-flag rebuild for older in-progress saves.'
+
+    Assert-LWBookSixRecent -Name 'section200_rebuild_flag' -Condition (
+        Test-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
+    ) -Message 'Visited section 200 should restore the silver-key-used flag during story-flag rebuild.'
+
     $section293State = New-LWBookSixRecentState -Section 293 -SpecialItems @('Book of the Magnakai', 'Sinede''s Silver Key')
     Set-LWBookSixRecentSmokeQueues
     Invoke-LWMagnakaiBookSixSectionEntryRules -State $section293State
 
     Assert-LWBookSixRecent -Name 'section293_key_removed' -Condition (
         -not (Test-LWStateHasInventoryItem -State $section293State -Names (Get-LWSmallSilverKeyItemNames) -Type 'special')
-    ) -Message 'Section 293 should erase Sinede''s Silver Key.'
+    ) -Message 'Section 293 should still erase Sinede''s Silver Key as a save-compatibility fallback.'
 
     Assert-LWBookSixRecent -Name 'section293_flag' -Condition (
         Test-LWStoryAchievementFlag -Name 'Book6Section293SilverKeyUsed'
