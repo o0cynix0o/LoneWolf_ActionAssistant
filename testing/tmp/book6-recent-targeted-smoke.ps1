@@ -378,6 +378,35 @@ Invoke-LWBookSixRecentScenario -Name 'Section158200And293SilverKey' -Action {
     ) -Message 'Section 293 should mark the key-used flag.'
 }
 
+Invoke-LWBookSixRecentScenario -Name 'Section209ArrowLoss' -Action {
+    $liveState = New-LWBookSixRecentState -Section 209 -Weapons @('Bow') -SpecialItems @('Book of the Magnakai', 'Quiver')
+    $liveState.Inventory.QuiverArrows = 2
+    Set-LWBookSixRecentSmokeQueues
+    Invoke-LWMagnakaiBookSixSectionEntryRules -State $liveState
+
+    Assert-LWBookSixRecent -Name 'section209_arrow_removed' -Condition (
+        (Get-LWQuiverArrowCount -State $liveState) -eq 1
+    ) -Message ("Section 209 should remove one fired Arrow; actual tracked arrows {0}." -f (Get-LWQuiverArrowCount -State $liveState))
+
+    Assert-LWBookSixRecent -Name 'section209_flag' -Condition (
+        Test-LWStoryAchievementFlag -Name 'Book6Section209ArrowLost'
+    ) -Message 'Section 209 should mark the arrow-loss flag.'
+
+    $legacyState = New-LWBookSixRecentState -Section 210 -BackpackItems @('Arrow', 'Meal')
+    $legacyState.CurrentBookStats.VisitedSections = @(209, 210)
+    $legacyState.EngineVersion = $script:LWAppVersion
+    $legacyState.Achievements.LoadBackfillVersion = 2
+    $normalizedLegacyState = Normalize-LWState -State $legacyState
+
+    Assert-LWBookSixRecent -Name 'section209_normalize_arrow_removed' -Condition (
+        -not (Test-LWStateHasInventoryItem -State $normalizedLegacyState -Names (Get-LWArrowItemNames) -Type 'backpack')
+    ) -Message 'Older Book 6 saves that already passed section 209 should lose one Arrow during normalization.'
+
+    Assert-LWBookSixRecent -Name 'section209_normalize_flag' -Condition (
+        [bool]$normalizedLegacyState.Achievements.StoryFlags.Book6Section209ArrowLost
+    ) -Message 'Older Book 6 saves that already passed section 209 should mark the arrow-loss flag during normalization.'
+}
+
 Invoke-LWBookSixRecentScenario -Name 'Section170RollFix' -Action {
     $errorLogPath = Join-Path $repoRoot 'data\error.log'
     $savePath = Get-LWBookSixRecentSavePath -Stem 'campaign-save-roll-crash-copy'

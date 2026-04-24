@@ -72,6 +72,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - section `27` and section `273` now support the source-side `3` Gold Crown `Cess` purchase before the existing section `304` item claim
   - section `165` now supports the source-side `5` Gold Crown `Map of Varetta` purchase, and section `16` now safely marks the map claim when you reach it
   - section `137` now deducts the source-side `3` Gold Crown Quarlen levy
+  - section `209` now removes the fired Arrow from your Action Chart and backfills that loss onto older in-progress saves during normalization
   - section `328` now deducts the source-side `2` Gold Crown roast-beef meal cost
   - sections `96`, `169`, `205`, `211`, `248`, `295`, `316`, and `318` now surface guidance-only automation notes for the text-supported route checks found in the original book language sweep
 - latest lag pass now present on `main` fixed two post-extraction regressions:

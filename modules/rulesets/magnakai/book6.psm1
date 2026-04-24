@@ -2391,6 +2391,30 @@ function Invoke-LWMagnakaiBookSixSectionEntryRules {
                 }
             }
         }
+        209 {
+            if (-not (Test-LWStoryAchievementFlag -Name 'Book6Section209ArrowLost')) {
+                Set-LWStoryAchievementFlag -Name 'Book6Section209ArrowLost'
+                $removedArrow = (Remove-LWStateInventoryItemByNames -State $script:GameState -Names (Get-LWArrowItemNames) -Quantity 1 -Types @('backpack'))
+                if ($removedArrow -eq 0) {
+                    $currentQuiverArrows = Get-LWQuiverArrowCount -State $script:GameState
+                    if ($currentQuiverArrows -gt 0) {
+                        $script:GameState.Inventory.QuiverArrows = ($currentQuiverArrows - 1)
+                        $removedArrow = 1
+                    }
+                }
+
+                if (Test-LWStateHasQuiver -State $script:GameState) {
+                    [void](Sync-LWQuiverArrowState -State $script:GameState)
+                }
+
+                if ($removedArrow -gt 0) {
+                    Write-LWInfo 'Section 209: the fired Arrow is removed from your Action Chart.'
+                }
+                else {
+                    Write-LWInfo 'Section 209: the shot assumes 1 Arrow should now be removed from your Action Chart.'
+                }
+            }
+        }
         212 {
             Invoke-LWMagnakaiBookSixSection212HorseTrade
         }

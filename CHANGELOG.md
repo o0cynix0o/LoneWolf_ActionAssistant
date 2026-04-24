@@ -19,6 +19,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - added the `Map of Varetta` purchase-and-claim flow across sections `165` and `16`
   - added the missing source-side `3` Gold Crown levy deduction at section `137`
   - added the missing source-side `2` Gold Crown meal deduction at section `328`
+  - added the missing section `209` source-side Arrow loss when the crypt shot is fired
   - moved `Sinede's Silver Key` erasure to section `200`, where the source text has Lone Wolf insert it into the tomb lock, while keeping section `293` as a save-compatibility fallback for older runs that still carry the key too far
   - added guidance-only automation notes for sections `96`, `169`, `205`, `211`, `248`, `295`, `316`, and `318` without changing those sections' underlying state
   - widened the Book `6` recent-targeted smoke harness to cover the full OG follow-up slice

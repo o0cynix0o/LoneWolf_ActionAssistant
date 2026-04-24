@@ -1361,7 +1361,9 @@ function Normalize-LWState {
 
     Ensure-LWAchievementState -State $normalized
     $currentBookNumber = if ($null -ne $normalized.Character -and $null -ne $normalized.Character.BookNumber) { [int]$normalized.Character.BookNumber } else { 1 }
-    $requiresFullBookSixReconciliation = [string]::IsNullOrWhiteSpace($sourceEngineVersion) -or ($sourceEngineVersion -ne $script:LWAppVersion)
+    $requiresFullBookSixReconciliation = [string]::IsNullOrWhiteSpace($sourceEngineVersion) -or
+        ($sourceEngineVersion -ne $script:LWAppVersion) -or
+        ([int]$normalized.Achievements.LoadBackfillVersion -lt (Get-LWAchievementLoadBackfillVersion))
     if ($requiresFullBookSixReconciliation -and $currentBookNumber -ge 6) {
         $visitedSections = @()
         if ($null -ne $normalized.CurrentBookStats -and (Test-LWPropertyExists -Object $normalized.CurrentBookStats -Name 'VisitedSections') -and $null -ne $normalized.CurrentBookStats.VisitedSections) {
@@ -1415,6 +1417,39 @@ function Normalize-LWState {
                 }
             }
         }
+
+        if (($visitedSections -contains 209) -and -not [bool]$normalized.Achievements.StoryFlags.Book6Section209ArrowLost) {
+            $removedArrow = 0
+            $backpackItems = @()
+            if ($null -ne $normalized.Inventory -and $null -ne $normalized.Inventory.BackpackItems) {
+                $backpackItems = @($normalized.Inventory.BackpackItems)
+            }
+
+            $normalized.Inventory.BackpackItems = @(
+                foreach ($item in $backpackItems) {
+                    if ($removedArrow -lt 1 -and -not [string]::IsNullOrWhiteSpace((Get-LWMatchingValue -Values (Get-LWArrowItemNames) -Target ([string]$item)))) {
+                        $removedArrow++
+                        continue
+                    }
+
+                    [string]$item
+                }
+            )
+
+            if ($removedArrow -eq 0 -and (Test-LWStateHasQuiver -State $normalized)) {
+                $currentQuiverArrows = Get-LWQuiverArrowCount -State $normalized
+                if ($currentQuiverArrows -gt 0) {
+                    $normalized.Inventory.QuiverArrows = ($currentQuiverArrows - 1)
+                    $removedArrow = 1
+                }
+            }
+
+            if (Test-LWStateHasQuiver -State $normalized) {
+                [void](Sync-LWQuiverArrowState -State $normalized)
+            }
+
+            $normalized.Achievements.StoryFlags.Book6Section209ArrowLost = $true
+        }
     }
 
     return (Sync-LWStateRefactorMetadata -State $normalized)
@@ -1448,6 +1483,7 @@ function Load-LWGame {
                 Invoke-LWInstantDeath -Cause $magnakaiInstantDeathCause
             }
         }
+
     }
 }
 
