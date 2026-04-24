@@ -50,12 +50,23 @@ try {
     $transitionText = Get-Content -LiteralPath $transitionTranscript -Raw
     $summaryIndex = $transitionText.IndexOf('ADVENTURE COMPLETE')
     $playthroughIndex = $transitionText.IndexOf('THIS PLAYTHROUGH')
+    $combatIndex = $transitionText.IndexOf('COMBAT RECORD')
+    $achievementIndex = $transitionText.IndexOf('BOOK 6 ACHIEVEMENTS')
+    $progressIndex = $transitionText.IndexOf('CAMPAIGN PROGRESS')
     $noteIndex = $transitionText.IndexOf('Press Enter to continue to Book 7 - Castle Death setup.')
     $startingGearIndex = $transitionText.IndexOf('Book 7 Starting Gear')
 
     Assert-LWBookCompleteSmoke -Condition ($summaryIndex -ge 0) -Message 'Book 6 completion transcript did not render the Adventure Complete summary.'
     Assert-LWBookCompleteSmoke -Condition ($playthroughIndex -gt $summaryIndex) -Message 'Book 6 completion transcript did not render the This Playthrough panel after the summary header.'
-    Assert-LWBookCompleteSmoke -Condition ($noteIndex -gt $playthroughIndex) -Message 'Book 6 completion transcript did not show the continue note after the recap.'
+    Assert-LWBookCompleteSmoke -Condition ($combatIndex -gt $playthroughIndex) -Message 'Book 6 completion transcript did not render the Combat Record panel after the playthrough panel.'
+    Assert-LWBookCompleteSmoke -Condition ($achievementIndex -gt $combatIndex) -Message 'Book 6 completion transcript did not render the Book 6 achievements panel after Combat Record.'
+    Assert-LWBookCompleteSmoke -Condition ($progressIndex -gt $achievementIndex) -Message 'Book 6 completion transcript did not render the Campaign Progress panel after Book 6 achievements.'
+    Assert-LWBookCompleteSmoke -Condition ($transitionText.Contains('Book 6 - The Kingdoms of Terror')) -Message 'Book 6 completion transcript truncated the completed-book label.'
+    Assert-LWBookCompleteSmoke -Condition ($transitionText.Contains('Quote')) -Message 'Book 6 completion transcript did not render the quote row.'
+    Assert-LWBookCompleteSmoke -Condition ($transitionText.Contains("A Kai Lord's finest victories are the ones that light the next road forward.")) -Message 'Book 6 completion transcript did not render the full completion quote.'
+    Assert-LWBookCompleteSmoke -Condition ($transitionText.Contains('Highest CS Win :')) -Message 'Book 6 completion transcript did not render the extended combat highlights.'
+    Assert-LWBookCompleteSmoke -Condition (-not $transitionText.Contains('The Kingdoms of T...')) -Message 'Book 6 completion transcript still truncated the book title.'
+    Assert-LWBookCompleteSmoke -Condition ($noteIndex -gt $progressIndex) -Message 'Book 6 completion transcript did not show the continue note after the recap.'
     Assert-LWBookCompleteSmoke -Condition ($startingGearIndex -gt $noteIndex) -Message 'Book 7 starting gear appeared before the Book 6 completion recap finished rendering.'
     Assert-LWBookCompleteSmoke -Condition ([int]$script:GameState.Character.BookNumber -eq 7) -Message 'Book 6 completion did not advance into Book 7.'
     Assert-LWBookCompleteSmoke -Condition ([int]$script:GameState.CurrentSection -eq 1) -Message 'Book 7 did not reset to section 1 after completion.'

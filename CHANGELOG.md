@@ -9,7 +9,10 @@ This file is meant to summarize shipped behavior at release time, not every inte
 - improved the book-complete recap flow:
   - mid-campaign book finishes now stop on the rendered recap screen before the next book's setup begins
   - the recap now snapshots the completed book's final Gold, Endurance, notes count, and integrity state so the summary still reflects the book you just finished
-  - the recap panel now reads more like a true run summary, with sections, END swings, gold movement, deaths, rewinds, and final-state totals
+  - the recap panel now reads more like a true run summary, with sections, END swings, gold movement, deaths, rewinds, potions, meals, and final-state totals
+  - the book-complete screen now renders in a wider no-truncation layout so long book titles, the completion quote, and named combat highlights stay on-screen without `...`
+  - combat recap rows now call out named high and low enemy stats alongside the numeric values, plus average fight length and weapon-usage summaries
+  - achievements now render in a two-column book-specific panel on the recap screen
   - final Book `7` completion still remains on the book-complete screen as the campaign endpoint
   - validated in both shells via:
     - `testing/logs/BOOK_COMPLETE_SUMMARY_SMOKE_PS7.txt`

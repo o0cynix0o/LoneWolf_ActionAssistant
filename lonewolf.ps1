@@ -786,6 +786,7 @@ function Complete-LWBook {
         RuleSet          = [string]$script:GameState.RuleSet
         Difficulty       = Get-LWCurrentDifficulty
         RunIntegrityState = [string]$script:GameState.Run.IntegrityState
+        CombatMode       = [string]$script:GameState.Settings.CombatMode
         GoldCrowns       = [int]$script:GameState.Inventory.GoldCrowns
         EnduranceCurrent = [int]$script:GameState.Character.EnduranceCurrent
         EnduranceMax     = [int]$script:GameState.Character.EnduranceMax
