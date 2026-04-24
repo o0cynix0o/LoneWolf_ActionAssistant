@@ -5,7 +5,7 @@ $script:GameData = $null
 $script:LWUi = $null
 
 $script:LWAchievementModeAvailabilityCache = $null
-$script:LWAchievementStateSchemaVersion = 2
+$script:LWAchievementStateSchemaVersion = 3
 $script:LWAchievementLoadBackfillVersion = 3
 $script:LWAchievementDefinitionsCache = $null
 $script:LWAchievementDefinitionsByIdCache = $null

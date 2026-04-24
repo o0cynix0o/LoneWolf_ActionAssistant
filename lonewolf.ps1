@@ -1418,7 +1418,11 @@ function Normalize-LWState {
             }
         }
 
-        if (($visitedSections -contains 209) -and -not [bool]$normalized.Achievements.StoryFlags.Book6Section209ArrowLost) {
+        $section209ArrowLost = (
+            (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book6Section209ArrowLost') -and
+            [bool]$normalized.Achievements.StoryFlags.Book6Section209ArrowLost
+        )
+        if (($visitedSections -contains 209) -and -not $section209ArrowLost) {
             $removedArrow = 0
             $backpackItems = @()
             if ($null -ne $normalized.Inventory -and $null -ne $normalized.Inventory.BackpackItems) {
@@ -1448,7 +1452,12 @@ function Normalize-LWState {
                 [void](Sync-LWQuiverArrowState -State $normalized)
             }
 
-            $normalized.Achievements.StoryFlags.Book6Section209ArrowLost = $true
+            if (-not (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book6Section209ArrowLost')) {
+                $normalized.Achievements.StoryFlags | Add-Member -Force -NotePropertyName 'Book6Section209ArrowLost' -NotePropertyValue $true
+            }
+            else {
+                $normalized.Achievements.StoryFlags.Book6Section209ArrowLost = $true
+            }
         }
     }
 

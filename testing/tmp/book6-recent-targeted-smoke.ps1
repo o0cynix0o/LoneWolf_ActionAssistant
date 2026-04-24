@@ -395,7 +395,9 @@ Invoke-LWBookSixRecentScenario -Name 'Section209ArrowLoss' -Action {
     $legacyState = New-LWBookSixRecentState -Section 210 -BackpackItems @('Arrow', 'Meal')
     $legacyState.CurrentBookStats.VisitedSections = @(209, 210)
     $legacyState.EngineVersion = $script:LWAppVersion
+    $legacyState.Achievements.SchemaVersion = 2
     $legacyState.Achievements.LoadBackfillVersion = 2
+    $legacyState.Achievements.StoryFlags.PSObject.Properties.Remove('Book6Section209ArrowLost')
     $normalizedLegacyState = Normalize-LWState -State $legacyState
 
     Assert-LWBookSixRecent -Name 'section209_normalize_arrow_removed' -Condition (
@@ -405,6 +407,10 @@ Invoke-LWBookSixRecentScenario -Name 'Section209ArrowLoss' -Action {
     Assert-LWBookSixRecent -Name 'section209_normalize_flag' -Condition (
         [bool]$normalizedLegacyState.Achievements.StoryFlags.Book6Section209ArrowLost
     ) -Message 'Older Book 6 saves that already passed section 209 should mark the arrow-loss flag during normalization.'
+
+    Assert-LWBookSixRecent -Name 'section209_normalize_schema' -Condition (
+        [int]$normalizedLegacyState.Achievements.SchemaVersion -ge 3
+    ) -Message ("Older Book 6 saves that already passed section 209 should upgrade to the current achievement schema; actual {0}." -f [int]$normalizedLegacyState.Achievements.SchemaVersion)
 }
 
 Invoke-LWBookSixRecentScenario -Name 'Section170RollFix' -Action {
