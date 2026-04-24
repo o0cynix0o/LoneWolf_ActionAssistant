@@ -780,6 +780,17 @@ function Complete-LWBook {
     $currentBook = [int]$script:GameState.Character.BookNumber
     $stats = Ensure-LWCurrentBookStats
     $bookSummary = New-LWBookHistoryEntry -Stats $stats
+    $nextBook = $currentBook + 1
+    $nextBookLabel = if ($currentBook -lt 7) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { '' }
+    $completionSnapshot = [pscustomobject]@{
+        RuleSet          = [string]$script:GameState.RuleSet
+        Difficulty       = Get-LWCurrentDifficulty
+        RunIntegrityState = [string]$script:GameState.Run.IntegrityState
+        GoldCrowns       = [int]$script:GameState.Inventory.GoldCrowns
+        EnduranceCurrent = [int]$script:GameState.Character.EnduranceCurrent
+        EnduranceMax     = [int]$script:GameState.Character.EnduranceMax
+        NotesCount       = @($script:GameState.Character.Notes).Count
+    }
 
     if (@($script:GameState.Character.CompletedBooks) -notcontains $currentBook) {
         $script:GameState.Character.CompletedBooks = @($script:GameState.Character.CompletedBooks) + $currentBook
@@ -790,6 +801,8 @@ function Complete-LWBook {
     Set-LWScreen -Name 'bookcomplete' -Data ([pscustomobject]@{
             Summary       = $bookSummary
             CharacterName = $script:GameState.Character.Name
+            Snapshot      = $completionSnapshot
+            ContinueToBookLabel = $nextBookLabel
         })
 
     if ($currentBook -ge 7) {
@@ -802,8 +815,12 @@ function Complete-LWBook {
         return
     }
 
-    $nextBook = $currentBook + 1
-    $nextBookLabel = Format-LWBookLabel -BookNumber $nextBook -IncludePrefix
+    if ($script:LWUi.Enabled) {
+        Refresh-LWScreen
+        [void](Read-LWText -Prompt ("Press Enter to continue to {0} setup" -f $nextBookLabel) -NoRefresh)
+        Set-LWScreen -Name 'sheet'
+    }
+
     $nextBookStartSection = 1
     $script:GameState.Character.BookNumber = $nextBook
     if ($nextBook -le 5) {

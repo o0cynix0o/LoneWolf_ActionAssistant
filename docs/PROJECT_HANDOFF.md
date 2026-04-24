@@ -54,6 +54,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
 - current stabilization work on `main` is architecture hardening cleanup, recent Book `6` DE support, and Book `7` validation after the `0.8.0` release
+- current `main` UX hotfix:
+  - mid-campaign book completions now stop on the book-complete recap screen before the next book's setup prompts begin
+  - the book-complete recap now snapshots the just-finished book's final Gold, Endurance, notes count, and run-integrity state so the summary does not drift into the next book's state
+  - the recap panel now shows a fuller per-book run summary, including sections seen, END swings, gold gained/spent, deaths, rewinds, and final-state totals
 - latest `main` hotfix:
   - Book `6` section `170` `roll` now uses the live current state correctly in interactive play
   - section `170` bonus logic now matches the local OG text (`Weaponmastery with Bow +3`, `Huntmastery +1`)

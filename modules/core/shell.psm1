@@ -1107,8 +1107,27 @@ function Invoke-LWCoreShowBookCompleteScreen {
     }
 
     Write-LWBanner
-    Show-LWBookCompletionSummary -Summary $screenData.Summary -CharacterName $screenData.CharacterName
-    Show-LWHelpfulCommandsPanel -ScreenName 'bookcomplete'
+    $continueToBookLabel = if ((Test-LWPropertyExists -Object $screenData -Name 'ContinueToBookLabel') -and -not [string]::IsNullOrWhiteSpace([string]$screenData.ContinueToBookLabel)) {
+        [string]$screenData.ContinueToBookLabel
+    }
+    else {
+        ''
+    }
+    $snapshot = if ((Test-LWPropertyExists -Object $screenData -Name 'Snapshot') -and $null -ne $screenData.Snapshot) {
+        $screenData.Snapshot
+    }
+    else {
+        $null
+    }
+
+    Show-LWBookCompletionSummary -Summary $screenData.Summary -CharacterName $screenData.CharacterName -Snapshot $snapshot -ContinueToBookLabel $continueToBookLabel
+
+    if ([string]::IsNullOrWhiteSpace($continueToBookLabel)) {
+        Show-LWHelpfulCommandsPanel -ScreenName 'bookcomplete'
+    }
+    else {
+        Write-LWScreenFooterNote -Message ("Press Enter to continue to {0} setup." -f $continueToBookLabel)
+    }
 }
 
 function Invoke-LWCoreRefreshScreen {
@@ -4723,22 +4742,88 @@ function Show-LWHelp {
 function Show-LWBookCompletionSummary {
     param(
         [Parameter(Mandatory = $true)][object]$Summary,
-        [Parameter(Mandatory = $true)][string]$CharacterName
+        [Parameter(Mandatory = $true)][string]$CharacterName,
+        [object]$Snapshot = $null,
+        [string]$ContinueToBookLabel = ''
     )
 
     $completedBookLabel = Format-LWBookLabel -BookNumber ([int]$Summary.BookNumber) -IncludePrefix
     $bookAchievements = @($script:GameState.Achievements.Unlocked | Where-Object { [int]$_.BookNumber -eq [int]$Summary.BookNumber } | Select-Object -Last 4)
+    $difficulty = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'Difficulty') -and -not [string]::IsNullOrWhiteSpace([string]$Snapshot.Difficulty)) {
+        [string]$Snapshot.Difficulty
+    }
+    else {
+        Get-LWCurrentDifficulty
+    }
+    $ruleSet = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'RuleSet') -and -not [string]::IsNullOrWhiteSpace([string]$Snapshot.RuleSet)) {
+        [string]$Snapshot.RuleSet
+    }
+    else {
+        [string]$script:GameState.RuleSet
+    }
+    $runIntegrityState = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'RunIntegrityState') -and -not [string]::IsNullOrWhiteSpace([string]$Snapshot.RunIntegrityState)) {
+        [string]$Snapshot.RunIntegrityState
+    }
+    else {
+        [string]$script:GameState.Run.IntegrityState
+    }
+    $goldCrowns = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'GoldCrowns') -and $null -ne $Snapshot.GoldCrowns) {
+        [int]$Snapshot.GoldCrowns
+    }
+    else {
+        [int]$script:GameState.Inventory.GoldCrowns
+    }
+    $enduranceCurrent = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'EnduranceCurrent') -and $null -ne $Snapshot.EnduranceCurrent) {
+        [int]$Snapshot.EnduranceCurrent
+    }
+    else {
+        [int]$script:GameState.Character.EnduranceCurrent
+    }
+    $enduranceMax = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'EnduranceMax') -and $null -ne $Snapshot.EnduranceMax) {
+        [int]$Snapshot.EnduranceMax
+    }
+    else {
+        [int]$script:GameState.Character.EnduranceMax
+    }
+    $notesCount = if ($null -ne $Snapshot -and (Test-LWPropertyExists -Object $Snapshot -Name 'NotesCount') -and $null -ne $Snapshot.NotesCount) {
+        [int]$Snapshot.NotesCount
+    }
+    else {
+        @($script:GameState.Character.Notes).Count
+    }
+    $uniqueSections = if ((Test-LWPropertyExists -Object $Summary -Name 'UniqueSectionsVisited') -and $null -ne $Summary.UniqueSectionsVisited) {
+        [string]$Summary.UniqueSectionsVisited
+    }
+    else {
+        [string]$Summary.SectionsVisited
+    }
+    $deathCount = if ((Test-LWPropertyExists -Object $Summary -Name 'DeathCount') -and $null -ne $Summary.DeathCount) {
+        [string]$Summary.DeathCount
+    }
+    else {
+        '0'
+    }
 
     Write-LWRetroPanelHeader -Title 'Adventure Complete' -AccentColor 'Green'
-    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $CharacterName -RightLabel 'Difficulty' -RightValue (Get-LWCurrentDifficulty) -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty (Get-LWCurrentDifficulty)) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
-    Write-LWRetroPanelPairRow -LeftLabel 'Rule Set' -LeftValue ([string]$script:GameState.RuleSet) -RightLabel 'Outcome' -RightValue 'Victory' -LeftColor 'Gray' -RightColor 'Green' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
-    Write-LWRetroPanelKeyValueRow -Label 'Completed Book' -Value $completedBookLabel -ValueColor 'White'
+    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $CharacterName -RightLabel 'Difficulty' -RightValue $difficulty -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty $difficulty) -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    Write-LWRetroPanelPairRow -LeftLabel 'Rule Set' -LeftValue $ruleSet -RightLabel 'Outcome' -RightValue 'Victory' -LeftColor 'Gray' -RightColor 'Green' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) {
+        Write-LWRetroPanelPairRow -LeftLabel 'Completed Book' -LeftValue $completedBookLabel -RightLabel 'Next Book' -RightValue $ContinueToBookLabel -LeftColor 'White' -RightColor 'Cyan' -LeftLabelWidth 13 -RightLabelWidth 13 -LeftWidth 29 -Gap 2
+    }
+    else {
+        Write-LWRetroPanelKeyValueRow -Label 'Completed Book' -Value $completedBookLabel -ValueColor 'White'
+    }
+    Write-LWRetroPanelTextRow -Text (Get-LWBookCompletionQuote -BookNumber ([int]$Summary.BookNumber)) -TextColor 'Gray'
     Write-LWRetroPanelFooter
 
-    Write-LWRetroPanelHeader -Title 'Book Summary' -AccentColor 'Cyan'
+    Write-LWRetroPanelHeader -Title 'This Playthrough' -AccentColor 'Cyan'
     Write-LWRetroPanelPairRow -LeftLabel 'Combat Wins' -LeftValue ([string]$Summary.Victories) -RightLabel 'Combat Losses' -RightValue ([string]$Summary.Defeats) -LeftColor 'Green' -RightColor 'Red'
-    Write-LWRetroPanelPairRow -LeftLabel 'Sections Seen' -LeftValue ([string]$Summary.SectionsVisited) -RightLabel 'Notes Added' -RightValue ([string]@($script:GameState.Character.Notes).Count) -LeftColor 'Gray' -RightColor 'Gray'
-    Write-LWRetroPanelPairRow -LeftLabel 'Gold Crowns' -LeftValue ("{0} / 50" -f [int]$script:GameState.Inventory.GoldCrowns) -RightLabel 'Endurance' -RightValue ("{0} / {1}" -f [int]$script:GameState.Character.EnduranceCurrent, [int]$script:GameState.Character.EnduranceMax) -LeftColor 'Yellow' -RightColor (Get-LWEnduranceColor -Current ([int]$script:GameState.Character.EnduranceCurrent) -Max ([int]$script:GameState.Character.EnduranceMax))
+    Write-LWRetroPanelPairRow -LeftLabel 'Sections Seen' -LeftValue ([string]$Summary.SectionsVisited) -RightLabel 'Unique Sections' -RightValue $uniqueSections -LeftColor 'Gray' -RightColor 'Gray'
+    Write-LWRetroPanelPairRow -LeftLabel 'END Lost' -LeftValue ([string]$Summary.EnduranceLost) -RightLabel 'END Gained' -RightValue ([string]$Summary.EnduranceGained) -LeftColor 'Red' -RightColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Gained' -LeftValue ([string]$Summary.GoldGained) -RightLabel 'Gold Spent' -RightValue ([string]$Summary.GoldSpent) -LeftColor 'Yellow' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Deaths' -LeftValue $deathCount -RightLabel 'Rewinds' -RightValue ([string]$Summary.RewindsUsed) -LeftColor 'Red' -RightColor 'Yellow'
+    Write-LWRetroPanelPairRow -LeftLabel 'Notes Added' -LeftValue ([string]$notesCount) -RightLabel 'Run Integrity' -RightValue $runIntegrityState -LeftColor 'Gray' -RightColor (Get-LWIntegrityColor -IntegrityState $runIntegrityState)
+    Write-LWRetroPanelPairRow -LeftLabel 'Final Gold' -LeftValue ("{0} / 50" -f $goldCrowns) -RightLabel 'Final END' -RightValue ("{0} / {1}" -f $enduranceCurrent, $enduranceMax) -LeftColor 'Yellow' -RightColor (Get-LWEnduranceColor -Current $enduranceCurrent -Max $enduranceMax)
     Write-LWRetroPanelFooter
 
     Write-LWRetroPanelHeader -Title 'Achievements Earned' -AccentColor 'Magenta'

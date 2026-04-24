@@ -6,6 +6,14 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- improved the book-complete recap flow:
+  - mid-campaign book finishes now stop on the rendered recap screen before the next book's setup begins
+  - the recap now snapshots the completed book's final Gold, Endurance, notes count, and integrity state so the summary still reflects the book you just finished
+  - the recap panel now reads more like a true run summary, with sections, END swings, gold movement, deaths, rewinds, and final-state totals
+  - final Book `7` completion still remains on the book-complete screen as the campaign endpoint
+  - validated in both shells via:
+    - `testing/logs/BOOK_COMPLETE_SUMMARY_SMOKE_PS7.txt`
+    - `testing/logs/BOOK_COMPLETE_SUMMARY_SMOKE_PS51.txt`
 - hardened redirected console-input handling:
   - added a console-aware shared prompt reader so redirected sessions can consume EOF cleanly instead of hanging at `Read-Host`
   - startup `-Load` sessions now exit cleanly under redirected input in both PowerShell `7` and Windows PowerShell `5.1`
