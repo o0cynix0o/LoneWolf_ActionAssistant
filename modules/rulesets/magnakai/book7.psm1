@@ -152,6 +152,30 @@ function Add-LWBookSevenPocketItem {
     return $false
 }
 
+function Ensure-LWBookSevenSectionOnePowerKey {
+    param(
+        [string]$SuccessMessage = 'Section 1: Power-key added to Pocket Items.'
+    )
+
+    if (-not (Test-LWHasState) -or [int]$script:GameState.Character.BookNumber -ne 7) {
+        return $false
+    }
+
+    if ([int]$script:GameState.CurrentSection -ne 1) {
+        return $false
+    }
+
+    if (-not (Test-LWStoryAchievementFlag -Name 'Book7PowerKeyClaimed') -and -not (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names (Get-LWBookSevenPowerKeyItemNames))) {
+        return (Add-LWBookSevenPocketItem -Name 'Power-key' -FlagName 'Book7PowerKeyClaimed' -SuccessMessage $SuccessMessage)
+    }
+
+    if (-not (Test-LWStoryAchievementFlag -Name 'Book7PowerKeyClaimed')) {
+        Set-LWStoryAchievementFlag -Name 'Book7PowerKeyClaimed'
+    }
+
+    return $true
+}
+
 function Get-LWMagnakaiBookSevenSection015ChoiceDefinitions {
     return @(
         [pscustomobject]@{ Id = 'laumspur'; FlagName = 'Book7Section015ConcentratedLaumspurClaimed'; DisplayName = 'Concentrated Laumspur'; Type = 'backpack'; Name = 'Concentrated Healing Potion'; Quantity = 1; Description = 'Concentrated Laumspur' },
@@ -1112,6 +1136,8 @@ function Apply-LWMagnakaiBookSevenStartingEquipment {
     if ($CarryExistingGear) {
         Write-LWInfo 'Book 7 carry-over preserves your current Weapons and Special Items.'
     }
+
+    [void](Ensure-LWBookSevenSectionOnePowerKey -SuccessMessage 'Book 7 startup: Power-key added to Pocket Items.')
 
     $startingGoldRoll = Get-LWRandomDigit
     $goldGain = 10 + [int]$startingGoldRoll

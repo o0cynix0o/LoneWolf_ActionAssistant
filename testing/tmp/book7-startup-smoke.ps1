@@ -131,7 +131,7 @@ function New-LWBookSevenStartupSmokeState {
         $state.Inventory.BackpackItems = @($BackpackItems)
         $state.Inventory.HerbPouchItems = @($HerbPouchItems)
         $state.Inventory.HasHerbPouch = ([bool]$HasHerbPouch -or @($HerbPouchItems).Count -gt 0)
-        $state.Inventory.PocketSpecialItems = @('Power-key')
+        $state.Inventory.PocketSpecialItems = @('Riverboat Ticket to Rhem')
         $state.Storage.Confiscated.BackpackItems = @('Meal')
         $state.Storage.Confiscated.PocketSpecialItems = @('Gold Key')
         $state.Storage.Confiscated.HerbPouchItems = @('Laumspur Herb')
@@ -170,6 +170,7 @@ $tests = @(
         Assert = {
             param($state)
             Assert-LWBookSevenStartupSmoke -Condition ([string]$state.RuleSet -eq 'Magnakai') -Message 'Book 7 startup did not keep the Magnakai ruleset.'
+            Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateHasPocketSpecialItem -State $state -Names @('Power-key', 'Power Key')) -Message 'Fresh Book 7 startup did not grant the section 1 Power-key.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Sword' }).Count -eq 1) -Message 'Fresh Book 7 startup did not add the Sword.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Bow' }).Count -eq 1) -Message 'Fresh Book 7 startup did not add the Bow.'
             Assert-LWBookSevenStartupSmoke -Condition ([int]$state.Inventory.QuiverArrows -eq 6) -Message 'Fresh Book 7 startup did not load the Quiver with 6 Arrows.'
@@ -189,7 +190,8 @@ $tests = @(
             Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateHasBackpack -State $state) -Message 'Book 7 carry-forward did not restore the backpack state.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Short Sword' }).Count -eq 1) -Message 'Book 7 carry-forward did not preserve the existing Short Sword.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Towel' }).Count -eq 0) -Message 'Book 7 carry-forward incorrectly preserved a Book 6 Backpack Item.'
-            Assert-LWBookSevenStartupSmoke -Condition (-not (Test-LWStateHasPocketSpecialItem -State $state -Names @('Power-key', 'Power Key'))) -Message 'Book 7 carry-forward incorrectly preserved a Book 6 pocket item.'
+            Assert-LWBookSevenStartupSmoke -Condition (-not (Test-LWStateHasPocketSpecialItem -State $state -Names @('Riverboat Ticket to Rhem', 'Riverboat Ticket'))) -Message 'Book 7 carry-forward incorrectly preserved a Book 6 pocket item.'
+            Assert-LWBookSevenStartupSmoke -Condition (@((Get-LWPocketSpecialItems) | Where-Object { $_ -eq 'Power-key' -or $_ -eq 'Power Key' }).Count -eq 1) -Message 'Book 7 carry-forward did not restore the section 1 Power-key after clearing old pocket items.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.HerbPouchItems | Where-Object { $_ -eq 'Healing Potion' }).Count -eq 0) -Message 'Book 7 carry-forward incorrectly preserved Herb Pouch contents.'
             Assert-LWBookSevenStartupSmoke -Condition (-not [bool]$state.Inventory.HasHerbPouch) -Message 'Book 7 carry-forward incorrectly preserved the Herb Pouch.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Storage.Confiscated.BackpackItems).Count -eq 0) -Message 'Book 7 carry-forward left confiscated Backpack Items available across the handoff.'
@@ -231,6 +233,51 @@ $tests = @(
             Assert-LWBookSevenStartupSmoke -Condition ([int]$state.Inventory.GoldCrowns -eq 50) -Message 'Book 7 startup did not cap Gold Crowns at 50.'
         }
     }
+    @{
+        Name = 'Book 7 section 1 load repair restores missing Power-key'
+        BuildState = {
+            $state = New-LWBookSevenStartupSmokeState
+            $state.Inventory.PocketSpecialItems = @('Fireseed')
+            $state.Achievements.StoryFlags.Book7PowerKeyClaimed = $false
+            return $state
+        }
+        SkipStartup = $true
+        Action = {
+            param($state)
+            $normalized = Normalize-LWState -State $state
+            Set-LWHostGameState -State $normalized | Out-Null
+            return $normalized
+        }
+        Assert = {
+            param($state)
+            Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateHasPocketSpecialItem -State $state -Names @('Power-key', 'Power Key')) -Message 'Book 7 section 1 load repair did not restore the missing Power-key.'
+            Assert-LWBookSevenStartupSmoke -Condition ([bool]$state.Achievements.StoryFlags.Book7PowerKeyClaimed) -Message 'Book 7 section 1 load repair did not mark the Power-key story flag.'
+        }
+    }
+    @{
+        Name = 'Book 7 section 1 current-format load repair restores missing Power-key'
+        BuildState = {
+            $state = New-LWBookSevenStartupSmokeState
+            $state.Inventory.PocketSpecialItems = @('Fireseed')
+            $state.Achievements.StoryFlags.Book7PowerKeyClaimed = $false
+            Set-LWAchievementLoadBackfillCurrent -State $state
+            $state = Sync-LWStateRefactorMetadata -State $state
+            return $state
+        }
+        SkipStartup = $true
+        Action = {
+            param($state)
+            Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateFastNormalizeEligible -State $state -SourceEngineVersion ([string]$state.EngineVersion)) -Message 'Book 7 current-format repair test did not produce a fast-normalize-eligible state.'
+            $normalized = Normalize-LWState -State $state
+            Set-LWHostGameState -State $normalized | Out-Null
+            return $normalized
+        }
+        Assert = {
+            param($state)
+            Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateHasPocketSpecialItem -State $state -Names @('Power-key', 'Power Key')) -Message 'Book 7 current-format load repair did not restore the missing Power-key.'
+            Assert-LWBookSevenStartupSmoke -Condition ([bool]$state.Achievements.StoryFlags.Book7PowerKeyClaimed) -Message 'Book 7 current-format load repair did not mark the Power-key story flag.'
+        }
+    }
 )
 
 $results = @()
@@ -244,7 +291,15 @@ foreach ($test in $tests) {
     Set-LWBookSevenStartupSmokeQueues -Ints $ints -Texts $texts -YesNo $yesNo
 
     try {
-        Apply-LWBookSevenStartingEquipment -CarryExistingGear:([bool]($test.ContainsKey('CarryExistingGear') -and $test.CarryExistingGear))
+        if ($test.ContainsKey('SkipStartup') -and $test.SkipStartup) {
+            if ($test.ContainsKey('Action') -and $null -ne $test.Action) {
+                $state = & $test.Action $state
+            }
+        }
+        else {
+            Apply-LWBookSevenStartingEquipment -CarryExistingGear:([bool]($test.ContainsKey('CarryExistingGear') -and $test.CarryExistingGear))
+        }
+
         & $test.Assert $state
         $results += [pscustomobject]@{ Name = [string]$test.Name; Status = 'ok'; Error = '' }
     }

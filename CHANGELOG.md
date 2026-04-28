@@ -6,6 +6,13 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- fixed the Book `7` section `1` `Power-key` grant and save compatibility:
+  - Book `7` startup now guarantees the section `1` `Power-key` is added as a pocket-carried Special Item before the opening setup can leave you parked on section `1` without it
+  - load normalization now repairs both older and current-format Book `7` section `1` saves that are missing the `Power-key`, then marks the `Book7PowerKeyClaimed` story flag so the fix persists on the next save
+  - added Book `7` startup/load regression coverage for both older-save reconciliation and current-format fast-normalize loads
+  - validated in both shells via:
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
 - corrected legacy-series book-to-book inventory carry-over for future transitions:
   - through Books `1-12`, old `Backpack Items` and app-level `Pocket Items` should not carry into the next adventure; only carried `Weapons`, `Special Items`, and `Gold` survive the handoff
   - future carried-over starts for the currently implemented Books `2-7` now clear old `Backpack Items` and `Pocket Items` before the new book's starting-equipment picks begin

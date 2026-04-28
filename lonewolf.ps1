@@ -1477,6 +1477,30 @@ function Normalize-LWState {
                 $normalized.Achievements.StoryFlags.Book6Section209ArrowLost = $true
             }
         }
+
+    }
+
+    $book7PowerKeyClaimed = (
+        (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book7PowerKeyClaimed') -and
+        [bool]$normalized.Achievements.StoryFlags.Book7PowerKeyClaimed
+    )
+    $hasBook7PowerKey = (
+        (Test-LWStateHasPocketSpecialItem -State $normalized -Names @('Power-key', 'Power Key')) -or
+        (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $normalized -Names @('Power-key', 'Power Key') -Type 'special')))
+    )
+    if ($currentBookNumber -eq 7 -and [int]$normalized.CurrentSection -eq 1 -and -not $book7PowerKeyClaimed -and -not $hasBook7PowerKey) {
+        if ($null -eq $normalized.Inventory.PocketSpecialItems) {
+            $normalized.Inventory.PocketSpecialItems = @()
+        }
+
+        $normalized.Inventory.PocketSpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items (@($normalized.Inventory.PocketSpecialItems) + @('Power-key')))
+
+        if (-not (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book7PowerKeyClaimed')) {
+            $normalized.Achievements.StoryFlags | Add-Member -Force -NotePropertyName 'Book7PowerKeyClaimed' -NotePropertyValue $true
+        }
+        else {
+            $normalized.Achievements.StoryFlags.Book7PowerKeyClaimed = $true
+        }
     }
 
     return (Sync-LWStateRefactorMetadata -State $normalized)
