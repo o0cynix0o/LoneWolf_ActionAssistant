@@ -68,6 +68,132 @@ function global:Read-Host {
     return $response
 }
 
+function global:Read-LWPromptLine {
+    param(
+        [string]$Prompt = '',
+        [switch]$ReturnNullOnEof
+    )
+
+    if ($global:PlaytestPromptQueue.Count -le 0) {
+        if ($ReturnNullOnEof) {
+            return $null
+        }
+
+        throw "Unexpected prompt: $Prompt"
+    }
+
+    $response = [string]$global:PlaytestPromptQueue.Dequeue()
+    $global:PlaytestPromptLog += [pscustomobject]@{
+        Prompt   = $Prompt
+        Response = $response
+    }
+    return $response
+}
+
+function global:Read-LWYesNo {
+    param(
+        [Parameter(Mandatory = $true)][string]$Prompt,
+        [bool]$Default = $true
+    )
+
+    while ($true) {
+        $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
+        $raw = Read-LWPromptLine -Prompt "$Prompt $suffix" -ReturnNullOnEof
+
+        if ($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) {
+            return $Default
+        }
+
+        switch ($raw.Trim().ToLowerInvariant()) {
+            'y' { return $true }
+            'yes' { return $true }
+            'n' { return $false }
+            'no' { return $false }
+            default { Write-LWWarn 'Please enter y or n.' }
+        }
+    }
+}
+
+function global:Read-LWInlineYesNo {
+    param(
+        [Parameter(Mandatory = $true)][string]$Prompt,
+        [bool]$Default = $true
+    )
+
+    while ($true) {
+        $suffix = if ($Default) { '[Y/n]' } else { '[y/N]' }
+        $raw = Read-LWPromptLine -Prompt "$Prompt $suffix" -ReturnNullOnEof
+
+        if ($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) {
+            return $Default
+        }
+
+        switch ($raw.Trim().ToLowerInvariant()) {
+            'y' { return $true }
+            'yes' { return $true }
+            'n' { return $false }
+            'no' { return $false }
+            default { Write-LWInlineWarn 'Please enter y or n.' }
+        }
+    }
+}
+
+function global:Read-LWInt {
+    param(
+        [Parameter(Mandatory = $true)][string]$Prompt,
+        [Nullable[int]]$Default = $null,
+        [Nullable[int]]$Min = $null,
+        [Nullable[int]]$Max = $null,
+        [switch]$NoRefresh
+    )
+
+    while ($true) {
+        $label = if ($null -ne $Default) { "$Prompt [$Default]" } else { $Prompt }
+        $raw = Read-LWPromptLine -Prompt $label -ReturnNullOnEof
+
+        if (($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) -and $null -ne $Default) {
+            return [int]$Default
+        }
+        if ($null -eq $raw) {
+            throw "No redirected input remains for numeric prompt '$Prompt'."
+        }
+
+        $value = 0
+        if (-not [int]::TryParse($raw, [ref]$value)) {
+            Write-LWWarn 'Please enter a whole number.'
+            continue
+        }
+
+        if ($null -ne $Min -and $value -lt $Min) {
+            Write-LWWarn "Value must be at least $Min."
+            continue
+        }
+
+        if ($null -ne $Max -and $value -gt $Max) {
+            Write-LWWarn "Value must be at most $Max."
+            continue
+        }
+
+        return $value
+    }
+}
+
+function global:Read-LWText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Prompt,
+        [string]$Default = '',
+        [switch]$NoRefresh
+    )
+
+    $label = if ([string]::IsNullOrWhiteSpace($Default)) { $Prompt } else { "$Prompt [$Default]" }
+    $raw = Read-LWPromptLine -Prompt $label -ReturnNullOnEof
+    if ($null -eq $raw -or [string]::IsNullOrWhiteSpace($raw)) {
+        return $Default
+    }
+
+    return $raw.Trim()
+}
+
 function Set-PlaytestPromptResponses {
     param([string[]]$Responses = @())
 
@@ -115,6 +241,32 @@ function Copy-BaseSave {
     Copy-Item -LiteralPath $baseSavePath -Destination $DestinationPath -Force
 }
 
+function Resolve-CreatedSavePath {
+    $candidatePaths = New-Object System.Collections.Generic.List[string]
+
+    if ($null -ne $script:GameState -and $null -ne $script:GameState.Settings -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Settings.SavePath)) {
+        [void]$candidatePaths.Add([string]$script:GameState.Settings.SavePath)
+    }
+
+    $preferredPath = Get-LWPreferredSavePath
+    if (-not [string]::IsNullOrWhiteSpace([string]$preferredPath)) {
+        [void]$candidatePaths.Add([string]$preferredPath)
+    }
+
+    foreach ($candidate in @($candidatePaths)) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$candidate) -and (Test-Path -LiteralPath $candidate)) {
+            return [string]$candidate
+        }
+    }
+
+    $fallback = @(Get-ChildItem -LiteralPath $playtestSaveDir -File -Filter '*.json' | Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+    if ($fallback.Count -gt 0) {
+        return [string]$fallback[0].FullName
+    }
+
+    return $null
+}
+
 function Ensure-BaseSave {
     foreach ($path in @($baseSavePath, $workSavePath, $newSavePath, $loadAlphaPath, $loadBetaPath, $loadGammaPath)) {
         Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
@@ -141,6 +293,11 @@ function Ensure-BaseSave {
         Invoke-LWCommand -InputLine 'new' | Out-Null
         Refresh-LWScreen
     } | Out-Null
+
+    $createdSavePath = Resolve-CreatedSavePath
+    if (-not [string]::IsNullOrWhiteSpace($createdSavePath) -and (Test-Path -LiteralPath $createdSavePath) -and ([string]$createdSavePath -ine [string]$baseSavePath)) {
+        Copy-Item -LiteralPath $createdSavePath -Destination $baseSavePath -Force
+    }
 
     if (-not (Test-Path -LiteralPath $baseSavePath)) {
         throw "Base playtest save was not created at $baseSavePath"
@@ -391,7 +548,8 @@ Ensure-LoadCatalog
 $cases = @(
     (New-Case -Name 'new' -Scenario 'no-state' -Command 'new' -Responses @('3', 'n', 'y', 'Surface New', '1', '1', '1,2,3,4,5', 'y', $newSavePath, 'n') -Assert {
             $errors = @()
-            if (-not (Test-Path -LiteralPath $newSavePath)) { $errors += 'new did not create the requested save.' }
+            $createdSavePath = Resolve-CreatedSavePath
+            if ([string]::IsNullOrWhiteSpace($createdSavePath) -or -not (Test-Path -LiteralPath $createdSavePath)) { $errors += 'new did not create a save file.' }
             if (-not (Assert-NotificationContains -Notifications (Get-NotificationLines) -Pattern 'New Normal run created')) { $errors += 'new did not report successful run creation.' }
             return @($errors)
         })
@@ -453,6 +611,22 @@ $cases = @(
     (New-Case -Name 'drop backpack 1' -Scenario 'loaded' -Command 'drop backpack 1' -Setup { $script:GameState.Inventory.BackpackItems = @('Meal', 'Torch') } -Assert {
             if (@($script:GameState.Inventory.BackpackItems).Count -ne 1) { return @('drop backpack 1 did not remove one backpack item.') }
             return @()
+        })
+    (New-Case -Name 'drop pocket 1' -Scenario 'loaded' -Command 'drop pocket 1' -Setup {
+            $script:GameState.Inventory.PocketSpecialItems = @('Power-key', 'Gold Key')
+        } -Assert {
+            $errors = @()
+            if (@($script:GameState.Inventory.PocketSpecialItems).Count -ne 1) { $errors += 'drop pocket 1 did not remove one pocket item.' }
+            if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Power-key', 'Power Key')) { $errors += 'drop pocket 1 did not remove the first pocket item.' }
+            return @($errors)
+        })
+    (New-Case -Name 'drop interactive pocket 1' -Scenario 'loaded' -Command 'drop' -Responses @('pocket', '1') -Setup {
+            $script:GameState.Inventory.PocketSpecialItems = @('Power-key', 'Gold Key')
+        } -Assert {
+            $errors = @()
+            if (@($script:GameState.Inventory.PocketSpecialItems).Count -ne 1) { $errors += 'interactive drop did not remove one pocket item.' }
+            if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Power-key', 'Power Key')) { $errors += 'interactive drop did not remove the selected pocket item.' }
+            return @($errors)
         })
     (New-Case -Name 'drop backpack all' -Scenario 'loaded' -Command 'drop backpack all' -Setup { $script:GameState.Inventory.BackpackItems = @('Meal', 'Torch') } -Assert {
             $errors = @()
@@ -586,7 +760,7 @@ $cases = @(
             return @()
         })
     (New-Case -Name 'mode data' -Scenario 'loaded' -Command 'mode data')
-    (New-Case -Name 'combat start' -Scenario 'loaded-fight-ready' -Command 'combat start TestEnemy 15 20' -Responses @('y') -Assert {
+    (New-Case -Name 'combat start' -Scenario 'loaded-fight-ready' -Command 'combat start TestEnemy 15 20' -Assert {
             if (-not $script:GameState.Combat.Active) { return @('combat start did not begin combat.') }
             return @()
         })
@@ -599,16 +773,16 @@ $cases = @(
             return @()
         })
     (New-Case -Name 'mode manual' -Scenario 'loaded' -Command 'mode manual')
-    (New-Case -Name 'manual combat start' -Scenario 'loaded-fight-ready' -Command 'combat start TestEnemy 12 15' -Setup { $script:GameState.Settings.CombatMode = 'ManualCRT' } -Responses @('y') -Assert {
+    (New-Case -Name 'manual combat start' -Scenario 'loaded-fight-ready' -Command 'combat start TestEnemy 12 15' -Setup { $script:GameState.Settings.CombatMode = 'ManualCRT' } -Assert {
             if (-not $script:GameState.Combat.Active) { return @('manual combat start did not begin combat.') }
             return @()
         })
     (New-Case -Name 'combat evade' -Scenario 'loaded-combat-evade' -Command 'combat evade')
-    (New-Case -Name 'fight quickstart' -Scenario 'loaded-fight-ready' -Command 'fight TestEnemy 14 18' -Responses @('y'))
+    (New-Case -Name 'fight quickstart' -Scenario 'loaded-fight-ready' -Command 'fight TestEnemy 14 18')
     (New-Case -Name 'combat auto' -Scenario 'loaded-combat' -Command 'combat auto')
     (New-Case -Name 'combat log book 1' -Scenario 'loaded' -Command 'combat log book 1')
     (New-Case -Name 'combat log book 2' -Scenario 'loaded' -Command 'combat log book 2')
-    (New-Case -Name 'combat no weapons' -Scenario 'loaded-no-weapons' -Command 'combat start TestEnemy 10 10' -Responses @('y') -Assert {
+    (New-Case -Name 'combat no weapons' -Scenario 'loaded-no-weapons' -Command 'combat start TestEnemy 10 10' -Assert {
             $errors = @()
             if (-not $script:GameState.Combat.Active) { $errors += 'combat start with no weapons did not begin unarmed combat cleanly.' }
             if ($null -ne $script:GameState.Combat.EquippedWeapon -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Combat.EquippedWeapon)) { $errors += 'combat no weapons did not stay unarmed.' }

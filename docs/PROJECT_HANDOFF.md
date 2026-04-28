@@ -60,9 +60,14 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - the Book `7` startup smoke now explicitly verifies that the original mastered set survives the transition and that exactly one new mastery is appended
 - latest `main` future-transfer rules fix:
   - future carried-over starts for Books `2-7` now follow the source-text rule that old `Backpack Items` do not carry between adventures during the Kai and Magnakai series
-  - the fix is forward-only for local play: existing saves are left as-is, but future book-to-book transfers now clear old `Backpack Items` before the new book's starting-equipment picks begin
+  - app-level `Pocket Items` are now also cleared on those future transfers instead of lingering indefinitely across books
+  - the fix is forward-only for local play: existing saves are left as-is, but future book-to-book transfers now clear old `Backpack Items` and `Pocket Items` before the new book's starting-equipment picks begin
   - Book `6` -> `7` transitions now also clear old `Herb Pouch` contents and the carried `Herb Pouch` state so Book `6` potion storage does not bleed into Book `7`
   - carried `Weapons`, `Special Items`, and `Gold` still survive these pre-Book-13 handoffs as before
+- latest `main` inventory command follow-up:
+  - the interactive `drop` prompt now accepts `pocket` as a removable inventory type
+  - `drop pocket <slot>` and `drop pocket all` now work for current pocket-carried items
+  - `add pocket` and `recover pocket` remain intentionally blocked so pocket items stay tied to section automation instead of the general inventory recovery system
 - current `main` UX hotfix:
   - mid-campaign book completions now stop on the book-complete recap screen before the next book's setup prompts begin
   - the book-complete recap now snapshots the just-finished book's final Gold, Endurance, notes count, and run-integrity state so the summary does not drift into the next book's state

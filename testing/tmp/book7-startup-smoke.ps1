@@ -131,7 +131,9 @@ function New-LWBookSevenStartupSmokeState {
         $state.Inventory.BackpackItems = @($BackpackItems)
         $state.Inventory.HerbPouchItems = @($HerbPouchItems)
         $state.Inventory.HasHerbPouch = ([bool]$HasHerbPouch -or @($HerbPouchItems).Count -gt 0)
+        $state.Inventory.PocketSpecialItems = @('Power-key')
         $state.Storage.Confiscated.BackpackItems = @('Meal')
+        $state.Storage.Confiscated.PocketSpecialItems = @('Gold Key')
         $state.Storage.Confiscated.HerbPouchItems = @('Laumspur Herb')
         $state.Storage.Confiscated.HasHerbPouch = $true
         $state.RecoveryStash.Backpack.Items = @('Blanket')
@@ -187,9 +189,11 @@ $tests = @(
             Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateHasBackpack -State $state) -Message 'Book 7 carry-forward did not restore the backpack state.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.Weapons | Where-Object { $_ -eq 'Short Sword' }).Count -eq 1) -Message 'Book 7 carry-forward did not preserve the existing Short Sword.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Towel' }).Count -eq 0) -Message 'Book 7 carry-forward incorrectly preserved a Book 6 Backpack Item.'
+            Assert-LWBookSevenStartupSmoke -Condition (-not (Test-LWStateHasPocketSpecialItem -State $state -Names @('Power-key', 'Power Key'))) -Message 'Book 7 carry-forward incorrectly preserved a Book 6 pocket item.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.HerbPouchItems | Where-Object { $_ -eq 'Healing Potion' }).Count -eq 0) -Message 'Book 7 carry-forward incorrectly preserved Herb Pouch contents.'
             Assert-LWBookSevenStartupSmoke -Condition (-not [bool]$state.Inventory.HasHerbPouch) -Message 'Book 7 carry-forward incorrectly preserved the Herb Pouch.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Storage.Confiscated.BackpackItems).Count -eq 0) -Message 'Book 7 carry-forward left confiscated Backpack Items available across the handoff.'
+            Assert-LWBookSevenStartupSmoke -Condition (@($state.Storage.Confiscated.PocketSpecialItems).Count -eq 0) -Message 'Book 7 carry-forward left confiscated pocket items available across the handoff.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Storage.Confiscated.HerbPouchItems).Count -eq 0 -and -not [bool]$state.Storage.Confiscated.HasHerbPouch) -Message 'Book 7 carry-forward left confiscated Herb Pouch state available across the handoff.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.RecoveryStash.Backpack.Items).Count -eq 0) -Message 'Book 7 carry-forward left recovery-stashed Backpack Items available across the handoff.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.RecoveryStash.HerbPouch.Items).Count -eq 0) -Message 'Book 7 carry-forward left recovery-stashed Herb Pouch items available across the handoff.'

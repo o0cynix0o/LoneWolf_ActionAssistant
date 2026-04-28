@@ -35,6 +35,11 @@ function Resolve-LWInventoryType {
         'backpackitem' { return 'backpack' }
         'backpackitems' { return 'backpack' }
         'pack' { return 'backpack' }
+        'pocket' { return 'pocket' }
+        'pockets' { return 'pocket' }
+        'pocketspecial' { return 'pocket' }
+        'pocketspecialitem' { return 'pocket' }
+        'pocketspecialitems' { return 'pocket' }
         'herb' { return 'herbpouch' }
         'herbpouch' { return 'herbpouch' }
         'pouch' { return 'herbpouch' }
@@ -46,39 +51,42 @@ function Resolve-LWInventoryType {
 }
 
 function Get-LWInventoryTypeLabel {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type)
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
     switch ($Type) {
         'weapon' { return 'Weapons' }
         'backpack' { return 'Backpack' }
+        'pocket' { return 'Pocket Items' }
         'herbpouch' { return 'Herb Pouch' }
         'special' { return 'Special Items' }
     }
 }
 
 function Get-LWInventoryTypeColor {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type)
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
     switch ($Type) {
         'weapon' { return 'Green' }
         'backpack' { return 'Yellow' }
+        'pocket' { return 'DarkYellow' }
         'herbpouch' { return 'DarkGreen' }
         'special' { return 'DarkCyan' }
     }
 }
 
 function Get-LWInventoryTypeCapacity {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type)
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
     switch ($Type) {
         'weapon' { return 2 }
         'backpack' { return 8 }
+        'pocket' { return $null }
         'herbpouch' { return 6 }
         'special' { return 12 }
     }
@@ -216,7 +224,7 @@ function Get-LWBackpackOccupiedSlotCount {
 
 function Get-LWInventoryUsedCapacity {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type,
         [object[]]$Items = $null
     )
     Set-LWModuleContext -Context (Get-LWModuleContext)
@@ -240,13 +248,14 @@ function Get-LWBackpackSlotMap {
 }
 
 function Get-LWInventoryItems {
-    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type)
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type)
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
     switch ($Type) {
         'weapon' { return @($script:GameState.Inventory.Weapons) }
         'backpack' { return @($script:GameState.Inventory.BackpackItems) }
+        'pocket' { return @(Get-LWPocketSpecialItems) }
         'herbpouch' { return @($script:GameState.Inventory.HerbPouchItems) }
         'special' { return @($script:GameState.Inventory.SpecialItems) }
     }
@@ -254,17 +263,18 @@ function Get-LWInventoryItems {
 
 function Set-LWInventoryItems {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Items
     )
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
 
-    $normalizedItems = Normalize-LWInventoryItemCollection -Type $Type -Items @($Items)
+    $normalizedItems = Normalize-LWInventoryItemCollection -Type $(if ($Type -eq 'pocket') { 'special' } else { $Type }) -Items @($Items)
 
     switch ($Type) {
         'weapon' { $script:GameState.Inventory.Weapons = @($normalizedItems) }
         'backpack' { $script:GameState.Inventory.BackpackItems = @($normalizedItems) }
+        'pocket' { $script:GameState.Inventory.PocketSpecialItems = @($normalizedItems) }
         'herbpouch' { $script:GameState.Inventory.HerbPouchItems = @($normalizedItems) }
         'special' { $script:GameState.Inventory.SpecialItems = @($normalizedItems) }
     }
@@ -701,8 +711,17 @@ function Clear-LWLegacyBackpackCarryover {
     }
 
     $backpackItems = @($script:GameState.Inventory.BackpackItems)
+    $pocketItems = @(Get-LWPocketSpecialItems)
     $herbPouchItems = @($script:GameState.Inventory.HerbPouchItems)
     $confiscatedBackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems)
+    $confiscatedPocketItems = @(
+        if ((Test-LWPropertyExists -Object $script:GameState.Storage.Confiscated -Name 'PocketSpecialItems') -and $null -ne $script:GameState.Storage.Confiscated.PocketSpecialItems) {
+            @($script:GameState.Storage.Confiscated.PocketSpecialItems)
+        }
+        else {
+            @()
+        }
+    )
     $confiscatedHerbPouchItems = @($script:GameState.Storage.Confiscated.HerbPouchItems)
     $recoveryBackpackItems = @(Get-LWInventoryRecoveryItems -Type 'backpack')
     $recoveryHerbPouchItems = @(Get-LWInventoryRecoveryItems -Type 'herbpouch')
@@ -714,31 +733,37 @@ function Clear-LWLegacyBackpackCarryover {
         $recoveryHerbPouchItems.Count -gt 0)
 
     Set-LWInventoryItems -Type 'backpack' -Items @()
+    Set-LWInventoryItems -Type 'pocket' -Items @()
     Set-LWInventoryItems -Type 'herbpouch' -Items @()
     $script:GameState.Inventory.HasHerbPouch = $false
     $script:GameState.Storage.Confiscated.BackpackItems = @()
+    $script:GameState.Storage.Confiscated.PocketSpecialItems = @()
     $script:GameState.Storage.Confiscated.HerbPouchItems = @()
     $script:GameState.Storage.Confiscated.HasHerbPouch = $false
     Clear-LWInventoryRecoveryEntry -Type 'backpack'
     Clear-LWInventoryRecoveryEntry -Type 'herbpouch'
     Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
 
-    if (-not $WriteMessages -or ($backpackItems.Count -eq 0 -and $herbPouchItems.Count -eq 0 -and $confiscatedBackpackItems.Count -eq 0 -and $confiscatedHerbPouchItems.Count -eq 0 -and $recoveryBackpackItems.Count -eq 0 -and $recoveryHerbPouchItems.Count -eq 0 -and -not $hadHerbPouch)) {
+    if (-not $WriteMessages -or ($backpackItems.Count -eq 0 -and $pocketItems.Count -eq 0 -and $herbPouchItems.Count -eq 0 -and $confiscatedBackpackItems.Count -eq 0 -and $confiscatedPocketItems.Count -eq 0 -and $confiscatedHerbPouchItems.Count -eq 0 -and $recoveryBackpackItems.Count -eq 0 -and $recoveryHerbPouchItems.Count -eq 0 -and -not $hadHerbPouch)) {
         return
     }
 
     $leftBehind = @()
     $allBackpackItems = @($backpackItems + $confiscatedBackpackItems + $recoveryBackpackItems)
+    $allPocketItems = @($pocketItems + $confiscatedPocketItems)
     $allHerbPouchItems = @($herbPouchItems + $confiscatedHerbPouchItems + $recoveryHerbPouchItems)
     if ($allBackpackItems.Count -gt 0) {
         $leftBehind += ('Backpack: {0}' -f (Format-LWList -Items $allBackpackItems))
+    }
+    if ($allPocketItems.Count -gt 0) {
+        $leftBehind += ('Pocket: {0}' -f (Format-LWList -Items $allPocketItems))
     }
     if ($hadHerbPouch -or $allHerbPouchItems.Count -gt 0) {
         $herbPouchValue = if ($allHerbPouchItems.Count -gt 0) { (Format-LWList -Items $allHerbPouchItems) } else { '(empty)' }
         $leftBehind += ('Herb Pouch: {0}' -f $herbPouchValue)
     }
 
-    Write-LWInfo ("Books 1-12 do not carry Backpack Items between adventures. Previous pack gear is left behind: {0}." -f ($leftBehind -join '; '))
+    Write-LWInfo ("Books 1-12 do not carry Backpack or Pocket Items between adventures. Previous carried gear is left behind: {0}." -f ($leftBehind -join '; '))
 }
 
 function Get-LWConfiscatedInventorySummaryText {
@@ -1813,12 +1838,20 @@ function Add-LWInventoryInteractive {
             Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
             return
         }
+        if ($type -eq 'pocket') {
+            Write-LWWarn 'Pocket items can be removed manually, but not added with add. Use section automation instead.'
+            return
+        }
     }
 
     if ($null -eq $type) {
         $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type (weapon/backpack/herbpouch/special)')
         if ($null -eq $type) {
             Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
+            return
+        }
+        if ($type -eq 'pocket') {
+            Write-LWWarn 'Pocket items can be removed manually, but not added with add. Use section automation instead.'
             return
         }
     }
@@ -1848,7 +1881,7 @@ function Add-LWInventoryInteractive {
 
 function Remove-LWInventoryItem {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][string]$Name,
         [int]$Quantity = 1
     )
@@ -1863,6 +1896,7 @@ function Remove-LWInventoryItem {
     $source = switch ($Type) {
         'weapon'   { @($script:GameState.Inventory.Weapons) }
         'backpack' { @($script:GameState.Inventory.BackpackItems) }
+        'pocket'   { @(Get-LWPocketSpecialItems) }
         'herbpouch' { @($script:GameState.Inventory.HerbPouchItems) }
         'special'  { @($script:GameState.Inventory.SpecialItems) }
     }
@@ -1885,6 +1919,7 @@ function Remove-LWInventoryItem {
     switch ($Type) {
         'weapon'   { $script:GameState.Inventory.Weapons = $remaining }
         'backpack' { $script:GameState.Inventory.BackpackItems = $remaining }
+        'pocket'   { $script:GameState.Inventory.PocketSpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items @($remaining)) }
         'herbpouch' { $script:GameState.Inventory.HerbPouchItems = $remaining }
         'special'  { $script:GameState.Inventory.SpecialItems = $remaining }
     }
@@ -1897,7 +1932,7 @@ function Remove-LWInventoryItem {
 
 function Remove-LWInventoryItemBySlot {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type,
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type,
         [Parameter(Mandatory = $true)][int]$Slot
     )
     Set-LWModuleContext -Context (Get-LWModuleContext)
@@ -1955,7 +1990,7 @@ function Remove-LWInventoryItemBySlot {
 
 function Remove-LWInventorySection {
     param(
-        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'herbpouch', 'special')][string]$Type
+        [Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type
     )
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
@@ -1965,6 +2000,14 @@ function Remove-LWInventorySection {
 
     if ($items.Count -eq 0) {
         Write-LWWarn "$label is empty."
+        return
+    }
+
+    if ($Type -eq 'pocket') {
+        Set-LWInventoryItems -Type 'pocket' -Items @()
+        [void](Sync-LWAchievements -Context 'inventory')
+        Write-LWInfo ("Removed all {0} pocket item{1}." -f $items.Count, $(if ($items.Count -eq 1) { '' } else { 's' }))
+        Invoke-LWMaybeAutosave
         return
     }
 
@@ -2095,15 +2138,15 @@ function Remove-LWInventoryInteractive {
     if ($InputParts.Count -gt 1) {
         $type = Resolve-LWInventoryType -Value $InputParts[1]
         if ($null -eq $type) {
-            Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
+            Write-LWWarn 'Type must be weapon, backpack, pocket, herbpouch, or special.'
             return
         }
     }
 
     if ($null -eq $type) {
-        $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type to remove (weapon/backpack/herbpouch/special)')
+        $type = Resolve-LWInventoryType -Value (Read-LWText -Prompt 'Item type to remove (weapon/backpack/pocket/herbpouch/special)')
         if ($null -eq $type) {
-            Write-LWWarn 'Type must be weapon, backpack, herbpouch, or special.'
+            Write-LWWarn 'Type must be weapon, backpack, pocket, herbpouch, or special.'
             return
         }
     }
@@ -2192,6 +2235,10 @@ function Restore-LWInventoryInteractive {
     $type = Resolve-LWInventoryType -Value $selection
     if ($null -eq $type) {
         Write-LWWarn 'Type must be weapon, backpack, herbpouch, special, or all.'
+        return
+    }
+    if ($type -eq 'pocket') {
+        Write-LWWarn 'Pocket items cannot be recovered. They can only be removed directly.'
         return
     }
 
