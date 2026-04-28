@@ -286,31 +286,31 @@ function Get-LWDifficultyDefinitions {
     return @(
         [pscustomobject]@{
             Name              = 'Story'
-            Description       = 'No normal END loss. Story and universal achievements only.'
+            Description       = 'No normal END loss. Full END restored between books.'
             AchievementNote   = 'Universal + Story achievements'
             PermadeathAllowed = $false
         },
         [pscustomobject]@{
             Name              = 'Easy'
-            Description       = 'Incoming END loss is halved.'
+            Description       = 'Incoming END loss is halved. Full END restored between books.'
             AchievementNote   = 'Universal achievements only'
             PermadeathAllowed = $true
         },
         [pscustomobject]@{
             Name              = 'Normal'
-            Description       = 'Standard Lone Wolf rules.'
+            Description       = 'Standard Lone Wolf rules, including current END carryover between books.'
             AchievementNote   = 'Universal + Combat achievements'
             PermadeathAllowed = $true
         },
         [pscustomobject]@{
             Name              = 'Hard'
-            Description       = 'Sommerswerd bonus halved. Healing capped at 10 END per book.'
+            Description       = 'Sommerswerd bonus halved. Healing capped at 10 END per book. Current END carries between books.'
             AchievementNote   = 'Universal + Combat + Challenge achievements'
             PermadeathAllowed = $true
         },
         [pscustomobject]@{
             Name              = 'Veteran'
-            Description       = 'Hard rules plus Sommerswerd only when the text allows it.'
+            Description       = 'Hard rules plus Sommerswerd only when the text allows it. Current END carries between books.'
             AchievementNote   = 'Universal + Combat + Challenge achievements'
             PermadeathAllowed = $true
         }

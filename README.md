@@ -310,21 +310,25 @@ newrun
 
 - `Story`
   Prevents normal END loss from gameplay damage.
+  Restores END to full between books.
   Uses universal and Story-only achievements.
   Cannot be combined with Permadeath.
 - `Easy`
   Halves incoming END loss.
+  Restores END to full between books.
   Uses universal achievements only.
 - `Normal`
-  Standard rules.
+  Standard rules, including current END carryover between books.
   Uses the standard universal, combat, and exploration pool.
 - `Hard`
   Halves the Sommerswerd combat bonus.
   Caps Healing at `10 END` restored per book.
+  Keeps current END carryover between books.
   Enables challenge achievements.
 - `Veteran`
   Uses Hard rules.
   Also requires the text to explicitly allow Sommerswerd power in each combat.
+  Keeps current END carryover between books.
   Enables challenge achievements.
 
 ### Permadeath
@@ -333,6 +337,7 @@ newrun
 - Cannot be turned off once chosen
 - Deletes the save file when the character dies
 - Disables rewind for that run
+- Keeps the classic current-END carryover between books
 - Unlocks Permadeath challenge achievements when the run stays clean
 
 ### Run Integrity

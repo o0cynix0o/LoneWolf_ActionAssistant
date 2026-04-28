@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added difficulty-based between-book END restoration:
+  - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
+  - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books
+  - `Hard`, `Veteran`, and `Permadeath` now also keep classic current-`ENDURANCE` carryover between books
+  - no other transfer rules changed; this only affects the between-book heal step
+  - refreshed the book-complete summary smoke to verify the `Book 6` -> `Book 7` transition behavior for `Story`, `Easy`, `Normal`, `Hard`, `Veteran`, and `Permadeath`
+  - validated in both shells via:
+    - `testing/logs/BOOK_COMPLETE_SUMMARY_SMOKE_PS7.txt`
+    - `testing/logs/BOOK_COMPLETE_SUMMARY_SMOKE_PS51.txt`
 - fixed the Book `7` section `1` `Power-key` grant and save compatibility:
   - Book `7` startup now guarantees the section `1` `Power-key` is added as a pocket-carried Special Item before the opening setup can leave you parked on section `1` without it
   - load normalization now repairs both older and current-format Book `7` section `1` saves that are missing the `Power-key`, then marks the `Book7PowerKeyClaimed` story flag so the fix persists on the next save

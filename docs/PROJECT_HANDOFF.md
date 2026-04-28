@@ -72,6 +72,13 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - the interactive `drop` prompt now accepts `pocket` as a removable inventory type
   - `drop pocket <slot>` and `drop pocket all` now work for current pocket-carried items
   - `add pocket` and `recover pocket` remain intentionally blocked so pocket items stay tied to section automation instead of the general inventory recovery system
+- latest `main` transition-healing rules update:
+  - between-book `ENDURANCE` restoration is now difficulty-driven instead of being hard-coded to early-book transitions
+  - `Story` and `Easy` now restore `ENDURANCE` to full when the next book begins
+  - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books
+  - `Hard`, `Veteran`, and `Permadeath` also keep classic current-`ENDURANCE` carryover between books
+  - no other handoff rules changed; carried weapons, Special Items, gold, and the existing future-transfer cleanup rules still behave the same
+  - the book-complete summary smoke now explicitly covers `Book 6` -> `Book 7` transitions for `Story`, `Easy`, `Normal`, `Hard`, `Veteran`, and `Permadeath`
 - current `main` UX hotfix:
   - mid-campaign book completions now stop on the book-complete recap screen before the next book's setup prompts begin
   - the book-complete recap now snapshots the just-finished book's final Gold, Endurance, notes count, and run-integrity state so the summary does not drift into the next book's state

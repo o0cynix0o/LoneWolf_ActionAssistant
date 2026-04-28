@@ -824,7 +824,7 @@ function Complete-LWBook {
 
     $nextBookStartSection = 1
     $script:GameState.Character.BookNumber = $nextBook
-    if ($nextBook -le 5) {
+    if (Test-LWShouldRestoreEnduranceOnBookTransition -State $script:GameState) {
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
     }
     $script:GameState.CurrentSection = $nextBookStartSection
@@ -972,6 +972,13 @@ function Select-LWRunConfiguration {
             }
         }
     }
+}
+
+function Test-LWShouldRestoreEnduranceOnBookTransition {
+    param([object]$State = $script:GameState)
+
+    $difficulty = Get-LWCurrentDifficulty -State $State
+    return (@('Story', 'Easy') -contains [string]$difficulty)
 }
 
 function Start-LWNewGameCore {
