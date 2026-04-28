@@ -58,8 +58,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - mid-campaign book completions now stop on the book-complete recap screen before the next book's setup prompts begin
   - the book-complete recap now snapshots the just-finished book's final Gold, Endurance, notes count, and run-integrity state so the summary does not drift into the next book's state
   - the recap panel now shows a fuller per-book run summary, including sections seen, END swings, gold gained/spent, deaths, rewinds, potions, meals, and final-state totals
-  - the recap screen now uses a wider no-truncation layout so long book titles, the completion quote, and combat-highlight lines render without `...`
-  - combat recap rows now include named shortest/longest fights, highest and lowest enemy CS/END callouts, highest win thresholds, average fight length, and weapon-usage summaries
+  - the recap screen now stays in the app's slimmer two-column panel layout instead of the brief full-width experiment
+  - combat recap rows now include named shortest/longest fights, highest and lowest enemy CS/END callouts, highest win thresholds, average fight length, and weapon-usage summaries, with the longer named highlights rendered on their own lines for readability
   - book achievements now render in a dedicated two-column per-book panel on the recap screen
 - latest `main` hotfix:
   - Book `6` section `170` `roll` now uses the live current state correctly in interactive play

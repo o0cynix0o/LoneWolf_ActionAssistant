@@ -4739,30 +4739,6 @@ function Show-LWHelp {
     Invoke-LWCoreShowHelpScreen -Context (Get-LWModuleContext)
 }
 
-function Get-LWBookCompletionCellText {
-    param(
-        [Parameter(Mandatory = $true)][string]$Label,
-        [Parameter(Mandatory = $true)][string]$Value,
-        [int]$LabelWidth = 15
-    )
-
-    return (Get-LWInlineKeyValueText -Label $Label -Value $Value -LabelWidth $LabelWidth)
-}
-
-function Get-LWBookCompletionMaxTextLength {
-    param([object[]]$Values)
-
-    $maxLength = 0
-    foreach ($value in @($Values)) {
-        $text = if ($null -eq $value) { '' } else { [string]$value }
-        if ($text.Length -gt $maxLength) {
-            $maxLength = $text.Length
-        }
-    }
-
-    return $maxLength
-}
-
 function Get-LWBookCompletionCombatEntries {
     param([int]$BookNumber)
 
@@ -4874,7 +4850,7 @@ function Get-LWBookCompletionCombatMetricText {
         return [string]$MetricValue
     }
 
-    return ('{0} ({1})' -f $MetricValue, ($uniqueNames -join ' / '))
+    return ('{0} ({1})' -f $MetricValue, ($uniqueNames -join ', '))
 }
 
 function Show-LWBookCompletionSummary {
@@ -4972,8 +4948,6 @@ function Show-LWBookCompletionSummary {
     $completedBooks = @(@($script:GameState.Character.CompletedBooks) | Where-Object { $null -ne $_ } | ForEach-Object { [int]$_ } | Sort-Object -Unique)
     $completedBooksCount = $completedBooks.Count
     $completedBooksText = if ($completedBooksCount -gt 0) { (@($completedBooks | ForEach-Object { [string]$_ }) -join ', ') } else { '(none)' }
-    $campaignStatusLabel = if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) { 'Next Book' } else { 'Campaign Status' }
-    $campaignStatusValue = if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) { $ContinueToBookLabel } else { 'Completed' }
     $carryForwardValue = if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) { "Ready to begin $ContinueToBookLabel" } else { 'Magnakai campaign complete' }
 
     $netEnd = [int]$Summary.EnduranceGained - [int]$Summary.EnduranceLost
@@ -5035,244 +5009,69 @@ function Show-LWBookCompletionSummary {
     $lowestEndText = if ($lowestEndurance -gt 0) { Get-LWBookCompletionCombatMetricText -MetricValue $lowestEndurance -Entries $combatEntries -MetricProperty 'EnemyEndurance' } else { '(none)' }
     $highestCSWinText = Get-LWBookCompletionCombatMetricText -MetricValue ([int]$Summary.HighestEnemyCombatSkillDefeated) -Entries $combatEntries -MetricProperty 'EnemyCombatSkill' -AllowedOutcomes $victoryOutcomes
     $highestEndWinText = Get-LWBookCompletionCombatMetricText -MetricValue ([int]$Summary.HighestEnemyEnduranceDefeated) -Entries $combatEntries -MetricProperty 'EnemyEndurance' -AllowedOutcomes $victoryOutcomes
-
-    $adventureRow1 = [pscustomobject]@{
-        Left        = Get-LWBookCompletionCellText -Label 'Character' -Value $CharacterName
-        Middle      = Get-LWBookCompletionCellText -Label 'Difficulty' -Value $difficulty
-        Right       = Get-LWBookCompletionCellText -Label 'Rule Set' -Value $ruleSet
-        LeftColor   = 'White'
-        MiddleColor = Get-LWDifficultyColor -Difficulty $difficulty
-        RightColor  = 'Gray'
+    Write-LWRetroPanelHeader -Title 'Adventure Complete' -AccentColor 'Green'
+    Write-LWRetroPanelPairRow -LeftLabel 'Character' -LeftValue $CharacterName -RightLabel 'Difficulty' -RightValue $difficulty -LeftColor 'White' -RightColor (Get-LWDifficultyColor -Difficulty $difficulty) -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Rule Set' -LeftValue $ruleSet -RightLabel 'Outcome' -RightValue 'Victory' -LeftColor 'Gray' -RightColor 'Green' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelKeyValueRow -Label 'Completed Book' -Value $completedBookLabel -ValueColor 'White'
+    if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) {
+        Write-LWRetroPanelKeyValueRow -Label 'Next Book' -Value $ContinueToBookLabel -ValueColor 'Cyan'
     }
-    $adventureRow2 = [pscustomobject]@{
-        Left       = Get-LWBookCompletionCellText -Label 'Outcome' -Value 'Victory'
-        Right      = Get-LWBookCompletionCellText -Label 'Completed Book' -Value $completedBookLabel
-        LeftColor  = 'Green'
-        RightColor = 'White'
+    else {
+        Write-LWRetroPanelKeyValueRow -Label 'Campaign Status' -Value 'Completed' -ValueColor 'Green'
     }
-    $adventureRow3 = [pscustomobject]@{
-        Left        = Get-LWBookCompletionCellText -Label $campaignStatusLabel -Value $campaignStatusValue
-        Middle      = Get-LWBookCompletionCellText -Label 'Books Complete' -Value ([string]$completedBooksCount)
-        Right       = Get-LWBookCompletionCellText -Label 'Permadeath' -Value $(if ($permadeathEnabled) { 'On' } else { 'Off' })
-        LeftColor   = $(if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) { 'Cyan' } else { 'Green' })
-        MiddleColor = 'Green'
-        RightColor  = $(if ($permadeathEnabled) { 'Red' } else { 'Gray' })
-    }
+    Write-LWRetroPanelPairRow -LeftLabel 'Books Complete' -LeftValue ([string]$completedBooksCount) -RightLabel 'Permadeath' -RightValue $(if ($permadeathEnabled) { 'On' } else { 'Off' }) -LeftColor 'Green' -RightColor $(if ($permadeathEnabled) { 'Red' } else { 'Gray' }) -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelWrappedKeyValueRows -Label 'Quote' -Value $completionQuote -ValueColor 'Gray'
+    Write-LWRetroPanelFooter
 
-    $playthroughRows = @(
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Sections Seen' -Value ([string]$Summary.SectionsVisited)
-            Middle      = Get-LWBookCompletionCellText -Label 'Unique Sections' -Value $uniqueSections
-            Right       = Get-LWBookCompletionCellText -Label 'Current Section' -Value ([string]$Summary.LastSection)
-            LeftColor   = 'Gray'
-            MiddleColor = 'Gray'
-            RightColor  = 'Gray'
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Notes Added' -Value ([string]$notesCount)
-            Middle      = Get-LWBookCompletionCellText -Label 'Run Integrity' -Value $runIntegrityState
-            Right       = Get-LWBookCompletionCellText -Label 'Combat Mode' -Value $combatMode
-            LeftColor   = 'Gray'
-            MiddleColor = Get-LWIntegrityColor -IntegrityState $runIntegrityState
-            RightColor  = Get-LWModeColor -Mode $combatMode
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Final Gold' -Value ("{0} / 50" -f $goldCrowns)
-            Middle      = Get-LWBookCompletionCellText -Label 'Final END' -Value ("{0} / {1}" -f $enduranceCurrent, $enduranceMax)
-            Right       = Get-LWBookCompletionCellText -Label 'END Lost' -Value ([string]$Summary.EnduranceLost)
-            LeftColor   = 'Yellow'
-            MiddleColor = Get-LWEnduranceColor -Current $enduranceCurrent -Max $enduranceMax
-            RightColor  = 'Red'
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'END Gained' -Value ([string]$Summary.EnduranceGained)
-            Middle      = Get-LWBookCompletionCellText -Label 'Gold Gained' -Value ([string]$Summary.GoldGained)
-            Right       = Get-LWBookCompletionCellText -Label 'Gold Spent' -Value ([string]$Summary.GoldSpent)
-            LeftColor   = 'Green'
-            MiddleColor = 'Yellow'
-            RightColor  = 'Yellow'
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Deaths' -Value $deathCount
-            Middle      = Get-LWBookCompletionCellText -Label 'Rewinds Used' -Value ([string]$Summary.RewindsUsed)
-            Right       = Get-LWBookCompletionCellText -Label 'Potions Used' -Value ([string]$Summary.PotionsUsed)
-            LeftColor   = 'Red'
-            MiddleColor = 'Yellow'
-            RightColor  = 'Green'
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Potion END' -Value ([string]$Summary.PotionEnduranceRestored)
-            Middle      = Get-LWBookCompletionCellText -Label 'Meals Eaten' -Value ([string]$Summary.MealsEaten)
-            Right       = Get-LWBookCompletionCellText -Label 'Hunting Meals' -Value ([string]$Summary.MealsCoveredByHunting)
-            LeftColor   = 'Green'
-            MiddleColor = 'Yellow'
-            RightColor  = 'Green'
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Net END' -Value $netEndText
-            Middle      = Get-LWBookCompletionCellText -Label 'Net Gold' -Value $netGoldText
-            Right       = ''
-            LeftColor   = $(if ($netEnd -ge 0) { 'Green' } else { 'Red' })
-            MiddleColor = 'Yellow'
-            RightColor  = 'DarkGray'
-        }
-    )
+    Write-LWRetroPanelHeader -Title 'This Playthrough' -AccentColor 'Cyan'
+    Write-LWRetroPanelPairRow -LeftLabel 'Sections Seen' -LeftValue ([string]$Summary.SectionsVisited) -RightLabel 'Unique Sections' -RightValue $uniqueSections -LeftColor 'Gray' -RightColor 'Gray' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Current Section' -LeftValue ([string]$Summary.LastSection) -RightLabel 'Notes Added' -RightValue ([string]$notesCount) -LeftColor 'Gray' -RightColor 'Gray' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Run Integrity' -LeftValue $runIntegrityState -RightLabel 'Combat Mode' -RightValue $combatMode -LeftColor (Get-LWIntegrityColor -IntegrityState $runIntegrityState) -RightColor (Get-LWModeColor -Mode $combatMode) -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Final Gold' -LeftValue ("{0} / 50" -f $goldCrowns) -RightLabel 'Final END' -RightValue ("{0} / {1}" -f $enduranceCurrent, $enduranceMax) -LeftColor 'Yellow' -RightColor (Get-LWEnduranceColor -Current $enduranceCurrent -Max $enduranceMax) -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'END Lost' -LeftValue ([string]$Summary.EnduranceLost) -RightLabel 'END Gained' -RightValue ([string]$Summary.EnduranceGained) -LeftColor 'Red' -RightColor 'Green' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Gold Gained' -LeftValue ([string]$Summary.GoldGained) -RightLabel 'Gold Spent' -RightValue ([string]$Summary.GoldSpent) -LeftColor 'Yellow' -RightColor 'Yellow' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Deaths' -LeftValue $deathCount -RightLabel 'Rewinds Used' -RightValue ([string]$Summary.RewindsUsed) -LeftColor 'Red' -RightColor 'Yellow' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Potions Used' -LeftValue ([string]$Summary.PotionsUsed) -RightLabel 'Potion END' -RightValue ([string]$Summary.PotionEnduranceRestored) -LeftColor 'Green' -RightColor 'Green' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Meals Eaten' -LeftValue ([string]$Summary.MealsEaten) -RightLabel 'Hunting Meals' -RightValue ([string]$Summary.MealsCoveredByHunting) -LeftColor 'Yellow' -RightColor 'Green' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Net END' -LeftValue $netEndText -RightLabel 'Net Gold' -RightValue $netGoldText -LeftColor $(if ($netEnd -ge 0) { 'Green' } else { 'Red' }) -RightColor 'Yellow' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelFooter
 
-    $combatTopRows = @(
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Combats Fought' -Value ([string]$Summary.CombatCount)
-            Middle      = Get-LWBookCompletionCellText -Label 'Victories' -Value ([string]$Summary.Victories)
-            Right       = Get-LWBookCompletionCellText -Label 'Defeats' -Value ([string]$Summary.Defeats)
-            LeftColor   = 'Gray'
-            MiddleColor = 'Green'
-            RightColor  = 'Red'
-        }
-        [pscustomobject]@{
-            Left        = Get-LWBookCompletionCellText -Label 'Evades' -Value ([string]$Summary.Evades)
-            Middle      = Get-LWBookCompletionCellText -Label 'Total Rounds' -Value ([string]$Summary.RoundsFought)
-            Right       = Get-LWBookCompletionCellText -Label 'Mindblast Wins' -Value ([string]$Summary.MindblastVictories)
-            LeftColor   = 'Yellow'
-            MiddleColor = 'Gray'
-            RightColor  = 'Cyan'
-        }
-    )
-    $combatDetailRows = @(
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Shortest Fight' -Value $fastestFightText
-            Right      = Get-LWBookCompletionCellText -Label 'Longest Fight' -Value $longestFightText
-            LeftColor  = 'Green'
-            RightColor = 'Yellow'
-        }
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Highest CS' -Value $highestCSFacedText
-            Right      = Get-LWBookCompletionCellText -Label 'Lowest CS' -Value $lowestCSText
-            LeftColor  = 'Cyan'
-            RightColor = 'Gray'
-        }
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Highest END' -Value $highestEndFacedText
-            Right      = Get-LWBookCompletionCellText -Label 'Lowest END' -Value $lowestEndText
-            LeftColor  = 'Red'
-            RightColor = 'Gray'
-        }
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Easiest Win' -Value $easiestWinText
-            Right      = Get-LWBookCompletionCellText -Label 'Highest CS Win' -Value $highestCSWinText
-            LeftColor  = 'Green'
-            RightColor = 'Cyan'
-        }
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Highest END Win' -Value $highestEndWinText
-            Right      = Get-LWBookCompletionCellText -Label 'Average Fight' -Value $averageFightText
-            LeftColor  = 'Red'
-            RightColor = 'Gray'
-        }
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Weapons Used' -Value $weaponUsage
-            Right      = Get-LWBookCompletionCellText -Label 'Weapon Wins' -Value $weaponVictories
-            LeftColor  = 'Gray'
-            RightColor = 'Gray'
-        }
-    )
+    Write-LWRetroPanelHeader -Title 'Combat Record' -AccentColor 'Red'
+    Write-LWRetroPanelPairRow -LeftLabel 'Combats Fought' -LeftValue ([string]$Summary.CombatCount) -RightLabel 'Victories' -RightValue ([string]$Summary.Victories) -LeftColor 'Gray' -RightColor 'Green' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Defeats' -LeftValue ([string]$Summary.Defeats) -RightLabel 'Evades' -RightValue ([string]$Summary.Evades) -LeftColor 'Red' -RightColor 'Yellow' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelPairRow -LeftLabel 'Total Rounds' -LeftValue ([string]$Summary.RoundsFought) -RightLabel 'Mindblast Wins' -RightValue ([string]$Summary.MindblastVictories) -LeftColor 'Gray' -RightColor 'Cyan' -LeftLabelWidth 15 -RightLabelWidth 15
+    Write-LWRetroPanelDivider
+    Write-LWRetroPanelKeyValueRow -Label 'Shortest Fight' -Value $fastestFightText -ValueColor 'Green'
+    Write-LWRetroPanelKeyValueRow -Label 'Longest Fight' -Value $longestFightText -ValueColor 'Yellow'
+    Write-LWRetroPanelKeyValueRow -Label 'Highest CS' -Value $highestCSFacedText -ValueColor 'Cyan'
+    Write-LWRetroPanelKeyValueRow -Label 'Lowest CS' -Value $lowestCSText -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Highest END' -Value $highestEndFacedText -ValueColor 'Red'
+    Write-LWRetroPanelKeyValueRow -Label 'Lowest END' -Value $lowestEndText -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Highest CS Win' -Value $highestCSWinText -ValueColor 'Cyan'
+    Write-LWRetroPanelKeyValueRow -Label 'Highest END Win' -Value $highestEndWinText -ValueColor 'Red'
+    Write-LWRetroPanelKeyValueRow -Label 'Easiest Win' -Value $easiestWinText -ValueColor 'Green'
+    Write-LWRetroPanelKeyValueRow -Label 'Average Fight' -Value $averageFightText -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Weapons Used' -Value $weaponUsage -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Weapon Wins' -Value $weaponVictories -ValueColor 'Gray'
+    Write-LWRetroPanelFooter
 
-    $achievementRows = @()
+    Write-LWRetroPanelHeader -Title ("Book {0} Achievements" -f $bookNumber) -AccentColor 'Magenta'
     if ($bookAchievements.Count -eq 0) {
-        $achievementRows += [pscustomobject]@{
-            Left  = '(none recorded)'
-            Right = ''
-        }
+        Write-LWRetroPanelTextRow -Text '(none recorded)' -TextColor 'DarkGray'
     }
     else {
         for ($i = 0; $i -lt $bookAchievements.Count; $i += 2) {
-            $achievementRows += [pscustomobject]@{
-                Left  = [string](Get-LWAchievementUnlockedDisplayName -Entry $bookAchievements[$i])
-                Right = $(if (($i + 1) -lt $bookAchievements.Count) { [string](Get-LWAchievementUnlockedDisplayName -Entry $bookAchievements[$i + 1]) } else { '' })
-            }
+            $leftText = [string](Get-LWAchievementUnlockedDisplayName -Entry $bookAchievements[$i])
+            $rightText = if (($i + 1) -lt $bookAchievements.Count) { [string](Get-LWAchievementUnlockedDisplayName -Entry $bookAchievements[$i + 1]) } else { '' }
+            Write-LWRetroPanelTwoColumnRow -LeftText $leftText -RightText $rightText -LeftColor 'Gray' -RightColor 'Gray' -LeftWidth 27 -Gap 2
         }
     }
+    Write-LWRetroPanelFooter
 
-    $campaignRows = @(
-        [pscustomobject]@{
-            Left       = Get-LWBookCompletionCellText -Label 'Books Complete' -Value $completedBooksText
-            Right      = Get-LWBookCompletionCellText -Label 'Carry Forward' -Value $carryForwardValue
-            LeftColor  = 'Gray'
-            RightColor = $(if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) { 'Cyan' } else { 'Green' })
-        }
-    )
-
-    $threeGap = 4
-    $twoGap = 4
-    $achievementGap = 6
-    $quoteLabelWidth = 15
-
-    $adventureThreeLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($adventureRow1.Left, $adventureRow3.Left)
-    $adventureThreeMiddleWidth = Get-LWBookCompletionMaxTextLength -Values @($adventureRow1.Middle, $adventureRow3.Middle)
-    $adventureThreeRightWidth = Get-LWBookCompletionMaxTextLength -Values @($adventureRow1.Right, $adventureRow3.Right)
-    $adventureTwoLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($adventureRow2.Left)
-    $adventureTwoRightWidth = Get-LWBookCompletionMaxTextLength -Values @($adventureRow2.Right)
-
-    $playLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($playthroughRows | ForEach-Object { $_.Left })
-    $playMiddleWidth = Get-LWBookCompletionMaxTextLength -Values @($playthroughRows | ForEach-Object { $_.Middle })
-    $playRightWidth = Get-LWBookCompletionMaxTextLength -Values @($playthroughRows | ForEach-Object { $_.Right })
-
-    $combatTopLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($combatTopRows | ForEach-Object { $_.Left })
-    $combatTopMiddleWidth = Get-LWBookCompletionMaxTextLength -Values @($combatTopRows | ForEach-Object { $_.Middle })
-    $combatTopRightWidth = Get-LWBookCompletionMaxTextLength -Values @($combatTopRows | ForEach-Object { $_.Right })
-    $combatDetailLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($combatDetailRows | ForEach-Object { $_.Left })
-    $combatDetailRightWidth = Get-LWBookCompletionMaxTextLength -Values @($combatDetailRows | ForEach-Object { $_.Right })
-
-    $achievementLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($achievementRows | ForEach-Object { $_.Left })
-    $achievementRightWidth = Get-LWBookCompletionMaxTextLength -Values @($achievementRows | ForEach-Object { $_.Right })
-
-    $campaignLeftWidth = Get-LWBookCompletionMaxTextLength -Values @($campaignRows | ForEach-Object { $_.Left })
-    $campaignRightWidth = Get-LWBookCompletionMaxTextLength -Values @($campaignRows | ForEach-Object { $_.Right })
-
-    $widthCandidates = @(
-        132,
-        (4 + $adventureThreeLeftWidth + $threeGap + $adventureThreeMiddleWidth + $threeGap + $adventureThreeRightWidth),
-        (4 + $adventureTwoLeftWidth + $twoGap + $adventureTwoRightWidth),
-        (4 + ("{0,-$quoteLabelWidth}: " -f 'Quote').Length + $completionQuote.Length),
-        (4 + $playLeftWidth + $threeGap + $playMiddleWidth + $threeGap + $playRightWidth),
-        (4 + $combatTopLeftWidth + $threeGap + $combatTopMiddleWidth + $threeGap + $combatTopRightWidth),
-        (4 + $combatDetailLeftWidth + $twoGap + $combatDetailRightWidth),
-        (4 + $achievementLeftWidth + $achievementGap + $achievementRightWidth),
-        (4 + $campaignLeftWidth + $twoGap + $campaignRightWidth)
-    )
-    $panelWidth = [int](($widthCandidates | Measure-Object -Maximum).Maximum)
-
-    Write-LWRetroPanelHeader -Title 'Adventure Complete' -AccentColor 'Green' -Width $panelWidth
-    Write-LWRetroPanelThreeColumnRow -LeftText $adventureRow1.Left -MiddleText $adventureRow1.Middle -RightText $adventureRow1.Right -LeftColor $adventureRow1.LeftColor -MiddleColor $adventureRow1.MiddleColor -RightColor $adventureRow1.RightColor -Width $panelWidth -Gap $threeGap -LeftWidth $adventureThreeLeftWidth -MiddleWidth $adventureThreeMiddleWidth
-    Write-LWRetroPanelTwoColumnRow -LeftText $adventureRow2.Left -RightText $adventureRow2.Right -LeftColor $adventureRow2.LeftColor -RightColor $adventureRow2.RightColor -Width $panelWidth -Gap $twoGap -LeftWidth $adventureTwoLeftWidth
-    Write-LWRetroPanelThreeColumnRow -LeftText $adventureRow3.Left -MiddleText $adventureRow3.Middle -RightText $adventureRow3.Right -LeftColor $adventureRow3.LeftColor -MiddleColor $adventureRow3.MiddleColor -RightColor $adventureRow3.RightColor -Width $panelWidth -Gap $threeGap -LeftWidth $adventureThreeLeftWidth -MiddleWidth $adventureThreeMiddleWidth
-    Write-LWRetroPanelKeyValueRow -Label 'Quote' -Value $completionQuote -ValueColor 'Gray' -Width $panelWidth -LabelWidth $quoteLabelWidth
-    Write-LWRetroPanelFooter -Width $panelWidth
-
-    Write-LWRetroPanelHeader -Title 'This Playthrough' -AccentColor 'Cyan' -Width $panelWidth
-    foreach ($row in $playthroughRows) {
-        Write-LWRetroPanelThreeColumnRow -LeftText $row.Left -MiddleText $row.Middle -RightText $row.Right -LeftColor $row.LeftColor -MiddleColor $row.MiddleColor -RightColor $row.RightColor -Width $panelWidth -Gap $threeGap -LeftWidth $playLeftWidth -MiddleWidth $playMiddleWidth
-    }
-    Write-LWRetroPanelFooter -Width $panelWidth
-
-    Write-LWRetroPanelHeader -Title 'Combat Record' -AccentColor 'Red' -Width $panelWidth
-    foreach ($row in $combatTopRows) {
-        Write-LWRetroPanelThreeColumnRow -LeftText $row.Left -MiddleText $row.Middle -RightText $row.Right -LeftColor $row.LeftColor -MiddleColor $row.MiddleColor -RightColor $row.RightColor -Width $panelWidth -Gap $threeGap -LeftWidth $combatTopLeftWidth -MiddleWidth $combatTopMiddleWidth
-    }
-    foreach ($row in $combatDetailRows) {
-        Write-LWRetroPanelTwoColumnRow -LeftText $row.Left -RightText $row.Right -LeftColor $row.LeftColor -RightColor $row.RightColor -Width $panelWidth -Gap $twoGap -LeftWidth $combatDetailLeftWidth
-    }
-    Write-LWRetroPanelFooter -Width $panelWidth
-
-    Write-LWRetroPanelHeader -Title ("Book {0} Achievements" -f $bookNumber) -AccentColor 'Magenta' -Width $panelWidth
-    foreach ($row in $achievementRows) {
-        Write-LWRetroPanelTwoColumnRow -LeftText $row.Left -RightText $row.Right -LeftColor 'Gray' -RightColor 'Gray' -Width $panelWidth -Gap $achievementGap -LeftWidth $achievementLeftWidth
-    }
-    Write-LWRetroPanelFooter -Width $panelWidth
-
-    Write-LWRetroPanelHeader -Title 'Campaign Progress' -AccentColor 'DarkYellow' -Width $panelWidth
-    foreach ($row in $campaignRows) {
-        Write-LWRetroPanelTwoColumnRow -LeftText $row.Left -RightText $row.Right -LeftColor $row.LeftColor -RightColor $row.RightColor -Width $panelWidth -Gap $twoGap -LeftWidth $campaignLeftWidth
-    }
-    Write-LWRetroPanelFooter -Width $panelWidth
+    Write-LWRetroPanelHeader -Title 'Campaign Progress' -AccentColor 'DarkYellow'
+    Write-LWRetroPanelKeyValueRow -Label 'Books Complete' -Value $completedBooksText -ValueColor 'Gray'
+    Write-LWRetroPanelKeyValueRow -Label 'Carry Forward' -Value $carryForwardValue -ValueColor $(if (-not [string]::IsNullOrWhiteSpace($ContinueToBookLabel)) { 'Cyan' } else { 'Green' })
+    Write-LWRetroPanelFooter
 }
 
 Export-ModuleMember -Function Write-LWInlineWarn, Write-LWLootNoRoomWarning, Format-LWCompletedBooks, Get-LWBookCompletionQuote, Show-LWSectionGateHints, Get-LWScreenAccentColor, Get-LWScreenBannerStatusText, Get-LWInlineKeyValueText, Write-LWRetroPanelPairRow, New-LWHelpfulCommandRow, Get-LWHelpfulCommandRows, Show-LWHelpfulCommandsPanel, Get-LWCompactRunHistoryLines, Write-LWBanner, Write-LWCommandPromptHint, Write-LWScreenFooterNote, Show-LWDisciplines, Show-LWNotes, Show-LWRunDifficulty, Show-LWRunPermadeath, Show-LWHelp, Show-LWBookCompletionSummary, Get-LWAvailableSectionChoices, Grant-LWSectionGenericChoice, Invoke-LWSectionGoldReward, Invoke-LWSectionPaymentChoice, Invoke-LWSectionChoiceTable
