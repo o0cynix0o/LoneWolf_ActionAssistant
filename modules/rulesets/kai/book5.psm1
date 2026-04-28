@@ -377,6 +377,10 @@ function Apply-LWKaiBookFiveStartingEquipment {
             Invoke-LWBookTransitionSafekeepingPrompt -BookNumber 5
         }
 
+        if ($CarryExistingGear) {
+            Clear-LWLegacyBackpackCarryover -WriteMessages
+        }
+
         if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfVassagoniaItemNames) -Type 'special')) {
             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Map of Vassagonia') {
                 Write-LWInfo 'Book 5 starting Special Item added: Map of Vassagonia.'

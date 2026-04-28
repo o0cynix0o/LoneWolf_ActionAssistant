@@ -58,6 +58,11 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - Book `7` startup now preserves the `3` Weaponmastery weapons already earned in a carried-over Book `6` run and prompts only for the one new mastery slot needed to reach the Book `7` total of `4`
   - this matches the original Magnakai Weaponmastery progression text instead of forcing a full `4`-weapon re-pick during the Book `6` -> `7` handoff
   - the Book `7` startup smoke now explicitly verifies that the original mastered set survives the transition and that exactly one new mastery is appended
+- latest `main` future-transfer rules fix:
+  - future carried-over starts for Books `2-7` now follow the source-text rule that old `Backpack Items` do not carry between adventures during the Kai and Magnakai series
+  - the fix is forward-only for local play: existing saves are left as-is, but future book-to-book transfers now clear old `Backpack Items` before the new book's starting-equipment picks begin
+  - Book `6` -> `7` transitions now also clear old `Herb Pouch` contents and the carried `Herb Pouch` state so Book `6` potion storage does not bleed into Book `7`
+  - carried `Weapons`, `Special Items`, and `Gold` still survive these pre-Book-13 handoffs as before
 - current `main` UX hotfix:
   - mid-campaign book completions now stop on the book-complete recap screen before the next book's setup prompts begin
   - the book-complete recap now snapshots the just-finished book's final Gold, Endurance, notes count, and run-integrity state so the summary does not drift into the next book's state

@@ -691,6 +691,56 @@ function Restore-LWBackpackState {
     Set-LWBackpackState -HasBackpack:$true -WriteMessages:$WriteMessages
 }
 
+function Clear-LWLegacyBackpackCarryover {
+    param([switch]$WriteMessages)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+
+    if (-not (Test-LWHasState)) {
+        return
+    }
+
+    $backpackItems = @($script:GameState.Inventory.BackpackItems)
+    $herbPouchItems = @($script:GameState.Inventory.HerbPouchItems)
+    $confiscatedBackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems)
+    $confiscatedHerbPouchItems = @($script:GameState.Storage.Confiscated.HerbPouchItems)
+    $recoveryBackpackItems = @(Get-LWInventoryRecoveryItems -Type 'backpack')
+    $recoveryHerbPouchItems = @(Get-LWInventoryRecoveryItems -Type 'herbpouch')
+    $hadHerbPouch = (
+        [bool]$script:GameState.Inventory.HasHerbPouch -or
+        [bool]$script:GameState.Storage.Confiscated.HasHerbPouch -or
+        $herbPouchItems.Count -gt 0 -or
+        $confiscatedHerbPouchItems.Count -gt 0 -or
+        $recoveryHerbPouchItems.Count -gt 0)
+
+    Set-LWInventoryItems -Type 'backpack' -Items @()
+    Set-LWInventoryItems -Type 'herbpouch' -Items @()
+    $script:GameState.Inventory.HasHerbPouch = $false
+    $script:GameState.Storage.Confiscated.BackpackItems = @()
+    $script:GameState.Storage.Confiscated.HerbPouchItems = @()
+    $script:GameState.Storage.Confiscated.HasHerbPouch = $false
+    Clear-LWInventoryRecoveryEntry -Type 'backpack'
+    Clear-LWInventoryRecoveryEntry -Type 'herbpouch'
+    Sync-LWStateEquipmentBonuses -State $script:GameState -WriteMessages
+
+    if (-not $WriteMessages -or ($backpackItems.Count -eq 0 -and $herbPouchItems.Count -eq 0 -and $confiscatedBackpackItems.Count -eq 0 -and $confiscatedHerbPouchItems.Count -eq 0 -and $recoveryBackpackItems.Count -eq 0 -and $recoveryHerbPouchItems.Count -eq 0 -and -not $hadHerbPouch)) {
+        return
+    }
+
+    $leftBehind = @()
+    $allBackpackItems = @($backpackItems + $confiscatedBackpackItems + $recoveryBackpackItems)
+    $allHerbPouchItems = @($herbPouchItems + $confiscatedHerbPouchItems + $recoveryHerbPouchItems)
+    if ($allBackpackItems.Count -gt 0) {
+        $leftBehind += ('Backpack: {0}' -f (Format-LWList -Items $allBackpackItems))
+    }
+    if ($hadHerbPouch -or $allHerbPouchItems.Count -gt 0) {
+        $herbPouchValue = if ($allHerbPouchItems.Count -gt 0) { (Format-LWList -Items $allHerbPouchItems) } else { '(empty)' }
+        $leftBehind += ('Herb Pouch: {0}' -f $herbPouchValue)
+    }
+
+    Write-LWInfo ("Books 1-12 do not carry Backpack Items between adventures. Previous pack gear is left behind: {0}." -f ($leftBehind -join '; '))
+}
+
 function Get-LWConfiscatedInventorySummaryText {
     param([object]$State = $script:GameState)
     Set-LWModuleContext -Context (Get-LWModuleContext)
@@ -2169,5 +2219,5 @@ function Set-LWGold {
     Invoke-LWMaybeAutosave
 }
 
-Export-ModuleMember -Function Resolve-LWInventoryType, Get-LWInventoryTypeLabel, Get-LWInventoryTypeColor, Get-LWInventoryTypeCapacity, Get-LWLongRopeItemNames, Get-LWBackpackItemSlotSize, Get-LWBackpackOccupiedSlotCount, Get-LWInventoryUsedCapacity, Get-LWBackpackSlotMap, Get-LWInventoryItems, Set-LWInventoryItems, Get-LWPocketSpecialItems, Test-LWStateHasPocketSpecialItem, TryAdd-LWPocketSpecialItemSilently, Remove-LWPocketSpecialItemSilently, Normalize-LWInventoryItemCollection, Move-LWHerbPouchPotionItemsFromBackpack, Grant-LWHerbPouch, TryAdd-LWPreferredPotionStorageSilently, Sync-LWHerbPouchState, Set-LWBackpackState, Lose-LWBackpack, Restore-LWBackpackState, Get-LWConfiscatedInventorySummaryText, Test-LWStateHasConfiscatedEquipment, Save-LWConfiscatedEquipment, Restore-LWConfiscatedEquipment, Move-LWSpecialItemsToSafekeeping, Move-LWSpecialItemsFromSafekeeping, Add-LWWeaponWithOptionalReplace, Get-LWRecoveryStashPropertyName, Get-LWRecoveryStashEntry, Save-LWInventoryRecoveryEntry, Clear-LWInventoryRecoveryEntry, Get-LWInventoryRecoveryItems, Show-LWInventorySlotsSection, Get-LWInventorySlotDisplayText, Show-LWInventorySlotsGridSection, Show-LWInventorySummary, Get-LWInventoryNoteRows, Show-LWInventoryNotesPanel, Show-LWInventory, Show-LWSheet, Add-LWInventoryItem, TryAdd-LWInventoryItemSilently, Remove-LWInventoryItemSilently, Add-LWInventoryInteractive, Remove-LWInventoryItem, Remove-LWInventoryItemBySlot, Remove-LWInventorySection, Test-LWInventoryRecoveryFits, Restore-LWInventorySection, Restore-LWAllInventorySections, Remove-LWInventoryInteractive, Restore-LWInventoryInteractive, Set-LWGold
+Export-ModuleMember -Function Resolve-LWInventoryType, Get-LWInventoryTypeLabel, Get-LWInventoryTypeColor, Get-LWInventoryTypeCapacity, Get-LWLongRopeItemNames, Get-LWBackpackItemSlotSize, Get-LWBackpackOccupiedSlotCount, Get-LWInventoryUsedCapacity, Get-LWBackpackSlotMap, Get-LWInventoryItems, Set-LWInventoryItems, Get-LWPocketSpecialItems, Test-LWStateHasPocketSpecialItem, TryAdd-LWPocketSpecialItemSilently, Remove-LWPocketSpecialItemSilently, Normalize-LWInventoryItemCollection, Move-LWHerbPouchPotionItemsFromBackpack, Grant-LWHerbPouch, TryAdd-LWPreferredPotionStorageSilently, Sync-LWHerbPouchState, Set-LWBackpackState, Lose-LWBackpack, Restore-LWBackpackState, Clear-LWLegacyBackpackCarryover, Get-LWConfiscatedInventorySummaryText, Test-LWStateHasConfiscatedEquipment, Save-LWConfiscatedEquipment, Restore-LWConfiscatedEquipment, Move-LWSpecialItemsToSafekeeping, Move-LWSpecialItemsFromSafekeeping, Add-LWWeaponWithOptionalReplace, Get-LWRecoveryStashPropertyName, Get-LWRecoveryStashEntry, Save-LWInventoryRecoveryEntry, Clear-LWInventoryRecoveryEntry, Get-LWInventoryRecoveryItems, Show-LWInventorySlotsSection, Get-LWInventorySlotDisplayText, Show-LWInventorySlotsGridSection, Show-LWInventorySummary, Get-LWInventoryNoteRows, Show-LWInventoryNotesPanel, Show-LWInventory, Show-LWSheet, Add-LWInventoryItem, TryAdd-LWInventoryItemSilently, Remove-LWInventoryItemSilently, Add-LWInventoryInteractive, Remove-LWInventoryItem, Remove-LWInventoryItemBySlot, Remove-LWInventorySection, Test-LWInventoryRecoveryFits, Restore-LWInventorySection, Restore-LWAllInventorySections, Remove-LWInventoryInteractive, Restore-LWInventoryInteractive, Set-LWGold
 

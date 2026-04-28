@@ -1104,9 +1104,13 @@ function Apply-LWMagnakaiBookSevenStartingEquipment {
         Invoke-LWBookTransitionSafekeepingPrompt -BookNumber 7
     }
 
+    if ($CarryExistingGear) {
+        Clear-LWLegacyBackpackCarryover -WriteMessages
+    }
+
     Restore-LWBackpackState
     if ($CarryExistingGear) {
-        Write-LWInfo 'Book 7 carry-over preserves your current Weapons, Backpack Items, and Special Items.'
+        Write-LWInfo 'Book 7 carry-over preserves your current Weapons and Special Items.'
     }
 
     $startingGoldRoll = Get-LWRandomDigit

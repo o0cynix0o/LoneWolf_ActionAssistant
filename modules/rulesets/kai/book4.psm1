@@ -266,6 +266,10 @@ function Apply-LWKaiBookFourStartingEquipment {
             return
         }
 
+        if ($CarryExistingGear) {
+            Clear-LWLegacyBackpackCarryover -WriteMessages
+        }
+
         if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfSouthlandsItemNames) -Type 'special')) {
             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Map of the Southlands') {
                 Write-LWInfo 'Book 4 starting Special Item added: Map of the Southlands.'

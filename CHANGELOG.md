@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- corrected legacy-series book-to-book inventory carry-over for future transitions:
+  - through Books `1-12`, old `Backpack Items` should not carry into the next adventure; only carried `Weapons`, `Special Items`, and `Gold` survive the handoff
+  - future carried-over starts for the currently implemented Books `2-7` now clear old `Backpack Items` before the new book's starting-equipment picks begin
+  - Book `6` -> `7` transitions also clear old `Herb Pouch` contents and the carried `Herb Pouch` state, so late-Magnakai starts no longer preserve Book `6` potion storage into Book `7`
+  - existing saves are not retro-corrected; this fix only changes future book-to-book transfers
+  - added/updated Book `7` startup regression coverage to verify a carried weapon survives while old backpack and herb-pouch items do not
+  - validated in both shells via:
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
 - fixed Book `6` -> Book `7` `Weaponmastery` carry-over:
   - when a carried-over Magnakai run already had `Weaponmastery` plus `3` mastered weapons from Book `6`, Book `7` startup was incorrectly making the player re-pick `4` weapons instead of preserving the existing `3` and adding only `1` more
   - Book `7` carry-over now keeps the mastered weapons you already earned and only prompts for the missing Weaponmastery slot needed to reach the Book `7` total of `4`

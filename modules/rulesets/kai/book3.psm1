@@ -195,6 +195,10 @@ function Apply-LWKaiBookThreeStartingEquipment {
             return
         }
 
+        if ($CarryExistingGear) {
+            Clear-LWLegacyBackpackCarryover -WriteMessages
+        }
+
         if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfKalteItemNames) -Type 'special')) {
             if (TryAdd-LWInventoryItemSilently -Type 'special' -Name 'Map of Kalte') {
                 Write-LWInfo 'Book 3 starting Special Item added: Map of Kalte.'

@@ -186,6 +186,10 @@ function Apply-LWKaiBookTwoStartingEquipment {
             return
         }
 
+        if ($CarryExistingGear) {
+            Clear-LWLegacyBackpackCarryover -WriteMessages
+        }
+
         $startingGoldRoll = Get-LWRandomDigit
         $goldGain = 10 + [int]$startingGoldRoll
         $oldGold = [int]$script:GameState.Inventory.GoldCrowns

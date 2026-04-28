@@ -2712,9 +2712,13 @@ function Apply-LWMagnakaiBookSixStartingEquipment {
         Invoke-LWBookTransitionSafekeepingPrompt -BookNumber 6
     }
 
+    if ($CarryExistingGear) {
+        Clear-LWLegacyBackpackCarryover -WriteMessages
+    }
+
     Restore-LWBackpackState
     if ($CarryExistingGear) {
-        Write-LWInfo 'Book 6 DE carry-over preserves your current Weapons, Backpack Items, and Special Items.'
+        Write-LWInfo 'Book 6 DE carry-over preserves your current Weapons and Special Items.'
     }
 
     if (-not (Test-LWStateHasInventoryItem -State $script:GameState -Names (Get-LWMapOfStornlandsItemNames) -Type 'special')) {
