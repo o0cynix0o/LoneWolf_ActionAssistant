@@ -6,6 +6,13 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- fixed Book `6` -> Book `7` `Weaponmastery` carry-over:
+  - when a carried-over Magnakai run already had `Weaponmastery` plus `3` mastered weapons from Book `6`, Book `7` startup was incorrectly making the player re-pick `4` weapons instead of preserving the existing `3` and adding only `1` more
+  - Book `7` carry-over now keeps the mastered weapons you already earned and only prompts for the missing Weaponmastery slot needed to reach the Book `7` total of `4`
+  - added a Book `7` startup regression that verifies the original `3` mastered weapons survive the transition and only one new mastery is appended
+  - validated in both shells via:
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
 - improved the book-complete recap flow:
   - mid-campaign book finishes now stop on the rendered recap screen before the next book's setup begins
   - the recap now snapshots the completed book's final Gold, Endurance, notes count, and integrity state so the summary still reflects the book you just finished

@@ -54,6 +54,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
 - current stabilization work on `main` is architecture hardening cleanup, recent Book `6` DE support, and Book `7` validation after the `0.8.0` release
+- latest `main` carry-over hotfix:
+  - Book `7` startup now preserves the `3` Weaponmastery weapons already earned in a carried-over Book `6` run and prompts only for the one new mastery slot needed to reach the Book `7` total of `4`
+  - this matches the original Magnakai Weaponmastery progression text instead of forcing a full `4`-weapon re-pick during the Book `6` -> `7` handoff
+  - the Book `7` startup smoke now explicitly verifies that the original mastered set survives the transition and that exactly one new mastery is appended
 - current `main` UX hotfix:
   - mid-campaign book completions now stop on the book-complete recap screen before the next book's setup prompts begin
   - the book-complete recap now snapshots the just-finished book's final Gold, Endurance, notes count, and run-integrity state so the summary does not drift into the next book's state

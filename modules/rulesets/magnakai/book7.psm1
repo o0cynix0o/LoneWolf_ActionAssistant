@@ -1089,9 +1089,13 @@ function Apply-LWMagnakaiBookSevenStartingEquipment {
     if ([int]$script:GameState.Character.MagnakaiRank -lt $requiredDisciplines) {
         $script:GameState.Character.MagnakaiRank = $requiredDisciplines
     }
-    if (@($script:GameState.Character.MagnakaiDisciplines) -contains 'Weaponmastery' -and @($script:GameState.Character.WeaponmasteryWeapons).Count -lt $requiredDisciplines) {
-        $script:GameState.Character.WeaponmasteryWeapons = @(Select-LWWeaponmasteryWeapons -Count $requiredDisciplines -Exclude @($script:GameState.Character.WeaponmasteryWeapons))
-        Write-LWInfo ("Weaponmastery selection: {0}" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
+    if (@($script:GameState.Character.MagnakaiDisciplines) -contains 'Weaponmastery') {
+        $ownedWeaponmasteryWeapons = @($script:GameState.Character.WeaponmasteryWeapons)
+        $neededWeaponmasteryWeapons = $requiredDisciplines - $ownedWeaponmasteryWeapons.Count
+        if ($neededWeaponmasteryWeapons -gt 0) {
+            $script:GameState.Character.WeaponmasteryWeapons = @($ownedWeaponmasteryWeapons + @(Select-LWWeaponmasteryWeapons -Count $neededWeaponmasteryWeapons -Exclude $ownedWeaponmasteryWeapons))
+            Write-LWInfo ("Weaponmastery selection: {0}" -f (@($script:GameState.Character.WeaponmasteryWeapons) -join ', '))
+        }
     }
 
     Sync-LWMagnakaiLoreCircleBonuses -State $script:GameState -WriteMessages

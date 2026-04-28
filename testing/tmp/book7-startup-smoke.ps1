@@ -28,6 +28,17 @@ function Set-LWBookSevenStartupSmokeQueues {
     foreach ($value in @($YesNo)) { $script:YesNoQueue.Enqueue([bool]$value) }
 }
 
+function global:Read-LWPromptLine {
+    param(
+        [string]$Prompt = '',
+        [switch]$ReturnNullOnEof
+    )
+
+    if ($script:TextQueue.Count -gt 0) { return [string]$script:TextQueue.Dequeue() }
+    if ($ReturnNullOnEof) { return $null }
+    return ''
+}
+
 function global:Read-LWInt {
     param(
         [string]$Prompt,
@@ -85,7 +96,10 @@ function New-LWBookSevenStartupSmokeState {
     param(
         [int]$Gold = 0,
         [switch]$CarryExistingGear,
-        [switch]$BackpackLost
+        [switch]$BackpackLost,
+        [int]$MagnakaiRank = 4,
+        [string[]]$MagnakaiDisciplines = @('Weaponmastery', 'Curing', 'Nexus', 'Psi-surge'),
+        [string[]]$WeaponmasteryWeapons = @('Sword', 'Bow', 'Warhammer', 'Dagger')
     )
 
     $state = New-LWDefaultState
@@ -93,9 +107,9 @@ function New-LWBookSevenStartupSmokeState {
     $state.Character.BookNumber = 7
     $state.RuleSet = 'Magnakai'
     $state.Character.LegacyKaiComplete = $true
-    $state.Character.MagnakaiRank = 4
-    $state.Character.MagnakaiDisciplines = @('Weaponmastery', 'Curing', 'Nexus', 'Psi-surge')
-    $state.Character.WeaponmasteryWeapons = @('Sword', 'Bow', 'Warhammer', 'Dagger')
+    $state.Character.MagnakaiRank = [int]$MagnakaiRank
+    $state.Character.MagnakaiDisciplines = @($MagnakaiDisciplines)
+    $state.Character.WeaponmasteryWeapons = @($WeaponmasteryWeapons)
     $state.Character.EnduranceCurrent = 30
     $state.Character.EnduranceMax = 30
     $state.Inventory.GoldCrowns = [int]$Gold
@@ -164,6 +178,26 @@ $tests = @(
             Assert-LWBookSevenStartupSmoke -Condition ([int]$state.Inventory.QuiverArrows -eq 6) -Message 'Book 7 carry-forward did not add the Quiver correctly.'
             Assert-LWBookSevenStartupSmoke -Condition (@($state.Inventory.BackpackItems | Where-Object { $_ -eq 'Lantern' }).Count -eq 1) -Message 'Book 7 carry-forward did not add the Lantern.'
             Assert-LWBookSevenStartupSmoke -Condition (Test-LWStateHasPocketSpecialItem -State $state -Names @('Fireseed', 'Fireseeds')) -Message 'Book 7 carry-forward did not add the Fireseed pocket item.'
+        }
+    }
+    @{
+        Name = 'Carry-forward preserves Book 6 Weaponmastery picks and adds one new mastery'
+        Texts = @('1', '1', 'N')
+        Ints = @(3, 4, 4, 5, 6)
+        BuildState = {
+            New-LWBookSevenStartupSmokeState -Gold 5 -CarryExistingGear -MagnakaiRank 3 -MagnakaiDisciplines @('Weaponmastery', 'Curing', 'Nexus') -WeaponmasteryWeapons @('Sword', 'Bow', 'Warhammer')
+        }
+        CarryExistingGear = $true
+        Assert = {
+            param($state)
+            $ownedWeaponmasteryWeapons = @($state.Character.WeaponmasteryWeapons)
+            Assert-LWBookSevenStartupSmoke -Condition ([int]$state.Character.MagnakaiRank -eq 4) -Message 'Book 7 carry-forward did not raise Magnakai rank to 4.'
+            Assert-LWBookSevenStartupSmoke -Condition (@($state.Character.MagnakaiDisciplines).Count -eq 4) -Message 'Book 7 carry-forward did not add the fourth Magnakai discipline.'
+            Assert-LWBookSevenStartupSmoke -Condition ($ownedWeaponmasteryWeapons.Count -eq 4) -Message 'Book 7 carry-forward did not finish with four Weaponmastery picks.'
+            Assert-LWBookSevenStartupSmoke -Condition (($ownedWeaponmasteryWeapons | Select-Object -Unique).Count -eq 4) -Message 'Book 7 carry-forward duplicated a Weaponmastery weapon instead of adding a new one.'
+            Assert-LWBookSevenStartupSmoke -Condition ($ownedWeaponmasteryWeapons -contains 'Sword') -Message 'Book 7 carry-forward lost the existing Sword mastery.'
+            Assert-LWBookSevenStartupSmoke -Condition ($ownedWeaponmasteryWeapons -contains 'Bow') -Message 'Book 7 carry-forward lost the existing Bow mastery.'
+            Assert-LWBookSevenStartupSmoke -Condition ($ownedWeaponmasteryWeapons -contains 'Warhammer') -Message 'Book 7 carry-forward lost the existing Warhammer mastery.'
         }
     }
     @{
