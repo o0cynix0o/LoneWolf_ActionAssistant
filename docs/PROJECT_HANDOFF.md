@@ -58,6 +58,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
   - the Book `7` startup smoke now covers both the older-save reconciliation path and the current-format fast-normalize path for this repair
+- latest `main` Book `7` automation catch-up:
+  - section `190` now automatically applies the text-required `2 ENDURANCE` psychic cost when you force your discipline through the wounded eye and escape the tentacle
+  - the section `190` hook is one-shot, so revisiting the section-entry rules while still on `190` will not charge the cost twice
+  - the Book `7` choice/state smoke now includes a dedicated section `190` regression for this escape cost
 - latest `main` carry-over hotfix:
   - Book `7` startup now preserves the `3` Weaponmastery weapons already earned in a carried-over Book `6` run and prompts only for the one new mastery slot needed to reach the Book `7` total of `4`
   - this matches the original Magnakai Weaponmastery progression text instead of forcing a full `4`-weapon re-pick during the Book `6` -> `7` handoff

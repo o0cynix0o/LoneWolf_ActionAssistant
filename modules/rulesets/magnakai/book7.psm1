@@ -966,6 +966,9 @@ function Invoke-LWMagnakaiBookSevenSectionEntryRules {
         186 {
             Invoke-LWBookFourChoiceTable -Title 'Section 186 Aftermath' -PromptLabel 'Section 186 choice' -ContextLabel 'Section 186' -Choices (Get-LWMagnakaiBookSevenSection186ChoiceDefinitions) -Intro 'Section 186: take the Spear and Silver Whistle if you want them.'
         }
+        190 {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book7Section190PsychicCostApplied' -Delta -2 -MessagePrefix 'Section 190: forcing your psychic discipline through the wounded eye costs you 2 ENDURANCE.' -FatalCause 'The psychic effort at section 190 reduced your Endurance to zero.')
+        }
         198 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book7Section198DamageApplied' -Delta -2 -MessagePrefix 'Section 198: the Rahkos claws scratch your scalp as you dive clear.' -FatalCause 'The Rahkos attack at section 198 reduced your Endurance to zero.')
         }

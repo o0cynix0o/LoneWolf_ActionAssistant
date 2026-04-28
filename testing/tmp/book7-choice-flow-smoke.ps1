@@ -190,6 +190,17 @@ $tests = @(
         }
     }
     @{
+        Name = 'Section 190 psychic escape cost'
+        Section = 190
+        Assert = {
+            param($state)
+            Assert-LWBookSevenChoiceSmoke -Condition ([int]$state.Character.EnduranceCurrent -eq ([int]$state.ChoiceSmokePreEnduranceCurrent - 2)) -Message 'Section 190 did not apply the 2 END psychic cost.'
+            Assert-LWBookSevenChoiceSmoke -Condition (Test-LWStoryAchievementFlag -Name 'Book7Section190PsychicCostApplied') -Message 'Section 190 did not set its one-shot story flag.'
+            Invoke-LWRuleSetSectionEntryRules -State $state
+            Assert-LWBookSevenChoiceSmoke -Condition ([int]$state.Character.EnduranceCurrent -eq ([int]$state.ChoiceSmokePreEnduranceCurrent - 2)) -Message 'Section 190 applied its psychic cost more than once.'
+        }
+    }
+    @{
         Name = 'Section 199 corpse loot'
         Section = 199
         Texts = @('1', '2', '0')

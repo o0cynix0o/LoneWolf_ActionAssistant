@@ -22,6 +22,13 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - validated in both shells via:
     - `testing/logs/BOOK7_STARTUP_SMOKE_PS7.txt`
     - `testing/logs/BOOK7_STARTUP_SMOKE_PS51.txt`
+- added the missing Book `7` section `190` psychic escape cost:
+  - section `190` now automatically removes the text-required `2 ENDURANCE` when you force your psychic discipline through the wounded eye and escape to section `41`
+  - the new section hook is one-shot and will not double-charge if section-entry rules are touched again while you are still parked on `190`
+  - added a Book `7` choice/state regression for the section `190` psychic cost
+  - validated in both shells via:
+    - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/BOOK7_CHOICE_FLOW_SMOKE_PS51.txt`
 - corrected legacy-series book-to-book inventory carry-over for future transitions:
   - through Books `1-12`, old `Backpack Items` and app-level `Pocket Items` should not carry into the next adventure; only carried `Weapons`, `Special Items`, and `Gold` survive the handoff
   - future carried-over starts for the currently implemented Books `2-7` now clear old `Backpack Items` and `Pocket Items` before the new book's starting-equipment picks begin
