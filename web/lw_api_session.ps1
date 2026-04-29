@@ -602,6 +602,64 @@ function Get-LWWebCampaignSnapshot {
     return (Copy-LWWebValue (Get-LWCampaignSummary))
 }
 
+function Get-LWWebDeathSnapshot {
+    if ($null -eq $script:GameState) {
+        return $null
+    }
+
+    $deathState = Get-LWActiveDeathState
+    if ($null -eq $deathState) {
+        return $null
+    }
+
+    $bookNumber = if ((Test-LWPropertyExists -Object $deathState -Name 'BookNumber') -and $null -ne $deathState.BookNumber) {
+        [int]$deathState.BookNumber
+    }
+    elseif ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.BookNumber) {
+        [int]$script:GameState.Character.BookNumber
+    }
+    else {
+        0
+    }
+
+    $bookTitle = if ((Test-LWPropertyExists -Object $deathState -Name 'BookTitle') -and -not [string]::IsNullOrWhiteSpace([string]$deathState.BookTitle)) {
+        [string]$deathState.BookTitle
+    }
+    elseif ($bookNumber -gt 0) {
+        [string](Get-LWBookTitle -BookNumber $bookNumber)
+    }
+    else {
+        ''
+    }
+
+    $savePath = if ((Test-LWPropertyExists -Object $script:GameState.Settings -Name 'SavePath') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Settings.SavePath)) {
+        [string]$script:GameState.Settings.SavePath
+    }
+    else {
+        ''
+    }
+
+    return [ordered]@{
+        Active            = $true
+        Type              = if ((Test-LWPropertyExists -Object $deathState -Name 'Type') -and -not [string]::IsNullOrWhiteSpace([string]$deathState.Type)) { [string]$deathState.Type } else { 'Instant' }
+        Cause             = if ((Test-LWPropertyExists -Object $deathState -Name 'Cause') -and -not [string]::IsNullOrWhiteSpace([string]$deathState.Cause)) { [string]$deathState.Cause } else { 'A fatal choice ended this path.' }
+        BookNumber        = $bookNumber
+        BookTitle         = $bookTitle
+        Section           = if ((Test-LWPropertyExists -Object $deathState -Name 'Section') -and $null -ne $deathState.Section) { [int]$deathState.Section } else { $null }
+        RecordedOn        = if ((Test-LWPropertyExists -Object $deathState -Name 'RecordedOn') -and $null -ne $deathState.RecordedOn) { [string]$deathState.RecordedOn } else { '' }
+        CharacterName     = if ($null -ne $script:GameState.Character -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Character.Name)) { [string]$script:GameState.Character.Name } else { '' }
+        Difficulty        = [string](Get-LWCurrentDifficulty)
+        PermadeathEnabled = [bool](Test-LWPermadeathEnabled)
+        AvailableRewinds  = [int](Get-LWAvailableRewindCount)
+        CombatSkill       = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.CombatSkillBase) { [int]$script:GameState.Character.CombatSkillBase } else { 0 }
+        EnduranceCurrent  = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.EnduranceCurrent) { [int]$script:GameState.Character.EnduranceCurrent } else { 0 }
+        EnduranceMax      = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.EnduranceMax) { [int]$script:GameState.Character.EnduranceMax } else { 0 }
+        GoldCrowns        = if ($null -ne $script:GameState.Inventory -and $null -ne $script:GameState.Inventory.GoldCrowns) { [int]$script:GameState.Inventory.GoldCrowns } else { 0 }
+        IntegrityState    = if ((Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and $null -ne $script:GameState.Run -and (Test-LWPropertyExists -Object $script:GameState.Run -Name 'IntegrityState') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityState)) { [string]$script:GameState.Run.IntegrityState } else { '' }
+        SavePath          = $savePath
+    }
+}
+
 function Get-LWWebAchievementEntrySnapshot {
     param([Parameter(Mandatory = $true)][object]$Definition)
 
@@ -622,7 +680,7 @@ function Get-LWWebAchievementEntrySnapshot {
 
     return [ordered]@{
         Id                 = $id
-        Name               = if ($unlocked) { [string](Get-LWAchievementDisplayNameById -Id $id) } else { [string](Get-LWAchievementLockedDisplayName -Definition $Definition) }
+        Name               = if ($unlocked) { [string](Get-LWAchievementDisplayNameById -Id $id -DefaultName ([string]$Definition.Name)) } else { [string](Get-LWAchievementLockedDisplayName -Definition $Definition) }
         Category           = if ((Test-LWPropertyExists -Object $Definition -Name 'Category') -and -not [string]::IsNullOrWhiteSpace([string]$Definition.Category)) { [string]$Definition.Category } else { '' }
         Description        = if ($unlocked) { [string]$Definition.Description } else { [string](Get-LWAchievementLockedDisplayDescription -Definition $Definition) }
         BookNumber         = if ((Test-LWPropertyExists -Object $Definition -Name 'BookNumber') -and $null -ne $Definition.BookNumber) { [int]$Definition.BookNumber } else { $null }
@@ -1791,6 +1849,7 @@ function Get-LWWebStateSnapshot {
                 }
                 session          = [ordered]@{
                     HasState      = $false
+                    DeathActive   = $false
                     CurrentScreen = $screenName
                     ScreenData    = $screenData
                     Notifications = @($notifications)
@@ -1804,6 +1863,7 @@ function Get-LWWebStateSnapshot {
                 }
                 saves            = @(Get-LWWebSaveEntries)
                 campaign         = $null
+                death            = $null
                 pendingFlow      = $pendingFlow
                 availableScreens = @('welcome', 'sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'bookcomplete', 'help')
             }
@@ -1831,6 +1891,7 @@ function Get-LWWebStateSnapshot {
             }
             session          = [ordered]@{
                 HasState      = $true
+                DeathActive   = [bool](Test-LWDeathActive)
                 CurrentScreen = $screenName
                 ScreenData    = $screenData
                 Notifications = @($notifications)
@@ -1896,10 +1957,11 @@ function Get-LWWebStateSnapshot {
             history          = @(Get-LWWebHistoryPreview -History @($script:GameState.History))
             currentBookStats = Get-LWLiveBookStatsSummary
             campaign         = Get-LWWebCampaignSnapshot
+            death            = Get-LWWebDeathSnapshot
             achievements     = Get-LWWebAchievementSnapshot
             saves            = @(Get-LWWebSaveEntries)
             pendingFlow      = $pendingFlow
-            availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'bookcomplete', 'help')
+            availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'death', 'bookcomplete', 'help')
             safeCommands     = @(
                 'sheet',
                 'inventory',
@@ -2205,6 +2267,33 @@ function Invoke-LWWebRequest {
             }
 
             return (Start-LWWebSetSectionFlow -Section $section)
+        }
+        'rewindDeath' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if (-not (Test-LWDeathActive)) {
+                throw 'Rewind is only available after a death or failed mission.'
+            }
+            if (Test-LWPermadeathEnabled) {
+                throw 'Permadeath disables rewind for this run.'
+            }
+
+            $steps = if ((Test-LWPropertyExists -Object $Request -Name 'steps') -and $null -ne $Request.steps) { [int]$Request.steps } else { 1 }
+            if ($steps -lt 1) {
+                throw 'Rewind steps must be at least 1.'
+            }
+
+            $available = [int](Get-LWAvailableRewindCount)
+            if ($available -lt 1) {
+                throw 'No earlier safe section is available to rewind to.'
+            }
+            if ($steps -gt $available) {
+                throw ("You can rewind at most {0} section(s) from this death." -f $available)
+            }
+
+            Invoke-LWRewind -Steps $steps
+            return ("Rewound {0} section{1}. You are back at section {2}." -f $steps, $(if ($steps -eq 1) { '' } else { 's' }), [int]$script:GameState.CurrentSection)
         }
         'showScreen' {
             $name = if ((Test-LWPropertyExists -Object $Request -Name 'name') -and -not [string]::IsNullOrWhiteSpace([string]$Request.name)) { [string]$Request.name } else { '' }

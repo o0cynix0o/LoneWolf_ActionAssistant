@@ -147,6 +147,7 @@ function formatTimestamp(value) {
 
 function getTabForScreen(screenName) {
   switch (String(screenName || '').toLowerCase()) {
+    case 'death':
     case 'sheet':
     case 'disciplines':
     case 'help':
@@ -172,6 +173,8 @@ function getTabForScreen(screenName) {
       return null;
   }
 }
+
+const DEATH_REVIEW_TABS = ['overview', 'stats', 'campaign', 'achievements', 'saves'];
 
 function syncActiveTabButtons() {
   elements.tabbar.querySelectorAll('button').forEach((button) => {
@@ -1036,6 +1039,69 @@ function renderBookComplete(payload) {
   `;
 }
 
+function renderDeath(payload) {
+  const death = payload?.death || {};
+  const savePath = text(death.SavePath, '');
+  const saveName = savePath ? savePath.split(/[\\/]/).pop() : '';
+  const availableRewinds = Number(death.AvailableRewinds || 0);
+  const canRewind = availableRewinds > 0 && !death.PermadeathEnabled;
+  const bookLabel = death.BookNumber
+    ? `Book ${death.BookNumber} - ${text(death.BookTitle, 'Unknown')}`
+    : text(death.BookTitle, 'Unknown Book');
+  const outcomeLabel = String(death.Type || '').toLowerCase() === 'failure' ? 'Mission Failed' : 'You Have Fallen';
+
+  return `
+    <section class="panel panel-danger">
+      <h2>${outcomeLabel}</h2>
+      <p class="death-cause">${text(death.Cause, 'A fatal choice ended this path.')}</p>
+      <div class="kv-grid">
+        <div class="kv"><span>Character</span><strong>${text(death.CharacterName, text(payload?.character?.Name))}</strong></div>
+        <div class="kv"><span>Death Type</span><strong>${text(death.Type, 'Instant')}</strong></div>
+        <div class="kv"><span>Book</span><strong>${bookLabel}</strong></div>
+        <div class="kv"><span>Section</span><strong>${text(death.Section, '0')}</strong></div>
+        <div class="kv"><span>Difficulty</span><strong>${text(death.Difficulty, '(unknown)')}</strong></div>
+        <div class="kv"><span>Permadeath</span><strong>${death.PermadeathEnabled ? 'On' : 'Off'}</strong></div>
+        <div class="kv"><span>Final END</span><strong>${text(death.EnduranceCurrent, '0')} / ${text(death.EnduranceMax, '0')}</strong></div>
+        <div class="kv"><span>Gold Crowns</span><strong>${text(death.GoldCrowns, '0')}</strong></div>
+        <div class="kv"><span>Run Integrity</span><strong>${text(death.IntegrityState, '(unknown)')}</strong></div>
+        <div class="kv"><span>Recorded</span><strong>${formatTimestamp(death.RecordedOn)}</strong></div>
+        <div class="kv"><span>Rewinds Available</span><strong>${text(death.AvailableRewinds, '0')}</strong></div>
+        <div class="kv"><span>Resume Save</span><strong>${text(saveName, death.PermadeathEnabled ? '(deleted by permadeath)' : '(none)')}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Recovery Options</h2>
+      ${canRewind ? `
+        <form id="death-rewind-form" class="inline-form">
+          <label class="inline-field" for="death-rewind-steps">
+            <span>Rewind back to an earlier safe checkpoint</span>
+            <input id="death-rewind-steps" type="number" min="1" max="${availableRewinds}" value="1">
+          </label>
+          <button type="submit">Rewind</button>
+        </form>
+      ` : `
+        <p class="muted">${death.PermadeathEnabled
+          ? 'Permadeath disables rewind for this run, so recovery has to come from a save or a fresh start.'
+          : 'No earlier safe checkpoint is available to rewind to from this death.'}</p>
+      `}
+      <div class="flow-actions completion-actions">
+        <button type="button" class="button-secondary" id="death-load-last-save-btn">Load Last Save</button>
+        <button type="button" class="button-secondary" id="death-new-game-btn">Start New Run</button>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Review Before You Decide</h2>
+      <p class="muted death-review-copy">You can still review this run's progress before rewinding or restarting.</p>
+      <div class="flow-actions death-review-actions">
+        <button type="button" class="button-secondary" data-death-tab="stats">Stats</button>
+        <button type="button" class="button-secondary" data-death-tab="campaign">Campaign</button>
+        <button type="button" class="button-secondary" data-death-tab="achievements">Achievements</button>
+        <button type="button" class="button-secondary" data-death-tab="saves">Saves</button>
+      </div>
+    </section>
+  `;
+}
+
 function renderFlowSummary(summary) {
   if (!summary) {
     return '';
@@ -1401,6 +1467,10 @@ function renderView() {
     return;
   }
 
+  const currentScreen = String(payload.session?.CurrentScreen || '').toLowerCase();
+  const effectiveTab = currentScreen === 'death' && !DEATH_REVIEW_TABS.includes(state.activeTab)
+    ? 'overview'
+    : state.activeTab;
   if (!payload.session?.HasState) {
     elements.view.innerHTML = `
       <section class="panel">
@@ -1409,10 +1479,10 @@ function renderView() {
       </section>
       ${renderSaves(payload)}
     `;
-  } else if (payload.session?.CurrentScreen === 'bookcomplete') {
+  } else if (currentScreen === 'bookcomplete') {
     elements.view.innerHTML = renderBookComplete(payload);
   } else {
-    switch (state.activeTab) {
+    switch (effectiveTab) {
       case 'inventory':
         elements.view.innerHTML = renderInventory(payload);
         break;
@@ -1438,7 +1508,7 @@ function renderView() {
         elements.view.innerHTML = renderNotes(payload);
         break;
       default:
-        elements.view.innerHTML = renderOverview(payload);
+        elements.view.innerHTML = currentScreen === 'death' ? renderDeath(payload) : renderOverview(payload);
         break;
     }
   }
@@ -1458,6 +1528,52 @@ function bindDynamicViewEvents(payload) {
       }
     });
   }
+
+  const deathRewindForm = document.getElementById('death-rewind-form');
+  if (deathRewindForm) {
+    deathRewindForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const rawSteps = Number(document.getElementById('death-rewind-steps')?.value || 1);
+      try {
+        const result = await apiAction({ action: 'rewindDeath', steps: rawSteps });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const deathLoadLastSaveButton = document.getElementById('death-load-last-save-btn');
+  if (deathLoadLastSaveButton) {
+    deathLoadLastSaveButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'loadLastSave' });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const deathNewGameButton = document.getElementById('death-new-game-btn');
+  if (deathNewGameButton) {
+    deathNewGameButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'startNewGameWizard' });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-death-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.activeTab = button.dataset.deathTab;
+      syncActiveTabButtons();
+      renderView();
+    });
+  });
 
   document.querySelectorAll('[data-load-path]').forEach((button) => {
     button.addEventListener('click', async () => {
@@ -1717,7 +1833,9 @@ function applyResponse(response) {
   state.payload = response.payload;
   const currentScreen = String(response.payload?.session?.CurrentScreen || '').toLowerCase();
   const mappedTab = getTabForScreen(currentScreen);
-  if (mappedTab && ['stats', 'campaign', 'achievements'].includes(currentScreen) && currentScreen !== previousScreen) {
+  if (currentScreen === 'death' && currentScreen !== previousScreen) {
+    state.activeTab = 'overview';
+  } else if (mappedTab && ['stats', 'campaign', 'achievements'].includes(currentScreen) && currentScreen !== previousScreen) {
     state.activeTab = mappedTab;
   }
   elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.8.0')}`;
@@ -1749,7 +1867,9 @@ async function refreshState() {
 function attachEvents() {
   elements.tabbar.querySelectorAll('button').forEach((button) => {
     button.addEventListener('click', () => {
-      state.activeTab = button.dataset.tab;
+      const requestedTab = button.dataset.tab;
+      const currentScreen = String(state.payload?.session?.CurrentScreen || '').toLowerCase();
+      state.activeTab = (currentScreen === 'death' && !DEATH_REVIEW_TABS.includes(requestedTab)) ? 'overview' : requestedTab;
       syncActiveTabButtons();
       renderView();
     });

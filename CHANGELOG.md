@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- expanded the tracked web scaffold into the first browser-native death / rewind recovery surface:
+  - the web session payload now exposes a dedicated death snapshot with cause, death type, book/section, recorded time, rewind availability, final END, gold, integrity, and save-path context
+  - the browser Overview now renders a real death panel when the engine enters the `death` screen instead of leaving recovery behind raw commands
+  - the new death panel supports browser-side rewind submission, `Load Last Save`, and `Start New Run` actions, plus quick review links into `Stats`, `Campaign`, `Achievements`, and `Saves`
+  - the web action layer now exposes a direct `rewindDeath` request instead of relying on command-text fallback for recovery
+  - verified both through the long-lived web-session host and through the live local HTTP server with a disposable death-state save: death loaded as `death`, rewind returned the run to section `96`, and death state cleared back to `sheet`
+- fixed a web achievement payload bug uncovered during death-screen validation:
+  - the web achievement snapshot now passes the required fallback name when resolving unlocked achievement display names
+  - this keeps the richer web state snapshot path from failing when current-book achievements are present
 - expanded the tracked web scaffold review surfaces into browser-native tabs:
   - added browser-side `Stats`, `Campaign`, and `Achievements` tabs to the tracked web shell
   - the web session payload now exposes the live current-book stats summary instead of only the raw `CurrentBookStats` object

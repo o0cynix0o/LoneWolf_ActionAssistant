@@ -687,6 +687,18 @@ Current checkpoint:
   - backend `stats`, `campaign`, and `achievements` screen changes now sync
     into the browser tab state, so review commands and screen shortcuts land on
     the matching browser tab
+  - the web session payload now exposes a dedicated death snapshot with cause,
+    death type, book/section, final-state totals, and rewind availability
+  - the browser Overview now renders a dedicated death/recovery surface with
+    direct rewind, `Load Last Save`, and `Start New Run` controls instead of
+    leaving recovery behind raw command text
+  - while dead, the browser can still review `Stats`, `Campaign`,
+    `Achievements`, and `Saves` before the player decides whether to rewind or
+    restart
+  - the web action layer now includes a direct `rewindDeath` request for
+    browser-native recovery
+  - this slice also fixed a web achievement-snapshot regression where unlocked
+    display names were being resolved without their required fallback name
 
 ## Tracking Rules
 

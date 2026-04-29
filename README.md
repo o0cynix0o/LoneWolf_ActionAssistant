@@ -146,6 +146,11 @@ Current web-scaffold coverage includes:
   - `Stats`
   - `Campaign`
   - `Achievements`
+- browser-native death and recovery surface:
+  - the Overview now renders a dedicated death panel whenever the engine enters the `death` screen
+  - rewind can now be triggered directly from the browser without falling back to command text
+  - `Load Last Save` and `Start New Run` are exposed as explicit recovery buttons on that panel
+  - while dead, the browser still lets you inspect `Stats`, `Campaign`, `Achievements`, and `Saves` before deciding what to do next
 - browser-tab sync for backend review screens:
   - `stats`
   - `campaign`
