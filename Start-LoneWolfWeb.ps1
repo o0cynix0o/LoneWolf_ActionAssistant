@@ -1,5 +1,5 @@
 param(
-    [string]$Host = 'localhost',
+    [string]$ListenHost = 'localhost',
     [int]$Port = 8797,
     [switch]$NoBrowser
 )
@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSCommandPath
 $serverScript = Join-Path $root 'web\app_server.py'
-$url = "http://$Host`:$Port/"
+$url = "http://$ListenHost`:$Port/"
 $platformName = if ($IsWindows) { 'windows' } elseif ($IsMacOS) { 'macos' } else { 'linux' }
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
@@ -50,4 +50,4 @@ Write-Host "URL: $url" -ForegroundColor Green
 Write-Host ""
 
 Set-Location $root
-& python $serverScript --host $Host --port $Port
+& python $serverScript --host $ListenHost --port $Port

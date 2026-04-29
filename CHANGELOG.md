@@ -25,6 +25,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
     - startup-equipment follow-through without terminal scraping
   - the frontend now renders these pending setup steps as browser forms instead of relying on command-line prompts
   - the new flow was verified both against the direct long-lived PowerShell session host and through the local HTTP server
+- fixed the tracked web launcher so `Start-LoneWolfWeb.ps1` can be invoked normally or dot-sourced without colliding with PowerShell's built-in read-only `$Host` variable
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books
