@@ -376,8 +376,71 @@ function Invoke-LWMagnakaiBookSevenWeaponConfiscation {
     param(
         [Parameter(Mandatory = $true)][string]$FlagName,
         [Parameter(Mandatory = $true)][string]$Reason,
-        [int]$EnduranceLoss = 0
+        [int]$EnduranceLoss = 0,
+        [switch]$AllCarriedGear
     )
+
+    if ($AllCarriedGear) {
+        $recoveryWeapons = @(Get-LWInventoryRecoveryItems -Type 'weapon')
+        $recoveryBackpack = @(Get-LWInventoryRecoveryItems -Type 'backpack')
+        $recoveryHerbPouch = @(Get-LWInventoryRecoveryItems -Type 'herbpouch')
+        $recoverySpecials = @(Get-LWInventoryRecoveryItems -Type 'special')
+        $hasRecoveryGear = (($recoveryWeapons.Count + $recoveryBackpack.Count + $recoveryHerbPouch.Count + $recoverySpecials.Count) -gt 0)
+        $hasCarriedGear = (
+            @($script:GameState.Inventory.Weapons).Count -gt 0 -or
+            @($script:GameState.Inventory.BackpackItems).Count -gt 0 -or
+            @($script:GameState.Inventory.HerbPouchItems).Count -gt 0 -or
+            @($script:GameState.Inventory.SpecialItems).Count -gt 0 -or
+            @(Get-LWPocketSpecialItems).Count -gt 0 -or
+            [int]$script:GameState.Inventory.GoldCrowns -gt 0 -or
+            [bool]$script:GameState.Inventory.HasBackpack -or
+            [bool]$script:GameState.Inventory.HasHerbPouch
+        )
+
+        $alreadyApplied = Test-LWStoryAchievementFlag -Name $FlagName
+        if ($alreadyApplied -and -not $hasCarriedGear -and -not $hasRecoveryGear) {
+            return
+        }
+
+        if ($alreadyApplied) {
+            if ($hasCarriedGear) {
+                Write-LWWarn ("Section {0}: confiscation was already marked as handled, but carried gear remains. Stashing it now." -f [int]$script:GameState.CurrentSection)
+            }
+        }
+        elseif ($EnduranceLoss -gt 0) {
+            [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName ("{0}LossApplied" -f $FlagName) -Delta (-1 * $EnduranceLoss) -MessagePrefix $Reason -FatalCause ("The ordeal at section {0} reduced your Endurance to zero." -f [int]$script:GameState.CurrentSection))
+        }
+        else {
+            Write-LWInfo $Reason
+        }
+
+        if ($hasCarriedGear) {
+            Save-LWConfiscatedEquipment -WriteMessages -Reason ("Section {0}: all carried gear confiscated for later recovery" -f [int]$script:GameState.CurrentSection)
+        }
+        if ($hasRecoveryGear) {
+            $script:GameState.Storage.Confiscated.Weapons = @($script:GameState.Storage.Confiscated.Weapons + $recoveryWeapons)
+            $script:GameState.Storage.Confiscated.BackpackItems = @($script:GameState.Storage.Confiscated.BackpackItems + $recoveryBackpack)
+            $script:GameState.Storage.Confiscated.HerbPouchItems = @($script:GameState.Storage.Confiscated.HerbPouchItems + $recoveryHerbPouch)
+            $script:GameState.Storage.Confiscated.SpecialItems = @($script:GameState.Storage.Confiscated.SpecialItems + $recoverySpecials)
+            if ($null -eq $script:GameState.Storage.Confiscated.BookNumber) {
+                $script:GameState.Storage.Confiscated.BookNumber = [int]$script:GameState.Character.BookNumber
+            }
+            if ($null -eq $script:GameState.Storage.Confiscated.Section) {
+                $script:GameState.Storage.Confiscated.Section = [int]$script:GameState.CurrentSection
+            }
+            if ([string]::IsNullOrWhiteSpace([string]$script:GameState.Storage.Confiscated.SavedOn)) {
+                $script:GameState.Storage.Confiscated.SavedOn = (Get-Date).ToString('o')
+            }
+            Clear-LWInventoryRecoveryEntry -Type 'weapon'
+            Clear-LWInventoryRecoveryEntry -Type 'backpack'
+            Clear-LWInventoryRecoveryEntry -Type 'herbpouch'
+            Clear-LWInventoryRecoveryEntry -Type 'special'
+            Write-LWInfo ("Section {0}: folded older recovery-stash gear into confiscated equipment." -f [int]$script:GameState.CurrentSection)
+        }
+
+        Set-LWStoryAchievementFlag -Name $FlagName
+        return
+    }
 
     $weapons = @(Get-LWInventoryItems -Type 'weapon')
     $weaponLikeSpecials = @(
@@ -428,6 +491,11 @@ function Invoke-LWMagnakaiBookSevenWeaponConfiscation {
 
 function Restore-LWMagnakaiBookSevenRecoveredWeapons {
     $restoredAnything = $false
+    if (Test-LWStateHasConfiscatedEquipment) {
+        if (Restore-LWConfiscatedEquipment -WriteMessages) {
+            $restoredAnything = $true
+        }
+    }
     if (@(Get-LWInventoryRecoveryItems -Type 'weapon').Count -gt 0) {
         Restore-LWInventorySection -Type 'weapon'
         $restoredAnything = $true
@@ -1082,7 +1150,7 @@ function Invoke-LWMagnakaiBookSevenSectionEntryRules {
             Invoke-LWBookFourChoiceTable -Title 'Section 333 Door Rack' -PromptLabel 'Section 333 choice' -ContextLabel 'Section 333' -Choices (Get-LWMagnakaiBookSevenSection333ChoiceDefinitions) -Intro 'Section 333: take the Spear and Quarterstaff if you want them before choosing a tunnel.'
         }
         335 {
-            Invoke-LWMagnakaiBookSevenWeaponConfiscation -FlagName 'Book7Section335ConfiscationApplied' -Reason 'Section 335: Zahda strips you of all Weapons and weapon-like Special Items.' -EnduranceLoss 1
+            Invoke-LWMagnakaiBookSevenWeaponConfiscation -FlagName 'Book7Section335ConfiscationApplied' -Reason 'Section 335: Zahda strips you of all carried gear.' -EnduranceLoss 1 -AllCarriedGear
         }
         340 {
             Set-LWStoryAchievementFlag -Name 'Book7KasinWarningHeard'

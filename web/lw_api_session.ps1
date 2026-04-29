@@ -2357,6 +2357,12 @@ function Get-LWWebStateSnapshot {
         $specialSection = Get-LWWebInventorySectionSnapshot -Type 'special'
         $pocketSection = Get-LWWebInventorySectionSnapshot -Type 'pocket'
         $herbPouchSection = Get-LWWebInventorySectionSnapshot -Type 'herbpouch'
+        $confiscatedStorage = if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'Confiscated') -and $null -ne $script:GameState.Storage.Confiscated) {
+            $script:GameState.Storage.Confiscated
+        }
+        else {
+            $null
+        }
         $randomNumber = Get-LWWebRandomNumberSnapshot -State $script:GameState -Section $readerSection -PendingFlowActive ($null -ne $pendingFlow)
 
         $stage = 'active state payload'
@@ -2416,6 +2422,20 @@ function Get-LWWebStateSnapshot {
                     backpack  = @($backpackSection.RecoveryItems)
                     special   = @($specialSection.RecoveryItems)
                     herbpouch = @($herbPouchSection.RecoveryItems)
+                }
+                Confiscated        = [ordered]@{
+                    HasAny             = [bool](Test-LWStateHasConfiscatedEquipment)
+                    Summary            = Get-LWConfiscatedInventorySummaryText
+                    Weapons            = if ($null -ne $confiscatedStorage) { @($confiscatedStorage.Weapons) } else { @() }
+                    BackpackItems      = if ($null -ne $confiscatedStorage) { @($confiscatedStorage.BackpackItems) } else { @() }
+                    HerbPouchItems     = if ($null -ne $confiscatedStorage) { @($confiscatedStorage.HerbPouchItems) } else { @() }
+                    SpecialItems       = if ($null -ne $confiscatedStorage) { @($confiscatedStorage.SpecialItems) } else { @() }
+                    PocketSpecialItems = if ($null -ne $confiscatedStorage -and (Test-LWPropertyExists -Object $confiscatedStorage -Name 'PocketSpecialItems')) { @($confiscatedStorage.PocketSpecialItems) } else { @() }
+                    GoldCrowns         = if ($null -ne $confiscatedStorage -and $null -ne $confiscatedStorage.GoldCrowns) { [int]$confiscatedStorage.GoldCrowns } else { 0 }
+                    HasHerbPouch       = if ($null -ne $confiscatedStorage -and (Test-LWPropertyExists -Object $confiscatedStorage -Name 'HasHerbPouch')) { [bool]$confiscatedStorage.HasHerbPouch } else { $false }
+                    BookNumber         = if ($null -ne $confiscatedStorage -and $null -ne $confiscatedStorage.BookNumber) { [int]$confiscatedStorage.BookNumber } else { $null }
+                    Section            = if ($null -ne $confiscatedStorage -and $null -ne $confiscatedStorage.Section) { [int]$confiscatedStorage.Section } else { $null }
+                    SavedOn            = if ($null -ne $confiscatedStorage -and $null -ne $confiscatedStorage.SavedOn) { [string]$confiscatedStorage.SavedOn } else { '' }
                 }
             }
             combat           = [ordered]@{
