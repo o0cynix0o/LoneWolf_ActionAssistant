@@ -735,6 +735,11 @@ Current checkpoint:
     in both shells:
     - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS51.txt`
+  - web parity death validation now covers a disposable ENDURANCE death, death
+    snapshot/review payloads, and browser-action rewind back to a living section
+    in both shells:
+    - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS51.txt`
 
 ## Tracking Rules
 

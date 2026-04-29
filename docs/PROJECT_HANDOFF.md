@@ -115,6 +115,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - the local web parity flow smoke at `testing/tmp/web-parity-flow-smoke.ps1` now covers fresh setup, sandbox save/load, inventory section recovery, combat start/auto-resolve, and the review tabs, with green artifacts:
     - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS51.txt`
+  - the local web parity death smoke at `testing/tmp/web-parity-death-smoke.ps1` now covers a disposable ENDURANCE death, death snapshot/review payloads, and browser-action rewind back to a living section, with green artifacts:
+    - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS51.txt`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
@@ -916,7 +919,7 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 - Deepen Book `6` route reporting and strategy support as more play data comes in
 - Plan the next post-Book `7` Magnakai audit once the current `main` Book `7` surface feels stable
 - Keep the handoff docs and strategy-guide workflow in sync as new books become implemented
-- Continue M6 parity from the now-covered setup/save/load/inventory/combat smoke into death, book transition, achievement, and book-automation browser flows
+- Continue M6 parity from the now-covered setup/save/load/inventory/combat/death smokes into book transition, achievement, book-automation, and browser-DOM flows
 
 ## Important Cautions
 

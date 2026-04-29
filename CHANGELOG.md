@@ -6,6 +6,13 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added repeatable web death/recovery parity validation for M6:
+  - `testing/tmp/web-parity-death-smoke.ps1` creates a disposable run, advances to a rewindable checkpoint, saves to a sandbox path, forces an ENDURANCE death through the web action layer, verifies the death snapshot/review payloads, and rewinds back to a living section
+  - the death smoke preserves the pre-existing local `data/last-save.txt` pointer after using its sandbox save
+  - validated the death smoke in both shells, with the broader web flow smoke rerun as a regression guard:
+    - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS51.txt`
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
 - hardened the web pending-flow snapshot path and added a deeper M6 flow validation pass:
   - pending-flow payloads now tolerate optional prompt metadata under strict mode instead of assuming every flow has `ContextText`, labels, or prompt fields
   - startup-equipment prompts now capture readable prompt context and restore their checkpoint before returning control to the browser

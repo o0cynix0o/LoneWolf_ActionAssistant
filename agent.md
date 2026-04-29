@@ -33,6 +33,7 @@ For deeper project state, workflow details, and local report locations, use:
 - current `main` also contains validated local Book `7` / `Castle Death` support plus recent Book `6` DE stabilization
 - current `main` also contains the first tracked M6 web-GUI migration scaffold under `web/`, with browser-native setup, saves, inventory, combat, stats, campaign, achievements, death recovery, disciplines, modes, combat log, and help surfaces backed by the PowerShell session/HTTP JSON path
 - the M6 web flow smoke now covers fresh setup, sandbox save/load, inventory section recovery, combat start/auto-resolve, and review-tab payloads in both PowerShell engines
+- the M6 web death smoke now covers ENDURANCE death, dead-state review payloads, and browser-action rewind in both PowerShell engines
 - M1 modular refactor is complete and pushed
 - Core modules live under:
   - `modules/core/`
@@ -60,7 +61,7 @@ That old framing is stale.
 
 The highest-value work now is:
 
-1. continuing M6 web GUI parity work: remaining structured prompt edge cases, death/transition/achievement/book-automation parity harnesses, cross-platform launch/packaging hardening, and web-first release docs
+1. continuing M6 web GUI parity work: remaining structured prompt edge cases, transition/achievement/book-automation/browser-DOM parity harnesses, cross-platform launch/packaging hardening, and web-first release docs
 2. post-release stabilization across the recent `main` surface, especially Book `6` sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`
 3. validating and hardening current `main` Book `7` startup, choice, combat, achievement, route, and difficulty behavior
 4. keeping repo docs/workflow current
@@ -156,7 +157,7 @@ Meaning:
 ## Good Next Steps
 
 - continue live playtesting across the released Books `1-6` surface and current `main` Book `7` coverage
-- continue M6 parity work from the browser scaffold, especially death, transition, achievement, and book-automation flow validation plus cross-platform hardening
+- continue M6 parity work from the browser scaffold, especially transition, achievement, book-automation, and browser-DOM flow validation plus cross-platform hardening
 - patch DE differences as they appear, especially in the recent Book `6` stabilization paths
 - keep `PROJECT_HANDOFF.md` and milestone docs current
 - keep branch/release wording explicit when public docs are updated
