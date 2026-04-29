@@ -276,6 +276,28 @@ h1 {
   margin: 0;
 }
 
+.roll-result {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(212, 176, 88, 0.45);
+  border-radius: 8px;
+  background: rgba(212, 176, 88, 0.08);
+}
+
+.roll-result span {
+  color: var(--gold-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roll-result strong {
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: normal;
+}
+
 .roll-meta {
   display: flex;
   gap: 0.35rem;

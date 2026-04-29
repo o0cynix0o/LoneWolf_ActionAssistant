@@ -101,6 +101,12 @@ function formatSignedNumber(value) {
   return number > 0 ? `+${number}` : String(number);
 }
 
+function getRecentRollMessages(payload) {
+  return safeArray(payload?.randomNumber?.LastRoll?.Messages)
+    .map((message) => String(message || ''))
+    .filter((message) => message.trim());
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -418,7 +424,17 @@ function renderRollPanel(payload) {
 
   const notes = safeArray(roll.ModifierNotes).filter((note) => String(note || '').trim());
   const modifier = Number(roll.Modifier || 0);
+  const recentRollMessages = getRecentRollMessages(payload);
   const details = [];
+
+  if (recentRollMessages.length) {
+    details.push(`
+      <div class="roll-result">
+        <span>Last Roll</span>
+        ${recentRollMessages.map((message) => `<strong>${escapeHtml(message)}</strong>`).join('')}
+      </div>
+    `);
+  }
 
   if (roll.Error) {
     details.push(`<p class="danger-text">${escapeHtml(text(roll.Error))}</p>`);

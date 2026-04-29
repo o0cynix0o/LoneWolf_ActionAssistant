@@ -277,6 +277,10 @@ try {
 
     $screenResponse = Invoke-RestMethod -Method Post -Uri "$baseUrl/api/action" -ContentType 'application/json' -Body (@{ action = 'showScreen'; name = 'achievements' } | ConvertTo-Json -Compress)
     Assert-WebDomSmoke -Condition ([bool]$screenResponse.ok) -Message 'Could not switch the server session to achievements before DOM capture.'
+    $rollResponse = Invoke-RestMethod -Method Post -Uri "$baseUrl/api/action" -ContentType 'application/json' -Body (@{ action = 'safeCommand'; command = 'roll' } | ConvertTo-Json -Compress)
+    Assert-WebDomSmoke -Condition ([bool]$rollResponse.ok) -Message 'Could not run the roll command before DOM capture.'
+    $rollNotifications = @($rollResponse.payload.session.Notifications | ForEach-Object { [string]$_.Message })
+    Assert-WebDomSmoke -Condition (($rollNotifications -join "`n").Contains('Random Number Table roll')) -Message 'Roll command did not return a random-number notification before DOM capture.'
 
     $rootHtml = [string](Invoke-RestMethod -Method Get -Uri "$baseUrl/" -TimeoutSec 5)
     Assert-WebDomSmoke -Condition ($rootHtml.Contains('Lone Wolf Web Assistant')) -Message 'The web server root did not return the frontend shell.'
@@ -288,6 +292,8 @@ try {
 
     Assert-WebDomSmoke -Condition ($dom.Contains('Lone Wolf Web Assistant')) -Message ("Browser DOM did not include the web app shell. DOM preview: {0}" -f $domPreview)
     Assert-WebDomSmoke -Condition ($dom.Contains('Roll Command')) -Message 'Browser DOM did not render the roll command panel.'
+    Assert-WebDomSmoke -Condition ($dom.Contains('Last Roll')) -Message 'Browser DOM did not render the roll panel result label.'
+    Assert-WebDomSmoke -Condition ($dom.Contains('Random Number Table roll')) -Message 'Browser DOM did not render the latest roll result inside the roll panel.'
     Assert-WebDomSmoke -Condition ($dom.Contains('No section-specific random-number rule')) -Message 'Browser DOM did not render the current roll context text.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Web DOM Smoke')) -Message 'Browser DOM did not render the loaded character summary.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Book 7 - Castle Death')) -Message 'Browser DOM did not render the loaded Book 7 context.'

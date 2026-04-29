@@ -6,9 +6,12 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- improved the local web launcher shutdown path:
+  - `Start-LoneWolfWeb.ps1` and `Start-LoneWolfWeb.sh` now keep the terminal open with a press-Enter shutdown prompt
+  - the web server now exposes a graceful local shutdown path that closes the long-lived PowerShell engine session before the HTTP process exits
 - restored the web-safe `roll` command:
   - browser sessions now allow `roll` through the safe-command gate, list it in the web help payload, and expose a dedicated Roll Command panel in place of the old shortcut cluster
-  - the Roll Command panel now describes the current section random-number rule, roll count, automatic modifier, bypass state, and any book-text modifier notes
+  - the Roll Command panel now describes the current section random-number rule, roll count, automatic modifier, bypass state, any book-text modifier notes, and the last roll result for the current section
   - Book `7` section `148` automation coverage now completes the nest-loot prompt and verifies that `roll` returns a Random Number Table notification
   - the section `148` random-check description now includes its destination ranges: `0-4 -> 63`, `5-9 -> 346`
 - fixed the web reader timing for prompt-backed section entry:

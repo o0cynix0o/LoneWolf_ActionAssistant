@@ -10,6 +10,8 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSCommandPath
 $serverScript = Join-Path $root 'web\app_server.py'
 $url = "http://$ListenHost`:$Port/"
+$controlHost = if ($ListenHost -in @('0.0.0.0', '::', '[::]')) { 'localhost' } else { $ListenHost }
+$shutdownUrl = "http://$controlHost`:$Port/api/shutdown"
 
 $isWindowsValue = Get-Variable -Name IsWindows -ValueOnly -ErrorAction SilentlyContinue
 $isMacOSValue = Get-Variable -Name IsMacOS -ValueOnly -ErrorAction SilentlyContinue
@@ -56,7 +58,36 @@ if (-not $NoBrowser) {
 Write-Host ""
 Write-Host "Lone Wolf web scaffold" -ForegroundColor Yellow
 Write-Host "URL: $url" -ForegroundColor Green
+Write-Host "Press Enter in this window to stop the web server." -ForegroundColor DarkGray
 Write-Host ""
 
 Set-Location $root
-& $pythonCommand.Source $serverScript --host $ListenHost --port $Port
+$serverProcess = $null
+try {
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = [string]$pythonCommand.Source
+    $startInfo.Arguments = ('"{0}" --host "{1}" --port {2}' -f $serverScript, $ListenHost, $Port)
+    $startInfo.WorkingDirectory = [string]$root
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $false
+
+    $serverProcess = [System.Diagnostics.Process]::Start($startInfo)
+    [void](Read-Host 'Press Enter to stop all Lone Wolf web processes')
+}
+finally {
+    if ($null -ne $serverProcess -and -not $serverProcess.HasExited) {
+        try {
+            Invoke-RestMethod -Method Post -Uri $shutdownUrl -ContentType 'application/json' -Body '{}' -TimeoutSec 5 | Out-Null
+        }
+        catch {
+        }
+
+        if (-not $serverProcess.WaitForExit(10000)) {
+            try {
+                Stop-Process -Id ([int]$serverProcess.Id) -Force -ErrorAction Stop
+            }
+            catch {
+            }
+        }
+    }
+}

@@ -29,6 +29,7 @@ $script:LWWebRandomReplay = [ordered]@{
     Generated = @()
 }
 $script:LWWebFlow = $null
+$script:LWWebLastRoll = $null
 $script:LWWebHostCapture = [ordered]@{
     Active      = $false
     CurrentLine = ''
@@ -1127,6 +1128,7 @@ function Get-LWWebRandomNumberSnapshot {
         ZeroCountsAsTen   = $false
         Bypassed          = $false
         BypassReason      = ''
+        LastRoll          = $null
         Error             = ''
     }
 
@@ -1143,6 +1145,21 @@ function Get-LWWebRandomNumberSnapshot {
         $snapshot.CanRoll = (-not [bool]$PendingFlowActive) -and (-not [bool](Test-LWDeathActive))
         $snapshot.BookNumber = $bookNumber
         $snapshot.Section = $sectionNumber
+
+        if ($null -ne $script:LWWebLastRoll -and
+            (Test-LWPropertyExists -Object $script:LWWebLastRoll -Name 'BookNumber') -and
+            (Test-LWPropertyExists -Object $script:LWWebLastRoll -Name 'Section') -and
+            $null -ne $bookNumber -and
+            $null -ne $sectionNumber -and
+            [int]$script:LWWebLastRoll.BookNumber -eq [int]$bookNumber -and
+            [int]$script:LWWebLastRoll.Section -eq [int]$sectionNumber) {
+            $snapshot.LastRoll = [ordered]@{
+                BookNumber  = [int]$script:LWWebLastRoll.BookNumber
+                Section     = [int]$script:LWWebLastRoll.Section
+                Messages    = @($script:LWWebLastRoll.Messages)
+                RecordedUtc = [string]$script:LWWebLastRoll.RecordedUtc
+            }
+        }
 
         if ($null -eq $sectionNumber -or [int]$sectionNumber -le 0) {
             $snapshot.Description = 'No active section is available for a Random Number Table roll.'
@@ -2496,6 +2513,44 @@ function Test-LWWebSafeCommand {
     )
 }
 
+function Save-LWWebLastRollSnapshot {
+    if ($null -eq $script:GameState -or $null -eq $script:GameState.Character) {
+        $script:LWWebLastRoll = $null
+        return
+    }
+
+    $messages = @()
+    $record = $false
+    foreach ($notification in @($script:LWUi.Notifications)) {
+        if ($null -eq $notification) {
+            continue
+        }
+
+        $message = if (Test-LWPropertyExists -Object $notification -Name 'Message') { [string]$notification.Message } else { [string]$notification }
+        if ([string]::IsNullOrWhiteSpace($message)) {
+            continue
+        }
+
+        if ($message -match '^Random Number Table rolls?:') {
+            $record = $true
+        }
+
+        if ($record -and (
+                $message -match '^Random Number Table rolls?:' -or
+                $message -match '^Book \d+ section \d+' -or
+                $message -match '^Section \d+')) {
+            $messages += $message
+        }
+    }
+
+    $script:LWWebLastRoll = [ordered]@{
+        BookNumber  = [int]$script:GameState.Character.BookNumber
+        Section     = [int]$script:GameState.CurrentSection
+        Messages    = @($messages)
+        RecordedUtc = ([datetime]::UtcNow.ToString('o'))
+    }
+}
+
 function Invoke-LWWebRequest {
     param([Parameter(Mandatory = $true)][object]$Request)
 
@@ -2776,16 +2831,20 @@ function Invoke-LWWebRequest {
         }
         'safeCommand' {
             $commandText = if ((Test-LWPropertyExists -Object $Request -Name 'command') -and -not [string]::IsNullOrWhiteSpace([string]$Request.command)) { [string]$Request.command } else { '' }
-            if (-not (Test-LWWebSafeCommand -InputLine $commandText)) {
+            $trimmedCommand = $commandText.Trim()
+            if (-not (Test-LWWebSafeCommand -InputLine $trimmedCommand)) {
                 throw 'That command is not available through the web scaffold yet.'
             }
 
-            if ($commandText.Trim() -match '^set\s+(\d+)$') {
+            if ($trimmedCommand -match '^set\s+(\d+)$') {
                 return (Start-LWWebSetSectionFlow -Section ([int]$matches[1]))
             }
 
-            [void](Invoke-LWCommand -InputLine $commandText)
-            return ("Ran command: {0}" -f $commandText)
+            [void](Invoke-LWCommand -InputLine $trimmedCommand)
+            if ($trimmedCommand -ieq 'roll') {
+                Save-LWWebLastRollSnapshot
+            }
+            return ("Ran command: {0}" -f $trimmedCommand)
         }
         'continueBook' {
             if ($null -eq $script:GameState) {

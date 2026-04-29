@@ -227,6 +227,8 @@ try {
     Assert-WebAutomationSmoke -Condition ([int]$nestLootDone.payload.randomNumber.Modifier -eq 0) -Message 'Book 7 section 148 roll context should report no automatic modifier.'
     $rollResult = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'roll' }
     Assert-WebAutomationSmoke -Condition ([string]$rollResult.message -eq 'Ran command: roll') -Message 'Web safe command roll did not run.'
+    Assert-WebAutomationSmoke -Condition ($null -ne $rollResult.payload.randomNumber.LastRoll) -Message 'Roll panel payload did not remember the latest roll.'
+    Assert-WebAutomationSmoke -Condition ([int]$rollResult.payload.randomNumber.LastRoll.Section -eq 148) -Message 'Roll panel payload remembered the latest roll for the wrong section.'
     $rollNotifications = @($rollResult.payload.session.Notifications | ForEach-Object { [string]$_.Message })
     Assert-WebAutomationSmoke -Condition (($rollNotifications -join "`n").Contains('Random Number Table roll')) -Message 'Web safe command roll did not return the random-number notification.'
     Assert-WebAutomationSmoke -Condition (($rollNotifications -join "`n").Contains('0-4 -> 63; 5-9 -> 346')) -Message 'Book 7 section 148 roll notification did not include the destination ranges.'

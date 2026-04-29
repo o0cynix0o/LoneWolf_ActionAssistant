@@ -99,6 +99,37 @@ class LoneWolfSession:
 
         return response
 
+    def close(self) -> None:
+        process = self.process
+        self.process = None
+        if process is None:
+            return
+
+        try:
+            if process.stdin is not None and not process.stdin.closed:
+                process.stdin.close()
+        except OSError:
+            pass
+
+        try:
+            process.wait(timeout=5)
+            return
+        except subprocess.TimeoutExpired:
+            pass
+
+        try:
+            process.terminate()
+            process.wait(timeout=5)
+            return
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+        try:
+            process.kill()
+            process.wait(timeout=5)
+        except OSError:
+            pass
+
 
 SESSION = LoneWolfSession(ROOT)
 
@@ -134,6 +165,11 @@ class LoneWolfHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
+        if parsed.path == "/api/shutdown":
+            self.send_json({"ok": True, "message": "Server shutdown requested."})
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
+
         if parsed.path != "/api/action":
             self.send_json({"ok": False, "message": "Not found."}, HTTPStatus.NOT_FOUND)
             return
@@ -205,6 +241,7 @@ def main() -> int:
     except KeyboardInterrupt:
         pass
     finally:
+        SESSION.close()
         server.server_close()
     return 0
 
