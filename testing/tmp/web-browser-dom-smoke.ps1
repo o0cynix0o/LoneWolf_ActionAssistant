@@ -287,6 +287,8 @@ try {
     $domPreview = if ($dom.Length -gt 500) { $dom.Substring(0, 500) } else { $dom }
 
     Assert-WebDomSmoke -Condition ($dom.Contains('Lone Wolf Web Assistant')) -Message ("Browser DOM did not include the web app shell. DOM preview: {0}" -f $domPreview)
+    Assert-WebDomSmoke -Condition ($dom.Contains('Roll Command')) -Message 'Browser DOM did not render the roll command panel.'
+    Assert-WebDomSmoke -Condition ($dom.Contains('No section-specific random-number rule')) -Message 'Browser DOM did not render the current roll context text.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Web DOM Smoke')) -Message 'Browser DOM did not render the loaded character summary.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Book 7 - Castle Death')) -Message 'Browser DOM did not render the loaded Book 7 context.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Current Book Progress')) -Message 'Browser DOM did not render the achievements tab content.'

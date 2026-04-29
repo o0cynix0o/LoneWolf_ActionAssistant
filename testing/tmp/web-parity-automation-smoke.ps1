@@ -218,8 +218,13 @@ try {
     $nestLootPrompt = Invoke-WebApiAction -Process $session -Request @{ action = 'setSection'; section = 148 }
     [void](Assert-PendingPrompt -Response $nestLootPrompt -ExpectedPrompt 'Section 148 choice' -ExpectedKind 'choiceTable' -ContextContains @('Section 148 Nest Loot', 'Mace', 'Padded Leather Waistcoat', 'Potion of Laumspur', '0. Done choosing'))
     Assert-WebAutomationSmoke -Condition ([int]$nestLootPrompt.payload.reader.Section -eq 148) -Message 'Pending Book 7 section 148 loot prompt should still advance the reader pane to section 148.'
+    Assert-WebAutomationSmoke -Condition ([int]$nestLootPrompt.payload.randomNumber.Section -eq 148) -Message 'Pending Book 7 section 148 should expose roll context for the reader section.'
+    Assert-WebAutomationSmoke -Condition (-not [bool]$nestLootPrompt.payload.randomNumber.CanRoll) -Message 'Roll panel should wait until the section 148 loot prompt completes.'
+    Assert-WebAutomationSmoke -Condition ([string]$nestLootPrompt.payload.randomNumber.Description -like '*0-4 -> 63; 5-9 -> 346*') -Message 'Book 7 section 148 roll context is missing destination ranges while the loot prompt is pending.'
     $nestLootDone = Invoke-WebApiAction -Process $session -Request @{ action = 'submitFlow'; data = @{ response = 0 } }
     Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $nestLootDone)) -Message 'Book 7 section 148 loot prompt did not complete after choosing 0.'
+    Assert-WebAutomationSmoke -Condition ([bool]$nestLootDone.payload.randomNumber.CanRoll) -Message 'Roll panel should enable after the section 148 loot prompt completes.'
+    Assert-WebAutomationSmoke -Condition ([int]$nestLootDone.payload.randomNumber.Modifier -eq 0) -Message 'Book 7 section 148 roll context should report no automatic modifier.'
     $rollResult = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'roll' }
     Assert-WebAutomationSmoke -Condition ([string]$rollResult.message -eq 'Ran command: roll') -Message 'Web safe command roll did not run.'
     $rollNotifications = @($rollResult.payload.session.Notifications | ForEach-Object { [string]$_.Message })

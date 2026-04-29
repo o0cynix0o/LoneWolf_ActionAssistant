@@ -1105,6 +1105,96 @@ function Get-LWWebOptionalString {
     return $text
 }
 
+function Get-LWWebRandomNumberSnapshot {
+    param(
+        [object]$State = $script:GameState,
+        [int]$Section = 0,
+        [bool]$PendingFlowActive = $false
+    )
+
+    $snapshot = [ordered]@{
+        Available         = $false
+        CanRoll           = $false
+        PendingFlowActive = [bool]$PendingFlowActive
+        HasContext        = $false
+        BookNumber        = $null
+        Section           = if ($Section -gt 0) { [int]$Section } else { $null }
+        Description       = ''
+        Modifier          = 0
+        ModifierNotes     = @()
+        RollCount         = 1
+        SequenceMode      = 'combined'
+        ZeroCountsAsTen   = $false
+        Bypassed          = $false
+        BypassReason      = ''
+        Error             = ''
+    }
+
+    if ($null -eq $State) {
+        $snapshot.Description = 'Load a run to use the Random Number Table.'
+        return $snapshot
+    }
+
+    try {
+        $bookNumber = if ($null -ne $State.Character -and $null -ne $State.Character.BookNumber) { [int]$State.Character.BookNumber } else { $null }
+        $sectionNumber = if ($Section -gt 0) { [int]$Section } elseif ($null -ne $State.CurrentSection) { [int]$State.CurrentSection } else { $null }
+
+        $snapshot.Available = $true
+        $snapshot.CanRoll = (-not [bool]$PendingFlowActive) -and (-not [bool](Test-LWDeathActive))
+        $snapshot.BookNumber = $bookNumber
+        $snapshot.Section = $sectionNumber
+
+        if ($null -eq $sectionNumber -or [int]$sectionNumber -le 0) {
+            $snapshot.Description = 'No active section is available for a Random Number Table roll.'
+            $snapshot.CanRoll = $false
+            return $snapshot
+        }
+
+        $contextState = Copy-LWWebValue $State
+        if ($null -ne $contextState) {
+            if (Test-LWPropertyExists -Object $contextState -Name 'CurrentSection') {
+                $contextState.CurrentSection = [int]$sectionNumber
+            }
+            else {
+                $contextState | Add-Member -NotePropertyName CurrentSection -NotePropertyValue ([int]$sectionNumber)
+            }
+        }
+
+        $context = Get-LWSectionRandomNumberContext -State $contextState
+        if ($null -eq $context) {
+            $snapshot.Description = 'No section-specific random-number rule is registered for this section.'
+            return $snapshot
+        }
+
+        $snapshot.HasContext = $true
+        $snapshot.Description = Get-LWWebOptionalString -Object $context -Name 'Description' -Default 'Plain random-number check.'
+        $snapshot.Modifier = [int](Get-LWWebOptionalProperty -Object $context -Name 'Modifier' -Default 0)
+        $snapshot.ModifierNotes = @(
+            foreach ($note in @(Get-LWWebOptionalProperty -Object $context -Name 'ModifierNotes' -Default @())) {
+                if (-not [string]::IsNullOrWhiteSpace([string]$note)) {
+                    [string]$note
+                }
+            }
+        )
+        $snapshot.RollCount = [Math]::Max(1, [int](Get-LWWebOptionalProperty -Object $context -Name 'RollCount' -Default 1))
+        $snapshot.SequenceMode = Get-LWWebOptionalString -Object $context -Name 'SequenceMode' -Default 'combined'
+        $snapshot.ZeroCountsAsTen = [bool](Get-LWWebOptionalProperty -Object $context -Name 'ZeroCountsAsTen' -Default $false)
+        $snapshot.Bypassed = [bool](Get-LWWebOptionalProperty -Object $context -Name 'Bypassed' -Default $false)
+        $snapshot.BypassReason = Get-LWWebOptionalString -Object $context -Name 'BypassReason'
+        if ([bool]$snapshot.Bypassed) {
+            $snapshot.CanRoll = $false
+        }
+
+        return $snapshot
+    }
+    catch {
+        $snapshot.CanRoll = $false
+        $snapshot.Description = 'Random Number Table context could not be prepared.'
+        $snapshot.Error = [string]$_.Exception.Message
+        return $snapshot
+    }
+}
+
 function New-LWWebFlowPrompt {
     param([Parameter(Mandatory = $true)][object]$Flow)
 
@@ -2223,6 +2313,7 @@ function Get-LWWebStateSnapshot {
                 modes             = Get-LWWebModeSnapshot
                 combatLog         = $null
                 help              = Get-LWWebHelpSnapshot
+                randomNumber      = Get-LWWebRandomNumberSnapshot
                 pendingFlow      = $pendingFlow
                 availableScreens = @('welcome', 'sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'modes', 'bookcomplete', 'help')
             }
@@ -2249,6 +2340,7 @@ function Get-LWWebStateSnapshot {
         $specialSection = Get-LWWebInventorySectionSnapshot -Type 'special'
         $pocketSection = Get-LWWebInventorySectionSnapshot -Type 'pocket'
         $herbPouchSection = Get-LWWebInventorySectionSnapshot -Type 'herbpouch'
+        $randomNumber = Get-LWWebRandomNumberSnapshot -State $script:GameState -Section $readerSection -PendingFlowActive ($null -ne $pendingFlow)
 
         $stage = 'active state payload'
         return [ordered]@{
@@ -2332,6 +2424,7 @@ function Get-LWWebStateSnapshot {
             modes            = Get-LWWebModeSnapshot
             combatLog        = Get-LWWebCombatLogSnapshot
             help             = Get-LWWebHelpSnapshot
+            randomNumber     = $randomNumber
             saves            = @(Get-LWWebSaveEntries)
             pendingFlow      = $pendingFlow
             availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'modes', 'death', 'bookcomplete', 'help')

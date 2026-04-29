@@ -234,7 +234,8 @@ h1 {
 }
 
 .command-row,
-.shortcut-row {
+.shortcut-row,
+.roll-action-row {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
@@ -242,6 +243,49 @@ h1 {
 
 .command-row input {
   flex: 1;
+}
+
+.roll-command-group {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+
+.roll-action-row {
+  align-items: center;
+}
+
+.roll-action-row button {
+  min-width: 4.5rem;
+}
+
+.roll-section {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.roll-context {
+  display: grid;
+  gap: 0.42rem;
+  color: var(--paper);
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.roll-context p {
+  margin: 0;
+}
+
+.roll-meta {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.roll-note-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
 }
 
 .tabbar {
@@ -890,6 +934,10 @@ h1 {
 
 .muted {
   color: var(--muted);
+}
+
+.danger-text {
+  color: var(--danger);
 }
 
 .history-row,

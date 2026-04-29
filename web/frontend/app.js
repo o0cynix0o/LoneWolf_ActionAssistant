@@ -51,6 +51,9 @@ const elements = {
   commandInput: document.getElementById('command-input'),
   jumpSectionBtn: document.getElementById('jump-section-btn'),
   runCommandBtn: document.getElementById('run-command-btn'),
+  rollCommandBtn: document.getElementById('roll-command-btn'),
+  rollSectionLabel: document.getElementById('roll-section-label'),
+  rollContext: document.getElementById('roll-context'),
   newGameBtn: document.getElementById('new-game-btn'),
   loadLastSaveBtn: document.getElementById('load-last-save-btn'),
   saveGameBtn: document.getElementById('save-game-btn'),
@@ -91,6 +94,11 @@ function text(value, fallback = '(none)') {
     return fallback;
   }
   return String(value);
+}
+
+function formatSignedNumber(value) {
+  const number = Number(value || 0);
+  return number > 0 ? `+${number}` : String(number);
 }
 
 function escapeHtml(value) {
@@ -384,6 +392,71 @@ function renderSummaryCards(payload) {
       <strong>${value}</strong>
     </article>
   `).join('');
+}
+
+function renderRollPanel(payload) {
+  if (!elements.rollCommandBtn || !elements.rollSectionLabel || !elements.rollContext) {
+    return;
+  }
+
+  const roll = payload?.randomNumber || {};
+  const hasState = Boolean(payload?.session?.HasState);
+  const pending = Boolean(payload?.pendingFlow?.Active || roll.PendingFlowActive);
+  const canRoll = Boolean(hasState && roll.CanRoll && !pending);
+  const bookNumber = roll.BookNumber || payload?.reader?.BookNumber;
+  const section = roll.Section || payload?.reader?.Section;
+
+  elements.rollCommandBtn.disabled = !canRoll;
+  elements.rollSectionLabel.textContent = hasState
+    ? `Book ${text(bookNumber, '?')} | Section ${text(section, '?')}`
+    : 'No run loaded';
+
+  if (!hasState) {
+    elements.rollContext.innerHTML = '<p class="muted">Load a run to use the Random Number Table.</p>';
+    return;
+  }
+
+  const notes = safeArray(roll.ModifierNotes).filter((note) => String(note || '').trim());
+  const modifier = Number(roll.Modifier || 0);
+  const details = [];
+
+  if (roll.Error) {
+    details.push(`<p class="danger-text">${escapeHtml(text(roll.Error))}</p>`);
+  }
+
+  if (pending) {
+    details.push('<p class="muted">Finish the current prompt before rolling.</p>');
+  }
+
+  if (roll.HasContext) {
+    details.push(`<p>${escapeHtml(text(roll.Description, 'Plain random-number check.'))}</p>`);
+    details.push(`
+      <div class="roll-meta">
+        <span class="pill subtle-pill">Rolls: ${escapeHtml(text(roll.RollCount, '1'))}</span>
+        <span class="pill subtle-pill">Modifier: ${escapeHtml(formatSignedNumber(modifier))}</span>
+        ${roll.ZeroCountsAsTen ? '<span class="pill subtle-pill">0 counts as 10</span>' : ''}
+        ${roll.Bypassed ? '<span class="pill subtle-pill">Bypassed</span>' : ''}
+      </div>
+    `);
+
+    if (roll.Bypassed) {
+      details.push(`<p class="muted">${escapeHtml(text(roll.BypassReason, 'This section bypasses the random-number check.'))}</p>`);
+    } else if (notes.length) {
+      details.push(`
+        <ul class="roll-note-list">
+          ${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}
+        </ul>
+      `);
+    } else if (modifier === 0) {
+      details.push('<p class="muted">No automatic modifier applies.</p>');
+    } else {
+      details.push('<p class="muted">The modifier comes from this section rule.</p>');
+    }
+  } else {
+    details.push(`<p class="muted">${escapeHtml(text(roll.Description, 'No section-specific random-number rule is registered for this section.'))}</p>`);
+  }
+
+  elements.rollContext.innerHTML = details.join('');
 }
 
 function renderDisciplineGroup(title, disciplines, tone = '') {
@@ -2276,6 +2349,7 @@ function applyResponse(response) {
   elements.saveGameBtn.disabled = !response.payload?.session?.HasState;
   syncActiveTabButtons();
   renderSummaryCards(response.payload);
+  renderRollPanel(response.payload);
   renderPendingFlow(response.payload);
   syncReader(response.payload);
   renderView();
