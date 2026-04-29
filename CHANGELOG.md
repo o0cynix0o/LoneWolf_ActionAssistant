@@ -6,6 +6,12 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- expanded the tracked web scaffold review surfaces into browser-native tabs:
+  - added browser-side `Stats`, `Campaign`, and `Achievements` tabs to the tracked web shell
+  - the web session payload now exposes the live current-book stats summary instead of only the raw `CurrentBookStats` object
+  - the web session payload now exposes a structured achievement snapshot with current-book entries, recent unlocks, and per-book totals
+  - backend screen changes to `stats`, `campaign`, and `achievements` now sync back into the browser tab state instead of leaving the frontend parked on an older tab
+  - verified against the live local HTTP server by switching the active session through `stats`, `campaign`, and `achievements` and checking the rendered browser DOM
 - began the tracked web-GUI and cross-platform migration scaffold:
   - added the formal migration plan in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
   - added the Phase `0` parity inventory in `docs/WEB_PARITY_INVENTORY.md`

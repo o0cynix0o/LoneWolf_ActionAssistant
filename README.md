@@ -142,6 +142,14 @@ Current web-scaffold coverage includes:
 - split reader + assistant browser shell
 - live state and screen refresh over the local HTTP/JSON backend
 - same-book section-page navigation inside the reader now pushes section changes back into the app state
+- browser-native review surfaces for:
+  - `Stats`
+  - `Campaign`
+  - `Achievements`
+- browser-tab sync for backend review screens:
+  - `stats`
+  - `campaign`
+  - `achievements`
 - safe screen / section commands
 - save catalog browsing and load actions
 - browser-side save controls:
@@ -150,6 +158,10 @@ Current web-scaffold coverage includes:
 - browser-side note controls:
   - add note directly from the Notes tab
   - remove existing notes without dropping back to command text
+- browser-side run-review surfaces:
+  - current-book stats now render from the live engine summary instead of the raw `CurrentBookStats` object
+  - campaign review now has a browser-native screen for run status, totals, milestones, weapon trends, and tracked-book history
+  - achievements now have a browser-native screen for current-book targets, recent unlocks, and per-book totals
 - browser-side inventory and resource controls:
   - slot-aware inventory panels for Weapons, Backpack, Special Items, Pocket Items, and Herb Pouch
   - direct add, drop, and recover actions for supported inventory sections

@@ -88,6 +88,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - the local web bootstrap now skips stale backup pointers and falls back to the newest normal `.json` save when needed
   - the main web Overview sheet now groups disciplines by ruleset, with separate Kai and Magnakai sections instead of one flat mixed list
   - the web discipline panel now uses a compact multi-column chip grid so overview sheets stop wasting a full row per discipline
+  - the tracked browser shell now includes browser-native `Stats`, `Campaign`, and `Achievements` tabs instead of forcing the run-review surfaces back through command text
+  - the web session payload now exposes the live current-book stats summary and a structured achievement snapshot with current-book entries, recent unlocks, and per-book totals
+  - backend `stats`, `campaign`, and `achievements` screen changes now sync back into the browser tab state, so safe commands and screen shortcuts land on the matching review tab instead of leaving the browser on stale content
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

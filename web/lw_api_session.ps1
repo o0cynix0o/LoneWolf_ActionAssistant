@@ -649,6 +649,127 @@ function Get-LWWebCampaignSnapshot {
     }
 }
 
+function Get-LWWebAchievementEntrySnapshot {
+    param([Parameter(Mandatory = $true)][object]$Definition)
+
+    $id = if ((Test-LWPropertyExists -Object $Definition -Name 'Id') -and -not [string]::IsNullOrWhiteSpace([string]$Definition.Id)) {
+        [string]$Definition.Id
+    }
+    else {
+        ''
+    }
+
+    if ([string]::IsNullOrWhiteSpace($id)) {
+        return $null
+    }
+
+    $unlocked = [bool](Test-LWAchievementUnlocked -Id $id)
+    $available = [bool](Test-LWAchievementAvailableInCurrentMode -Definition $Definition)
+    $progressText = if (-not $unlocked) { [string](Get-LWAchievementProgressText -Definition $Definition) } else { '' }
+
+    return [ordered]@{
+        Id                 = $id
+        Name               = if ($unlocked) { [string](Get-LWAchievementDisplayNameById -Id $id) } else { [string](Get-LWAchievementLockedDisplayName -Definition $Definition) }
+        Category           = if ((Test-LWPropertyExists -Object $Definition -Name 'Category') -and -not [string]::IsNullOrWhiteSpace([string]$Definition.Category)) { [string]$Definition.Category } else { '' }
+        Description        = if ($unlocked) { [string]$Definition.Description } else { [string](Get-LWAchievementLockedDisplayDescription -Definition $Definition) }
+        BookNumber         = if ((Test-LWPropertyExists -Object $Definition -Name 'BookNumber') -and $null -ne $Definition.BookNumber) { [int]$Definition.BookNumber } else { $null }
+        Hidden             = [bool]((Test-LWPropertyExists -Object $Definition -Name 'Hidden') -and [bool]$Definition.Hidden)
+        Unlocked           = $unlocked
+        AvailableInMode    = $available
+        AvailabilityReason = if ($available) { '' } else { [string](Get-LWAchievementAvailabilityReason -Definition $Definition) }
+        Progress           = if ([string]::IsNullOrWhiteSpace($progressText)) { '' } else { $progressText }
+    }
+}
+
+function Get-LWWebAchievementBookTotals {
+    if ($null -eq $script:GameState -or $null -eq $script:GameState.Character) {
+        return @()
+    }
+
+    $currentBook = if ($null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 1 }
+    $completedBooks = if ($null -ne $script:GameState.Character.CompletedBooks) { @($script:GameState.Character.CompletedBooks) } else { @() }
+
+    return @(
+        foreach ($bookNumber in @(1..$currentBook)) {
+            $definitions = @(Get-LWAchievementBookDisplayDefinitions -BookNumber $bookNumber)
+            if ($definitions.Count -eq 0) {
+                continue
+            }
+
+            $unlockedCount = 0
+            foreach ($definition in $definitions) {
+                if ($null -ne $definition -and (Test-LWAchievementUnlocked -Id ([string]$definition.Id))) {
+                    $unlockedCount++
+                }
+            }
+
+            [ordered]@{
+                BookNumber    = $bookNumber
+                BookTitle     = [string](Get-LWBookTitle -BookNumber $bookNumber)
+                UnlockedCount = $unlockedCount
+                TotalCount    = @($definitions).Count
+                Completed     = [bool]($completedBooks -contains $bookNumber)
+                Current       = ($bookNumber -eq $currentBook)
+            }
+        }
+    )
+}
+
+function Get-LWWebAchievementSnapshot {
+    if ($null -eq $script:GameState -or $null -eq $script:GameState.Character) {
+        return $null
+    }
+
+    $currentBook = if ($null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 1 }
+    $currentBookDefinitions = @(Get-LWAchievementBookDisplayDefinitions -BookNumber $currentBook)
+    $currentBookEntries = @(
+        foreach ($definition in $currentBookDefinitions) {
+            $entry = Get-LWWebAchievementEntrySnapshot -Definition $definition
+            if ($null -ne $entry) {
+                $entry
+            }
+        }
+    )
+
+    $recentUnlocks = @(
+        foreach ($entry in @((Get-LWAchievementRecentUnlocks) | Sort-Object -Property UnlockedOn -Descending)) {
+            if ($null -eq $entry) {
+                continue
+            }
+
+            [ordered]@{
+                Id          = if ((Test-LWPropertyExists -Object $entry -Name 'Id') -and -not [string]::IsNullOrWhiteSpace([string]$entry.Id)) { [string]$entry.Id } else { '' }
+                Name        = if ((Test-LWPropertyExists -Object $entry -Name 'Name') -and -not [string]::IsNullOrWhiteSpace([string]$entry.Name)) { [string]$entry.Name } else { '' }
+                Category    = if ((Test-LWPropertyExists -Object $entry -Name 'Category') -and -not [string]::IsNullOrWhiteSpace([string]$entry.Category)) { [string]$entry.Category } else { '' }
+                Description = if ((Test-LWPropertyExists -Object $entry -Name 'Description') -and -not [string]::IsNullOrWhiteSpace([string]$entry.Description)) { [string]$entry.Description } else { '' }
+                BookNumber  = if ((Test-LWPropertyExists -Object $entry -Name 'BookNumber') -and $null -ne $entry.BookNumber) { [int]$entry.BookNumber } else { $null }
+                Section     = if ((Test-LWPropertyExists -Object $entry -Name 'Section') -and $null -ne $entry.Section) { [int]$entry.Section } else { $null }
+                UnlockedOn  = if ((Test-LWPropertyExists -Object $entry -Name 'UnlockedOn') -and $null -ne $entry.UnlockedOn) { ([datetime]$entry.UnlockedOn).ToString('s') } else { '' }
+            }
+        }
+    )
+
+    $currentBookUnlocked = @($currentBookEntries | Where-Object { $_.Unlocked }).Count
+    $currentBookAvailable = @($currentBookEntries | Where-Object { $_.AvailableInMode }).Count
+    $currentBookProgress = @($currentBookEntries | Where-Object { -not $_.Unlocked -and -not [string]::IsNullOrWhiteSpace([string]$_.Progress) })
+
+    return [ordered]@{
+        CurrentBookNumber      = $currentBook
+        CurrentBookTitle       = [string](Get-LWBookTitle -BookNumber $currentBook)
+        UnlockedCount          = [int](Get-LWAchievementUnlockedCount)
+        AvailableCount         = [int](Get-LWAchievementAvailableCount)
+        ProfileUnlockedCount   = @($script:GameState.Achievements.Unlocked).Count
+        ProfileAvailableCount  = @(Get-LWAchievementDefinitions).Count
+        CurrentBookUnlocked    = $currentBookUnlocked
+        CurrentBookAvailable   = $currentBookAvailable
+        CurrentBookTotal       = @($currentBookEntries).Count
+        CurrentBookEntries     = @($currentBookEntries)
+        CurrentBookProgress    = @($currentBookProgress)
+        RecentUnlocks          = @($recentUnlocks)
+        BookTotals             = @(Get-LWWebAchievementBookTotals)
+    }
+}
+
 function Get-LWWebOptionEntries {
     param(
         [Parameter(Mandatory = $true)][object[]]$Items,
@@ -1820,8 +1941,9 @@ function Get-LWWebStateSnapshot {
             }
             notes            = @($character.Notes)
             history          = @(Get-LWWebHistoryPreview -History @($script:GameState.History))
-            currentBookStats = if ($null -ne $script:GameState.CurrentBookStats) { $script:GameState.CurrentBookStats } else { $null }
+            currentBookStats = Get-LWLiveBookStatsSummary
             campaign         = Get-LWWebCampaignSnapshot
+            achievements     = Get-LWWebAchievementSnapshot
             saves            = @(Get-LWWebSaveEntries)
             pendingFlow      = $pendingFlow
             availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'bookcomplete', 'help')

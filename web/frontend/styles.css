@@ -520,6 +520,191 @@ h1 {
   text-align: center;
 }
 
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.panel-grid > .panel {
+  margin-bottom: 0;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.compact-detail-list {
+  margin-top: 0.65rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: start;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(103, 93, 57, 0.45);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.detail-row span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.detail-row strong {
+  color: var(--ink);
+  text-align: right;
+}
+
+.feature-quote {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border-left: 3px solid var(--gold-soft);
+  border-radius: 0 10px 10px 0;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--paper);
+  line-height: 1.65;
+}
+
+.subheading {
+  margin: 0.95rem 0 0.55rem;
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.chip-cloud {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.chip-cloud .pill {
+  gap: 0.35rem;
+}
+
+.chip-cloud .pill strong {
+  color: var(--gold);
+  font-size: 0.84rem;
+}
+
+.book-track-grid,
+.achievement-grid,
+.book-total-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.book-track-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.book-track-card,
+.achievement-card,
+.book-total-chip {
+  padding: 0.8rem;
+  border: 1px solid rgba(103, 93, 57, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.book-track-card strong,
+.achievement-card strong,
+.book-total-chip strong {
+  color: var(--ink);
+}
+
+.book-total-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.book-total-chip {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.book-total-chip span,
+.book-total-chip em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.book-total-chip-current {
+  border-color: rgba(212, 176, 88, 0.75);
+  background: rgba(212, 176, 88, 0.08);
+}
+
+.achievement-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.achievement-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.achievement-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.achievement-card p {
+  margin: 0;
+  color: var(--paper);
+  line-height: 1.55;
+}
+
+.achievement-card-unlocked {
+  border-color: rgba(133, 191, 118, 0.65);
+  background: rgba(133, 191, 118, 0.08);
+}
+
+.achievement-card-muted {
+  opacity: 0.8;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(103, 93, 57, 0.55);
+}
+
+.status-pill-success {
+  color: #d4f2cb;
+  border-color: rgba(133, 191, 118, 0.75);
+  background: rgba(133, 191, 118, 0.14);
+}
+
+.status-pill-warning {
+  color: var(--gold);
+  border-color: rgba(212, 176, 88, 0.75);
+  background: rgba(212, 176, 88, 0.12);
+}
+
+.status-pill-muted {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .inline-form {
   align-content: start;
 }
@@ -707,6 +892,11 @@ h1 {
 
   .flow-grid,
   .compact-options,
+  .panel-grid,
+  .metric-grid,
+  .book-track-grid,
+  .achievement-grid,
+  .book-total-grid,
   .inventory-actions-grid,
   .inventory-grid,
   .kv-grid {
@@ -721,5 +911,14 @@ h1 {
 @media (max-width: 720px) {
   .discipline-grid {
     grid-template-columns: 1fr;
+  }
+
+  .detail-row,
+  .achievement-card-header {
+    flex-direction: column;
+  }
+
+  .detail-row strong {
+    text-align: left;
   }
 }

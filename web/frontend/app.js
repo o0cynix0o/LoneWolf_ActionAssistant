@@ -132,6 +132,86 @@ function formatMessage(value, fallback = 'Ready.') {
   return text(value, fallback);
 }
 
+function formatTimestamp(value) {
+  if (!value) {
+    return '(unknown)';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return text(value, '(unknown)');
+  }
+
+  return date.toLocaleString();
+}
+
+function getTabForScreen(screenName) {
+  switch (String(screenName || '').toLowerCase()) {
+    case 'sheet':
+    case 'disciplines':
+    case 'help':
+      return 'overview';
+    case 'inventory':
+      return 'inventory';
+    case 'stats':
+      return 'stats';
+    case 'campaign':
+      return 'campaign';
+    case 'achievements':
+      return 'achievements';
+    case 'combat':
+    case 'combatlog':
+      return 'combat';
+    case 'history':
+      return 'history';
+    case 'notes':
+      return 'notes';
+    case 'saves':
+      return 'saves';
+    default:
+      return null;
+  }
+}
+
+function syncActiveTabButtons() {
+  elements.tabbar.querySelectorAll('button').forEach((button) => {
+    button.classList.toggle('active', button.dataset.tab === state.activeTab);
+  });
+}
+
+function renderNamedCountCloud(items, emptyLabel = '(none)') {
+  const entries = safeArray(items);
+  if (!entries.length) {
+    return `<p class="muted">${emptyLabel}</p>`;
+  }
+
+  return `
+    <div class="chip-cloud">
+      ${entries.map((entry) => `
+        <span class="pill">
+          ${escapeHtml(text(entry.Name, '(unknown)'))}
+          <strong>${escapeHtml(text(entry.Count, '0'))}</strong>
+        </span>
+      `).join('')}
+    </div>
+  `;
+}
+
+function getUniqueCampaignBookEntries(bookEntries) {
+  const byBook = new Map();
+  safeArray(bookEntries).forEach((entry) => {
+    const bookNumber = Number(entry?.Summary?.BookNumber || 0);
+    if (!bookNumber) {
+      return;
+    }
+    byBook.set(bookNumber, entry);
+  });
+
+  return Array.from(byBook.values()).sort((left, right) => {
+    return Number(left?.Summary?.BookNumber || 0) - Number(right?.Summary?.BookNumber || 0);
+  });
+}
+
 function getReaderPageInfo() {
   try {
     const href = elements.readerFrame.contentWindow?.location?.href
@@ -298,6 +378,275 @@ function renderOverview(payload) {
           <div class="kv"><span>Deaths / Rewinds</span><strong>${text(campaign.Deaths, '0')} / ${text(campaign.RewindsUsed, '0')}</strong></div>
         </div>
       ` : '<p class="muted">No campaign summary is available until a run is loaded.</p>'}
+    </section>
+  `;
+}
+
+function renderStats(payload) {
+  const stats = payload.currentBookStats || null;
+  if (!stats) {
+    return `
+      <section class="panel">
+        <h2>Current Book Stats</h2>
+        <p class="muted">No live book summary is available yet for this run.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="panel">
+      <h2>Current Book Summary</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Book</span><strong>Book ${text(stats.BookNumber, '?')} - ${text(stats.BookTitle, 'Unknown')}</strong></div>
+        <div class="kv"><span>Difficulty</span><strong>${text(stats.Difficulty)}</strong></div>
+        <div class="kv"><span>Permadeath</span><strong>${stats.Permadeath ? 'On' : 'Off'}</strong></div>
+        <div class="kv"><span>Integrity</span><strong>${text(stats.RunIntegrityState)}</strong></div>
+        <div class="kv"><span>Start / Last Section</span><strong>${text(stats.StartSection, '0')} / ${text(stats.LastSection, '0')}</strong></div>
+        <div class="kv"><span>Path Sections</span><strong>${text(stats.SuccessfulPathSections, '0')}</strong></div>
+        <div class="kv"><span>Sections Seen</span><strong>${text(stats.SectionsVisited, '0')}</strong></div>
+        <div class="kv"><span>Unique Sections</span><strong>${text(stats.UniqueSectionsVisited, '0')}</strong></div>
+        <div class="kv"><span>END Lost / Gained</span><strong>${text(stats.EnduranceLost, '0')} / ${text(stats.EnduranceGained, '0')}</strong></div>
+        <div class="kv"><span>Gold Gained / Spent</span><strong>${text(stats.GoldGained, '0')} / ${text(stats.GoldSpent, '0')}</strong></div>
+        <div class="kv"><span>Deaths / Rewinds</span><strong>${text(stats.DeathCount, '0')} / ${text(stats.RewindsUsed, '0')}</strong></div>
+        <div class="kv"><span>Run Style</span><strong>${stats.PartialTracking ? 'Partial Tracking' : 'Tracked Run'}</strong></div>
+      </div>
+    </section>
+    <section class="panel-grid">
+      <section class="panel">
+        <h2>Survival & Recovery</h2>
+        <div class="kv-grid">
+          <div class="kv"><span>Meals Eaten</span><strong>${text(stats.MealsEaten, '0')}</strong></div>
+          <div class="kv"><span>Hunting Meals</span><strong>${text(stats.MealsCoveredByHunting, '0')}</strong></div>
+          <div class="kv"><span>Starvation Penalties</span><strong>${text(stats.StarvationPenalties, '0')}</strong></div>
+          <div class="kv"><span>Potions Used</span><strong>${text(stats.PotionsUsed, '0')}</strong></div>
+          <div class="kv"><span>Strong Potions</span><strong>${text(stats.ConcentratedPotionsUsed, '0')}</strong></div>
+          <div class="kv"><span>Potion END</span><strong>${text(stats.PotionEnduranceRestored, '0')}</strong></div>
+          <div class="kv"><span>Healing Triggers</span><strong>${text(stats.HealingTriggers, '0')}</strong></div>
+          <div class="kv"><span>Healing END</span><strong>${text(stats.HealingEnduranceRestored, '0')}</strong></div>
+          <div class="kv"><span>Manual Recoveries</span><strong>${text(stats.ManualRecoveryShortcuts, '0')}</strong></div>
+          <div class="kv"><span>Instant Deaths</span><strong>${text(stats.InstantDeaths, '0')}</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Combat Benchmarks</h2>
+        <div class="kv-grid">
+          <div class="kv"><span>Combats</span><strong>${text(stats.CombatCount, '0')}</strong></div>
+          <div class="kv"><span>Victories / Defeats</span><strong>${text(stats.Victories, '0')} / ${text(stats.Defeats, '0')}</strong></div>
+          <div class="kv"><span>Evades</span><strong>${text(stats.Evades, '0')}</strong></div>
+          <div class="kv"><span>Rounds Fought</span><strong>${text(stats.RoundsFought, '0')}</strong></div>
+          <div class="kv"><span>Mindblast Combats</span><strong>${text(stats.MindblastCombats, '0')}</strong></div>
+          <div class="kv"><span>Mindblast Wins</span><strong>${text(stats.MindblastVictories, '0')}</strong></div>
+          <div class="kv"><span>Highest CS Faced</span><strong>${text(stats.HighestEnemyCombatSkillFaced, '0')}</strong></div>
+          <div class="kv"><span>Highest END Faced</span><strong>${text(stats.HighestEnemyEnduranceFaced, '0')}</strong></div>
+          <div class="kv"><span>Highest CS Defeated</span><strong>${text(stats.HighestEnemyCombatSkillDefeated, '0')}</strong></div>
+          <div class="kv"><span>Highest END Defeated</span><strong>${text(stats.HighestEnemyEnduranceDefeated, '0')}</strong></div>
+        </div>
+        <div class="detail-list">
+          <div class="detail-row"><span>Fastest Victory</span><strong>${text(stats.FastestVictoryEnemyName)} ${stats.FastestVictoryRounds ? `(${stats.FastestVictoryRounds} round${Number(stats.FastestVictoryRounds) === 1 ? '' : 's'})` : ''}</strong></div>
+          <div class="detail-row"><span>Easiest Victory</span><strong>${text(stats.EasiestVictoryEnemyName)} ${stats.EasiestVictoryRatio ? `(ratio ${stats.EasiestVictoryRatio})` : ''}</strong></div>
+          <div class="detail-row"><span>Longest Fight</span><strong>${text(stats.LongestFightEnemyName)} ${stats.LongestFightRounds ? `(${stats.LongestFightRounds} round${Number(stats.LongestFightRounds) === 1 ? '' : 's'})` : ''}</strong></div>
+        </div>
+      </section>
+    </section>
+    <section class="panel-grid">
+      <section class="panel">
+        <h2>Weapon Usage</h2>
+        ${renderNamedCountCloud(stats.WeaponUsage, 'No weapon usage has been logged yet.')}
+      </section>
+      <section class="panel">
+        <h2>Weapon Victories</h2>
+        ${renderNamedCountCloud(stats.WeaponVictories, 'No weapon victories have been logged yet.')}
+      </section>
+    </section>
+    <section class="panel">
+      <h2>Completion Quote</h2>
+      <p class="feature-quote">${text(stats.CompletionQuote, 'No current completion quote is available yet.')}</p>
+    </section>
+  `;
+}
+
+function renderCampaign(payload) {
+  const campaign = payload.campaign || null;
+  if (!campaign) {
+    return `
+      <section class="panel">
+        <h2>Campaign Review</h2>
+        <p class="muted">No campaign summary is available until a run is loaded.</p>
+      </section>
+    `;
+  }
+
+  const bookEntries = getUniqueCampaignBookEntries(campaign.BookEntries);
+  const recentAchievements = safeArray(campaign.RecentAchievements);
+
+  return `
+    <section class="panel">
+      <h2>Campaign Overview</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Character</span><strong>${text(campaign.CharacterName)}</strong></div>
+        <div class="kv"><span>Current Book</span><strong>${text(campaign.CurrentBookLabel)}</strong></div>
+        <div class="kv"><span>Rank</span><strong>${text(campaign.CurrentRankLabel)}</strong></div>
+        <div class="kv"><span>Run Status</span><strong>${text(campaign.RunStatus)}</strong></div>
+        <div class="kv"><span>Difficulty</span><strong>${text(campaign.Difficulty)}</strong></div>
+        <div class="kv"><span>Permadeath</span><strong>${campaign.PermadeathEnabled ? 'On' : 'Off'}</strong></div>
+        <div class="kv"><span>Integrity</span><strong>${text(campaign.RunIntegrityState)}</strong></div>
+        <div class="kv"><span>Run Style</span><strong>${text(campaign.RunStyle)}</strong></div>
+        <div class="kv"><span>Achievement Pool</span><strong>${text(campaign.AchievementPoolLabel)}</strong></div>
+        <div class="kv"><span>Achievements</span><strong>${text(campaign.AchievementsUnlocked, '0')} / ${text(campaign.AchievementsAvailable, '0')}</strong></div>
+        <div class="kv"><span>Profile Totals</span><strong>${text(campaign.ProfileAchievementsUnlocked, '0')} / ${text(campaign.ProfileAchievementsAvailable, '0')}</strong></div>
+        <div class="kv"><span>Books Completed</span><strong>${text(campaign.BooksCompletedCount, '0')} / ${text(campaign.BooksTrackedCount, '0')}</strong></div>
+      </div>
+      <div class="detail-list">
+        <div class="detail-row"><span>Completed Books</span><strong>${text(campaign.CompletedBooksLabel, '(none)')}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Campaign Totals</h2>
+      <div class="metric-grid">
+        <div class="kv"><span>Sections Visited</span><strong>${text(campaign.TotalSectionsVisited, '0')}</strong></div>
+        <div class="kv"><span>Unique Sections</span><strong>${text(campaign.TotalUniqueSectionsVisited, '0')}</strong></div>
+        <div class="kv"><span>Path Sections</span><strong>${text(campaign.TotalSuccessfulPathSections, '0')}</strong></div>
+        <div class="kv"><span>END Lost</span><strong>${text(campaign.TotalEnduranceLost, '0')}</strong></div>
+        <div class="kv"><span>END Gained</span><strong>${text(campaign.TotalEnduranceGained, '0')}</strong></div>
+        <div class="kv"><span>Meals Eaten</span><strong>${text(campaign.TotalMealsEaten, '0')}</strong></div>
+        <div class="kv"><span>Hunting Meals</span><strong>${text(campaign.TotalHuntingMeals, '0')}</strong></div>
+        <div class="kv"><span>Potions Used</span><strong>${text(campaign.TotalPotionsUsed, '0')}</strong></div>
+        <div class="kv"><span>Gold Gained</span><strong>${text(campaign.TotalGoldGained, '0')}</strong></div>
+        <div class="kv"><span>Gold Spent</span><strong>${text(campaign.TotalGoldSpent, '0')}</strong></div>
+        <div class="kv"><span>Deaths</span><strong>${text(campaign.TotalDeaths, '0')}</strong></div>
+        <div class="kv"><span>Rewinds</span><strong>${text(campaign.TotalRewindsUsed, '0')}</strong></div>
+      </div>
+    </section>
+    <section class="panel-grid">
+      <section class="panel">
+        <h2>Combat Milestones</h2>
+        <div class="kv-grid">
+          <div class="kv"><span>Total Combats</span><strong>${text(campaign.TotalCombatCount, '0')}</strong></div>
+          <div class="kv"><span>Victories / Defeats</span><strong>${text(campaign.TotalVictories, '0')} / ${text(campaign.TotalDefeats, '0')}</strong></div>
+          <div class="kv"><span>Total Rounds</span><strong>${text(campaign.TotalRoundsFought, '0')}</strong></div>
+          <div class="kv"><span>Mindblast Wins</span><strong>${text(campaign.TotalMindblastVictories, '0')}</strong></div>
+          <div class="kv"><span>Highest CS Faced</span><strong>${text(campaign.HighestEnemyCombatSkillFaced, '0')}</strong></div>
+          <div class="kv"><span>Highest END Faced</span><strong>${text(campaign.HighestEnemyEnduranceFaced, '0')}</strong></div>
+          <div class="kv"><span>Highest CS Defeated</span><strong>${text(campaign.HighestEnemyCombatSkillDefeated, '0')}</strong></div>
+          <div class="kv"><span>Highest END Defeated</span><strong>${text(campaign.HighestEnemyEnduranceDefeated, '0')}</strong></div>
+        </div>
+        <div class="detail-list">
+          <div class="detail-row"><span>Fastest Victory</span><strong>${text(campaign.FastestVictoryEnemyName)} ${campaign.FastestVictoryRounds ? `(${campaign.FastestVictoryRounds} round${Number(campaign.FastestVictoryRounds) === 1 ? '' : 's'}, ${text(campaign.FastestVictoryBookLabel, 'book unknown')})` : ''}</strong></div>
+          <div class="detail-row"><span>Easiest Victory</span><strong>${text(campaign.EasiestVictoryEnemyName)} ${campaign.EasiestVictoryRatio ? `(ratio ${campaign.EasiestVictoryRatio}, ${text(campaign.EasiestVictoryBookLabel, 'book unknown')})` : ''}</strong></div>
+          <div class="detail-row"><span>Longest Fight</span><strong>${text(campaign.LongestFightEnemyName)} ${campaign.LongestFightRounds ? `(${campaign.LongestFightRounds} round${Number(campaign.LongestFightRounds) === 1 ? '' : 's'}, ${text(campaign.LongestFightBookLabel, 'book unknown')})` : ''}</strong></div>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Weapon Trends</h2>
+        <div class="detail-list">
+          <div class="detail-row"><span>Favorite Weapon</span><strong>${campaign.FavoriteWeapon ? `${text(campaign.FavoriteWeapon.Name)} (${text(campaign.FavoriteWeapon.Count, '0')})` : '(none)'}</strong></div>
+          <div class="detail-row"><span>Deadliest Weapon</span><strong>${campaign.DeadliestWeapon ? `${text(campaign.DeadliestWeapon.Name)} (${text(campaign.DeadliestWeapon.Count, '0')})` : '(none)'}</strong></div>
+        </div>
+        <h3 class="subheading">Usage</h3>
+        ${renderNamedCountCloud(campaign.WeaponUsage, 'No campaign weapon usage has been logged yet.')}
+        <h3 class="subheading">Victories</h3>
+        ${renderNamedCountCloud(campaign.WeaponVictories, 'No campaign weapon victories have been logged yet.')}
+      </section>
+    </section>
+    <section class="panel">
+      <h2>Books Tracked</h2>
+      <div class="book-track-grid">
+        ${bookEntries.length ? bookEntries.map((entry) => {
+          const summary = entry?.Summary || {};
+          return `
+            <article class="book-track-card">
+              <strong>${text(entry?.Status, 'Tracked')} | Book ${text(summary.BookNumber, '?')} - ${text(summary.BookTitle, 'Unknown')}</strong>
+              <div class="history-meta">Sections ${text(summary.SectionsVisited, '0')} (${text(summary.UniqueSectionsVisited, '0')} unique) | Combats ${text(summary.CombatCount, '0')} | Victories ${text(summary.Victories, '0')}</div>
+              <div class="history-meta">END ${text(summary.EnduranceLost, '0')} lost / ${text(summary.EnduranceGained, '0')} gained | Gold ${text(summary.GoldGained, '0')} / ${text(summary.GoldSpent, '0')} | Deaths ${text(summary.DeathCount, '0')}</div>
+            </article>
+          `;
+        }).join('') : '<p class="muted">No campaign book entries are recorded yet.</p>'}
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Recent Achievements</h2>
+      ${recentAchievements.length ? recentAchievements.map((entry) => `
+        <article class="history-row">
+          <strong>${text(entry.Name)}</strong>
+          <div class="history-meta">${text(entry.Category)} | Book ${text(entry.BookNumber, '?')} ${entry.Section ? `| Section ${entry.Section}` : ''}</div>
+          <div class="history-meta">${text(entry.Description, '')}</div>
+          <div class="history-meta">${formatTimestamp(entry.UnlockedOn)}</div>
+        </article>
+      `).join('') : '<p class="muted">No recent achievement unlocks are available.</p>'}
+    </section>
+  `;
+}
+
+function renderAchievements(payload) {
+  const achievements = payload.achievements || null;
+  if (!achievements) {
+    return `
+      <section class="panel">
+        <h2>Achievements</h2>
+        <p class="muted">No achievement data is available until a run is loaded.</p>
+      </section>
+    `;
+  }
+
+  const currentBookEntries = safeArray(achievements.CurrentBookEntries);
+  const recentUnlocks = safeArray(achievements.RecentUnlocks);
+  const bookTotals = safeArray(achievements.BookTotals);
+
+  return `
+    <section class="panel">
+      <h2>Achievement Overview</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Current Book</span><strong>Book ${text(achievements.CurrentBookNumber, '?')} - ${text(achievements.CurrentBookTitle, 'Unknown')}</strong></div>
+        <div class="kv"><span>Current Book Progress</span><strong>${text(achievements.CurrentBookUnlocked, '0')} / ${text(achievements.CurrentBookAvailable, '0')}</strong></div>
+        <div class="kv"><span>Current Book Total</span><strong>${text(achievements.CurrentBookTotal, '0')}</strong></div>
+        <div class="kv"><span>Visible Progress</span><strong>${text(achievements.CurrentBookProgress)}</strong></div>
+        <div class="kv"><span>Run Unlocked</span><strong>${text(achievements.UnlockedCount, '0')} / ${text(achievements.AvailableCount, '0')}</strong></div>
+        <div class="kv"><span>Profile Unlocked</span><strong>${text(achievements.ProfileUnlockedCount, '0')} / ${text(achievements.ProfileAvailableCount, '0')}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Book Progress</h2>
+      <div class="book-total-grid">
+        ${bookTotals.length ? bookTotals.map((entry) => `
+          <div class="book-total-chip ${entry.Current ? 'book-total-chip-current' : ''}">
+            <strong>Book ${text(entry.BookNumber, '?')}</strong>
+            <span>${text(entry.BookTitle, 'Unknown')}</span>
+            <em>${text(entry.UnlockedCount, '0')} / ${text(entry.TotalCount, '0')}</em>
+          </div>
+        `).join('') : '<p class="muted">No per-book totals are available yet.</p>'}
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Current Book Targets</h2>
+      <div class="achievement-grid">
+        ${currentBookEntries.length ? currentBookEntries.map((entry) => `
+          <article class="achievement-card ${entry.Unlocked ? 'achievement-card-unlocked' : ''} ${entry.AvailableInMode ? '' : 'achievement-card-muted'}">
+            <div class="achievement-card-header">
+              <strong>${text(entry.Name)}</strong>
+              <span class="status-pill ${entry.Unlocked ? 'status-pill-success' : (entry.AvailableInMode ? 'status-pill-warning' : 'status-pill-muted')}">
+                ${entry.Unlocked ? 'Unlocked' : (entry.AvailableInMode ? 'Locked' : 'Unavailable')}
+              </span>
+            </div>
+            <div class="history-meta">${text(entry.Category)}</div>
+            <p>${text(entry.Description, '')}</p>
+            <div class="detail-list compact-detail-list">
+              <div class="detail-row"><span>Progress</span><strong>${text(entry.Progress, entry.Unlocked ? 'Complete' : 'Not started')}</strong></div>
+              ${entry.AvailableInMode ? '' : `<div class="detail-row"><span>Mode Note</span><strong>${text(entry.AvailabilityReason, 'Unavailable in this run mode')}</strong></div>`}
+            </div>
+          </article>
+        `).join('') : '<p class="muted">No current-book achievements are available.</p>'}
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Recent Unlocks</h2>
+      ${recentUnlocks.length ? recentUnlocks.map((entry) => `
+        <article class="history-row">
+          <strong>${text(entry.Name)}</strong>
+          <div class="history-meta">${text(entry.Category)} | Book ${text(entry.BookNumber, '?')} ${entry.Section ? `| Section ${entry.Section}` : ''}</div>
+          <div class="history-meta">${text(entry.Description, '')}</div>
+          <div class="history-meta">${formatTimestamp(entry.UnlockedOn)}</div>
+        </article>
+      `).join('') : '<p class="muted">No recent unlocks have been recorded yet.</p>'}
     </section>
   `;
 }
@@ -1063,6 +1412,15 @@ function renderView() {
       case 'inventory':
         elements.view.innerHTML = renderInventory(payload);
         break;
+      case 'stats':
+        elements.view.innerHTML = renderStats(payload);
+        break;
+      case 'campaign':
+        elements.view.innerHTML = renderCampaign(payload);
+        break;
+      case 'achievements':
+        elements.view.innerHTML = renderAchievements(payload);
+        break;
       case 'combat':
         elements.view.innerHTML = renderCombat(payload);
         break;
@@ -1351,9 +1709,16 @@ function setMessage(message, isError = false) {
 }
 
 function applyResponse(response) {
+  const previousScreen = String(state.payload?.session?.CurrentScreen || '').toLowerCase();
   state.payload = response.payload;
+  const currentScreen = String(response.payload?.session?.CurrentScreen || '').toLowerCase();
+  const mappedTab = getTabForScreen(currentScreen);
+  if (mappedTab && ['stats', 'campaign', 'achievements'].includes(currentScreen) && currentScreen !== previousScreen) {
+    state.activeTab = mappedTab;
+  }
   elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.8.0')}`;
   elements.saveGameBtn.disabled = !response.payload?.session?.HasState;
+  syncActiveTabButtons();
   renderSummaryCards(response.payload);
   renderPendingFlow(response.payload);
   syncReader(response.payload);
@@ -1381,7 +1746,7 @@ function attachEvents() {
   elements.tabbar.querySelectorAll('button').forEach((button) => {
     button.addEventListener('click', () => {
       state.activeTab = button.dataset.tab;
-      elements.tabbar.querySelectorAll('button').forEach((item) => item.classList.toggle('active', item === button));
+      syncActiveTabButtons();
       renderView();
     });
   });

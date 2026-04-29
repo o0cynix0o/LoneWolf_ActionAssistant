@@ -678,6 +678,15 @@ Current checkpoint:
   - recovery `.bak-...` loads no longer replace the default launch save, and
     the web bootstrap now falls back to the newest normal `.json` save when a
     stale backup pointer is present
+  - the tracked browser shell now includes browser-native `Stats`,
+    `Campaign`, and `Achievements` tabs instead of forcing the run-review
+    surfaces back through safe command text
+  - the web session payload now exposes the live current-book stats summary and
+    a structured achievement snapshot with current-book entries, recent
+    unlocks, and per-book totals
+  - backend `stats`, `campaign`, and `achievements` screen changes now sync
+    into the browser tab state, so review commands and screen shortcuts land on
+    the matching browser tab
 
 ## Tracking Rules
 
