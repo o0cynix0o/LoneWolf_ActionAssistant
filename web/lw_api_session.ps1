@@ -1111,6 +1111,41 @@ function Get-LWWebPendingContextText {
         return ($lines -join "`n").Trim()
     }
 
+    if ($promptText -match '^Book\s+(6|7)\s+choice\s+#(\d+)$') {
+        $bookNumber = [int]$matches[1]
+        $promptNumber = [int]$matches[2]
+        $choices = switch ($bookNumber) {
+            6 { @(Get-LWMagnakaiBookSixStartingChoices) }
+            7 { @(Get-LWMagnakaiBookSevenStartingChoices) }
+            default { @() }
+        }
+        if ($choices.Count -gt 0) {
+            $lines = @(
+                ("Book {0} Starting Gear" -f $bookNumber),
+                '',
+                ("Choices Made: {0}/5" -f ($promptNumber - 1)),
+                ("Weapons: {0}/2" -f @($script:GameState.Inventory.Weapons).Count),
+                ("Backpack: {0}" -f $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' })),
+                ("Special Items: {0}/12" -f @($script:GameState.Inventory.SpecialItems).Count)
+            )
+            if ((Test-LWStateHasQuiver -State $script:GameState) -or (Get-LWQuiverArrowCount -State $script:GameState) -gt 0) {
+                $lines += ("Arrows: {0}" -f (Format-LWQuiverArrowCounter -State $script:GameState))
+            }
+            $lines += ''
+            for ($i = 0; $i -lt $choices.Count; $i++) {
+                $lines += ("{0}. {1}" -f ($i + 1), (Format-LWBookFourStartingChoiceLine -Choice $choices[$i]))
+            }
+            $manageIndex = $choices.Count + 1
+            $lines += ("{0}. Review inventory / make room" -f $manageIndex)
+            $lines += '0. Done choosing'
+            if ($promptNumber -gt 1) {
+                $lines += ''
+                $lines += 'Reference list only: already taken choices may no longer appear in the live prompt.'
+            }
+            return ($lines -join "`n").Trim()
+        }
+    }
+
     return ''
 }
 
@@ -1812,17 +1847,23 @@ function Get-LWWebStateSnapshot {
 
 function Load-LWWebLastSave {
     $lastSaveFile = Join-Path $repoRoot 'data\last-save.txt'
-    if (-not (Test-Path -LiteralPath $lastSaveFile)) {
-        return 'No last save file found.'
+    $path = $null
+    if (Test-Path -LiteralPath $lastSaveFile) {
+        $candidate = (Get-Content -LiteralPath $lastSaveFile -Raw).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($candidate) -and -not (Test-LWBackupSavePath -Path $candidate) -and (Test-Path -LiteralPath $candidate)) {
+            $path = $candidate
+        }
     }
 
-    $path = (Get-Content -LiteralPath $lastSaveFile -Raw).Trim()
     if ([string]::IsNullOrWhiteSpace($path)) {
-        return 'Last save file is empty.'
+        $catalog = @(Get-LWSaveCatalog)
+        if ($catalog.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$catalog[0].FullName) -and (Test-Path -LiteralPath ([string]$catalog[0].FullName))) {
+            $path = [string]$catalog[0].FullName
+        }
     }
 
-    if (-not (Test-Path -LiteralPath $path)) {
-        return "Last save not found: $path"
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        return 'No recent save was found.'
     }
 
     $script:LWWebFlow = $null

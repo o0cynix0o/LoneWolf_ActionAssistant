@@ -117,12 +117,15 @@ function Invoke-LWCoreLoadGame {
         }
 
         $state = $raw | ConvertFrom-Json
+        $isBackupSave = Test-LWBackupSavePath -Path $Path
         $script:GameState = Normalize-LWState -State $state
         $setHostGameStateCommand = Get-LWSaveHostCommand -Name 'Set-LWHostGameState'
         if ($null -ne $setHostGameStateCommand) { & $setHostGameStateCommand -State $script:GameState | Out-Null }
-        $script:GameState.Settings.SavePath = $Path
+        $script:GameState.Settings.SavePath = $(if ($isBackupSave) { $null } else { $Path })
         Ensure-LWCurrentSectionCheckpoint
-        Set-LWLastUsedSavePath -Path $Path
+        if (-not $isBackupSave) {
+            Set-LWLastUsedSavePath -Path $Path
+        }
         Set-LWScreen -Name (Get-LWDefaultScreen)
         if (Test-LWRunTampered) {
             $integrityNote = if (-not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityNote)) { [string]$script:GameState.Run.IntegrityNote } else { 'Locked run settings were changed outside the assistant.' }
@@ -136,7 +139,13 @@ function Invoke-LWCoreLoadGame {
         if ($backfilledCount -gt 0) {
             Write-LWInfo ("Backfilled {0} achievement{1} from save history." -f $backfilledCount, $(if ($backfilledCount -eq 1) { '' } else { 's' }))
         }
-        Write-LWInfo "Loaded game from $Path"
+        if ($isBackupSave) {
+            Write-LWInfo "Loaded backup save from $Path"
+            Write-LWInfo 'Backup loads do not replace the default last-save pointer. Save manually if you want to continue from this recovery state.'
+        }
+        else {
+            Write-LWInfo "Loaded game from $Path"
+        }
 
     return $script:GameState
 }
@@ -215,6 +224,21 @@ function Import-LWJson {
     return ($raw | ConvertFrom-Json)
 }
 
+function Test-LWBackupSavePath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $false
+    }
+
+    $leaf = [System.IO.Path]::GetFileName($Path.Trim())
+    if ([string]::IsNullOrWhiteSpace($leaf)) {
+        return $false
+    }
+
+    return ($leaf -match '\.bak(?:-|$)')
+}
+
 function Get-LWLastUsedSavePath {
     Set-LWModuleContext -Context (Get-LWModuleContext)
     if (-not (Test-Path -LiteralPath $script:LastUsedSavePathFile)) {
@@ -227,6 +251,9 @@ function Get-LWLastUsedSavePath {
     }
 
     $trimmed = $path.Trim()
+    if (Test-LWBackupSavePath -Path $trimmed) {
+        return $null
+    }
     if (-not (Test-Path -LiteralPath $trimmed)) {
         return $null
     }
@@ -423,7 +450,7 @@ function Resolve-LWSaveSelectionPath {
     return $trimmed
 }
 
-Export-ModuleMember -Function Import-LWJson, Get-LWLastUsedSavePath, Set-LWLastUsedSavePath, Get-LWPreferredSavePath, Get-LWChainmailItemNames, Get-LWSaveCatalog, Show-LWSaveCatalog, Resolve-LWSaveSelectionPath
+Export-ModuleMember -Function Import-LWJson, Test-LWBackupSavePath, Get-LWLastUsedSavePath, Set-LWLastUsedSavePath, Get-LWPreferredSavePath, Get-LWChainmailItemNames, Get-LWSaveCatalog, Show-LWSaveCatalog, Resolve-LWSaveSelectionPath
 
 
 

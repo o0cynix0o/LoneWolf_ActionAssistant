@@ -164,6 +164,10 @@ Current web-scaffold coverage includes:
   - the Book Complete screen now exposes a `Continue To Next Book` action
   - prompt-backed book transitions can now advance into the next book over the same HTTP/JSON path
   - current continuation prompt context includes readable option lists for Magnakai discipline picks, Weaponmastery top-ups, and transition safekeeping choices
+  - prompt-backed flows now render clickable quick-pick buttons from the visible option list when context is available
+- safer recovery-save handling:
+  - loading a `.bak-...` recovery save no longer replaces the default `last save` launch target automatically
+  - the web bootstrap now skips stale backup pointers and falls back to the newest normal `.json` save instead
 - structured `New Game` flow for:
   - difficulty and permadeath
   - character name, book, and starting section

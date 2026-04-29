@@ -671,6 +671,13 @@ Current checkpoint:
     before the first answer
   - current transition prompt context now renders option lists for Magnakai
     disciplines, Weaponmastery top-ups, and transition safekeeping choices
+  - prompt-backed browser flows now expose clickable quick-pick buttons when a
+    pending context includes numbered or lettered choices
+  - current quick-pick context now covers the Book `6` / `7` starting-gear
+    prompts, which removes another major bare-input fallback during setup
+  - recovery `.bak-...` loads no longer replace the default launch save, and
+    the web bootstrap now falls back to the newest normal `.json` save when a
+    stale backup pointer is present
 
 ## Tracking Rules
 

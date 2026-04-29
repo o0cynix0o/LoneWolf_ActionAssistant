@@ -47,6 +47,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
     - Weaponmastery top-up choices
     - transition safekeeping prompts
   - verified directly against `web/lw_api_session.ps1` with the legacy Book `6` -> `7` continuation path, including prompt replay through discipline, Weaponmastery, and safekeeping follow-up states
+- hardened save/bootstrap behavior for web-first play:
+  - loading a `.bak-...` recovery save now keeps `Settings.SavePath` empty and no longer rewrites `data/last-save.txt`
+  - the local web bootstrap now ignores backup-file launch pointers and falls back to the newest normal `.json` save when needed
+  - prompt-backed browser flows now render clickable quick-pick buttons whenever the pending context includes a numbered or lettered option list
+  - current quick-pick context now covers the Book `6` / `7` starting-gear prompts in addition to the existing continuation and safekeeping context
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books

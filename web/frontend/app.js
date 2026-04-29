@@ -102,6 +102,22 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function extractFlowChoices(contextText) {
+  const lines = String(contextText || '').split(/\r?\n/);
+  const choices = [];
+  for (const line of lines) {
+    const match = line.match(/^\s*([A-Za-z0-9]+)\.\s+(.+?)\s*$/);
+    if (!match) {
+      continue;
+    }
+    choices.push({
+      value: match[1],
+      label: match[2],
+    });
+  }
+  return choices;
+}
+
 function formatMessage(value, fallback = 'Ready.') {
   if (Array.isArray(value)) {
     for (let index = value.length - 1; index >= 0; index -= 1) {
@@ -820,6 +836,7 @@ function renderFlowPrompt(flow) {
   }
 
   const hint = [];
+  const quickChoices = extractFlowChoices(flow.ContextText);
   if (prompt.PromptType) {
     hint.push(`Input type: ${prompt.PromptType}`);
   }
@@ -836,6 +853,15 @@ function renderFlowPrompt(flow) {
         <p>${text(prompt.Prompt, flow.Description)}</p>
         ${hint.length ? `<p class="muted">${hint.join(' | ')}</p>` : ''}
         ${flow.ContextText ? `<pre class="flow-context">${escapeHtml(flow.ContextText)}</pre>` : ''}
+        ${quickChoices.length ? `
+          <div class="flow-choice-grid">
+            ${quickChoices.map((choice) => `
+              <button type="button" class="button-secondary flow-choice-button" data-flow-prompt-choice="${escapeHtml(choice.value)}">
+                ${escapeHtml(`${choice.value}. ${choice.label}`)}
+              </button>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>
       <div class="flow-field">
         ${control}
@@ -951,6 +977,19 @@ function collectFlowPayload(flow) {
 }
 
 function bindFlowEvents(flow) {
+  const submitPromptChoice = async (choiceValue) => {
+    const prompt = flow?.Prompt || null;
+    let response = choiceValue;
+    if (prompt?.PromptType === 'yesno') {
+      response = ['y', 'yes', 'true', '1'].includes(String(choiceValue).trim().toLowerCase());
+    } else if (prompt?.PromptType === 'int') {
+      response = Number(choiceValue);
+    }
+
+    const result = await apiAction({ action: 'submitFlow', data: { response } });
+    applyResponse(result);
+  };
+
   const form = document.getElementById('flow-form');
   if (form) {
     form.addEventListener('submit', async (event) => {
@@ -969,6 +1008,16 @@ function bindFlowEvents(flow) {
       try {
         const response = await apiAction({ action: 'cancelFlow' });
         applyResponse(response);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-flow-prompt-choice]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        await submitPromptChoice(button.getAttribute('data-flow-prompt-choice') || '');
       } catch (error) {
         handleActionError(error);
       }
