@@ -771,58 +771,24 @@ function Set-LWMaxEndurance {
     Invoke-LWMaybeAutosave
 }
 
-function Complete-LWBook {
+function Advance-LWCompletedBookTransition {
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
         return
     }
 
     $currentBook = [int]$script:GameState.Character.BookNumber
-    $stats = Ensure-LWCurrentBookStats
-    $bookSummary = New-LWBookHistoryEntry -Stats $stats
-    $nextBook = $currentBook + 1
-    $nextBookLabel = if ($currentBook -lt 7) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { '' }
-    $completionSnapshot = [pscustomobject]@{
-        RuleSet          = [string]$script:GameState.RuleSet
-        Difficulty       = Get-LWCurrentDifficulty
-        RunIntegrityState = [string]$script:GameState.Run.IntegrityState
-        CombatMode       = [string]$script:GameState.Settings.CombatMode
-        GoldCrowns       = [int]$script:GameState.Inventory.GoldCrowns
-        EnduranceCurrent = [int]$script:GameState.Character.EnduranceCurrent
-        EnduranceMax     = [int]$script:GameState.Character.EnduranceMax
-        NotesCount       = @($script:GameState.Character.Notes).Count
-    }
-
-    if (@($script:GameState.Character.CompletedBooks) -notcontains $currentBook) {
-        $script:GameState.Character.CompletedBooks = @($script:GameState.Character.CompletedBooks) + $currentBook
-    }
-    $script:GameState.BookHistory = @($script:GameState.BookHistory) + $bookSummary
-    [void](Sync-LWAchievements -Context 'bookcomplete' -Data $bookSummary)
-
-    Set-LWScreen -Name 'bookcomplete' -Data ([pscustomobject]@{
-            Summary       = $bookSummary
-            CharacterName = $script:GameState.Character.Name
-            Snapshot      = $completionSnapshot
-            ContinueToBookLabel = $nextBookLabel
-        })
-
     if ($currentBook -ge 7) {
-        $script:GameState.Run.Status = 'Completed'
-        $script:GameState.Run.CompletedOn = (Get-Date).ToString('o')
-        $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
-        Clear-LWDeathState
-        Write-LWInfo ("Book {0} complete. The current Magnakai campaign is now complete." -f $currentBook)
-        Invoke-LWMaybeAutosave
+        Write-LWWarn 'The current Magnakai campaign is already complete.'
         return
     }
 
-    if ($script:LWUi.Enabled) {
-        Refresh-LWScreen
-        [void](Read-LWText -Prompt ("Press Enter to continue to {0} setup" -f $nextBookLabel) -NoRefresh)
-        Set-LWScreen -Name 'sheet'
-    }
-
+    $nextBook = $currentBook + 1
+    $nextBookLabel = Format-LWBookLabel -BookNumber $nextBook -IncludePrefix
     $nextBookStartSection = 1
+
+    Set-LWScreen -Name 'sheet'
+
     $script:GameState.Character.BookNumber = $nextBook
     if (Test-LWShouldRestoreEnduranceOnBookTransition -State $script:GameState) {
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
@@ -893,6 +859,58 @@ function Complete-LWBook {
     }
 
     Invoke-LWMaybeAutosave
+}
+
+function Complete-LWBook {
+    if (-not (Test-LWHasState)) {
+        Write-LWWarn 'No active character. Use new or load first.'
+        return
+    }
+
+    $currentBook = [int]$script:GameState.Character.BookNumber
+    $stats = Ensure-LWCurrentBookStats
+    $bookSummary = New-LWBookHistoryEntry -Stats $stats
+    $nextBook = $currentBook + 1
+    $nextBookLabel = if ($currentBook -lt 7) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { '' }
+    $completionSnapshot = [pscustomobject]@{
+        RuleSet          = [string]$script:GameState.RuleSet
+        Difficulty       = Get-LWCurrentDifficulty
+        RunIntegrityState = [string]$script:GameState.Run.IntegrityState
+        CombatMode       = [string]$script:GameState.Settings.CombatMode
+        GoldCrowns       = [int]$script:GameState.Inventory.GoldCrowns
+        EnduranceCurrent = [int]$script:GameState.Character.EnduranceCurrent
+        EnduranceMax     = [int]$script:GameState.Character.EnduranceMax
+        NotesCount       = @($script:GameState.Character.Notes).Count
+    }
+
+    if (@($script:GameState.Character.CompletedBooks) -notcontains $currentBook) {
+        $script:GameState.Character.CompletedBooks = @($script:GameState.Character.CompletedBooks) + $currentBook
+    }
+    $script:GameState.BookHistory = @($script:GameState.BookHistory) + $bookSummary
+    [void](Sync-LWAchievements -Context 'bookcomplete' -Data $bookSummary)
+
+    Set-LWScreen -Name 'bookcomplete' -Data ([pscustomobject]@{
+            Summary       = $bookSummary
+            CharacterName = $script:GameState.Character.Name
+            Snapshot      = $completionSnapshot
+            ContinueToBookLabel = $nextBookLabel
+        })
+
+    if ($currentBook -ge 7) {
+        $script:GameState.Run.Status = 'Completed'
+        $script:GameState.Run.CompletedOn = (Get-Date).ToString('o')
+        $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
+        Clear-LWDeathState
+        Write-LWInfo ("Book {0} complete. The current Magnakai campaign is now complete." -f $currentBook)
+        Invoke-LWMaybeAutosave
+        return
+    }
+
+    if ($script:LWUi.Enabled) {
+        Refresh-LWScreen
+        [void](Read-LWText -Prompt ("Press Enter to continue to {0} setup" -f $nextBookLabel) -NoRefresh)
+    }
+    Advance-LWCompletedBookTransition
 }
 
 function Invoke-LWCombatPotionRound {

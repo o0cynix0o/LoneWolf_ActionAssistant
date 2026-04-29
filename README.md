@@ -160,6 +160,10 @@ Current web-scaffold coverage includes:
   - tracked combat start from the Combat tab
   - structured pending prompts for combat setup follow-up questions
   - resolve round, auto-resolve, evade, and stop controls for active fights
+- browser-side book-complete continuation:
+  - the Book Complete screen now exposes a `Continue To Next Book` action
+  - prompt-backed book transitions can now advance into the next book over the same HTTP/JSON path
+  - current continuation prompt context includes readable option lists for Magnakai discipline picks, Weaponmastery top-ups, and transition safekeeping choices
 - structured `New Game` flow for:
   - difficulty and permadeath
   - character name, book, and starting section

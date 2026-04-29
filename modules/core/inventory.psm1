@@ -573,12 +573,48 @@ function Sync-LWHerbPouchState {
         else {
             $State.Storage.Confiscated.HerbPouchItems = @(Normalize-LWInventoryItemCollection -Type 'herbpouch' -Items @($State.Storage.Confiscated.HerbPouchItems))
         }
+        if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'PocketSpecialItems') -or $null -eq $State.Storage.Confiscated.PocketSpecialItems) {
+            $State.Storage.Confiscated | Add-Member -Force -NotePropertyName PocketSpecialItems -NotePropertyValue @()
+        }
         if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name 'HasHerbPouch') -or $null -eq $State.Storage.Confiscated.HasHerbPouch) {
             $State.Storage.Confiscated | Add-Member -Force -NotePropertyName HasHerbPouch -NotePropertyValue $false
+        }
+        foreach ($propertyName in @('BookNumber', 'Section', 'SavedOn')) {
+            if (-not (Test-LWPropertyExists -Object $State.Storage.Confiscated -Name $propertyName)) {
+                $State.Storage.Confiscated | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $null
+            }
         }
     }
 
     if ($null -ne $State.RecoveryStash) {
+        foreach ($entryConfig in @(
+                @{ Name = 'Weapon'; Type = 'weapon' },
+                @{ Name = 'Backpack'; Type = 'backpack' },
+                @{ Name = 'Special'; Type = 'special' },
+                @{ Name = 'HerbPouch'; Type = 'herbpouch' }
+            )) {
+            $entryName = [string]$entryConfig.Name
+            $entryType = [string]$entryConfig.Type
+            if (-not (Test-LWPropertyExists -Object $State.RecoveryStash -Name $entryName) -or $null -eq $State.RecoveryStash.$entryName) {
+                $State.RecoveryStash | Add-Member -Force -NotePropertyName $entryName -NotePropertyValue (New-LWInventoryRecoveryEntry)
+                continue
+            }
+
+            $entry = $State.RecoveryStash.$entryName
+            if (-not (Test-LWPropertyExists -Object $entry -Name 'Items') -or $null -eq $entry.Items) {
+                $entry | Add-Member -Force -NotePropertyName Items -NotePropertyValue @()
+            }
+            else {
+                $entry.Items = @(Normalize-LWInventoryItemCollection -Type $entryType -Items @($entry.Items))
+            }
+
+            foreach ($propertyName in @('BookNumber', 'Section', 'SavedOn')) {
+                if (-not (Test-LWPropertyExists -Object $entry -Name $propertyName)) {
+                    $entry | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $null
+                }
+            }
+        }
+
         if (-not (Test-LWPropertyExists -Object $State.RecoveryStash -Name 'HerbPouch') -or $null -eq $State.RecoveryStash.HerbPouch) {
             $State.RecoveryStash | Add-Member -Force -NotePropertyName HerbPouch -NotePropertyValue (New-LWInventoryRecoveryEntry)
         }

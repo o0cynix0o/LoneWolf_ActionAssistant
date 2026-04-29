@@ -664,6 +664,13 @@ Current checkpoint:
     CRT follow-up answers can resume without reroll drift
   - same-book section-page navigation inside the reader iframe now pushes
     section changes back into the app state
+  - the Book Complete browser view now supports prompt-backed continuation into
+    the next book instead of stopping at the recap screen
+  - the current continuation flow has been verified on the legacy Book `6` ->
+    `7` handoff and now reaches the live next-book prompts instead of failing
+    before the first answer
+  - current transition prompt context now renders option lists for Magnakai
+    disciplines, Weaponmastery top-ups, and transition safekeeping choices
 
 ## Tracking Rules
 

@@ -39,6 +39,14 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - the web session payload now includes slot-aware inventory section snapshots and live recovery-stash summaries so the browser can render the same inventory shape the engine is enforcing
   - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
 - tightened the default desktop web split so the reader pane gives less empty margin around book text and the app pane gets more working room
+- extended the tracked web scaffold into the first prompt-backed book-transition surface:
+  - fixed the `continueBook` flow so browser-side Book Complete continuation can enter the next-book setup path instead of failing before the first prompt
+  - the Book Complete browser view now supports continuing into the next book over the real HTTP/JSON session path
+  - current transition prompt context now renders readable option lists for:
+    - Magnakai discipline top-up choices
+    - Weaponmastery top-up choices
+    - transition safekeeping prompts
+  - verified directly against `web/lw_api_session.ps1` with the legacy Book `6` -> `7` continuation path, including prompt replay through discipline, Weaponmastery, and safekeeping follow-up states
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books

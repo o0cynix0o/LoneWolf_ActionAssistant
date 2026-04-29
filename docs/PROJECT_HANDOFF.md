@@ -79,6 +79,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - this slice has been verified both by talking directly to `web/lw_api_session.ps1` and through the local HTTP server in `web/app_server.py`
   - same-book section-page navigation inside the reader iframe now pushes section changes back into the app state instead of only changing the displayed book page
   - the default desktop split now gives less width to the reader pane and more width to the app pane so the book text is framed more tightly and wastes less side margin
+  - browser-side Book Complete continuation now uses the real prompt-backed web flow instead of stopping at the recap screen
+  - the `continueBook` flow now survives legacy Book `6` -> `7` saves and can enter the real next-book setup path
+  - current web transition prompt context now renders readable option lists for Magnakai discipline picks, Weaponmastery top-ups, and safekeeping prompts during that handoff
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

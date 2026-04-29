@@ -324,6 +324,19 @@ h1 {
   margin: 0;
 }
 
+.flow-context {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(103, 93, 57, 0.45);
+  border-radius: 10px;
+  background: rgba(11, 15, 11, 0.78);
+  color: var(--paper);
+  white-space: pre-wrap;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .flow-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -389,6 +402,14 @@ h1 {
 
 .combat-actions {
   margin-top: 0.2rem;
+}
+
+.completion-actions {
+  margin-top: 0.95rem;
+}
+
+.completion-note {
+  margin: 0.8rem 0 0;
 }
 
 .button-secondary {

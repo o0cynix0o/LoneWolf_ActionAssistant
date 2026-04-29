@@ -93,6 +93,15 @@ function text(value, fallback = '(none)') {
   return String(value);
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function formatMessage(value, fallback = 'Ready.') {
   if (Array.isArray(value)) {
     for (let index = value.length - 1; index >= 0; index -= 1) {
@@ -595,6 +604,53 @@ function renderNotes(payload) {
   `;
 }
 
+function renderBookComplete(payload) {
+  const screenData = payload?.session?.ScreenData || {};
+  const summary = screenData.Summary || {};
+  const snapshot = screenData.Snapshot || {};
+  const bookNumber = Number(summary.BookNumber || payload?.reader?.BookNumber || 0);
+  const nextBookLabel = text(screenData.ContinueToBookLabel, '');
+  const completedBookLabel = bookNumber
+    ? `Book ${bookNumber} - ${text(payload?.reader?.BookTitle, 'Unknown')}`
+    : text(payload?.reader?.BookTitle, 'Completed Book');
+  const finalEndCurrent = text(snapshot.EnduranceCurrent, text(payload?.character?.EnduranceCurrent, '0'));
+  const finalEndMax = text(snapshot.EnduranceMax, text(payload?.character?.EnduranceMax, '0'));
+  const finalGold = text(snapshot.GoldCrowns, text(payload?.inventory?.GoldCrowns, '0'));
+
+  return `
+    <section class="panel">
+      <h2>Adventure Complete</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Character</span><strong>${text(screenData.CharacterName, text(payload?.character?.Name))}</strong></div>
+        <div class="kv"><span>Difficulty</span><strong>${text(snapshot.Difficulty, '(unknown)')}</strong></div>
+        <div class="kv"><span>Rule Set</span><strong>${text(snapshot.RuleSet, text(payload?.app?.RuleSet))}</strong></div>
+        <div class="kv"><span>Completed Book</span><strong>${completedBookLabel}</strong></div>
+        <div class="kv"><span>Final END</span><strong>${finalEndCurrent} / ${finalEndMax}</strong></div>
+        <div class="kv"><span>Final Gold</span><strong>${finalGold}</strong></div>
+      </div>
+      <div class="flow-actions completion-actions">
+        ${nextBookLabel ? `<button type="button" id="continue-book-btn">Continue to ${nextBookLabel}</button>` : ''}
+      </div>
+      <p class="muted completion-note">
+        ${nextBookLabel ? `Continue when you're ready to move into ${nextBookLabel} setup.` : 'This campaign has reached its current endpoint.'}
+      </p>
+    </section>
+    <section class="panel">
+      <h2>This Playthrough</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Sections Seen</span><strong>${text(summary.SectionsVisited, '0')}</strong></div>
+        <div class="kv"><span>Unique Sections</span><strong>${text(summary.UniqueSectionsVisited, text(summary.SectionsVisited, '0'))}</strong></div>
+        <div class="kv"><span>Combats Fought</span><strong>${text(summary.CombatCount, '0')}</strong></div>
+        <div class="kv"><span>Victories</span><strong>${text(summary.Victories, '0')}</strong></div>
+        <div class="kv"><span>Deaths</span><strong>${text(summary.DeathCount, '0')}</strong></div>
+        <div class="kv"><span>Rewinds Used</span><strong>${text(summary.RewindsUsed, '0')}</strong></div>
+        <div class="kv"><span>Gold Gained</span><strong>${text(summary.GoldGained, '0')}</strong></div>
+        <div class="kv"><span>Gold Spent</span><strong>${text(summary.GoldSpent, '0')}</strong></div>
+      </div>
+    </section>
+  `;
+}
+
 function renderFlowSummary(summary) {
   if (!summary) {
     return '';
@@ -613,6 +669,9 @@ function renderFlowSummary(summary) {
   }
   if (summary.StartSection) {
     entries.push(['Start', `Section ${summary.StartSection}`]);
+  }
+  if (summary.Section) {
+    entries.push(['Section', `Section ${summary.Section}`]);
   }
 
   return `
@@ -776,6 +835,7 @@ function renderFlowPrompt(flow) {
       <div class="flow-copy">
         <p>${text(prompt.Prompt, flow.Description)}</p>
         ${hint.length ? `<p class="muted">${hint.join(' | ')}</p>` : ''}
+        ${flow.ContextText ? `<pre class="flow-context">${escapeHtml(flow.ContextText)}</pre>` : ''}
       </div>
       <div class="flow-field">
         ${control}
@@ -931,6 +991,8 @@ function renderView() {
       </section>
       ${renderSaves(payload)}
     `;
+  } else if (payload.session?.CurrentScreen === 'bookcomplete') {
+    elements.view.innerHTML = renderBookComplete(payload);
   } else {
     switch (state.activeTab) {
       case 'inventory':
@@ -958,6 +1020,18 @@ function renderView() {
 }
 
 function bindDynamicViewEvents(payload) {
+  const continueBookButton = document.getElementById('continue-book-btn');
+  if (continueBookButton) {
+    continueBookButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'continueBook' });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
   document.querySelectorAll('[data-load-path]').forEach((button) => {
     button.addEventListener('click', async () => {
       try {

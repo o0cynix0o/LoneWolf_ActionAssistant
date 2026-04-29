@@ -28,6 +28,36 @@ $script:LWWebRandomReplay = [ordered]@{
     Generated = @()
 }
 $script:LWWebFlow = $null
+$script:LWWebHostCapture = [ordered]@{
+    Active      = $false
+    CurrentLine = ''
+    Lines       = @()
+}
+
+function Write-Host {
+    [CmdletBinding(DefaultParameterSetName = 'NoObject', RemotingCapability = 'None')]
+    param(
+        [Parameter(ParameterSetName = 'Object', Position = 0, ValueFromRemainingArguments = $true)]
+        [object[]]$Object,
+        [ConsoleColor]$ForegroundColor,
+        [ConsoleColor]$BackgroundColor,
+        [switch]$NoNewline,
+        [object]$Separator
+    )
+
+    if ($script:LWWebHostCapture.Active) {
+        $separatorText = if ($PSBoundParameters.ContainsKey('Separator') -and $null -ne $Separator) { [string]$Separator } else { ' ' }
+        $text = if ($null -eq $Object) { '' } else { (@($Object) | ForEach-Object { [string]$_ }) -join $separatorText }
+        $script:LWWebHostCapture.CurrentLine = [string]$script:LWWebHostCapture.CurrentLine + $text
+        if (-not $NoNewline) {
+            $script:LWWebHostCapture.Lines = @($script:LWWebHostCapture.Lines + @([string]$script:LWWebHostCapture.CurrentLine))
+            $script:LWWebHostCapture.CurrentLine = ''
+        }
+        return
+    }
+
+    Microsoft.PowerShell.Utility\Write-Host @PSBoundParameters
+}
 
 function Refresh-LWScreen {
     if ($null -ne $script:LWUi) {
@@ -309,6 +339,155 @@ function Invoke-LWWebSuppressedOperation {
     & $Operation 6>$null 5>$null 4>$null 3>$null 2>$null | Out-Null
 }
 
+function Start-LWWebHostCapture {
+    $script:LWWebHostCapture.Active = $true
+    $script:LWWebHostCapture.CurrentLine = ''
+    $script:LWWebHostCapture.Lines = @()
+}
+
+function Stop-LWWebHostCapture {
+    if ($script:LWWebHostCapture.Active -and -not [string]::IsNullOrEmpty([string]$script:LWWebHostCapture.CurrentLine)) {
+        $script:LWWebHostCapture.Lines = @($script:LWWebHostCapture.Lines + @([string]$script:LWWebHostCapture.CurrentLine))
+    }
+
+    $lines = @($script:LWWebHostCapture.Lines)
+    $script:LWWebHostCapture.Active = $false
+    $script:LWWebHostCapture.CurrentLine = ''
+    $script:LWWebHostCapture.Lines = @()
+    return @($lines)
+}
+
+function Invoke-LWWebCapturedOperation {
+    param([Parameter(Mandatory = $true)][scriptblock]$Operation)
+
+    $captured = [System.Collections.ArrayList]::new()
+    $transcriptPath = Join-Path ([System.IO.Path]::GetTempPath()) ("lw-web-capture-{0}.log" -f ([guid]::NewGuid().ToString('N')))
+    $transcriptStarted = $false
+    Start-LWWebHostCapture
+    try {
+        try {
+            Start-Transcript -Path $transcriptPath -Force | Out-Null
+            $transcriptStarted = $true
+        }
+        catch {
+        }
+
+        & $Operation 6>&1 5>&1 4>&1 3>&1 2>&1 | ForEach-Object {
+            [void]$captured.Add($_)
+        }
+    }
+    finally {
+        if ($transcriptStarted) {
+            try {
+                Stop-Transcript | Out-Null
+            }
+            catch {
+            }
+        }
+        foreach ($line in @(Stop-LWWebHostCapture)) {
+            [void]$captured.Add([string]$line)
+        }
+        foreach ($line in @(Get-LWWebTranscriptLines -Path $transcriptPath)) {
+            [void]$captured.Add([string]$line)
+        }
+        if (Test-Path -LiteralPath $transcriptPath) {
+            Remove-Item -LiteralPath $transcriptPath -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    return @($captured)
+}
+
+function Convert-LWWebOutputRecordsToText {
+    param([object[]]$Records = @())
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($record in @($Records)) {
+        if ($null -eq $record) {
+            continue
+        }
+
+        $text = switch ($record.GetType().FullName) {
+            'System.Management.Automation.InformationRecord' { [string]$record.MessageData; break }
+            'System.Management.Automation.WarningRecord' { [string]$record.Message; break }
+            'System.Management.Automation.VerboseRecord' { [string]$record.Message; break }
+            'System.Management.Automation.DebugRecord' { [string]$record.Message; break }
+            'System.Management.Automation.ErrorRecord' { [string]$record; break }
+            default { [string]$record; break }
+        }
+
+        if ([string]::IsNullOrWhiteSpace($text)) {
+            continue
+        }
+
+        foreach ($line in @($text -split "`r?`n")) {
+            if ([string]::IsNullOrWhiteSpace([string]$line)) {
+                continue
+            }
+            $lines.Add([string]$line)
+        }
+    }
+
+    return ($lines -join [Environment]::NewLine).Trim()
+}
+
+function Get-LWWebTranscriptLines {
+    param([string]$Path = '')
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
+        return @()
+    }
+
+    $metadataPrefixes = @(
+        'PowerShell transcript ',
+        'Start time:',
+        'End time:',
+        'Username:',
+        'RunAs User:',
+        'Configuration Name:',
+        'Machine:',
+        'Host Application:',
+        'Process ID:',
+        'PSVersion:',
+        'PSEdition:',
+        'GitCommitId:',
+        'OS:',
+        'Platform:',
+        'PSCompatibleVersions:',
+        'PSRemotingProtocolVersion:',
+        'SerializationVersion:',
+        'WSManStackVersion:'
+    )
+
+    $escapePattern = ([regex]::Escape([string][char]27) + '\[[0-9;]*m')
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($rawLine in @(Get-Content -LiteralPath $Path -ErrorAction SilentlyContinue)) {
+        $line = [string]$rawLine
+        if ([string]::IsNullOrWhiteSpace($line)) {
+            continue
+        }
+
+        $line = [regex]::Replace($line, $escapePattern, '')
+        $trimmed = $line.Trim()
+        if ([string]::IsNullOrWhiteSpace($trimmed)) {
+            continue
+        }
+        if ($trimmed -eq '**********************') {
+            continue
+        }
+        if ($metadataPrefixes | Where-Object { $trimmed.StartsWith($_, [System.StringComparison]::OrdinalIgnoreCase) }) {
+            continue
+        }
+        if ($lines.Count -gt 0 -and [string]$lines[$lines.Count - 1] -eq $trimmed) {
+            continue
+        }
+
+        $lines.Add($trimmed)
+    }
+
+    return @($lines)
+}
+
 function Get-LWWebBookFolders {
     return @{
         1  = 'lw/01fftd'
@@ -535,6 +714,16 @@ function New-LWWebFlowPrompt {
     param([Parameter(Mandatory = $true)][object]$Flow)
 
     if ([string]$Flow.Type -ne 'newGame') {
+        $summary = $null
+        if ($null -ne $Flow.Data) {
+            if ((Test-LWPropertyExists -Object $Flow.Data -Name 'Section') -and [int]$Flow.Data.Section -gt 0) {
+                $summary = [ordered]@{ Section = [int]$Flow.Data.Section }
+            }
+            elseif ((Test-LWPropertyExists -Object $Flow.Data -Name 'BookNumber') -and [int]$Flow.Data.BookNumber -gt 0) {
+                $summary = [ordered]@{ BookNumber = [int]$Flow.Data.BookNumber }
+            }
+        }
+
         return [ordered]@{
             Active      = $true
             Type        = [string]$Flow.Type
@@ -543,7 +732,8 @@ function New-LWWebFlowPrompt {
             Title       = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Title)) { [string]$Flow.Title } else { 'Continue' }
             Description = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Description)) { [string]$Flow.Description } else { 'Answer the pending prompt to continue.' }
             Prompt      = $Flow.PendingPrompt
-            Summary     = $null
+            Summary     = $summary
+            ContextText = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.ContextText)) { [string]$Flow.ContextText } else { '' }
             SubmitLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.SubmitLabel)) { [string]$Flow.SubmitLabel } else { 'Continue' }
             CancelLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.CancelLabel)) { [string]$Flow.CancelLabel } else { 'Cancel' }
         }
@@ -786,15 +976,142 @@ function New-LWWebPromptActionFlow {
         SubmitLabel   = $SubmitLabel
         CancelLabel   = $CancelLabel
         PendingPrompt = $null
+        ContextText   = ''
         Checkpoint    = New-LWWebCheckpoint
         Data          = [pscustomobject]@{
-            Responses   = @()
-            RandomRolls = @()
-            EnemyName   = ''
+            Responses        = @()
+            RandomRolls      = @()
+            EnemyName        = ''
             EnemyCombatSkill = 0
             EnemyEndurance   = 0
+            Section          = 0
+            BookNumber       = 0
         }
     }
+}
+
+function Get-LWWebPendingContextText {
+    param(
+        [Parameter(Mandatory = $true)][object]$Flow,
+        [Parameter(Mandatory = $true)][object]$PendingPrompt
+    )
+
+    $screenName = if ($null -ne $script:LWUi -and -not [string]::IsNullOrWhiteSpace([string]$script:LWUi.CurrentScreen)) {
+        [string]$script:LWUi.CurrentScreen
+    }
+    else {
+        ''
+    }
+    $screenData = if ($null -ne $script:LWUi) { $script:LWUi.ScreenData } else { $null }
+
+    if ($screenName -eq 'disciplineselect' -and $null -ne $screenData) {
+        $available = if (Test-LWPropertyExists -Object $screenData -Name 'Available') { @($screenData.Available) } else { @() }
+        $count = if (Test-LWPropertyExists -Object $screenData -Name 'Count') { [int]$screenData.Count } else { 1 }
+        $ruleSetName = if ((Test-LWPropertyExists -Object $screenData -Name 'RuleSet') -and -not [string]::IsNullOrWhiteSpace([string]$screenData.RuleSet)) { [string]$screenData.RuleSet } else { 'Kai' }
+        $lines = @(
+            $(if ($ruleSetName -ieq 'Magnakai') { 'Choose Magnakai Discipline' } else { 'Choose Kai Discipline' }),
+            ''
+        )
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            $entry = $available[$i]
+            $effect = if (Test-LWPropertyExists -Object $entry -Name 'Effect') { [string]$entry.Effect } else { '' }
+            $lines += ("{0}. {1} - {2}" -f ($i + 1), [string]$entry.Name, $effect)
+        }
+        $lines += ''
+        $lines += ("Enter {0} number(s) separated by commas." -f $count)
+        return ($lines -join "`n").Trim()
+    }
+
+    $promptText = if ((Test-LWPropertyExists -Object $PendingPrompt -Name 'Prompt') -and -not [string]::IsNullOrWhiteSpace([string]$PendingPrompt.Prompt)) {
+        [string]$PendingPrompt.Prompt
+    }
+    else {
+        ''
+    }
+
+    if ($promptText -match '^Choose\s+(\d+)\s+mastered weapon number\(s\) separated by commas$') {
+        $count = [int]$matches[1]
+        $exclude = if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'WeaponmasteryWeapons')) {
+            @($script:GameState.Character.WeaponmasteryWeapons | ForEach-Object { [string]$_ })
+        }
+        else {
+            @()
+        }
+        $available = @(Get-LWMagnakaiWeaponmasteryOptions | Where-Object { $exclude -notcontains [string]$_ })
+        $lines = @('Weaponmastery', '')
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            $lines += ("{0}. {1}" -f ($i + 1), [string]$available[$i])
+        }
+        $lines += ''
+        $lines += ("Choose {0} mastered weapon number(s) separated by commas." -f $count)
+        return ($lines -join "`n").Trim()
+    }
+
+    if ([string]$Flow.Type -eq 'continueBook' -and $promptText -match '^Enter\s+(\d+)\s+number\(s\) separated by commas$') {
+        $count = [int]$matches[1]
+        $exclude = if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'MagnakaiDisciplines')) {
+            @($script:GameState.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+        }
+        else {
+            @()
+        }
+        $available = @($script:GameData.MagnakaiDisciplines | Where-Object { $exclude -notcontains [string]$_.Name })
+        $lines = @('Choose Magnakai Discipline', '')
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            $entry = $available[$i]
+            $effect = if (Test-LWPropertyExists -Object $entry -Name 'Effect') { [string]$entry.Effect } else { '' }
+            $lines += ("{0}. {1} - {2}" -f ($i + 1), [string]$entry.Name, $effect)
+        }
+        $lines += ''
+        $lines += ("Enter {0} number(s) separated by commas." -f $count)
+        return ($lines -join "`n").Trim()
+    }
+
+    if ($promptText -eq 'Safekeeping choice') {
+        $bookNumber = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 0 }
+        $nextBook = if ($bookNumber -gt 0) { $bookNumber + 1 } else { 0 }
+        $continueLabel = if ($nextBook -gt 0) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { 'the next book' }
+        $carriedItems = if ($null -ne $script:GameState.Inventory) { @($script:GameState.Inventory.SpecialItems) } else { @() }
+        $storedItems = if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { @($script:GameState.Storage.SafekeepingSpecialItems) } else { @() }
+        $lines = @(
+            ('Book {0} Safekeeping' -f $nextBook),
+            '',
+            ('Carried Special Items: {0}' -f $(if ($carriedItems.Count -gt 0) { $carriedItems -join ', ' } else { '(none)' })),
+            ('Safekeeping: {0}' -f $(if ($storedItems.Count -gt 0) { $storedItems -join ', ' } else { '(none)' })),
+            ''
+        )
+        if ($carriedItems.Count -gt 0) {
+            $lines += 'Y. Choose carried Special Items to leave in safekeeping'
+        }
+        if ($storedItems.Count -gt 0) {
+            $lines += 'R. Reclaim Special Items from safekeeping'
+        }
+        $lines += 'I. Review inventory first'
+        $lines += ('N. Continue into {0}' -f $continueLabel)
+        return ($lines -join "`n").Trim()
+    }
+
+    if ($promptText -eq 'Safekeep which Special Item') {
+        $available = if ($null -ne $script:GameState.Inventory) { @($script:GameState.Inventory.SpecialItems) } else { @() }
+        $lines = @('Choose carried Special Items to leave in safekeeping', '')
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            $lines += ("{0}. {1}" -f ($i + 1), [string]$available[$i])
+        }
+        $lines += '0. Done choosing'
+        return ($lines -join "`n").Trim()
+    }
+
+    if ($promptText -eq 'Reclaim which Special Item') {
+        $available = if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { @($script:GameState.Storage.SafekeepingSpecialItems) } else { @() }
+        $lines = @('Reclaim stored Special Items', '')
+        for ($i = 0; $i -lt $available.Count; $i++) {
+            $lines += ("{0}. {1}" -f ($i + 1), [string]$available[$i])
+        }
+        $lines += '0. Done choosing'
+        return ($lines -join "`n").Trim()
+    }
+
+    return ''
 }
 
 function Get-LWWebPromptFlowResponse {
@@ -827,14 +1144,17 @@ function Invoke-LWWebPromptActionPhase {
     }
 
     $Flow.PendingPrompt = $null
+    $Flow.ContextText = ''
     Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
     Start-LWWebPromptReplay -Responses @($Flow.Data.Responses)
     if ($ReplayRandoms) {
         Start-LWWebRandomReplay -Values @([int[]]$Flow.Data.RandomRolls)
     }
 
+    $capturedOutput = @()
     try {
-        Invoke-LWWebSuppressedOperation -Operation $Operation
+        $capturedOutput = @(Invoke-LWWebCapturedOperation -Operation $Operation)
+        $Flow.ContextText = [string](Convert-LWWebOutputRecordsToText -Records $capturedOutput)
         if ($ReplayRandoms) {
             [void](Stop-LWWebRandomReplay)
         }
@@ -850,9 +1170,11 @@ function Invoke-LWWebPromptActionPhase {
                 $Flow.Data.RandomRolls = @($Flow.Data.RandomRolls + @([int[]]$generatedRolls))
             }
         }
+        $Flow.ContextText = [string](Convert-LWWebOutputRecordsToText -Records $capturedOutput)
         Stop-LWWebPromptReplay
         if (Test-LWWebPendingException -ErrorRecord $_) {
             $Flow.PendingPrompt = Copy-LWWebValue $script:LWWebPromptReplay.Pending
+            $Flow.ContextText = [string](Get-LWWebPendingContextText -Flow $Flow -PendingPrompt $Flow.PendingPrompt)
             Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
             return $PendingMessage
         }
@@ -919,6 +1241,36 @@ function Start-LWWebCombatAutoFlow {
     $script:LWWebFlow = $flow
     return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage 'Combat auto-resolve finished.' -PendingMessage 'Combat auto-resolve needs more input.' -Operation {
             Resolve-LWCombatToOutcome | Out-Null
+        })
+}
+
+function Start-LWWebSetSectionFlow {
+    param([Parameter(Mandatory = $true)][int]$Section)
+
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'setSection' -Title ("Section {0}" -f $Section) -Description 'This section needs one or more follow-up answers before the entry rules can finish processing.'
+    $flow.Data.Section = $Section
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage ("Moved to section {0}." -f $Section) -PendingMessage ("Section {0} needs more input." -f $Section) -Operation {
+            Set-LWSection -Section $Section
+        })
+}
+
+function Start-LWWebContinueBookFlow {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $currentBook = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 0 }
+    $nextBook = $currentBook + 1
+    $flow = New-LWWebPromptActionFlow -Type 'continueBook' -Title 'Continue To Next Book' -Description ("Finish the book transition into {0}." -f (Format-LWBookLabel -BookNumber $nextBook -IncludePrefix))
+    $flow.Data.BookNumber = $nextBook
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage ("Advanced into {0}." -f (Format-LWBookLabel -BookNumber $nextBook -IncludePrefix)) -PendingMessage 'The book transition needs more input.' -Operation {
+            Advance-LWCompletedBookTransition
         })
 }
 
@@ -1119,6 +1471,16 @@ function Submit-LWWebFlow {
             'combatAuto' {
                 return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage 'Combat auto-resolve finished.' -PendingMessage 'Combat auto-resolve needs more input.' -Operation {
                         Resolve-LWCombatToOutcome | Out-Null
+                    })
+            }
+            'setSection' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage ("Moved to section {0}." -f [int]$flow.Data.Section) -PendingMessage ("Section {0} needs more input." -f [int]$flow.Data.Section) -Operation {
+                        Set-LWSection -Section ([int]$flow.Data.Section)
+                    })
+            }
+            'continueBook' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage ("Advanced into {0}." -f (Format-LWBookLabel -BookNumber ([int]$flow.Data.BookNumber) -IncludePrefix)) -PendingMessage 'The book transition needs more input.' -Operation {
+                        Advance-LWCompletedBookTransition
                     })
             }
             'useMeal' {
@@ -1726,8 +2088,7 @@ function Invoke-LWWebRequest {
                 throw 'A positive section number is required.'
             }
 
-            Set-LWSection -Section $section
-            return ("Moved to section {0}." -f $section)
+            return (Start-LWWebSetSectionFlow -Section $section)
         }
         'showScreen' {
             $name = if ((Test-LWPropertyExists -Object $Request -Name 'name') -and -not [string]::IsNullOrWhiteSpace([string]$Request.name)) { [string]$Request.name } else { '' }
@@ -1744,8 +2105,25 @@ function Invoke-LWWebRequest {
                 throw 'That command is not available through the web scaffold yet.'
             }
 
+            if ($commandText.Trim() -match '^set\s+(\d+)$') {
+                return (Start-LWWebSetSectionFlow -Section ([int]$matches[1]))
+            }
+
             [void](Invoke-LWCommand -InputLine $commandText)
             return ("Ran command: {0}" -f $commandText)
+        }
+        'continueBook' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if ([string]$script:LWUi.CurrentScreen -ne 'bookcomplete') {
+                throw 'Book continuation is only available from the book complete screen.'
+            }
+            if ([int]$script:GameState.Character.BookNumber -ge 7) {
+                throw 'The current Magnakai campaign is already complete.'
+            }
+
+            return (Start-LWWebContinueBookFlow)
         }
         'startCombat' {
             if ($null -eq $script:GameState) {
