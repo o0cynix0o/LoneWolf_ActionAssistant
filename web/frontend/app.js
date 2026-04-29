@@ -3,6 +3,39 @@ const state = {
   activeTab: 'overview',
   followCurrent: true,
   message: '',
+  readerSyncInFlight: false,
+};
+
+const FOLDER_TO_BOOK = {
+  '01fftd': 1,
+  '02fotw': 2,
+  '03tcok': 3,
+  '04tcod': 4,
+  '05sots': 5,
+  '06tkot': 6,
+  '07cd': 7,
+  '08tjoh': 8,
+  '09tcof': 9,
+  '10tdot': 10,
+  '11tpot': 11,
+  '12tmod': 12,
+  '13tplor': 13,
+  '14tcok': 14,
+  '15tdc': 15,
+  '16tlov': 16,
+  '17tdoi': 17,
+  '18dotd': 18,
+  '19wb': 19,
+  '20tcon': 20,
+  '21votm': 21,
+  '22tbos': 22,
+  '23mh': 23,
+  '24rw': 24,
+  '25totw': 25,
+  '26tfobm': 26,
+  '27v': 27,
+  '28thos': 28,
+  '29tsoc': 29,
 };
 
 const elements = {
@@ -72,6 +105,97 @@ function formatMessage(value, fallback = 'Ready.') {
   }
 
   return text(value, fallback);
+}
+
+function getReaderPageInfo() {
+  try {
+    const href = elements.readerFrame.contentWindow?.location?.href
+      || elements.readerFrame.getAttribute('src')
+      || '';
+    const url = new URL(href, window.location.origin);
+    if (url.pathname === '/web/frontend/library.html') {
+      return { type: 'library', url: url.pathname };
+    }
+
+    const match = url.pathname.match(/^\/books\/lw\/([^/]+)\/sect(\d+)\.htm$/i);
+    if (!match) {
+      return { type: 'other', url: url.pathname };
+    }
+
+    const folder = match[1].toLowerCase();
+    return {
+      type: 'section',
+      url: url.pathname,
+      folder,
+      bookNumber: FOLDER_TO_BOOK[folder] || null,
+      section: Number(match[2]),
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function updateReaderTitleFromPageInfo(info) {
+  if (!info) {
+    return;
+  }
+
+  if (info.type === 'library') {
+    if (!state.payload?.session?.HasState) {
+      elements.readerTitle.textContent = 'Reader Home';
+    }
+    return;
+  }
+
+  if (info.type !== 'section') {
+    return;
+  }
+
+  const payload = state.payload;
+  const activeBookNumber = Number(payload?.reader?.BookNumber || 0);
+  const activeBookTitle = payload?.reader?.BookTitle || '';
+  const title = info.bookNumber === activeBookNumber && activeBookTitle
+    ? `Book ${info.bookNumber} - ${activeBookTitle} | Section ${info.section}`
+    : `Book ${text(info.bookNumber, '?')} | Section ${info.section}`;
+  elements.readerTitle.textContent = title;
+}
+
+async function handleReaderNavigation() {
+  const info = getReaderPageInfo();
+  updateReaderTitleFromPageInfo(info);
+
+  if (!info || info.type !== 'section') {
+    return;
+  }
+
+  const payload = state.payload;
+  if (!payload?.session?.HasState) {
+    return;
+  }
+  if (payload?.pendingFlow?.Active || payload?.combat?.Active) {
+    return;
+  }
+
+  const currentBook = Number(payload.reader?.BookNumber || 0);
+  const currentSection = Number(payload.reader?.Section || 0);
+  if (!info.bookNumber || info.bookNumber !== currentBook || info.section === currentSection) {
+    return;
+  }
+
+  if (state.readerSyncInFlight) {
+    return;
+  }
+
+  state.readerSyncInFlight = true;
+  try {
+    state.followCurrent = true;
+    const response = await apiAction({ action: 'setSection', section: info.section });
+    applyResponse(response);
+  } catch (error) {
+    handleActionError(error);
+  } finally {
+    state.readerSyncInFlight = false;
+  }
 }
 
 function renderSummaryCards(payload) {
@@ -871,6 +995,10 @@ function attachEvents() {
     if (state.payload) {
       syncReader(state.payload);
     }
+  });
+
+  elements.readerFrame.addEventListener('load', () => {
+    void handleReaderNavigation();
   });
 
   document.querySelector('[data-action="reload-state"]').addEventListener('click', refreshState);

@@ -73,6 +73,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
     - active combat actions for round resolution, auto-resolve, evade, and stop
   - the web session host now preserves generated random rolls across prompt-backed combat replay so manual CRT follow-up prompts can resume safely without reroll drift
   - this slice has been verified both by talking directly to `web/lw_api_session.ps1` and through the local HTTP server in `web/app_server.py`
+  - same-book section-page navigation inside the reader iframe now pushes section changes back into the app state instead of only changing the displayed book page
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

@@ -658,6 +658,8 @@ Current checkpoint:
     actions: round, auto-resolve, evade, and stop
   - prompt-backed combat replay now preserves generated random rolls so manual
     CRT follow-up answers can resume without reroll drift
+  - same-book section-page navigation inside the reader iframe now pushes
+    section changes back into the app state
 
 ## Tracking Rules
 

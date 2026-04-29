@@ -141,6 +141,7 @@ Current web-scaffold coverage includes:
 
 - split reader + assistant browser shell
 - live state and screen refresh over the local HTTP/JSON backend
+- same-book section-page navigation inside the reader now pushes section changes back into the app state
 - safe screen / section commands
 - save catalog browsing and load actions
 - browser-side save controls:

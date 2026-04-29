@@ -32,6 +32,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - the Combat tab now supports tracked combat start, structured setup follow-up prompts, round resolution, auto-resolve, evade, and stop controls
   - prompt-backed combat flows now preserve generated random rolls across follow-up answers so manual CRT prompts can resume safely instead of rerolling during replay
   - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
+- fixed tracked reader navigation so same-book section-page links inside the browser reader now update the app's current section instead of only changing the iframe page
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books
