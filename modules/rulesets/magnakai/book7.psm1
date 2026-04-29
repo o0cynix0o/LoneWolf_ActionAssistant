@@ -496,7 +496,7 @@ function Get-LWMagnakaiBookSevenSectionRandomNumberContext {
             return (New-LWSectionRandomNumberContext -Section 128 -Description 'Burnt Rahkos hand ambush check.' -Modifier $modifier -ModifierNotes $modifierNotes)
         }
         129 { return (New-LWSectionRandomNumberContext -Section 129 -Description 'Adgana addiction check after combat.') }
-        148 { return (New-LWSectionRandomNumberContext -Section 148 -Description 'Nest search aftermath reaction check.') }
+        148 { return (New-LWSectionRandomNumberContext -Section 148 -Description 'Nest search aftermath reaction check: 0-4 -> 63; 5-9 -> 346.') }
         166 {
             if (Test-LWStateHasDiscipline -State $State -Name 'Huntmastery') {
                 $modifier += 2

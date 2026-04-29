@@ -2346,6 +2346,7 @@ function Get-LWWebStateSnapshot {
                 'stats',
                 'campaign',
                 'achievements',
+                'roll',
                 'combat status',
                 'combat log',
                 'set <section>'
@@ -2396,6 +2397,7 @@ function Test-LWWebSafeCommand {
         $trimmed -match '^stats(\s+(overview|combat|survival))?$' -or
         $trimmed -match '^campaign(\s+(overview|books|combat|survival|milestones))?$' -or
         $trimmed -match '^achievements(\s+(overview|recent|unlocked|locked|progress|planned))?$' -or
+        $trimmed -match '^roll$' -or
         $trimmed -match '^combat\s+(status|log)$' -or
         $trimmed -match '^set\s+\d+$'
     )

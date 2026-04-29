@@ -2318,6 +2318,19 @@ function attachEvents() {
     });
   });
 
+  document.querySelectorAll('[data-safe-command]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        const command = button.dataset.safeCommand || '';
+        const response = await apiAction({ action: 'safeCommand', command });
+        state.followCurrent = command.startsWith('set ');
+        applyResponse(response);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  });
+
   document.querySelector('[data-action="open-library"]').addEventListener('click', () => {
     state.followCurrent = false;
     elements.readerFrame.setAttribute('src', '/web/frontend/library.html');

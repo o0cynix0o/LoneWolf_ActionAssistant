@@ -218,8 +218,13 @@ try {
     $nestLootPrompt = Invoke-WebApiAction -Process $session -Request @{ action = 'setSection'; section = 148 }
     [void](Assert-PendingPrompt -Response $nestLootPrompt -ExpectedPrompt 'Section 148 choice' -ExpectedKind 'choiceTable' -ContextContains @('Section 148 Nest Loot', 'Mace', 'Padded Leather Waistcoat', 'Potion of Laumspur', '0. Done choosing'))
     Assert-WebAutomationSmoke -Condition ([int]$nestLootPrompt.payload.reader.Section -eq 148) -Message 'Pending Book 7 section 148 loot prompt should still advance the reader pane to section 148.'
-    $nestLootCancelled = Invoke-WebApiAction -Process $session -Request @{ action = 'cancelFlow' }
-    Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $nestLootCancelled)) -Message 'cancelFlow did not clear the section 148 prompt.'
+    $nestLootDone = Invoke-WebApiAction -Process $session -Request @{ action = 'submitFlow'; data = @{ response = 0 } }
+    Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $nestLootDone)) -Message 'Book 7 section 148 loot prompt did not complete after choosing 0.'
+    $rollResult = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'roll' }
+    Assert-WebAutomationSmoke -Condition ([string]$rollResult.message -eq 'Ran command: roll') -Message 'Web safe command roll did not run.'
+    $rollNotifications = @($rollResult.payload.session.Notifications | ForEach-Object { [string]$_.Message })
+    Assert-WebAutomationSmoke -Condition (($rollNotifications -join "`n").Contains('Random Number Table roll')) -Message 'Web safe command roll did not return the random-number notification.'
+    Assert-WebAutomationSmoke -Condition (($rollNotifications -join "`n").Contains('0-4 -> 63; 5-9 -> 346')) -Message 'Book 7 section 148 roll notification did not include the destination ranges.'
 
     $loadedFullBook7 = Invoke-WebApiAction -Process $session -Request @{ action = 'loadGame'; path = [string]$book7FullSavePath }
     Assert-WebAutomationSmoke -Condition (@($loadedFullBook7.payload.inventory.BackpackItems).Count -ge 8) -Message 'Full-backpack automation source did not load as full.'

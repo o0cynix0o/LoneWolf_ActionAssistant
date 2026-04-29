@@ -6,6 +6,10 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- restored the web-safe `roll` command:
+  - browser sessions now allow `roll` through the safe-command gate, list it in the web help payload, and expose a `Roll` shortcut beside the review shortcuts
+  - Book `7` section `148` automation coverage now completes the nest-loot prompt and verifies that `roll` returns a Random Number Table notification
+  - the section `148` random-check description now includes its destination ranges: `0-4 -> 63`, `5-9 -> 346`
 - fixed the web reader timing for prompt-backed section entry:
   - pending `setSection` flows now advance the reader pane to the target section while the engine waits for loot/choice follow-up answers
   - Book `7` section `148` now has regression coverage so the nest-loot prompt shows its section text and option list together
