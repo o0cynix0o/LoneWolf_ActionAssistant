@@ -1606,6 +1606,32 @@ function Invoke-LWSectionChoiceTable {
         Write-LWBulletItem -Text 'D. Drop an item by number' -TextColor 'Gray' -BulletColor 'Yellow'
         Write-LWBulletItem -Text '0. Done choosing' -TextColor 'DarkGray' -BulletColor 'Yellow'
 
+        $webContextCommand = Get-Command -Name 'Set-LWWebPendingContextOverride' -CommandType Function -ErrorAction SilentlyContinue
+        if ($null -ne $webContextCommand) {
+            $contextLines = @(
+                $Title,
+                ''
+            )
+            if (-not [string]::IsNullOrWhiteSpace($Intro)) {
+                $contextLines += $Intro
+                $contextLines += ''
+            }
+            $contextLines += ("Gold Crowns: {0}/50" -f [int]$script:GameState.Inventory.GoldCrowns)
+            $contextLines += ("Weapons: {0}/2" -f @($script:GameState.Inventory.Weapons).Count)
+            $contextLines += ("Backpack: {0}" -f $(if (Test-LWStateHasBackpack -State $script:GameState) { "{0}/8 used" -f (Get-LWInventoryUsedCapacity -Type 'backpack' -Items @(Get-LWInventoryItems -Type 'backpack')) } else { 'lost' }))
+            $contextLines += ("Special Items: {0}/12" -f @($script:GameState.Inventory.SpecialItems).Count)
+            if ($SelectionLimit -gt 0) {
+                $contextLines += ("Choices Left: {0}/{1}" -f ([Math]::Max(0, ($SelectionLimit - $claimedChoiceCount))), $SelectionLimit)
+            }
+            $contextLines += ''
+            for ($i = 0; $i -lt $availableChoices.Count; $i++) {
+                $contextLines += ("{0}. {1}" -f ($i + 1), (Get-LWBookFourSectionChoiceLine -Choice $availableChoices[$i]))
+            }
+            $contextLines += 'D. Drop an item by number'
+            $contextLines += '0. Done choosing'
+            & $webContextCommand (($contextLines -join "`n").Trim())
+        }
+
         $choiceText = [string](Read-LWText -Prompt $PromptLabel -Default '0' -NoRefresh)
         if ([string]::IsNullOrWhiteSpace($choiceText)) {
             $choiceText = '0'

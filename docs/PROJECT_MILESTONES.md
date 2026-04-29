@@ -513,7 +513,7 @@ Completion checkpoint:
 
 Status:
 
-- `in_progress`
+- `complete`
 
 Goal:
 
@@ -598,7 +598,7 @@ Current checkpoint:
 
 Status:
 
-- `in_progress`
+- `completed`
 
 Goal:
 
@@ -749,6 +749,35 @@ Current checkpoint:
   - transition prompt context now keeps singleton Special Item lists array-shaped
     under strict mode and labels safekeeping with the real target book during
     `continueBook`
+  - M6 closeout now adds structured web-safe prompt context for the remaining
+    known shop, loot, payment, section-choice, make-room, safekeeping,
+    starting-gear, and book-transition prompt edges
+  - achievement parity validation now verifies current-book entries, per-book
+    totals, recent unlock context, hidden-achievement masking, and browser-safe
+    achievement screen changes in both shells:
+    - `testing/logs/WEB_PARITY_ACHIEVEMENT_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_ACHIEVEMENT_SMOKE_PS51.txt`
+  - prompt-heavy book automation validation now verifies Book `6` / `7` loot,
+    shop, payment, section-choice, and make-room prompt payloads in both shells:
+    - `testing/logs/WEB_PARITY_AUTOMATION_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_AUTOMATION_SMOKE_PS51.txt`
+  - browser-DOM validation now exercises the live local HTTP server and confirms
+    the loaded Book `7` achievement surface renders in both shells:
+    - `testing/logs/WEB_BROWSER_DOM_SMOKE_PS7.txt`
+    - `testing/logs/WEB_BROWSER_DOM_SMOKE_PS51.txt`
+  - portable package validation now confirms the web scaffold, generated Windows
+    web launcher, POSIX web launcher, and packaged `/api/state` endpoint in both
+    shells:
+    - `testing/logs/WEB_PACKAGING_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PACKAGING_SMOKE_PS51.txt`
+  - the existing portable release validator also remains green after the web
+    scaffold was added to the package:
+    - `testing/logs/RELEASE_VALIDATE_M6_CLOSEOUT_PS7.txt`
+  - `Start-LoneWolfWeb.sh` is now tracked for POSIX launches, and the portable
+    package manifest includes the `web/` scaffold plus all web launchers
+  - the final M6 validation matrix is green across surface, flow,
+    death/recovery, transition, achievement, automation, browser-DOM, and
+    packaging smokes; no known M6 acceptance gaps remain
 
 ## Tracking Rules
 

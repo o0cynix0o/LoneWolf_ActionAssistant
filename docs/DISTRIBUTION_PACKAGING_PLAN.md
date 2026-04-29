@@ -34,6 +34,11 @@ Ship:
 - generated launchers:
   - `Start-LoneWolf.cmd`
   - `Start-LoneWolf.ps1`
+  - `Start-LoneWolfWeb.cmd`
+- tracked web launchers:
+  - `Start-LoneWolfWeb.ps1`
+  - `Start-LoneWolfWeb.sh`
+- `web/`
 
 Do not ship:
 
@@ -98,9 +103,12 @@ Before any public release/package:
    - load a save
    - render `help`
    - render the main Book `6` screens
+   - serve the local web scaffold at `/api/state`
    - start cleanly through:
      - `Start-LoneWolf.ps1`
      - `Start-LoneWolf.cmd`
+     - `Start-LoneWolfWeb.ps1`
+     - `Start-LoneWolfWeb.cmd`
 5. keep validation notes in `testing/logs/`
 
 Preferred command:
@@ -109,11 +117,19 @@ Preferred command:
 .\validate-release.ps1 -Rebuild
 ```
 
+Web scaffold packaging smoke:
+
+```powershell
+pwsh -NoLogo -NoProfile -File .\testing\tmp\web-packaging-smoke.ps1
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\testing\tmp\web-packaging-smoke.ps1
+```
+
 ## Packaging Milestone
 
 M4 portable packaging is complete and remains the current release workflow.
 
-The portable zip is the correct public-release format for `v0.8.0`.
+The portable zip is the correct public-release format for `v0.8.0`. Current
+`main` packages also include the M6 web scaffold and launchers.
 
 ## Future Packaging Options
 

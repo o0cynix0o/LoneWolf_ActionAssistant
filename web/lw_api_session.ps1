@@ -16,10 +16,11 @@ Set-LWScreen -Name 'welcome'
 $script:LWWebPendingToken = '__LW_WEB_PENDING_PROMPT__'
 $script:LWWebOriginalGetRandomDigit = (Get-Command -Name 'Get-LWRandomDigit' -CommandType Function).ScriptBlock
 $script:LWWebPromptReplay = [ordered]@{
-    Active    = $false
-    Responses = @()
-    Index     = 0
-    Pending   = $null
+    Active          = $false
+    Responses       = @()
+    Index           = 0
+    Pending         = $null
+    ContextOverride = ''
 }
 $script:LWWebRandomReplay = [ordered]@{
     Active    = $false
@@ -112,10 +113,11 @@ function Start-LWWebPromptReplay {
     param([object[]]$Responses = @())
 
     $script:LWWebPromptReplay = [ordered]@{
-        Active    = $true
-        Responses = @($Responses)
-        Index     = 0
-        Pending   = $null
+        Active          = $true
+        Responses       = @($Responses)
+        Index           = 0
+        Pending         = $null
+        ContextOverride = ''
     }
 }
 
@@ -123,6 +125,14 @@ function Stop-LWWebPromptReplay {
     $script:LWWebPromptReplay.Active = $false
     $script:LWWebPromptReplay.Responses = @()
     $script:LWWebPromptReplay.Index = 0
+}
+
+function Set-LWWebPendingContextOverride {
+    param([string]$ContextText = '')
+
+    if ($script:LWWebPromptReplay.Active -and -not [string]::IsNullOrWhiteSpace($ContextText)) {
+        $script:LWWebPromptReplay.ContextOverride = [string]$ContextText
+    }
 }
 
 function Start-LWWebRandomReplay {
@@ -421,10 +431,11 @@ function Convert-LWWebOutputRecordsToText {
         }
 
         foreach ($line in @($text -split "`r?`n")) {
-            if ([string]::IsNullOrWhiteSpace([string]$line)) {
+            $cleanLine = [regex]::Replace([string]$line, "`e\[[0-9;?]*[ -/]*[@-~]", '')
+            if ([string]::IsNullOrWhiteSpace($cleanLine)) {
                 continue
             }
-            $lines.Add([string]$line)
+            $lines.Add($cleanLine)
         }
     }
 
@@ -1492,6 +1503,30 @@ function Get-LWWebPendingContextText {
         return ($lines -join "`n").Trim()
     }
 
+    switch ($promptText) {
+        'Section 98 shop choice' {
+            return @(
+                'Section 98 Weapons Shop',
+                '',
+                '1. Buy gear',
+                '2. Sell gear',
+                '0. Leave the shop'
+            ) -join "`n"
+        }
+        'Section 275 shop choice' {
+            return @(
+                'Section 275 Cartographer',
+                '',
+                '1. Buy gear',
+                '2. Sell gear',
+                '0. Leave the shop'
+            ) -join "`n"
+        }
+        'Section 137: pay the 3 Gold Crown levy now?' {
+            return 'Section 137 Levy'
+        }
+    }
+
     if ($promptText -eq 'Safekeep which Special Item') {
         $available = @(if ($null -ne $script:GameState.Inventory) { $script:GameState.Inventory.SpecialItems })
         $lines = @('Choose carried Special Items to leave in safekeeping', '')
@@ -1584,10 +1619,10 @@ function Get-LWWebPendingPromptKind {
     }
 
     $context = [string]$ContextText
-    if ($context -match '(?m)^\s*[0-9A-Za-z]+\.\s+' -and $context -match '(?m)^\s*0\.\s+Done choosing') {
+    if ($context -match '(?m)^\s*(?:[-*]\s*)?[0-9A-Za-z]+\.\s+' -and $context -match '(?m)^\s*(?:[-*]\s*)?0\.\s+Done choosing') {
         return 'choiceTable'
     }
-    if ($context -match '(?m)^\s*[0-9A-Za-z]+\.\s+') {
+    if ($context -match '(?m)^\s*(?:[-*]\s*)?[0-9A-Za-z]+\.\s+') {
         return 'choiceMenu'
     }
 
@@ -1650,11 +1685,14 @@ function Invoke-LWWebPromptActionPhase {
                 $Flow.Data.RandomRolls = @($Flow.Data.RandomRolls + @([int[]]$generatedRolls))
             }
         }
-        $Flow.ContextText = [string](Convert-LWWebOutputRecordsToText -Records $capturedOutput)
+        $capturedContextText = [string](Convert-LWWebOutputRecordsToText -Records $capturedOutput)
+        $Flow.ContextText = $capturedContextText
         Stop-LWWebPromptReplay
         if (Test-LWWebPendingException -ErrorRecord $_) {
             $Flow.PendingPrompt = Copy-LWWebValue $script:LWWebPromptReplay.Pending
-            $Flow.ContextText = [string](Get-LWWebPendingContextText -Flow $Flow -PendingPrompt $Flow.PendingPrompt)
+            $specificContextText = [string](Get-LWWebPendingContextText -Flow $Flow -PendingPrompt $Flow.PendingPrompt)
+            $overrideContextText = if ($script:LWWebPromptReplay.Contains('ContextOverride')) { [string]$script:LWWebPromptReplay.ContextOverride } else { '' }
+            $Flow.ContextText = if (-not [string]::IsNullOrWhiteSpace($specificContextText)) { $specificContextText } elseif (-not [string]::IsNullOrWhiteSpace($overrideContextText)) { $overrideContextText } else { $capturedContextText }
             Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
             return $PendingMessage
         }

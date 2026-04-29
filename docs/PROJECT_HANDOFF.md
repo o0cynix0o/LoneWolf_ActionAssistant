@@ -53,6 +53,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M3 UX polish is complete and released
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
+- M6 web GUI and cross-platform migration is complete on `main` under the
+  current validation policy
 - current stabilization work on `main` is architecture hardening cleanup, recent Book `6` DE support, and Book `7` validation after the `0.8.0` release
 - the formal migration plan for a web-GUI-first, cross-platform future now lives in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
 - the Phase `0` parity inventory for that migration now lives in `docs/WEB_PARITY_INVENTORY.md`
@@ -122,6 +124,31 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
     - `testing/logs/WEB_PARITY_TRANSITION_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_TRANSITION_SMOKE_PS51.txt`
   - transition prompt context now keeps singleton Special Item lists array-shaped under strict mode and labels safekeeping with the real target book during `continueBook`
+  - M6 closeout is now complete:
+    - remaining known shop, loot, payment, section-choice, make-room,
+      safekeeping, starting-gear, and transition prompts now carry web-safe
+      pending-flow context
+    - achievement parity is tracked at `testing/tmp/web-parity-achievement-smoke.ps1`
+      with green artifacts:
+      - `testing/logs/WEB_PARITY_ACHIEVEMENT_SMOKE_PS7.txt`
+      - `testing/logs/WEB_PARITY_ACHIEVEMENT_SMOKE_PS51.txt`
+    - prompt-heavy book automation parity is tracked at
+      `testing/tmp/web-parity-automation-smoke.ps1` with green artifacts:
+      - `testing/logs/WEB_PARITY_AUTOMATION_SMOKE_PS7.txt`
+      - `testing/logs/WEB_PARITY_AUTOMATION_SMOKE_PS51.txt`
+    - browser-DOM validation is tracked at `testing/tmp/web-browser-dom-smoke.ps1`
+      with green artifacts:
+      - `testing/logs/WEB_BROWSER_DOM_SMOKE_PS7.txt`
+      - `testing/logs/WEB_BROWSER_DOM_SMOKE_PS51.txt`
+    - package validation for the bundled web scaffold is tracked at
+      `testing/tmp/web-packaging-smoke.ps1` with green artifacts:
+      - `testing/logs/WEB_PACKAGING_SMOKE_PS7.txt`
+      - `testing/logs/WEB_PACKAGING_SMOKE_PS51.txt`
+    - the older portable release validator also passes after adding the web
+      scaffold to the package:
+      - `testing/logs/RELEASE_VALIDATE_M6_CLOSEOUT_PS7.txt`
+    - the portable package now includes `web/`, `Start-LoneWolfWeb.ps1`,
+      generated `Start-LoneWolfWeb.cmd`, and POSIX `Start-LoneWolfWeb.sh`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
@@ -923,7 +950,7 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 - Deepen Book `6` route reporting and strategy support as more play data comes in
 - Plan the next post-Book `7` Magnakai audit once the current `main` Book `7` surface feels stable
 - Keep the handoff docs and strategy-guide workflow in sync as new books become implemented
-- Continue M6 parity from the now-covered setup/save/load/inventory/combat/death/book-transition smokes into achievement, book-automation, browser-DOM, and cross-platform release flows
+- Treat M6 as complete; next web work is post-M6 live-play hardening, long-run browser polish, and non-Windows launch validation when those environments are available
 
 ## Important Cautions
 

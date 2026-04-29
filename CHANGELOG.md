@@ -6,6 +6,20 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- completed the tracked M6 web-GUI / cross-platform migration closeout:
+  - structured web prompt context now covers the remaining known shop, loot, payment, section-choice, make-room, safekeeping, starting-gear, and transition prompt edges
+  - added repeatable parity smokes for achievement payloads, prompt-heavy Book `6` / `7` automation, live browser-DOM rendering, and packaged web launches
+  - the portable release builder now includes the `web/` scaffold, the PowerShell web launcher, a generated Windows web launcher, and the POSIX `Start-LoneWolfWeb.sh` launcher
+  - validated the final M6 matrix in both PowerShell engines where applicable:
+    - `testing/logs/WEB_PARITY_ACHIEVEMENT_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_ACHIEVEMENT_SMOKE_PS51.txt`
+    - `testing/logs/WEB_PARITY_AUTOMATION_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_AUTOMATION_SMOKE_PS51.txt`
+    - `testing/logs/WEB_BROWSER_DOM_SMOKE_PS7.txt`
+    - `testing/logs/WEB_BROWSER_DOM_SMOKE_PS51.txt`
+    - `testing/logs/WEB_PACKAGING_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PACKAGING_SMOKE_PS51.txt`
+    - `testing/logs/RELEASE_VALIDATE_M6_CLOSEOUT_PS7.txt`
 - added repeatable web book-transition parity validation for M6:
   - `testing/tmp/web-parity-transition-smoke.ps1` builds a disposable completed Book `6` save, enters the browser-side Book Complete screen, triggers `continueBook`, and drives the prompt-backed transition into Book `7`
   - the transition smoke verifies that Magnakai discipline, Weaponmastery, safekeeping, and starting-gear prompt payloads stay readable and web-safe during the handoff
@@ -46,7 +60,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
     - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
     - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
-- upgraded the tracked browser flow surface so the remaining prompt-heavy gameplay steps render with more web-native guidance instead of looking like raw terminal replay:
+- upgraded the tracked browser flow surface so prompt-heavy gameplay steps render with more web-native guidance instead of looking like raw terminal replay:
   - the web session payload now tags pending prompts with lightweight prompt kinds such as `makeRoomConfirm`, `safekeepingMenu`, and `startingGearChoice`
   - browser-side prompt rendering now uses that metadata to show inventory-pressure and safekeeping companion panels, plus direct `Open Inventory Tab` shortcuts where the player needs to make room or manage carried items
   - prompt choice lists such as shop / loot / starting-gear tables now render as stacked quick-pick actions instead of only showing a plain input box with pasted context text

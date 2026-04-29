@@ -211,21 +211,28 @@ Existing validation categories that matter to the migration include:
 
 These should be preserved and extended, not replaced by ad hoc browser testing.
 
-## Current M6 Gap List
+## M6 Closeout Status
 
-The web migration still needs explicit implementation work for:
+The tracked M6 migration work is complete for the current local parity bar.
 
-- complete structured pending-choice modeling for remaining shop, loot,
-  payment, section-choice, make-room, safekeeping, and transition edge cases
-- deeper API/UI parity harnesses for achievement, book-automation, and
-  browser-DOM flows now that local flow coverage exists for setup, save/load,
-  inventory recovery, combat, death/recovery, and book transition
-- cross-platform launcher and packaging hardening
-- browser polish and parity review for long combat archives, history-heavy
-  runs, and book-complete/campaign-heavy views
-- web-first release documentation and validation workflow updates
+Closed M6 work:
 
-## Current M6 Kickoff Deliverables
+- structured pending-choice modeling now covers the known shop, loot, payment,
+  section-choice, make-room, safekeeping, starting-gear, and book-transition
+  prompt edges that blocked browser parity
+- repeatable parity harnesses now cover achievement payloads, prompt-heavy
+  book automation, browser-DOM rendering, death/recovery, book transition,
+  flow setup/save/load/combat paths, and the broad browser surface
+- packaging now includes the local web scaffold, Windows web launchers, and a
+  POSIX `Start-LoneWolfWeb.sh` launcher for the cross-platform path
+- web-first documentation and validation references now point at the current
+  M6 evidence logs
+
+No known M6 parity gaps remain in the tracked acceptance suite. Remaining web
+work is post-M6 polish and live-play hardening, especially long-run browser
+ergonomics for large histories, combat archives, and campaign-heavy saves.
+
+## M6 Delivered Surface
 
 The tracked migration slice has established:
 
@@ -248,6 +255,17 @@ The tracked migration slice has established:
   `continueBook` -> Book `6` to `7` continuation, including discipline,
   Weaponmastery, safekeeping, starting-gear payloads, and carried-state checks in
   both shells
+- repeatable web achievement validation for current-book achievement payloads,
+  recent unlocks, hidden-achievement masking, and browser-safe screen changes in
+  both shells
+- repeatable prompt-heavy automation validation for Book `6` / `7` loot, shop,
+  payment, section-choice, and make-room flows in both shells
+- repeatable browser-DOM validation against the live local HTTP server in both
+  shells
+- repeatable web packaging validation confirming the portable package carries
+  the browser scaffold and can serve `/api/state` from the packaged web launcher
+  in both shells
+- POSIX launcher coverage through `Start-LoneWolfWeb.sh`, now included in the
+  portable package manifest
 
-That does not complete parity, but it does establish the correct direction for
-the rest of the work.
+This completes the M6 migration milestone under the current validation policy.

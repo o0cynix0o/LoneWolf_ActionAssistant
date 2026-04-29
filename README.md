@@ -132,10 +132,16 @@ The tracked migration scaffold can be launched locally with:
 .\Start-LoneWolfWeb.ps1
 ```
 
-This is the first repo-tracked browser shell for the project. It is not full
-feature parity yet. It exists to establish the real HTTP/JSON architecture seam
-for the broader web-GUI and cross-platform migration while keeping the CLI
-available.
+On POSIX shells, the packaged launcher is:
+
+```sh
+./Start-LoneWolfWeb.sh
+```
+
+This is the repo-tracked local browser shell for the project. The M6 migration
+parity bar is complete on current `main`: the web path uses the real
+PowerShell engine over HTTP/JSON while the CLI remains available as a fallback
+and validation anchor.
 
 The launcher can be started from Windows PowerShell or PowerShell `7`, but the
 web engine host itself requires PowerShell `7`. On non-Windows systems, the
@@ -193,11 +199,12 @@ Current web-scaffold coverage includes:
   - prompt-backed book transitions can now advance into the next book over the same HTTP/JSON path
   - current continuation prompt context includes readable option lists for Magnakai discipline picks, Weaponmastery top-ups, and transition safekeeping choices
   - prompt-backed flows now render clickable quick-pick buttons from the visible option list when context is available
-- more web-native prompt handling for the remaining gameplay friction points:
+- web-native prompt handling for prompt-heavy gameplay friction points:
   - pending prompts now carry lightweight prompt-kind metadata such as make-room, safekeeping, and starting-gear choice states
   - inventory-pressure prompts now render a compact inventory snapshot plus direct `Open Inventory Tab` shortcuts instead of only dropping to a yes/no box
   - safekeeping prompts now render carried-versus-stored Special Item summaries alongside the live quick-pick actions
   - structured choice tables now render as stacked quick-pick actions, while the raw prompt transcript stays available through a collapsed details block when needed
+  - shop, loot, payment, section-choice, make-room, safekeeping, starting-gear, and transition prompts are covered by the M6 parity smokes
 - safer recovery-save handling:
   - loading a `.bak-...` recovery save no longer replaces the default `last save` launch target automatically
   - the web bootstrap now skips stale backup pointers and falls back to the newest normal `.json` save instead

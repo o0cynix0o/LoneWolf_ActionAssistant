@@ -38,6 +38,20 @@ function Write-LWBuildInfo {
     Write-Host $Message -ForegroundColor Gray
 }
 
+function Join-LWPath {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]]$ChildPath
+    )
+
+    $resolved = $Path
+    foreach ($child in @($ChildPath)) {
+        $resolved = Join-Path $resolved $child
+    }
+
+    return $resolved
+}
+
 function Copy-LWRequiredFile {
     param(
         [Parameter(Mandatory = $true)][string]$Source,
@@ -73,7 +87,7 @@ function Get-LWGitHead {
 }
 
 $repoRoot = Get-LWRepoRoot
-$bootstrapModulePath = Join-Path $repoRoot 'modules\core\bootstrap.psm1'
+$bootstrapModulePath = Join-LWPath $repoRoot 'modules' 'core' 'bootstrap.psm1'
 $appVersion = Get-LWAppVersion -BootstrapModulePath $bootstrapModulePath
 $releaseRoot = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     Join-Path $repoRoot 'testing\releases'
@@ -113,19 +127,21 @@ foreach ($dir in $directories) {
 Copy-LWRequiredFile -Source (Join-Path $repoRoot 'lonewolf.ps1') -Destination (Join-Path $stagingRoot 'lonewolf.ps1')
 Copy-LWRequiredFile -Source (Join-Path $repoRoot 'README.md') -Destination (Join-Path $stagingRoot 'README.md')
 Copy-LWRequiredFile -Source (Join-Path $repoRoot 'CHANGELOG.md') -Destination (Join-Path $stagingRoot 'CHANGELOG.md')
+Copy-LWRequiredFile -Source (Join-Path $repoRoot 'Start-LoneWolfWeb.ps1') -Destination (Join-Path $stagingRoot 'Start-LoneWolfWeb.ps1')
+Copy-LWRequiredFile -Source (Join-Path $repoRoot 'Start-LoneWolfWeb.sh') -Destination (Join-Path $stagingRoot 'Start-LoneWolfWeb.sh')
 
 foreach ($relativePath in @(
-        'data\kai-disciplines.json',
-        'data\magnakai-disciplines.json',
-        'data\magnakai-ranks.json',
-        'data\magnakai-lore-circles.json',
-        'data\weaponskill-map.json',
-        'data\crt.template.json'
+        (Join-LWPath 'data' 'kai-disciplines.json'),
+        (Join-LWPath 'data' 'magnakai-disciplines.json'),
+        (Join-LWPath 'data' 'magnakai-ranks.json'),
+        (Join-LWPath 'data' 'magnakai-lore-circles.json'),
+        (Join-LWPath 'data' 'weaponskill-map.json'),
+        (Join-LWPath 'data' 'crt.template.json')
     )) {
     Copy-LWRequiredFile -Source (Join-Path $repoRoot $relativePath) -Destination (Join-Path $stagingRoot $relativePath)
 }
 
-$optionalCrtPath = Join-Path $repoRoot 'data\crt.json'
+$optionalCrtPath = Join-LWPath $repoRoot 'data' 'crt.json'
 $includedCrt = $false
 if (Test-Path -LiteralPath $optionalCrtPath) {
     Copy-LWRequiredFile -Source $optionalCrtPath -Destination (Join-Path $stagingRoot 'data\crt.json')
@@ -136,6 +152,12 @@ $modulesSourceRoot = Join-Path $repoRoot 'modules'
 foreach ($moduleChild in @(Get-ChildItem -LiteralPath $modulesSourceRoot -Force)) {
     Copy-Item -LiteralPath $moduleChild.FullName -Destination (Join-Path $stagingRoot 'modules') -Recurse -Force
 }
+
+$webSourceRoot = Join-Path $repoRoot 'web'
+if (-not (Test-Path -LiteralPath $webSourceRoot)) {
+    throw "Web scaffold folder not found: $webSourceRoot"
+}
+Copy-Item -LiteralPath $webSourceRoot -Destination $stagingRoot -Recurse -Force
 
 $cmdLauncher = @'
 @echo off
@@ -157,6 +179,15 @@ $scriptPath = Join-Path $PSScriptRoot 'lonewolf.ps1'
 '@
 Set-Content -LiteralPath (Join-Path $stagingRoot 'Start-LoneWolf.ps1') -Value $psLauncher -Encoding UTF8
 
+$webCmdLauncher = @'
+@echo off
+setlocal
+set "APPDIR=%~dp0"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%APPDIR%Start-LoneWolfWeb.ps1" %*
+endlocal
+'@
+Set-Content -LiteralPath (Join-Path $stagingRoot 'Start-LoneWolfWeb.cmd') -Value $webCmdLauncher -Encoding ASCII
+
 $packageReadme = @"
 Lone Wolf Action Assistant
 Portable package: $packageName
@@ -166,9 +197,12 @@ Git head: $(if ($gitHead) { $gitHead } else { 'unknown' })
 Quick start:
 1. Double-click Start-LoneWolf.cmd
 2. Or run .\lonewolf.ps1 from PowerShell
+3. For the local browser scaffold, run .\Start-LoneWolfWeb.ps1 or Start-LoneWolfWeb.cmd
 
 Notes:
-- This package supports Kai Books 1-5 and Magnakai Book 6.
+- This package includes the CLI plus the current local web scaffold.
+- The web scaffold requires Python 3 and PowerShell 7.
+- Book text is not bundled; the browser reader shell can point at local book files when present.
 - This portable package keeps saves in the local saves folder beside the app.
 - DataFile combat mode requires data\crt.json. Included: $includedCrt
 "@
@@ -180,9 +214,9 @@ $manifest = [pscustomobject]@{
     BuiltOn            = (Get-Date).ToString('o')
     GitHead            = $gitHead
     IncludedCrtData    = $includedCrt
-    RequiredRootFiles  = @('lonewolf.ps1', 'README.md', 'CHANGELOG.md', 'Start-LoneWolf.cmd', 'Start-LoneWolf.ps1', 'PACKAGE_README.txt')
+    RequiredRootFiles  = @('lonewolf.ps1', 'README.md', 'CHANGELOG.md', 'Start-LoneWolf.cmd', 'Start-LoneWolf.ps1', 'Start-LoneWolfWeb.cmd', 'Start-LoneWolfWeb.ps1', 'Start-LoneWolfWeb.sh', 'PACKAGE_README.txt')
     RequiredDataFiles  = @('kai-disciplines.json', 'magnakai-disciplines.json', 'magnakai-ranks.json', 'magnakai-lore-circles.json', 'weaponskill-map.json', 'crt.template.json') + $(if ($includedCrt) { @('crt.json') } else { @() })
-    RequiredDirs       = @('data', 'modules', 'saves')
+    RequiredDirs       = @('data', 'modules', 'saves', 'web')
 }
 $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $stagingRoot 'release-manifest.json') -Encoding UTF8
 

@@ -106,7 +106,7 @@ function extractFlowChoices(contextText) {
   const lines = String(contextText || '').split(/\r?\n/);
   const choices = [];
   for (const line of lines) {
-    const match = line.match(/^\s*([A-Za-z0-9]+)\.\s+(.+?)\s*$/);
+    const match = line.match(/^\s*(?:[-*]\s*)?([A-Za-z0-9]+)\.\s+(.+?)\s*$/);
     if (!match) {
       continue;
     }
@@ -145,10 +145,10 @@ function inferFlowPromptKind(flow) {
   if (/^Choose\s+\d+\s+mastered weapon number\(s\) separated by commas$/i.test(promptText)) {
     return 'weaponmasteryChoice';
   }
-  if (contextText.match(/^\s*[0-9A-Za-z]+\.\s+/m) && contextText.match(/^\s*0\.\s+Done choosing/m)) {
+  if (contextText.match(/^\s*(?:[-*]\s*)?[0-9A-Za-z]+\.\s+/m) && contextText.match(/^\s*(?:[-*]\s*)?0\.\s+Done choosing/m)) {
     return 'choiceTable';
   }
-  if (contextText.match(/^\s*[0-9A-Za-z]+\.\s+/m)) {
+  if (contextText.match(/^\s*(?:[-*]\s*)?[0-9A-Za-z]+\.\s+/m)) {
     return 'choiceMenu';
   }
 
