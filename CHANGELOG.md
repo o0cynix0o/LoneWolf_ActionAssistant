@@ -6,6 +6,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- hardened the tracked web launcher for the cross-platform migration path:
+  - `Start-LoneWolfWeb.ps1` now avoids PowerShell 7-only platform variables under strict mode, so it can be started from Windows PowerShell 5.1 while still launching the PowerShell 7 engine host
+  - the launcher now falls back from `python` to `python3` when locating Python 3
+  - validated with a Windows PowerShell launcher smoke:
+    - `testing/logs/WEB_LAUNCHER_PS51_SMOKE.txt`
 - expanded the tracked web scaffold parity surface beyond the core play tabs:
   - added browser-native `Disciplines`, `Modes`, `Combat Log`, and `Help` tabs
   - the web session payload now exposes structured discipline catalogs, selected Kai/Magnakai state, Weaponmastery picks, lore-circle status, run-mode definitions, current achievement pools, safe-command help, and detailed active/archive combat-log snapshots

@@ -137,6 +137,10 @@ feature parity yet. It exists to establish the real HTTP/JSON architecture seam
 for the broader web-GUI and cross-platform migration while keeping the CLI
 available.
 
+The launcher can be started from Windows PowerShell or PowerShell `7`, but the
+web engine host itself requires PowerShell `7`. On non-Windows systems, the
+launcher will use `python3` if `python` is not available.
+
 Current web-scaffold coverage includes:
 
 - split reader + assistant browser shell

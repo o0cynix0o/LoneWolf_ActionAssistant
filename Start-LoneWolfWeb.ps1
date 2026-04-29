@@ -10,9 +10,18 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSCommandPath
 $serverScript = Join-Path $root 'web\app_server.py'
 $url = "http://$ListenHost`:$Port/"
-$platformName = if ($IsWindows) { 'windows' } elseif ($IsMacOS) { 'macos' } else { 'linux' }
 
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+$isWindowsValue = Get-Variable -Name IsWindows -ValueOnly -ErrorAction SilentlyContinue
+$isMacOSValue = Get-Variable -Name IsMacOS -ValueOnly -ErrorAction SilentlyContinue
+$isWindowsPlatform = if ($null -ne $isWindowsValue) { [bool]$isWindowsValue } else { [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT }
+$isMacOSPlatform = if ($null -ne $isMacOSValue) { [bool]$isMacOSValue } else { $false }
+$platformName = if ($isWindowsPlatform) { 'windows' } elseif ($isMacOSPlatform) { 'macos' } else { 'linux' }
+
+$pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+if ($null -eq $pythonCommand) {
+    $pythonCommand = Get-Command python3 -ErrorAction SilentlyContinue
+}
+if ($null -eq $pythonCommand) {
     throw 'Python 3 is required to launch the Lone Wolf web scaffold.'
 }
 
@@ -50,4 +59,4 @@ Write-Host "URL: $url" -ForegroundColor Green
 Write-Host ""
 
 Set-Location $root
-& python $serverScript --host $ListenHost --port $Port
+& $pythonCommand.Source $serverScript --host $ListenHost --port $Port

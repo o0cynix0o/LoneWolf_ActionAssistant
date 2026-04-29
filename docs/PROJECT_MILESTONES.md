@@ -722,6 +722,10 @@ Current checkpoint:
     - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
     - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
+  - `Start-LoneWolfWeb.ps1` now avoids PowerShell `7`-only platform variables
+    under strict mode and falls back from `python` to `python3`, with Windows
+    PowerShell launcher smoke coverage at:
+    - `testing/logs/WEB_LAUNCHER_PS51_SMOKE.txt`
 
 ## Tracking Rules
 

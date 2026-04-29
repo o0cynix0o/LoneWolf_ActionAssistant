@@ -108,6 +108,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
     - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
     - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
+  - `Start-LoneWolfWeb.ps1` now avoids PowerShell `7`-only platform variables under strict mode and falls back from `python` to `python3`, with Windows PowerShell launcher smoke coverage at:
+    - `testing/logs/WEB_LAUNCHER_PS51_SMOKE.txt`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
