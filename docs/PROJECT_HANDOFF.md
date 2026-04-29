@@ -57,6 +57,11 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - the formal migration plan for a web-GUI-first, cross-platform future now lives in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
 - the Phase `0` parity inventory for that migration now lives in `docs/WEB_PARITY_INVENTORY.md`
 - the initial tracked web scaffold now lives under `web/` with a PowerShell engine session host, a Python HTTP server, a browser frontend shell, and `Start-LoneWolfWeb.ps1`
+- the tracked web scaffold now supports the first structured setup flow end-to-end:
+  - browser-side `New Game` and `Load Last Save` controls now exist in the tracked frontend shell
+  - the web session host now exposes a structured pending-flow model for fresh-run setup instead of only safe screen/state actions
+  - current web-driven setup coverage includes run difficulty, name/book/section, Kai or Magnakai discipline picks, Weaponmastery picks, and startup-equipment handoff
+  - this flow has been verified both by talking directly to `web/lw_api_session.ps1` and through the local HTTP server in `web/app_server.py`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

@@ -643,6 +643,12 @@ Current checkpoint:
   streaming
 - current scaffold keeps the CLI and the existing rules engine intact while the
   new browser surface is built out
+- current scaffold now supports the first structured browser-driven setup flow:
+  - `New Game` and `Load Last Save` controls are present in the tracked browser shell
+  - the web session host now exposes pending-choice flow state for new-run setup
+  - the browser can now drive difficulty selection, identity setup, discipline
+    picks, Weaponmastery picks, and startup-equipment continuation through the
+    real HTTP/JSON path
 
 ## Tracking Rules
 

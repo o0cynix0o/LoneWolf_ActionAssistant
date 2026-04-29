@@ -14,6 +14,17 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - added a long-lived PowerShell engine session adapter in `web/lw_api_session.ps1`
   - added `Start-LoneWolfWeb.ps1` as the first tracked launcher for the web scaffold
   - the current scaffold uses a real JSON/HTTP path instead of PTY terminal streaming and keeps the CLI intact while parity work continues
+- upgraded the tracked web scaffold from a passive state shell into the first structured setup surface:
+  - the browser UI now includes repo-tracked `New Game` and `Load Last Save` controls
+  - the PowerShell web session now supports a structured pending-flow model for fresh-run setup
+  - the first web-driven flow covers:
+    - run difficulty / permadeath selection
+    - character identity and starting book / section
+    - Kai and Magnakai discipline selection
+    - Magnakai Weaponmastery selection
+    - startup-equipment follow-through without terminal scraping
+  - the frontend now renders these pending setup steps as browser forms instead of relying on command-line prompts
+  - the new flow was verified both against the direct long-lived PowerShell session host and through the local HTTP server
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books

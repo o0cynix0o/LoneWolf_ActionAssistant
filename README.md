@@ -137,6 +137,19 @@ feature parity yet. It exists to establish the real HTTP/JSON architecture seam
 for the broader web-GUI and cross-platform migration while keeping the CLI
 available.
 
+Current web-scaffold coverage includes:
+
+- split reader + assistant browser shell
+- live state and screen refresh over the local HTTP/JSON backend
+- safe screen / section commands
+- save catalog browsing and load actions
+- structured `New Game` flow for:
+  - difficulty and permadeath
+  - character name, book, and starting section
+  - Kai / Magnakai discipline picks
+  - Weaponmastery picks
+  - startup-equipment continuation
+
 ## Project Files
 
 - `lonewolf.ps1`

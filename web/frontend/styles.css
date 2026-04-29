@@ -32,7 +32,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -50,13 +51,26 @@ button:hover {
   background: linear-gradient(180deg, #243326, #1b261c);
 }
 
-input {
+input,
+select {
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #0f150f;
   color: var(--ink);
   padding: 0.45rem 0.7rem;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: auto;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  accent-color: var(--gold);
 }
 
 .shell {
@@ -144,6 +158,21 @@ h1 {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.7rem;
   padding: 1rem 1rem 0.75rem;
+}
+
+.action-strip,
+.flow-host {
+  padding: 0 1rem 0.8rem;
+}
+
+.action-strip {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.hidden {
+  display: none;
 }
 
 .summary-card,
@@ -236,6 +265,123 @@ h1 {
   margin: 0 0 0.75rem;
   color: var(--gold);
   font-size: 1.1rem;
+}
+
+.flow-panel {
+  margin-bottom: 0;
+}
+
+.flow-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.flow-header h2 {
+  margin-bottom: 0.25rem;
+}
+
+.flow-step {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flow-description {
+  margin: 0 0 0.85rem;
+  color: var(--ink);
+}
+
+.flow-summary {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.subtle-pill {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.flow-form {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.flow-copy p {
+  margin: 0;
+}
+
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.flow-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.flow-field span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.flow-options {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.compact-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.flow-option,
+.flow-checkbox {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+  border: 1px solid rgba(103, 93, 57, 0.45);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.7rem 0.75rem;
+}
+
+.flow-option input,
+.flow-checkbox input {
+  margin-top: 0.15rem;
+}
+
+.flow-option span,
+.flow-checkbox span {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.flow-option strong {
+  color: var(--ink);
+}
+
+.flow-option small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.flow-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.button-secondary {
+  color: var(--ink);
+  background: linear-gradient(180deg, #1e241f, #141a15);
 }
 
 .kv-grid {
@@ -408,6 +554,13 @@ h1 {
   }
 
   .command-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-grid,
+  .compact-options,
+  .inventory-grid,
+  .kv-grid {
     grid-template-columns: 1fr;
   }
 }
