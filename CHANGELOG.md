@@ -6,6 +6,16 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- hardened the web pending-flow snapshot path and added a deeper M6 flow validation pass:
+  - pending-flow payloads now tolerate optional prompt metadata under strict mode instead of assuming every flow has `ContextText`, labels, or prompt fields
+  - startup-equipment prompts now capture readable prompt context and restore their checkpoint before returning control to the browser
+  - this fixes the web new-game path that could fail after a Kai setup including `Weaponskill` reached startup-equipment flow state
+  - added a local web parity flow smoke at `testing/tmp/web-parity-flow-smoke.ps1` covering fresh setup, sandbox save/load, inventory section recovery, combat start/auto-resolve, and the review tabs
+  - validated the flow and surface smokes in both shells:
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS51.txt`
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
 - hardened the tracked web launcher for the cross-platform migration path:
   - `Start-LoneWolfWeb.ps1` now avoids PowerShell 7-only platform variables under strict mode, so it can be started from Windows PowerShell 5.1 while still launching the PowerShell 7 engine host
   - the launcher now falls back from `python` to `python3` when locating Python 3

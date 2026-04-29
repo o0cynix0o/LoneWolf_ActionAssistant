@@ -1048,10 +1048,60 @@ function Ensure-LWWebFlowRolls {
     }
 }
 
+function Get-LWWebOptionalProperty {
+    param(
+        [object]$Object,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [object]$Default = $null
+    )
+
+    if ($null -eq $Object) {
+        return $Default
+    }
+
+    if ($Object -is [System.Collections.IDictionary]) {
+        if ($Object.Contains($Name)) {
+            return $Object[$Name]
+        }
+        return $Default
+    }
+
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -ne $property) {
+        return $property.Value
+    }
+
+    return $Default
+}
+
+function Get-LWWebOptionalString {
+    param(
+        [object]$Object,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [string]$Default = ''
+    )
+
+    $value = Get-LWWebOptionalProperty -Object $Object -Name $Name -Default $null
+    if ($null -eq $value) {
+        return $Default
+    }
+
+    $text = [string]$value
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $Default
+    }
+
+    return $text
+}
+
 function New-LWWebFlowPrompt {
     param([Parameter(Mandatory = $true)][object]$Flow)
 
-    if ([string]$Flow.Type -ne 'newGame') {
+    $flowType = Get-LWWebOptionalString -Object $Flow -Name 'Type' -Default 'newGame'
+    $flowStep = Get-LWWebOptionalString -Object $Flow -Name 'Step'
+    $pendingPrompt = Get-LWWebOptionalProperty -Object $Flow -Name 'PendingPrompt'
+
+    if ($flowType -ne 'newGame') {
         $summary = $null
         if ($null -ne $Flow.Data) {
             if ((Test-LWPropertyExists -Object $Flow.Data -Name 'Section') -and [int]$Flow.Data.Section -gt 0) {
@@ -1062,22 +1112,22 @@ function New-LWWebFlowPrompt {
             }
         }
 
-        $contextText = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.ContextText)) { [string]$Flow.ContextText } else { '' }
-        $promptKind = if ($null -ne $Flow.PendingPrompt) { [string](Get-LWWebPendingPromptKind -Flow $Flow -PendingPrompt $Flow.PendingPrompt -ContextText $contextText) } else { 'generic' }
+        $contextText = Get-LWWebOptionalString -Object $Flow -Name 'ContextText'
+        $promptKind = if ($null -ne $pendingPrompt) { [string](Get-LWWebPendingPromptKind -Flow $Flow -PendingPrompt $pendingPrompt -ContextText $contextText) } else { 'generic' }
 
         return [ordered]@{
             Active      = $true
-            Type        = [string]$Flow.Type
-            Step        = [string]$Flow.Step
+            Type        = $flowType
+            Step        = $flowStep
             Mode        = 'prompt'
-            Title       = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Title)) { [string]$Flow.Title } else { 'Continue' }
-            Description = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Description)) { [string]$Flow.Description } else { 'Answer the pending prompt to continue.' }
-            Prompt      = $Flow.PendingPrompt
+            Title       = Get-LWWebOptionalString -Object $Flow -Name 'Title' -Default 'Continue'
+            Description = Get-LWWebOptionalString -Object $Flow -Name 'Description' -Default 'Answer the pending prompt to continue.'
+            Prompt      = $pendingPrompt
             Summary     = $summary
             ContextText = $contextText
             PromptKind  = $promptKind
-            SubmitLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.SubmitLabel)) { [string]$Flow.SubmitLabel } else { 'Continue' }
-            CancelLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.CancelLabel)) { [string]$Flow.CancelLabel } else { 'Cancel' }
+            SubmitLabel = Get-LWWebOptionalString -Object $Flow -Name 'SubmitLabel' -Default 'Continue'
+            CancelLabel = Get-LWWebOptionalString -Object $Flow -Name 'CancelLabel' -Default 'Cancel'
         }
     }
 
@@ -1089,7 +1139,7 @@ function New-LWWebFlowPrompt {
         StartSection = [int]$Flow.Data.StartSection
     }
 
-    switch ([string]$Flow.Step) {
+    switch ($flowStep) {
         'replaceConfirm' {
             return [ordered]@{
                 Active       = $true
@@ -1213,8 +1263,8 @@ function New-LWWebFlowPrompt {
             }
         }
         'startupEquipment' {
-            $contextText = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.ContextText)) { [string]$Flow.ContextText } else { '' }
-            $promptKind = if ($null -ne $Flow.PendingPrompt) { [string](Get-LWWebPendingPromptKind -Flow $Flow -PendingPrompt $Flow.PendingPrompt -ContextText $contextText) } else { 'generic' }
+            $contextText = Get-LWWebOptionalString -Object $Flow -Name 'ContextText'
+            $promptKind = if ($null -ne $pendingPrompt) { [string](Get-LWWebPendingPromptKind -Flow $Flow -PendingPrompt $pendingPrompt -ContextText $contextText) } else { 'generic' }
             return [ordered]@{
                 Active      = $true
                 Type        = 'newGame'
@@ -1223,7 +1273,7 @@ function New-LWWebFlowPrompt {
                 Title       = 'Starting Equipment'
                 Description = 'The book-specific startup package needs one more choice before the run can continue.'
                 Summary     = $summary
-                Prompt      = $Flow.PendingPrompt
+                Prompt      = $pendingPrompt
                 ContextText = $contextText
                 PromptKind  = $promptKind
                 SubmitLabel = 'Continue'
@@ -1283,6 +1333,7 @@ function New-LWWebFlow {
         Type         = $Type
         Step         = if ($hasActiveState) { 'replaceConfirm' } else { 'runConfig' }
         PendingPrompt = $null
+        ContextText   = ''
         Checkpoint   = $null
         Data         = [pscustomobject]@{
             Difficulty                = 'Normal'
@@ -1815,6 +1866,8 @@ function Invoke-LWWebStartingEquipmentPhase {
         $Flow.Checkpoint = New-LWWebCheckpoint
     }
 
+    $Flow.PendingPrompt = $null
+    $Flow.ContextText = ''
     Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
     Start-LWWebPromptReplay -Responses @($Flow.Data.StartupResponses)
 
@@ -1851,6 +1904,8 @@ function Invoke-LWWebStartingEquipmentPhase {
         Stop-LWWebPromptReplay
         if (Test-LWWebPendingException -ErrorRecord $_) {
             $Flow.PendingPrompt = Copy-LWWebValue $script:LWWebPromptReplay.Pending
+            $Flow.ContextText = [string](Get-LWWebPendingContextText -Flow $Flow -PendingPrompt $Flow.PendingPrompt)
+            Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
             return 'Additional starting-equipment input is required.'
         }
 

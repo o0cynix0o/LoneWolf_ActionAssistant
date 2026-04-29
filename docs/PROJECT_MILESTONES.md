@@ -726,6 +726,15 @@ Current checkpoint:
     under strict mode and falls back from `python` to `python3`, with Windows
     PowerShell launcher smoke coverage at:
     - `testing/logs/WEB_LAUNCHER_PS51_SMOKE.txt`
+  - pending-flow snapshots now tolerate optional prompt metadata under strict
+    mode, and startup-equipment prompts now preserve context text while
+    restoring their checkpoint before the browser receives the pending-flow
+    payload
+  - web parity flow validation now covers fresh setup, sandbox save/load,
+    inventory section recovery, combat start/auto-resolve, and the review tabs
+    in both shells:
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS51.txt`
 
 ## Tracking Rules
 

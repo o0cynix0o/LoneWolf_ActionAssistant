@@ -110,6 +110,11 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
     - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
   - `Start-LoneWolfWeb.ps1` now avoids PowerShell `7`-only platform variables under strict mode and falls back from `python` to `python3`, with Windows PowerShell launcher smoke coverage at:
     - `testing/logs/WEB_LAUNCHER_PS51_SMOKE.txt`
+  - pending-flow state snapshots now tolerate optional prompt metadata under strict mode, and startup-equipment prompts now carry readable context text while restoring their checkpoint before returning to the browser
+  - this closes the web setup failure where a Kai setup including `Weaponskill` could reach startup equipment and then fail snapshot rendering because the flow did not yet have `ContextText`
+  - the local web parity flow smoke at `testing/tmp/web-parity-flow-smoke.ps1` now covers fresh setup, sandbox save/load, inventory section recovery, combat start/auto-resolve, and the review tabs, with green artifacts:
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS51.txt`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
@@ -911,6 +916,7 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 - Deepen Book `6` route reporting and strategy support as more play data comes in
 - Plan the next post-Book `7` Magnakai audit once the current `main` Book `7` surface feels stable
 - Keep the handoff docs and strategy-guide workflow in sync as new books become implemented
+- Continue M6 parity from the now-covered setup/save/load/inventory/combat smoke into death, book transition, achievement, and book-automation browser flows
 
 ## Important Cautions
 
