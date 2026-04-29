@@ -6,6 +6,9 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- fixed the web reader timing for prompt-backed section entry:
+  - pending `setSection` flows now advance the reader pane to the target section while the engine waits for loot/choice follow-up answers
+  - Book `7` section `148` now has regression coverage so the nest-loot prompt shows its section text and option list together
 - completed the tracked M6 web-GUI / cross-platform migration closeout:
   - structured web prompt context now covers the remaining known shop, loot, payment, section-choice, make-room, safekeeping, starting-gear, and transition prompt edges
   - added repeatable parity smokes for achievement payloads, prompt-heavy Book `6` / `7` automation, live browser-DOM rendering, and packaged web launches

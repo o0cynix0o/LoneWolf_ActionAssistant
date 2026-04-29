@@ -2231,6 +2231,15 @@ function Get-LWWebStateSnapshot {
         $stage = 'active state metadata'
         $bookNumber = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 1 }
         $section = if ($null -ne $script:GameState.CurrentSection) { [int]$script:GameState.CurrentSection } else { 1 }
+        $readerSection = $section
+        if ($null -ne $script:LWWebFlow -and
+            [string](Get-LWWebOptionalString -Object $script:LWWebFlow -Name 'Type') -eq 'setSection' -and
+            $null -ne $script:LWWebFlow.Data -and
+            (Test-LWPropertyExists -Object $script:LWWebFlow.Data -Name 'Section') -and
+            $null -ne $script:LWWebFlow.Data.Section -and
+            [int]$script:LWWebFlow.Data.Section -gt 0) {
+            $readerSection = [int]$script:LWWebFlow.Data.Section
+        }
         $bookTitle = [string](Get-LWBookTitle -BookNumber $bookNumber)
         $inventory = $script:GameState.Inventory
         $character = $script:GameState.Character
@@ -2259,8 +2268,8 @@ function Get-LWWebStateSnapshot {
             reader           = [ordered]@{
                 BookNumber = $bookNumber
                 BookTitle  = $bookTitle
-                Section    = $section
-                Url        = Get-LWWebReaderUrl -BookNumber $bookNumber -Section $section
+                Section    = $readerSection
+                Url        = Get-LWWebReaderUrl -BookNumber $bookNumber -Section $readerSection
             }
             character        = [ordered]@{
                 Name                 = if ($null -ne $character -and -not [string]::IsNullOrWhiteSpace([string]$character.Name)) { [string]$character.Name } else { '' }

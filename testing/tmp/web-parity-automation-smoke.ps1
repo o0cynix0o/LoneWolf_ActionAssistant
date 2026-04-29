@@ -215,6 +215,12 @@ try {
     $sectionChoiceDone = Invoke-WebApiAction -Process $session -Request @{ action = 'submitFlow'; data = @{ response = 0 } }
     Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $sectionChoiceDone)) -Message 'Book 7 section-choice prompt did not complete after choosing 0.'
 
+    $nestLootPrompt = Invoke-WebApiAction -Process $session -Request @{ action = 'setSection'; section = 148 }
+    [void](Assert-PendingPrompt -Response $nestLootPrompt -ExpectedPrompt 'Section 148 choice' -ExpectedKind 'choiceTable' -ContextContains @('Section 148 Nest Loot', 'Mace', 'Padded Leather Waistcoat', 'Potion of Laumspur', '0. Done choosing'))
+    Assert-WebAutomationSmoke -Condition ([int]$nestLootPrompt.payload.reader.Section -eq 148) -Message 'Pending Book 7 section 148 loot prompt should still advance the reader pane to section 148.'
+    $nestLootCancelled = Invoke-WebApiAction -Process $session -Request @{ action = 'cancelFlow' }
+    Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $nestLootCancelled)) -Message 'cancelFlow did not clear the section 148 prompt.'
+
     $loadedFullBook7 = Invoke-WebApiAction -Process $session -Request @{ action = 'loadGame'; path = [string]$book7FullSavePath }
     Assert-WebAutomationSmoke -Condition (@($loadedFullBook7.payload.inventory.BackpackItems).Count -ge 8) -Message 'Full-backpack automation source did not load as full.'
 
