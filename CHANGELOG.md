@@ -38,6 +38,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - added browser-side Gold and END adjustment controls plus prompt-backed `Use Meal` and `Use Healing Potion` actions
   - the web session payload now includes slot-aware inventory section snapshots and live recovery-stash summaries so the browser can render the same inventory shape the engine is enforcing
   - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
+- tightened the default desktop web split so the reader pane gives less empty margin around book text and the app pane gets more working room
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books
