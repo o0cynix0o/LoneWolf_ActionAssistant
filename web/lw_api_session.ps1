@@ -856,6 +856,9 @@ function New-LWWebFlowPrompt {
             }
         }
 
+        $contextText = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.ContextText)) { [string]$Flow.ContextText } else { '' }
+        $promptKind = if ($null -ne $Flow.PendingPrompt) { [string](Get-LWWebPendingPromptKind -Flow $Flow -PendingPrompt $Flow.PendingPrompt -ContextText $contextText) } else { 'generic' }
+
         return [ordered]@{
             Active      = $true
             Type        = [string]$Flow.Type
@@ -865,7 +868,8 @@ function New-LWWebFlowPrompt {
             Description = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Description)) { [string]$Flow.Description } else { 'Answer the pending prompt to continue.' }
             Prompt      = $Flow.PendingPrompt
             Summary     = $summary
-            ContextText = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.ContextText)) { [string]$Flow.ContextText } else { '' }
+            ContextText = $contextText
+            PromptKind  = $promptKind
             SubmitLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.SubmitLabel)) { [string]$Flow.SubmitLabel } else { 'Continue' }
             CancelLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.CancelLabel)) { [string]$Flow.CancelLabel } else { 'Cancel' }
         }
@@ -1003,6 +1007,8 @@ function New-LWWebFlowPrompt {
             }
         }
         'startupEquipment' {
+            $contextText = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.ContextText)) { [string]$Flow.ContextText } else { '' }
+            $promptKind = if ($null -ne $Flow.PendingPrompt) { [string](Get-LWWebPendingPromptKind -Flow $Flow -PendingPrompt $Flow.PendingPrompt -ContextText $contextText) } else { 'generic' }
             return [ordered]@{
                 Active      = $true
                 Type        = 'newGame'
@@ -1012,6 +1018,8 @@ function New-LWWebFlowPrompt {
                 Description = 'The book-specific startup package needs one more choice before the run can continue.'
                 Summary     = $summary
                 Prompt      = $Flow.PendingPrompt
+                ContextText = $contextText
+                PromptKind  = $promptKind
                 SubmitLabel = 'Continue'
                 CancelLabel = 'Cancel'
             }
@@ -1279,6 +1287,50 @@ function Get-LWWebPendingContextText {
     }
 
     return ''
+}
+
+function Get-LWWebPendingPromptKind {
+    param(
+        [Parameter(Mandatory = $true)][object]$Flow,
+        [Parameter(Mandatory = $true)][object]$PendingPrompt,
+        [string]$ContextText = ''
+    )
+
+    $promptText = if ((Test-LWPropertyExists -Object $PendingPrompt -Name 'Prompt') -and -not [string]::IsNullOrWhiteSpace([string]$PendingPrompt.Prompt)) {
+        [string]$PendingPrompt.Prompt
+    }
+    else {
+        ''
+    }
+
+    switch ($promptText) {
+        'Review inventory and make room now?' { return 'makeRoomConfirm' }
+        'Drop an item to make room?' { return 'inventoryManageStart' }
+        'Drop another item?' { return 'inventoryManageContinue' }
+        'Safekeeping choice' { return 'safekeepingMenu' }
+        'Safekeep which Special Item' { return 'safekeepingStore' }
+        'Reclaim which Special Item' { return 'safekeepingReclaim' }
+    }
+
+    if ($promptText -match '^Book\s+(6|7)\s+choice\s+#(\d+)$') {
+        return 'startingGearChoice'
+    }
+    if ($promptText -match '^Choose\s+\d+\s+mastered weapon number\(s\) separated by commas$') {
+        return 'weaponmasteryChoice'
+    }
+    if ([string]$Flow.Type -eq 'continueBook' -and $promptText -match '^Enter\s+\d+\s+number\(s\) separated by commas$') {
+        return 'disciplineChoice'
+    }
+
+    $context = [string]$ContextText
+    if ($context -match '(?m)^\s*[0-9A-Za-z]+\.\s+' -and $context -match '(?m)^\s*0\.\s+Done choosing') {
+        return 'choiceTable'
+    }
+    if ($context -match '(?m)^\s*[0-9A-Za-z]+\.\s+') {
+        return 'choiceMenu'
+    }
+
+    return 'generic'
 }
 
 function Get-LWWebPromptFlowResponse {
@@ -1922,6 +1974,7 @@ function Get-LWWebStateSnapshot {
                 HerbPouchItems     = @($inventory.HerbPouchItems)
                 SpecialItems       = @($inventory.SpecialItems)
                 PocketSpecialItems = @($inventory.PocketSpecialItems)
+                SafekeepingSpecialItems = if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { @($script:GameState.Storage.SafekeepingSpecialItems) } else { @() }
                 GoldCrowns         = if ($null -ne $inventory.GoldCrowns) { [int]$inventory.GoldCrowns } else { 0 }
                 HasBackpack        = [bool]$inventory.HasBackpack
                 HasHerbPouch       = [bool]$inventory.HasHerbPouch

@@ -98,6 +98,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - while a run is dead, the browser can still switch into `Stats`, `Campaign`, `Achievements`, and `Saves` for review before the player decides whether to rewind or restart
   - the web action layer now includes a direct `rewindDeath` request for browser-native recovery
   - validating that new path also exposed and fixed a web achievement-snapshot bug where unlocked display names were being resolved without the required fallback name
+  - prompt-backed browser flows now also expose lightweight prompt-kind metadata so the frontend can distinguish inventory-pressure, safekeeping, and structured choice-table prompts
+  - the browser prompt surface now uses that metadata to render guided companion panels, stacked quick-pick actions, and direct `Open Inventory Tab` shortcuts instead of leaning so heavily on raw pasted prompt text
+  - startup-equipment prompt payloads now carry their readable context text through the tracked flow too, so Book `6` / `7` starting-gear prompts keep their live option list in the browser
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

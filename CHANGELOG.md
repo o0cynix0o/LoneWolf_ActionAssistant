@@ -6,6 +6,12 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- upgraded the tracked browser flow surface so the remaining prompt-heavy gameplay steps render with more web-native guidance instead of looking like raw terminal replay:
+  - the web session payload now tags pending prompts with lightweight prompt kinds such as `makeRoomConfirm`, `safekeepingMenu`, and `startingGearChoice`
+  - browser-side prompt rendering now uses that metadata to show inventory-pressure and safekeeping companion panels, plus direct `Open Inventory Tab` shortcuts where the player needs to make room or manage carried items
+  - prompt choice lists such as shop / loot / starting-gear tables now render as stacked quick-pick actions instead of only showing a plain input box with pasted context text
+  - startup-equipment prompt payloads now carry their readable context text into the browser flow, so Book `6` / `7` starting-gear prompts keep their option list instead of collapsing to a bare `Book X choice #n` label
+  - raw prompt context is still available on demand through a collapsed details block for the structured prompt kinds
 - expanded the tracked web scaffold into the first browser-native death / rewind recovery surface:
   - the web session payload now exposes a dedicated death snapshot with cause, death type, book/section, recorded time, rewind availability, final END, gold, integrity, and save-path context
   - the browser Overview now renders a real death panel when the engine enters the `death` screen instead of leaving recovery behind raw commands

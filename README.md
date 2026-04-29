@@ -182,6 +182,11 @@ Current web-scaffold coverage includes:
   - prompt-backed book transitions can now advance into the next book over the same HTTP/JSON path
   - current continuation prompt context includes readable option lists for Magnakai discipline picks, Weaponmastery top-ups, and transition safekeeping choices
   - prompt-backed flows now render clickable quick-pick buttons from the visible option list when context is available
+- more web-native prompt handling for the remaining gameplay friction points:
+  - pending prompts now carry lightweight prompt-kind metadata such as make-room, safekeeping, and starting-gear choice states
+  - inventory-pressure prompts now render a compact inventory snapshot plus direct `Open Inventory Tab` shortcuts instead of only dropping to a yes/no box
+  - safekeeping prompts now render carried-versus-stored Special Item summaries alongside the live quick-pick actions
+  - structured choice tables now render as stacked quick-pick actions, while the raw prompt transcript stays available through a collapsed details block when needed
 - safer recovery-save handling:
   - loading a `.bak-...` recovery save no longer replaces the default `last save` launch target automatically
   - the web bootstrap now skips stale backup pointers and falls back to the newest normal `.json` save instead

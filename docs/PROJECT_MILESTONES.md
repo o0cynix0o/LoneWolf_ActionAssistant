@@ -699,6 +699,15 @@ Current checkpoint:
     browser-native recovery
   - this slice also fixed a web achievement-snapshot regression where unlocked
     display names were being resolved without their required fallback name
+  - prompt-backed browser flows now also carry lightweight prompt-kind metadata
+    so the frontend can distinguish make-room, safekeeping, and structured
+    choice-table steps
+  - the browser prompt surface now renders companion panels, stacked quick-pick
+    actions, and direct `Open Inventory Tab` shortcuts for those prompt kinds
+    instead of leaning so heavily on raw prompt transcript text
+  - startup-equipment prompt payloads now carry their readable context text too,
+    so Book `6` / `7` starting-gear flows keep their live option list in the
+    browser
 
 ## Tracking Rules
 

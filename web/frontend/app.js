@@ -118,6 +118,51 @@ function extractFlowChoices(contextText) {
   return choices;
 }
 
+function inferFlowPromptKind(flow) {
+  const promptText = String(flow?.Prompt?.Prompt || '');
+  const contextText = String(flow?.ContextText || '');
+
+  switch (promptText) {
+    case 'Review inventory and make room now?':
+      return 'makeRoomConfirm';
+    case 'Drop an item to make room?':
+      return 'inventoryManageStart';
+    case 'Drop another item?':
+      return 'inventoryManageContinue';
+    case 'Safekeeping choice':
+      return 'safekeepingMenu';
+    case 'Safekeep which Special Item':
+      return 'safekeepingStore';
+    case 'Reclaim which Special Item':
+      return 'safekeepingReclaim';
+    default:
+      break;
+  }
+
+  if (/^Book\s+(6|7)\s+choice\s+#\d+$/i.test(promptText)) {
+    return 'startingGearChoice';
+  }
+  if (/^Choose\s+\d+\s+mastered weapon number\(s\) separated by commas$/i.test(promptText)) {
+    return 'weaponmasteryChoice';
+  }
+  if (contextText.match(/^\s*[0-9A-Za-z]+\.\s+/m) && contextText.match(/^\s*0\.\s+Done choosing/m)) {
+    return 'choiceTable';
+  }
+  if (contextText.match(/^\s*[0-9A-Za-z]+\.\s+/m)) {
+    return 'choiceMenu';
+  }
+
+  return 'generic';
+}
+
+function getFlowPromptKind(flow) {
+  const explicit = String(flow?.PromptKind || '').trim();
+  if (explicit && explicit !== 'generic') {
+    return explicit;
+  }
+  return inferFlowPromptKind(flow);
+}
+
 function formatMessage(value, fallback = 'Ready.') {
   if (Array.isArray(value)) {
     for (let index = value.length - 1; index >= 0; index -= 1) {
@@ -175,6 +220,12 @@ function getTabForScreen(screenName) {
 }
 
 const DEATH_REVIEW_TABS = ['overview', 'stats', 'campaign', 'achievements', 'saves'];
+
+function switchToTab(tabName) {
+  state.activeTab = tabName;
+  syncActiveTabButtons();
+  renderView();
+}
 
 function syncActiveTabButtons() {
   elements.tabbar.querySelectorAll('button').forEach((button) => {
@@ -1229,7 +1280,168 @@ function renderFlowSelectMany(flow) {
   `;
 }
 
-function renderFlowPrompt(flow) {
+function renderFlowPromptTabActions(tabs) {
+  const entries = safeArray(tabs).filter(Boolean);
+  if (!entries.length) {
+    return '';
+  }
+
+  return `
+    <div class="flow-actions flow-subactions">
+      ${entries.map((entry) => `
+        <button type="button" class="button-secondary" data-flow-tab="${escapeHtml(entry.tab)}">
+          ${escapeHtml(entry.label)}
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderFlowPromptItemCloud(items, emptyLabel = '(none)') {
+  const entries = safeArray(items);
+  if (!entries.length) {
+    return `<p class="muted">${escapeHtml(emptyLabel)}</p>`;
+  }
+
+  return `
+    <div class="inventory-list">
+      ${entries.map((item) => `<span class="pill subtle-pill">${escapeHtml(text(item))}</span>`).join(' ')}
+    </div>
+  `;
+}
+
+function renderFlowPromptInventorySnapshot(payload) {
+  const inventory = payload?.inventory || {};
+  const sections = inventory.Sections || {};
+  const weapon = sections.weapon || {};
+  const backpack = sections.backpack || {};
+  const special = sections.special || {};
+  const pocket = sections.pocket || {};
+  const herbPouch = sections.herbpouch || {};
+
+  return `
+    <div class="kv-grid flow-kv-grid">
+      <div class="kv"><span>Weapons</span><strong>${text(weapon.Count, '0')} / ${text(weapon.Capacity, '2')}</strong></div>
+      <div class="kv"><span>Backpack</span><strong>${inventory.HasBackpack ? `${text(backpack.Used, '0')} / ${text(backpack.Capacity, '8')}` : 'Missing'}</strong></div>
+      <div class="kv"><span>Special Items</span><strong>${text(special.Count, '0')} / ${text(special.Capacity, '12')}</strong></div>
+      <div class="kv"><span>Pocket Items</span><strong>${text(pocket.Count, '0')}</strong></div>
+      <div class="kv"><span>Herb Pouch</span><strong>${inventory.HasHerbPouch ? `${text(herbPouch.Used, '0')} / ${text(herbPouch.Capacity, '8')}` : 'Missing'}</strong></div>
+      <div class="kv"><span>Quiver</span><strong>${text(inventory.QuiverArrows, '0')} arrow${Number(inventory.QuiverArrows || 0) === 1 ? '' : 's'}</strong></div>
+    </div>
+  `;
+}
+
+function renderFlowChoiceButtons(quickChoices, { stacked = false } = {}) {
+  const entries = safeArray(quickChoices);
+  if (!entries.length) {
+    return '';
+  }
+
+  const wrapperClass = stacked ? 'flow-choice-list' : 'flow-choice-grid';
+  return `
+    <div class="${wrapperClass}">
+      ${entries.map((choice) => `
+        <button type="button" class="button-secondary flow-choice-button ${stacked ? 'flow-choice-button-block' : ''}" data-flow-prompt-choice="${escapeHtml(choice.value)}">
+          <span class="flow-choice-code">${escapeHtml(choice.value)}</span>
+          <span class="flow-choice-label">${escapeHtml(choice.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function shouldCollapseFlowRawContext(promptKind) {
+  return [
+    'choiceTable',
+    'choiceMenu',
+    'startingGearChoice',
+    'safekeepingMenu',
+    'safekeepingStore',
+    'safekeepingReclaim',
+    'makeRoomConfirm',
+    'inventoryManageStart',
+    'inventoryManageContinue',
+    'disciplineChoice',
+    'weaponmasteryChoice',
+  ].includes(promptKind);
+}
+
+function renderFlowPromptCompanion(flow, payload, promptKind, quickChoices) {
+  const inventoryShortcut = renderFlowPromptTabActions([{ tab: 'inventory', label: 'Open Inventory Tab' }]);
+  const inventoryRequiredKinds = new Set([
+    'makeRoomConfirm',
+    'inventoryManageStart',
+    'inventoryManageContinue',
+    'choiceTable',
+    'startingGearChoice',
+    'safekeepingMenu',
+    'safekeepingStore',
+    'safekeepingReclaim',
+  ]);
+  const specialItems = safeArray(payload?.inventory?.SpecialItems);
+  const safekeepingItems = safeArray(payload?.inventory?.SafekeepingSpecialItems);
+
+  switch (promptKind) {
+    case 'makeRoomConfirm':
+      return `
+        <section class="flow-support-block">
+          <h3>Make Room First</h3>
+          <p class="muted">This choice cannot be added until there is room for it. Review the inventory, drop what you do not need, and then answer the prompt.</p>
+          ${renderFlowPromptInventorySnapshot(payload)}
+          ${inventoryShortcut}
+        </section>
+      `;
+    case 'inventoryManageStart':
+    case 'inventoryManageContinue':
+      return `
+        <section class="flow-support-block">
+          <h3>Inventory Management</h3>
+          <p class="muted">Use the Inventory tab to drop items, then return here to confirm whether you want to keep trimming space.</p>
+          ${renderFlowPromptInventorySnapshot(payload)}
+          ${inventoryShortcut}
+        </section>
+      `;
+    case 'safekeepingMenu':
+    case 'safekeepingStore':
+    case 'safekeepingReclaim':
+      return `
+        <section class="flow-support-block">
+          <h3>Safekeeping Snapshot</h3>
+          <div class="flow-support-grid">
+            <div class="flow-support-card">
+              <p class="muted">Carried Special Items</p>
+              ${renderFlowPromptItemCloud(specialItems, 'No carried Special Items.')}
+            </div>
+            <div class="flow-support-card">
+              <p class="muted">Safekeeping</p>
+              ${renderFlowPromptItemCloud(safekeepingItems, 'Nothing is currently stored.')}
+            </div>
+          </div>
+          ${renderFlowChoiceButtons(quickChoices, { stacked: true })}
+          ${inventoryShortcut}
+        </section>
+      `;
+    case 'choiceTable':
+    case 'choiceMenu':
+    case 'startingGearChoice':
+    case 'disciplineChoice':
+    case 'weaponmasteryChoice':
+      return `
+        <section class="flow-support-block">
+          <h3>Quick Picks</h3>
+          <p class="muted">Choose directly from the live options below instead of typing the entry by hand.</p>
+          ${renderFlowChoiceButtons(quickChoices, { stacked: true })}
+          ${inventoryRequiredKinds.has(promptKind) || quickChoices.some((choice) => /inventory|make room|drop/i.test(choice.label) || String(choice.value).toUpperCase() === 'D')
+            ? inventoryShortcut
+            : ''}
+        </section>
+      `;
+    default:
+      return '';
+  }
+}
+
+function renderFlowPrompt(flow, payload) {
   const prompt = flow.Prompt || null;
   if (!prompt) {
     return `
@@ -1272,6 +1484,10 @@ function renderFlowPrompt(flow) {
 
   const hint = [];
   const quickChoices = extractFlowChoices(flow.ContextText);
+  const promptKind = getFlowPromptKind(flow);
+  const companion = renderFlowPromptCompanion(flow, payload, promptKind, quickChoices);
+  const showRawContextInline = flow.ContextText && !shouldCollapseFlowRawContext(promptKind);
+  const showRawContextDetail = flow.ContextText && shouldCollapseFlowRawContext(promptKind);
   if (prompt.PromptType) {
     hint.push(`Input type: ${prompt.PromptType}`);
   }
@@ -1287,16 +1503,15 @@ function renderFlowPrompt(flow) {
       <div class="flow-copy">
         <p>${text(prompt.Prompt, flow.Description)}</p>
         ${hint.length ? `<p class="muted">${hint.join(' | ')}</p>` : ''}
-        ${flow.ContextText ? `<pre class="flow-context">${escapeHtml(flow.ContextText)}</pre>` : ''}
-        ${quickChoices.length ? `
-          <div class="flow-choice-grid">
-            ${quickChoices.map((choice) => `
-              <button type="button" class="button-secondary flow-choice-button" data-flow-prompt-choice="${escapeHtml(choice.value)}">
-                ${escapeHtml(`${choice.value}. ${choice.label}`)}
-              </button>
-            `).join('')}
-          </div>
+        ${companion}
+        ${showRawContextInline ? `<pre class="flow-context">${escapeHtml(flow.ContextText)}</pre>` : ''}
+        ${showRawContextDetail ? `
+          <details class="flow-raw-context">
+            <summary>Show raw prompt context</summary>
+            <pre class="flow-context">${escapeHtml(flow.ContextText)}</pre>
+          </details>
         ` : ''}
+        ${quickChoices.length && !companion ? renderFlowChoiceButtons(quickChoices) : ''}
       </div>
       <div class="flow-field">
         ${control}
@@ -1332,7 +1547,7 @@ function renderPendingFlow(payload) {
       body = renderFlowSelectMany(flow);
       break;
     case 'prompt':
-      body = renderFlowPrompt(flow);
+      body = renderFlowPrompt(flow, payload);
       break;
     default:
       body = `
@@ -1458,6 +1673,13 @@ function bindFlowEvents(flow) {
       }
     });
   });
+
+  document.querySelectorAll('[data-flow-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const tabName = button.getAttribute('data-flow-tab') || 'overview';
+      switchToTab(tabName);
+    });
+  });
 }
 
 function renderView() {
@@ -1569,9 +1791,7 @@ function bindDynamicViewEvents(payload) {
 
   document.querySelectorAll('[data-death-tab]').forEach((button) => {
     button.addEventListener('click', () => {
-      state.activeTab = button.dataset.deathTab;
-      syncActiveTabButtons();
-      renderView();
+      switchToTab(button.dataset.deathTab);
     });
   });
 
@@ -1869,9 +2089,7 @@ function attachEvents() {
     button.addEventListener('click', () => {
       const requestedTab = button.dataset.tab;
       const currentScreen = String(state.payload?.session?.CurrentScreen || '').toLowerCase();
-      state.activeTab = (currentScreen === 'death' && !DEATH_REVIEW_TABS.includes(requestedTab)) ? 'overview' : requestedTab;
-      syncActiveTabButtons();
-      renderView();
+      switchToTab((currentScreen === 'death' && !DEATH_REVIEW_TABS.includes(requestedTab)) ? 'overview' : requestedTab);
     });
   });
 
