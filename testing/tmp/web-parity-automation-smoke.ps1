@@ -160,6 +160,9 @@ function New-WebAutomationStateSave {
     }
 
     if ($BookNumber -eq 7) {
+        $state.Conditions.BookSixDECuringOption = 3
+        [void](Grant-LWHerbPouch)
+        [void](TryAdd-LWInventoryItemSilently -Type 'herbpouch' -Name 'Potion of Laumspur')
         [void](TryAdd-LWPocketSpecialItemSilently -Name 'Power-key')
     }
 
@@ -245,12 +248,16 @@ try {
     Assert-WebAutomationSmoke -Condition (@($confiscated.payload.inventory.BackpackItems).Count -eq 0) -Message 'Book 7 section 335 should remove Backpack Items.'
     Assert-WebAutomationSmoke -Condition (@($confiscated.payload.inventory.SpecialItems).Count -eq 0) -Message 'Book 7 section 335 should remove carried Special Items.'
     Assert-WebAutomationSmoke -Condition (@($confiscated.payload.inventory.PocketSpecialItems).Count -eq 0) -Message 'Book 7 section 335 should empty Pocket Items.'
+    Assert-WebAutomationSmoke -Condition (@($confiscated.payload.inventory.HerbPouchItems).Count -eq 0) -Message 'Book 7 section 335 should empty Herb Pouch items.'
     Assert-WebAutomationSmoke -Condition ([int]$confiscated.payload.inventory.GoldCrowns -eq 0) -Message 'Book 7 section 335 should remove carried Gold Crowns.'
     Assert-WebAutomationSmoke -Condition (-not [bool]$confiscated.payload.inventory.HasBackpack) -Message 'Book 7 section 335 should leave the Backpack unavailable.'
+    Assert-WebAutomationSmoke -Condition (-not [bool]$confiscated.payload.inventory.HasHerbPouch) -Message 'Book 7 section 335 should leave the Herb Pouch unavailable.'
     Assert-WebAutomationSmoke -Condition ((@($confiscated.payload.inventory.Confiscated.Weapons) -contains 'Sword' -and @($confiscated.payload.inventory.Confiscated.Weapons) -contains 'Bow')) -Message 'Book 7 section 335 should stash removed Weapons as confiscated gear.'
     Assert-WebAutomationSmoke -Condition ((@($confiscated.payload.inventory.Confiscated.SpecialItems) -contains 'Sommerswerd' -and @($confiscated.payload.inventory.Confiscated.SpecialItems) -contains 'Helmet')) -Message 'Book 7 section 335 should stash removed Special Items as confiscated gear.'
     Assert-WebAutomationSmoke -Condition ((@($confiscated.payload.inventory.Confiscated.BackpackItems) -contains 'Meal')) -Message 'Book 7 section 335 should stash removed Backpack Items as confiscated gear.'
     Assert-WebAutomationSmoke -Condition ((@($confiscated.payload.inventory.Confiscated.PocketSpecialItems) -contains 'Power-key')) -Message 'Book 7 section 335 should stash removed Pocket Items as confiscated gear.'
+    Assert-WebAutomationSmoke -Condition ([bool]$confiscated.payload.inventory.Confiscated.HasHerbPouch) -Message 'Book 7 section 335 should stash the Herb Pouch container as confiscated gear.'
+    Assert-WebAutomationSmoke -Condition ((@($confiscated.payload.inventory.Confiscated.HerbPouchItems) -contains 'Healing Potion')) -Message 'Book 7 section 335 should stash removed Herb Pouch items as confiscated gear.'
     Assert-WebAutomationSmoke -Condition ([int]$confiscated.payload.inventory.Confiscated.GoldCrowns -eq 50) -Message 'Book 7 section 335 should stash removed Gold Crowns as confiscated gear.'
     $confiscationNotifications = @($confiscated.payload.session.Notifications | ForEach-Object { [string]$_.Message })
     Assert-WebAutomationSmoke -Condition (($confiscationNotifications -join "`n").Contains('all carried gear confiscated for later recovery')) -Message 'Book 7 section 335 should report confiscated gear.'

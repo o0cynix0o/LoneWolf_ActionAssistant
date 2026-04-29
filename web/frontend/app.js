@@ -935,40 +935,6 @@ function renderInventorySection(section) {
   `;
 }
 
-function renderConfiscatedInventory(confiscated) {
-  if (!confiscated?.HasAny) {
-    return '';
-  }
-
-  const groups = [
-    ['Weapons', safeArray(confiscated.Weapons)],
-    ['Backpack', safeArray(confiscated.BackpackItems)],
-    ['Herb Pouch', safeArray(confiscated.HerbPouchItems)],
-    ['Special Items', safeArray(confiscated.SpecialItems)],
-    ['Pocket Items', safeArray(confiscated.PocketSpecialItems)],
-  ].filter(([, items]) => items.length);
-
-  return `
-    <section class="panel">
-      <h2>Confiscated Equipment</h2>
-      <div class="kv-grid">
-        <div class="kv"><span>Book</span><strong>${text(confiscated.BookNumber, '?')}</strong></div>
-        <div class="kv"><span>Section</span><strong>${text(confiscated.Section, '?')}</strong></div>
-        <div class="kv"><span>Gold</span><strong>${text(confiscated.GoldCrowns, '0')}</strong></div>
-        <div class="kv"><span>Herb Pouch</span><strong>${confiscated.HasHerbPouch ? 'Held' : 'None'}</strong></div>
-      </div>
-      ${groups.length ? groups.map(([label, items]) => `
-        <div class="stash-block">
-          <p class="muted">${label}</p>
-          <div class="inventory-list">
-            ${items.map((item) => `<span class="pill subtle-pill">${escapeHtml(text(item))}</span>`).join(' ')}
-          </div>
-        </div>
-      `).join('') : ''}
-    </section>
-  `;
-}
-
 function renderInventory(payload) {
   const inventory = payload.inventory || {};
   const sections = [
@@ -1087,7 +1053,6 @@ function renderInventory(payload) {
         </form>
       </div>
     </section>
-    ${renderConfiscatedInventory(inventory.Confiscated)}
     <section class="panel">
       <h2>Inventory</h2>
       <div class="inventory-grid">

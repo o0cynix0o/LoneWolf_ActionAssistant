@@ -7,11 +7,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
 ## Unreleased
 
 - hardened Book `7` section `335` confiscation:
-  - the section now strips all carried gear into the confiscated-equipment store, leaving the browser Inventory tab empty while Zahda has your belongings
+  - the section now strips all carried gear into the hidden confiscated-equipment store, leaving the browser Inventory tab empty while Zahda has your belongings
   - flagged saves that still have carried gear are repaired by stashing the gear without repeating the ENDURANCE loss
   - older section `335` recovery-stash entries are folded into the same confiscated-equipment store when the section is reprocessed
-  - section `15` now restores both older recovery-stash weapon saves and the full confiscated-equipment stash
-  - web parity automation now verifies the section strips Weapons, Backpack Items, Special Items, Pocket Items, Gold, and the Backpack container, then reports the confiscated stash
+  - section `15` now restores both older recovery-stash weapon saves and the full confiscated-equipment stash, including Herb Pouch contents
+  - web parity automation now verifies the section strips Weapons, Backpack Items, Special Items, Pocket Items, Herb Pouch Items, Gold, and carried containers
 - improved the local web launcher shutdown path:
   - `Start-LoneWolfWeb.ps1` and `Start-LoneWolfWeb.sh` now keep the terminal open with a press-Enter shutdown prompt
   - the web server now exposes a graceful local shutdown path that closes the long-lived PowerShell engine session before the HTTP process exits
