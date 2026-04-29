@@ -14,11 +14,18 @@ $script:LWUi.NeedsRender = $false
 Set-LWScreen -Name 'welcome'
 
 $script:LWWebPendingToken = '__LW_WEB_PENDING_PROMPT__'
+$script:LWWebOriginalGetRandomDigit = (Get-Command -Name 'Get-LWRandomDigit' -CommandType Function).ScriptBlock
 $script:LWWebPromptReplay = [ordered]@{
     Active    = $false
     Responses = @()
     Index     = 0
     Pending   = $null
+}
+$script:LWWebRandomReplay = [ordered]@{
+    Active    = $false
+    Values    = @()
+    Index     = 0
+    Generated = @()
 }
 $script:LWWebFlow = $null
 
@@ -86,6 +93,46 @@ function Stop-LWWebPromptReplay {
     $script:LWWebPromptReplay.Active = $false
     $script:LWWebPromptReplay.Responses = @()
     $script:LWWebPromptReplay.Index = 0
+}
+
+function Start-LWWebRandomReplay {
+    param([int[]]$Values = @())
+
+    $script:LWWebRandomReplay = [ordered]@{
+        Active    = $true
+        Values    = @($Values)
+        Index     = 0
+        Generated = @()
+    }
+}
+
+function Stop-LWWebRandomReplay {
+    $generated = @($script:LWWebRandomReplay.Generated)
+    $script:LWWebRandomReplay = [ordered]@{
+        Active    = $false
+        Values    = @()
+        Index     = 0
+        Generated = @()
+    }
+
+    return @($generated)
+}
+
+function Get-LWRandomDigit {
+    if ($script:LWWebRandomReplay.Active) {
+        if ($script:LWWebRandomReplay.Index -lt @($script:LWWebRandomReplay.Values).Count) {
+            $value = [int]$script:LWWebRandomReplay.Values[$script:LWWebRandomReplay.Index]
+            $script:LWWebRandomReplay.Index++
+            return $value
+        }
+
+        $value = & $script:LWWebOriginalGetRandomDigit
+        $script:LWWebRandomReplay.Generated = @($script:LWWebRandomReplay.Generated + @([int]$value))
+        $script:LWWebRandomReplay.Index++
+        return [int]$value
+    }
+
+    return (& $script:LWWebOriginalGetRandomDigit)
 }
 
 function New-LWWebPendingPrompt {
@@ -487,6 +534,21 @@ function Ensure-LWWebFlowRolls {
 function New-LWWebFlowPrompt {
     param([Parameter(Mandatory = $true)][object]$Flow)
 
+    if ([string]$Flow.Type -ne 'newGame') {
+        return [ordered]@{
+            Active      = $true
+            Type        = [string]$Flow.Type
+            Step        = [string]$Flow.Step
+            Mode        = 'prompt'
+            Title       = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Title)) { [string]$Flow.Title } else { 'Continue' }
+            Description = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.Description)) { [string]$Flow.Description } else { 'Answer the pending prompt to continue.' }
+            Prompt      = $Flow.PendingPrompt
+            Summary     = $null
+            SubmitLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.SubmitLabel)) { [string]$Flow.SubmitLabel } else { 'Continue' }
+            CancelLabel = if (-not [string]::IsNullOrWhiteSpace([string]$Flow.CancelLabel)) { [string]$Flow.CancelLabel } else { 'Cancel' }
+        }
+    }
+
     $summary = [ordered]@{
         Difficulty = [string]$Flow.Data.Difficulty
         Permadeath = [bool]$Flow.Data.Permadeath
@@ -707,7 +769,164 @@ function New-LWWebFlow {
     }
 }
 
+function New-LWWebPromptActionFlow {
+    param(
+        [Parameter(Mandatory = $true)][string]$Type,
+        [Parameter(Mandatory = $true)][string]$Title,
+        [Parameter(Mandatory = $true)][string]$Description,
+        [string]$SubmitLabel = 'Continue',
+        [string]$CancelLabel = 'Cancel'
+    )
+
+    return [pscustomobject]@{
+        Type          = $Type
+        Step          = 'prompt'
+        Title         = $Title
+        Description   = $Description
+        SubmitLabel   = $SubmitLabel
+        CancelLabel   = $CancelLabel
+        PendingPrompt = $null
+        Checkpoint    = New-LWWebCheckpoint
+        Data          = [pscustomobject]@{
+            Responses   = @()
+            RandomRolls = @()
+            EnemyName   = ''
+            EnemyCombatSkill = 0
+            EnemyEndurance   = 0
+        }
+    }
+}
+
+function Get-LWWebPromptFlowResponse {
+    param([object]$Data)
+
+    if ($null -eq $Data) {
+        return $null
+    }
+    if (Test-LWPropertyExists -Object $Data -Name 'response') {
+        return $Data.response
+    }
+    if ($Data -is [System.Collections.IDictionary] -and $Data.Contains('response')) {
+        return $Data['response']
+    }
+
+    return $null
+}
+
+function Invoke-LWWebPromptActionPhase {
+    param(
+        [Parameter(Mandatory = $true)][object]$Flow,
+        [Parameter(Mandatory = $true)][scriptblock]$Operation,
+        [Parameter(Mandatory = $true)][string]$SuccessMessage,
+        [Parameter(Mandatory = $true)][string]$PendingMessage,
+        [switch]$ReplayRandoms
+    )
+
+    if ($null -eq $Flow.Checkpoint) {
+        $Flow.Checkpoint = New-LWWebCheckpoint
+    }
+
+    $Flow.PendingPrompt = $null
+    Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
+    Start-LWWebPromptReplay -Responses @($Flow.Data.Responses)
+    if ($ReplayRandoms) {
+        Start-LWWebRandomReplay -Values @([int[]]$Flow.Data.RandomRolls)
+    }
+
+    try {
+        Invoke-LWWebSuppressedOperation -Operation $Operation
+        if ($ReplayRandoms) {
+            [void](Stop-LWWebRandomReplay)
+        }
+        Stop-LWWebPromptReplay
+        $script:LWWebFlow = $null
+        return $SuccessMessage
+    }
+    catch {
+        $generatedRolls = @()
+        if ($ReplayRandoms) {
+            $generatedRolls = @(Stop-LWWebRandomReplay)
+            if (@($generatedRolls).Count -gt 0) {
+                $Flow.Data.RandomRolls = @($Flow.Data.RandomRolls + @([int[]]$generatedRolls))
+            }
+        }
+        Stop-LWWebPromptReplay
+        if (Test-LWWebPendingException -ErrorRecord $_) {
+            $Flow.PendingPrompt = Copy-LWWebValue $script:LWWebPromptReplay.Pending
+            Restore-LWWebCheckpoint -Checkpoint $Flow.Checkpoint
+            return $PendingMessage
+        }
+
+        throw
+    }
+}
+
+function Start-LWWebSaveGameFlow {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'saveGame' -Title 'Save Run' -Description 'Provide a save path for the current run. The default comes from the active character name and book.'
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage 'Saved current run.' -PendingMessage 'Save path input is required.' -Operation {
+            Save-LWGame -PromptForPath
+        })
+}
+
+function Start-LWWebCombatStartFlow {
+    param(
+        [Parameter(Mandatory = $true)][string]$EnemyName,
+        [Parameter(Mandatory = $true)][int]$EnemyCombatSkill,
+        [Parameter(Mandatory = $true)][int]$EnemyEndurance
+    )
+
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'combatStart' -Title 'Combat Setup' -Description 'Finish the remaining combat setup prompts for this tracked fight.'
+    $flow.Data.EnemyName = $EnemyName
+    $flow.Data.EnemyCombatSkill = $EnemyCombatSkill
+    $flow.Data.EnemyEndurance = $EnemyEndurance
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage ("Combat started: {0}." -f $EnemyName) -PendingMessage 'Combat setup needs more input.' -Operation {
+            Start-LWCombat -Arguments @(
+                [string]$flow.Data.EnemyName,
+                [string]$flow.Data.EnemyCombatSkill,
+                [string]$flow.Data.EnemyEndurance
+            ) | Out-Null
+        })
+}
+
+function Start-LWWebCombatRoundFlow {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'combatRound' -Title 'Combat Round' -Description 'This round needs manual CRT values or a follow-up answer before it can resolve.'
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage 'Combat round resolved.' -PendingMessage 'Combat round input is required.' -Operation {
+            Invoke-LWCombatRound | Out-Null
+        })
+}
+
+function Start-LWWebCombatAutoFlow {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'combatAuto' -Title 'Auto Resolve Combat' -Description 'Auto-resolve paused because the current fight needs manual CRT input or another combat answer.'
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage 'Combat auto-resolve finished.' -PendingMessage 'Combat auto-resolve needs more input.' -Operation {
+            Resolve-LWCombatToOutcome | Out-Null
+        })
+}
+
 function Start-LWWebNewGameWizard {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
     $script:LWWebFlow = New-LWWebFlow -Type 'newGame'
     return 'New game wizard started.'
 }
@@ -847,6 +1066,42 @@ function Submit-LWWebFlow {
 
     $flow = $script:LWWebFlow
     $step = [string]$flow.Step
+    $flowType = [string]$flow.Type
+
+    if ($flowType -ne 'newGame') {
+        $response = Get-LWWebPromptFlowResponse -Data $Data
+        $flow.Data.Responses = @($flow.Data.Responses + @($response))
+
+        switch ($flowType) {
+            'saveGame' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage 'Saved current run.' -PendingMessage 'Save path input is required.' -Operation {
+                        Save-LWGame -PromptForPath
+                    })
+            }
+            'combatStart' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage ("Combat started: {0}." -f [string]$flow.Data.EnemyName) -PendingMessage 'Combat setup needs more input.' -Operation {
+                        Start-LWCombat -Arguments @(
+                            [string]$flow.Data.EnemyName,
+                            [string]$flow.Data.EnemyCombatSkill,
+                            [string]$flow.Data.EnemyEndurance
+                        ) | Out-Null
+                    })
+            }
+            'combatRound' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage 'Combat round resolved.' -PendingMessage 'Combat round input is required.' -Operation {
+                        Invoke-LWCombatRound | Out-Null
+                    })
+            }
+            'combatAuto' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -ReplayRandoms -SuccessMessage 'Combat auto-resolve finished.' -PendingMessage 'Combat auto-resolve needs more input.' -Operation {
+                        Resolve-LWCombatToOutcome | Out-Null
+                    })
+            }
+            default {
+                throw ("Unknown web flow type: {0}" -f $flowType)
+            }
+        }
+    }
 
     switch ($step) {
         'replaceConfirm' {
@@ -947,6 +1202,9 @@ function Submit-LWWebFlow {
 }
 
 function Cancel-LWWebFlow {
+    if ($null -ne $script:LWWebFlow -and $null -ne $script:LWWebFlow.Checkpoint) {
+        Restore-LWWebCheckpoint -Checkpoint $script:LWWebFlow.Checkpoint
+    }
     $script:LWWebFlow = $null
     return 'Web flow cancelled.'
 }
@@ -978,6 +1236,7 @@ function Get-LWWebStateSnapshot {
                     CurrentScreen = $screenName
                     ScreenData    = $screenData
                     Notifications = @($notifications)
+                    SavePath      = ''
                 }
                 reader           = [ordered]@{
                     BookNumber = $null
@@ -1012,6 +1271,7 @@ function Get-LWWebStateSnapshot {
                 CurrentScreen = $screenName
                 ScreenData    = $screenData
                 Notifications = @($notifications)
+                SavePath      = if ((Test-LWPropertyExists -Object $script:GameState.Settings -Name 'SavePath') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Settings.SavePath)) { [string]$script:GameState.Settings.SavePath } else { '' }
             }
             reader           = [ordered]@{
                 BookNumber = $bookNumber
@@ -1156,8 +1416,48 @@ function Invoke-LWWebRequest {
                 throw 'No active run is loaded.'
             }
 
+            $path = if ((Test-LWPropertyExists -Object $Request -Name 'path') -and -not [string]::IsNullOrWhiteSpace([string]$Request.path)) { [string]$Request.path } else { '' }
+            $promptForPath = [bool]((Test-LWPropertyExists -Object $Request -Name 'promptForPath') -and $Request.promptForPath)
+            if (-not [string]::IsNullOrWhiteSpace($path)) {
+                $script:GameState.Settings.SavePath = $path
+                Save-LWGame
+                return ("Saved current run to {0}." -f (Split-Path -Leaf $path))
+            }
+
+            $currentSavePath = if ((Test-LWPropertyExists -Object $script:GameState.Settings -Name 'SavePath') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Settings.SavePath)) { [string]$script:GameState.Settings.SavePath } else { '' }
+            if ($promptForPath -or [string]::IsNullOrWhiteSpace($currentSavePath)) {
+                return (Start-LWWebSaveGameFlow)
+            }
+
             Save-LWGame
             return 'Saved current run.'
+        }
+        'addNote' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            $noteText = if ((Test-LWPropertyExists -Object $Request -Name 'text') -and -not [string]::IsNullOrWhiteSpace([string]$Request.text)) { [string]$Request.text } else { '' }
+            if ([string]::IsNullOrWhiteSpace($noteText)) {
+                throw 'Note text is required.'
+            }
+
+            Add-LWNote -Text $noteText
+            return 'Note added.'
+        }
+        'removeNote' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            $index = if ((Test-LWPropertyExists -Object $Request -Name 'index') -and $null -ne $Request.index) { [int]$Request.index } else { 0 }
+            $noteCount = @($script:GameState.Character.Notes).Count
+            if ($index -lt 1 -or $index -gt $noteCount) {
+                throw ("Note number must be between 1 and {0}." -f $noteCount)
+            }
+
+            Remove-LWNote -Index $index
+            return ("Removed note {0}." -f $index)
         }
         'setSection' {
             if ($null -eq $script:GameState) {
@@ -1189,6 +1489,71 @@ function Invoke-LWWebRequest {
 
             [void](Invoke-LWCommand -InputLine $commandText)
             return ("Ran command: {0}" -f $commandText)
+        }
+        'startCombat' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if ($script:GameState.Combat.Active) {
+                throw 'A combat is already active.'
+            }
+
+            $enemyName = if ((Test-LWPropertyExists -Object $Request -Name 'enemyName') -and -not [string]::IsNullOrWhiteSpace([string]$Request.enemyName)) { [string]$Request.enemyName } else { '' }
+            $enemyCombatSkill = if ((Test-LWPropertyExists -Object $Request -Name 'enemyCombatSkill') -and $null -ne $Request.enemyCombatSkill) { [int]$Request.enemyCombatSkill } else { 0 }
+            $enemyEndurance = if ((Test-LWPropertyExists -Object $Request -Name 'enemyEndurance') -and $null -ne $Request.enemyEndurance) { [int]$Request.enemyEndurance } else { 0 }
+            if ([string]::IsNullOrWhiteSpace($enemyName)) {
+                throw 'Enemy name is required.'
+            }
+            if ($enemyCombatSkill -lt 0) {
+                throw 'Enemy Combat Skill must be 0 or higher.'
+            }
+            if ($enemyEndurance -lt 1) {
+                throw 'Enemy Endurance must be at least 1.'
+            }
+
+            return (Start-LWWebCombatStartFlow -EnemyName $enemyName.Trim() -EnemyCombatSkill $enemyCombatSkill -EnemyEndurance $enemyEndurance)
+        }
+        'combatRound' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if (-not $script:GameState.Combat.Active) {
+                throw 'No active combat.'
+            }
+
+            return (Start-LWWebCombatRoundFlow)
+        }
+        'combatAuto' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if (-not $script:GameState.Combat.Active) {
+                throw 'No active combat.'
+            }
+
+            return (Start-LWWebCombatAutoFlow)
+        }
+        'combatEvade' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if (-not $script:GameState.Combat.Active) {
+                throw 'No active combat.'
+            }
+
+            Invoke-LWEvade
+            return 'Combat evade attempted.'
+        }
+        'combatStop' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if (-not $script:GameState.Combat.Active) {
+                throw 'No active combat.'
+            }
+
+            Stop-LWCombat | Out-Null
+            return 'Combat tracking stopped.'
         }
         'startNewGameWizard' {
             return (Start-LWWebNewGameWizard)

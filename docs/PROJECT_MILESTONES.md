@@ -649,6 +649,15 @@ Current checkpoint:
   - the browser can now drive difficulty selection, identity setup, discipline
     picks, Weaponmastery picks, and startup-equipment continuation through the
     real HTTP/JSON path
+- current scaffold now supports the first browser-driven in-run controls:
+  - `Save Run` plus save-to-path and prompt-backed path selection now exist in
+    the tracked browser shell
+  - the Notes tab now supports direct note add/remove actions over the
+    HTTP/JSON boundary
+  - the Combat tab now supports tracked combat start and the first live combat
+    actions: round, auto-resolve, evade, and stop
+  - prompt-backed combat replay now preserves generated random rolls so manual
+    CRT follow-up answers can resume without reroll drift
 
 ## Tracking Rules
 

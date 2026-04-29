@@ -26,6 +26,12 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - the frontend now renders these pending setup steps as browser forms instead of relying on command-line prompts
   - the new flow was verified both against the direct long-lived PowerShell session host and through the local HTTP server
 - fixed the tracked web launcher so `Start-LoneWolfWeb.ps1` can be invoked normally or dot-sourced without colliding with PowerShell's built-in read-only `$Host` variable
+- expanded the tracked web scaffold from setup-only into the first in-run play surface:
+  - the browser shell now has a repo-tracked `Save Run` control plus save-to-path and prompt-backed path selection in the Saves tab
+  - the Notes tab now supports direct note creation and note removal through structured web actions
+  - the Combat tab now supports tracked combat start, structured setup follow-up prompts, round resolution, auto-resolve, evade, and stop controls
+  - prompt-backed combat flows now preserve generated random rolls across follow-up answers so manual CRT prompts can resume safely instead of rerolling during replay
+  - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books

@@ -143,6 +143,16 @@ Current web-scaffold coverage includes:
 - live state and screen refresh over the local HTTP/JSON backend
 - safe screen / section commands
 - save catalog browsing and load actions
+- browser-side save controls:
+  - `Save Run` from the action strip
+  - `Save To Path` and prompt-backed path selection from the Saves tab
+- browser-side note controls:
+  - add note directly from the Notes tab
+  - remove existing notes without dropping back to command text
+- first live-play combat controls:
+  - tracked combat start from the Combat tab
+  - structured pending prompts for combat setup follow-up questions
+  - resolve round, auto-resolve, evade, and stop controls for active fights
 - structured `New Game` flow for:
   - difficulty and permadeath
   - character name, book, and starting section

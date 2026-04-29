@@ -20,6 +20,7 @@ const elements = {
   runCommandBtn: document.getElementById('run-command-btn'),
   newGameBtn: document.getElementById('new-game-btn'),
   loadLastSaveBtn: document.getElementById('load-last-save-btn'),
+  saveGameBtn: document.getElementById('save-game-btn'),
 };
 
 async function apiState() {
@@ -164,6 +165,8 @@ function renderInventory(payload) {
 
 function renderCombat(payload) {
   const combat = payload.combat || {};
+  const active = Boolean(combat.Active);
+  const rounds = safeArray(combat.Log).slice(-8);
   const rows = [
     ['Enemy', text(combat.EnemyName)],
     ['Enemy CS', text(combat.EnemyCombatSkill, '0')],
@@ -171,15 +174,47 @@ function renderCombat(payload) {
     ['Weapon', text(combat.EquippedWeapon)],
     ['Mindblast', combat.UseMindblast ? 'On' : 'Off'],
     ['Evade', combat.CanEvade ? 'Available' : 'No'],
+    ['Rounds Logged', String(safeArray(combat.Log).length)],
+    ['END Loss Multiplier', text(combat.PlayerEnduranceLossMultiplier, '1')],
   ];
-
-  const rounds = safeArray(combat.Log).slice(-8);
 
   return `
     <section class="panel">
+      <h2>${active ? 'Combat Controls' : 'Start Tracked Combat'}</h2>
+      ${active ? `
+        <div class="flow-actions combat-actions">
+          <button type="button" data-combat-action="combatRound">Resolve Round</button>
+          <button type="button" data-combat-action="combatAuto">Auto Resolve</button>
+          <button type="button" data-combat-action="combatEvade" ${combat.CanEvade ? '' : 'disabled'}>Evade</button>
+          <button type="button" class="button-secondary" data-combat-action="combatStop">Stop Tracking</button>
+        </div>
+      ` : `
+        <p class="muted">Use the tracked combat form when the book calls for a fight and you want the browser UI to drive setup instead of the terminal prompt flow.</p>
+        <form id="combat-start-form" class="flow-form">
+          <div class="flow-grid">
+            <label class="flow-field">
+              <span>Enemy name</span>
+              <input id="combat-enemy-name" type="text" placeholder="Enemy name">
+            </label>
+            <label class="flow-field">
+              <span>Enemy Combat Skill</span>
+              <input id="combat-enemy-cs" type="number" min="0" value="16">
+            </label>
+            <label class="flow-field">
+              <span>Enemy Endurance</span>
+              <input id="combat-enemy-end" type="number" min="1" value="20">
+            </label>
+          </div>
+          <div class="flow-actions">
+            <button type="submit">Start Combat</button>
+          </div>
+        </form>
+      `}
+    </section>
+    <section class="panel">
       <h2>Combat</h2>
       <div class="kv-grid">
-        <div class="kv"><span>Status</span><strong>${combat.Active ? 'Active' : 'Inactive'}</strong></div>
+        <div class="kv"><span>Status</span><strong>${active ? 'Active' : 'Inactive'}</strong></div>
         ${rows.map(([label, value]) => `<div class="kv"><span>${label}</span><strong>${value}</strong></div>`).join('')}
       </div>
     </section>
@@ -197,7 +232,28 @@ function renderCombat(payload) {
 
 function renderSaves(payload) {
   const saves = safeArray(payload.saves);
+  const currentSavePath = text(payload.session?.SavePath, '');
+  const hasState = Boolean(payload.session?.HasState);
   return `
+    <section class="panel">
+      <h2>Save Controls</h2>
+      ${hasState ? `
+        <div class="kv-grid">
+          <div class="kv"><span>Current Save Path</span><strong>${currentSavePath || '(not set yet)'}</strong></div>
+          <div class="kv"><span>Active Character</span><strong>${text(payload.character?.Name)}</strong></div>
+        </div>
+        <form id="save-as-form" class="flow-form">
+          <label class="flow-field">
+            <span>Save path</span>
+            <input id="save-as-path" type="text" value="${payload.session?.SavePath || ''}" placeholder="C:\\Scripts\\Lone Wolf\\saves\\my-run.json">
+          </label>
+          <div class="flow-actions">
+            <button type="submit">Save To Path</button>
+            <button type="button" class="button-secondary" id="save-prompt-btn">Choose Path</button>
+          </div>
+        </form>
+      ` : '<p class="muted">Load a run or start a new one before saving.</p>'}
+    </section>
     <section class="panel">
       <h2>Saves</h2>
       ${saves.length ? saves.map((save) => `
@@ -244,7 +300,27 @@ function renderNotes(payload) {
   return `
     <section class="panel">
       <h2>Notes</h2>
-      ${notes.length ? notes.map((note) => `<article class="note-row"><strong>${note}</strong></article>`).join('') : '<p class="muted">No notes recorded.</p>'}
+      <form id="note-form" class="flow-form">
+        <label class="flow-field">
+          <span>Add a note</span>
+          <input id="note-input" type="text" maxlength="240" placeholder="Track a clue, item, or route reminder">
+        </label>
+        <div class="flow-actions">
+          <button type="submit">Add Note</button>
+        </div>
+      </form>
+    </section>
+    <section class="panel">
+      <h2>Recorded Notes</h2>
+      ${notes.length ? notes.map((note, index) => `
+        <article class="note-row">
+          <strong>Note ${index + 1}</strong>
+          <div class="history-meta">${text(note, '')}</div>
+          <div class="save-actions">
+            <button type="button" class="button-secondary" data-remove-note="${index + 1}">Remove</button>
+          </div>
+        </article>
+      `).join('') : '<p class="muted">No notes recorded.</p>'}
     </section>
   `;
 }
@@ -608,10 +684,109 @@ function renderView() {
     }
   }
 
+  bindDynamicViewEvents(payload);
+}
+
+function bindDynamicViewEvents(payload) {
   document.querySelectorAll('[data-load-path]').forEach((button) => {
     button.addEventListener('click', async () => {
       try {
         const result = await apiAction({ action: 'loadGame', path: button.dataset.loadPath });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  });
+
+  const noteForm = document.getElementById('note-form');
+  if (noteForm) {
+    noteForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const textValue = document.getElementById('note-input')?.value?.trim() || '';
+      if (!textValue) {
+        setMessage('Enter note text first.', true);
+        return;
+      }
+      try {
+        const result = await apiAction({ action: 'addNote', text: textValue });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-remove-note]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'removeNote', index: Number(button.dataset.removeNote) });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  });
+
+  const saveAsForm = document.getElementById('save-as-form');
+  if (saveAsForm) {
+    saveAsForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const path = document.getElementById('save-as-path')?.value?.trim() || '';
+      if (!path) {
+        setMessage('Enter a save path first.', true);
+        return;
+      }
+      try {
+        const result = await apiAction({ action: 'saveGame', path });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const savePromptButton = document.getElementById('save-prompt-btn');
+  if (savePromptButton) {
+    savePromptButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'saveGame', promptForPath: true });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const combatStartForm = document.getElementById('combat-start-form');
+  if (combatStartForm) {
+    combatStartForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const enemyName = document.getElementById('combat-enemy-name')?.value?.trim() || '';
+      const enemyCombatSkill = Number(document.getElementById('combat-enemy-cs')?.value || 0);
+      const enemyEndurance = Number(document.getElementById('combat-enemy-end')?.value || 0);
+      if (!enemyName) {
+        setMessage('Enter an enemy name first.', true);
+        return;
+      }
+      try {
+        const result = await apiAction({
+          action: 'startCombat',
+          enemyName,
+          enemyCombatSkill,
+          enemyEndurance,
+        });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  document.querySelectorAll('[data-combat-action]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: button.dataset.combatAction });
         applyResponse(result);
       } catch (error) {
         handleActionError(error);
@@ -641,6 +816,7 @@ function setMessage(message, isError = false) {
 function applyResponse(response) {
   state.payload = response.payload;
   elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.8.0')}`;
+  elements.saveGameBtn.disabled = !response.payload?.session?.HasState;
   renderSummaryCards(response.payload);
   renderPendingFlow(response.payload);
   syncReader(response.payload);
@@ -711,6 +887,15 @@ function attachEvents() {
   elements.loadLastSaveBtn.addEventListener('click', async () => {
     try {
       const response = await apiAction({ action: 'loadLastSave' });
+      applyResponse(response);
+    } catch (error) {
+      handleActionError(error);
+    }
+  });
+
+  elements.saveGameBtn.addEventListener('click', async () => {
+    try {
+      const response = await apiAction({ action: 'saveGame' });
       applyResponse(response);
     } catch (error) {
       handleActionError(error);

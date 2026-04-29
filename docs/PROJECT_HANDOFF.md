@@ -63,6 +63,16 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - current web-driven setup coverage includes run difficulty, name/book/section, Kai or Magnakai discipline picks, Weaponmastery picks, and startup-equipment handoff
   - this flow has been verified both by talking directly to `web/lw_api_session.ps1` and through the local HTTP server in `web/app_server.py`
   - `Start-LoneWolfWeb.ps1` no longer uses a `Host` parameter name, so the launcher can be invoked or dot-sourced without tripping over PowerShell's built-in read-only `$Host` variable
+- latest `main` web migration checkpoint:
+  - the tracked browser shell now supports first-pass in-run controls instead of stopping at setup
+  - current browser-side live-play coverage now includes:
+    - `Save Run` plus save-to-path and prompt-backed path selection in the Saves tab
+    - direct note add/remove actions in the Notes tab
+    - tracked combat start from the Combat tab
+    - structured follow-up prompts for combat setup and save-path requests
+    - active combat actions for round resolution, auto-resolve, evade, and stop
+  - the web session host now preserves generated random rolls across prompt-backed combat replay so manual CRT follow-up prompts can resume safely without reroll drift
+  - this slice has been verified both by talking directly to `web/lw_api_session.ps1` and through the local HTTP server in `web/app_server.py`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
