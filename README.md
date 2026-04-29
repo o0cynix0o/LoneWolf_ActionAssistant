@@ -4,6 +4,11 @@ A PowerShell terminal companion for the **Lone Wolf** gamebooks. The latest publ
 
 This project is built to act like a digital Action Chart and play aid, not a replacement for the books. It handles the bookkeeping that tends to slow play down: character state, inventory, combat math, saves, notes, healing, book progression, stats, and achievements.
 
+Current `main` also includes the first tracked web-migration scaffold: a local
+browser UI shell backed by a Python HTTP server and a PowerShell engine session
+adapter, with the CLI still preserved as the source-accurate fallback while
+parity work continues.
+
 ## What It Does
 
 - Screen-based terminal UI with ASCII banners and color-coded panels
@@ -81,6 +86,10 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 - Locked run difficulties with Story, Easy, Normal, Hard, and Veteran rules
 - Optional Permadeath runs with tamper-evident challenge tracking
 - Transition-only Special Item safekeeping starting with the Book `4` -> `5` handoff and continuing on later book-to-book transitions
+- Initial tracked web scaffold with:
+  - local HTTP/JSON app server
+  - browser-based reader + assistant shell
+  - long-lived PowerShell engine adapter instead of PTY terminal streaming
 
 ## Release Status
 
@@ -113,6 +122,20 @@ This project is built to act like a digital Action Chart and play aid, not a rep
 
 - Windows PowerShell `5.1` or PowerShell `7+`
 - Windows terminal with color support recommended
+- Python `3` and PowerShell `7` for the tracked web scaffold on current `main`
+
+## Web Scaffold
+
+The tracked migration scaffold can be launched locally with:
+
+```powershell
+.\Start-LoneWolfWeb.ps1
+```
+
+This is the first repo-tracked browser shell for the project. It is not full
+feature parity yet. It exists to establish the real HTTP/JSON architecture seam
+for the broader web-GUI and cross-platform migration while keeping the CLI
+available.
 
 ## Project Files
 

@@ -6,6 +6,14 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- began the tracked web-GUI and cross-platform migration scaffold:
+  - added the formal migration plan in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
+  - added the Phase `0` parity inventory in `docs/WEB_PARITY_INVENTORY.md`
+  - added a first repo-tracked browser shell under `web/frontend/`
+  - added a local Python HTTP server in `web/app_server.py`
+  - added a long-lived PowerShell engine session adapter in `web/lw_api_session.ps1`
+  - added `Start-LoneWolfWeb.ps1` as the first tracked launcher for the web scaffold
+  - the current scaffold uses a real JSON/HTTP path instead of PTY terminal streaming and keeps the CLI intact while parity work continues
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books

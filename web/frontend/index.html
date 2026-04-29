@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lone Wolf Web Scaffold</title>
+  <link rel="stylesheet" href="/web/frontend/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Migration Scaffold</p>
+        <h1>Lone Wolf Web Assistant</h1>
+      </div>
+      <div class="topbar-meta">
+        <span id="status-line">Connecting...</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="reader-pane">
+        <div class="reader-toolbar">
+          <button type="button" data-action="open-library">Library</button>
+          <button type="button" data-action="follow-current">Current Section</button>
+          <button type="button" data-action="reload-state">Refresh</button>
+          <span class="reader-title" id="reader-title">Reader</span>
+        </div>
+        <iframe id="reader-frame" title="Lone Wolf Book Reader" src="/web/frontend/library.html"></iframe>
+      </section>
+
+      <section class="app-pane">
+        <div class="summary-grid" id="summary-grid"></div>
+
+        <section class="command-strip">
+          <div class="command-group">
+            <label for="section-input">Jump to section</label>
+            <div class="command-row">
+              <input id="section-input" type="number" min="1" placeholder="Section">
+              <button type="button" id="jump-section-btn">Go</button>
+            </div>
+          </div>
+
+          <div class="command-group">
+            <label for="command-input">Safe web command</label>
+            <div class="command-row">
+              <input id="command-input" type="text" placeholder="sheet, inventory, history, help, set 12">
+              <button type="button" id="run-command-btn">Run</button>
+            </div>
+          </div>
+
+          <div class="command-group shortcut-group">
+            <label>Shortcuts</label>
+            <div class="shortcut-row">
+              <button type="button" data-screen="sheet">Sheet</button>
+              <button type="button" data-screen="inventory">Inventory</button>
+              <button type="button" data-screen="notes">Notes</button>
+              <button type="button" data-screen="history">History</button>
+              <button type="button" data-screen="combat">Combat</button>
+            </div>
+          </div>
+        </section>
+
+        <nav class="tabbar" id="tabbar">
+          <button type="button" class="active" data-tab="overview">Overview</button>
+          <button type="button" data-tab="inventory">Inventory</button>
+          <button type="button" data-tab="combat">Combat</button>
+          <button type="button" data-tab="saves">Saves</button>
+          <button type="button" data-tab="history">History</button>
+          <button type="button" data-tab="notes">Notes</button>
+        </nav>
+
+        <section class="view" id="view"></section>
+
+        <footer class="message-bar" id="message-bar">
+          This scaffold is the first tracked web/API slice. Prompt-heavy flows still need structured migration.
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <script src="/web/frontend/app.js"></script>
+</body>
+</html>

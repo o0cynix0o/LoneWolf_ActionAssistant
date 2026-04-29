@@ -594,6 +594,56 @@ Current checkpoint:
     - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS7.txt`
     - `testing/logs/COMMAND_SURFACE_PLAYTEST_POSTREFACTOR_EXTRACT_PS51.txt`
 
+### M6 - Web GUI And Cross-Platform Migration
+
+Status:
+
+- `in_progress`
+
+Goal:
+
+- migrate the app from a terminal-first PowerShell experience to a web-GUI-first
+  local app without losing gameplay parity
+
+Deliverables:
+
+- formal parity inventory for the current supported feature surface
+- engine/session boundary that can be driven without terminal scraping
+- structured pending-choice model for setup, inventory, combat, saves, and
+  book transitions
+- local HTTP/JSON backend for state and action handling
+- browser-first GUI covering the supported play surface
+- parity validation between CLI and web-driven flows
+- cross-platform launch/runtime hardening for Windows, Linux, and macOS
+- CLI retained as fallback until web parity is proven
+
+Exit criteria:
+
+- supported gameplay behavior matches the parity checklist in web mode
+- browser UI is the documented primary interface
+- the engine remains the single source of truth for rules and saves
+- the web-first app runs on Windows, Linux, and macOS
+- CLI remains available through the parity-release transition
+
+Reference:
+
+- [WEB_GUI_CROSS_PLATFORM_PLAN.md](./WEB_GUI_CROSS_PLATFORM_PLAN.md)
+- [WEB_PARITY_INVENTORY.md](./WEB_PARITY_INVENTORY.md)
+
+Current checkpoint:
+
+- formal migration plan is now repo-tracked
+- Phase `0` parity inventory is now repo-tracked
+- initial tracked web scaffold now exists under:
+  - `web/lw_api_session.ps1`
+  - `web/app_server.py`
+  - `web/frontend/`
+  - `Start-LoneWolfWeb.ps1`
+- current scaffold uses a real local HTTP/JSON path instead of PTY terminal
+  streaming
+- current scaffold keeps the CLI and the existing rules engine intact while the
+  new browser surface is built out
+
 ## Tracking Rules
 
 When milestone work begins:

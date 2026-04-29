@@ -46,7 +46,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
 - GitHub Project board is now live
-- Formal architecture planning docs now exist for the modular-engine refactor milestone
+- Formal architecture planning docs now exist for the modular-engine refactor milestone and the planned web-GUI / cross-platform migration
 - M1 modular refactor is complete and pushed
 - M2 Magnakai / Book `6` support is complete and released
 - M2.7 validation closeout is complete under the route-and-mode validation bar
@@ -54,6 +54,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M4 portable packaging workflow is complete and released
 - M5 Book `6` automation catch-up is complete on `main`
 - current stabilization work on `main` is architecture hardening cleanup, recent Book `6` DE support, and Book `7` validation after the `0.8.0` release
+- the formal migration plan for a web-GUI-first, cross-platform future now lives in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
+- the Phase `0` parity inventory for that migration now lives in `docs/WEB_PARITY_INVENTORY.md`
+- the initial tracked web scaffold now lives under `web/` with a PowerShell engine session host, a Python HTTP server, a browser frontend shell, and `Start-LoneWolfWeb.ps1`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
