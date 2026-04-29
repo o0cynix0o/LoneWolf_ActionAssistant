@@ -654,6 +654,10 @@ Current checkpoint:
     the tracked browser shell
   - the Notes tab now supports direct note add/remove actions over the
     HTTP/JSON boundary
+  - the Inventory tab now supports slot-aware inventory rendering with live
+    recovery-stash summaries for the supported item sections
+  - the Inventory tab now exposes direct add, drop, recover, Gold, END, meal,
+    and potion controls over the same HTTP/JSON boundary
   - the Combat tab now supports tracked combat start and the first live combat
     actions: round, auto-resolve, evade, and stop
   - prompt-backed combat replay now preserves generated random rolls so manual

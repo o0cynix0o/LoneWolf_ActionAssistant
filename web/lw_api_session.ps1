@@ -922,6 +922,30 @@ function Start-LWWebCombatAutoFlow {
         })
 }
 
+function Start-LWWebUseMealFlow {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'useMeal' -Title 'Use Meal' -Description 'The meal flow paused because this run needs a hunting or wasteland answer before it can continue.'
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage 'Meal flow resolved.' -PendingMessage 'Meal input is required.' -Operation {
+            Use-LWMeal
+        })
+}
+
+function Start-LWWebUsePotionFlow {
+    if ($null -ne $script:LWWebFlow) {
+        throw 'Finish or cancel the current web flow first.'
+    }
+
+    $flow = New-LWWebPromptActionFlow -Type 'usePotion' -Title 'Use Healing Potion' -Description 'Choose which healing item to spend if more than one valid option is available.'
+    $script:LWWebFlow = $flow
+    return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage 'Healing potion used.' -PendingMessage 'Potion input is required.' -Operation {
+            Use-LWHealingPotion
+        })
+}
+
 function Start-LWWebNewGameWizard {
     if ($null -ne $script:LWWebFlow) {
         throw 'Finish or cancel the current web flow first.'
@@ -1097,6 +1121,16 @@ function Submit-LWWebFlow {
                         Resolve-LWCombatToOutcome | Out-Null
                     })
             }
+            'useMeal' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage 'Meal flow resolved.' -PendingMessage 'Meal input is required.' -Operation {
+                        Use-LWMeal
+                    })
+            }
+            'usePotion' {
+                return (Invoke-LWWebPromptActionPhase -Flow $flow -SuccessMessage 'Healing potion used.' -PendingMessage 'Potion input is required.' -Operation {
+                        Use-LWHealingPotion
+                    })
+            }
             default {
                 throw ("Unknown web flow type: {0}" -f $flowType)
             }
@@ -1209,6 +1243,59 @@ function Cancel-LWWebFlow {
     return 'Web flow cancelled.'
 }
 
+function Get-LWWebInventorySectionSnapshot {
+    param([Parameter(Mandatory = $true)][ValidateSet('weapon', 'backpack', 'pocket', 'herbpouch', 'special')][string]$Type)
+
+    $items = @(Get-LWInventoryItems -Type $Type)
+    $capacity = if ($Type -eq 'pocket') { $null } else { Get-LWInventoryTypeCapacity -Type $Type }
+    $used = Get-LWInventoryUsedCapacity -Type $Type -Items $items
+    $hasContainer = $true
+    $recoveryItems = @()
+
+    switch ($Type) {
+        'backpack' {
+            $hasContainer = Test-LWStateHasBackpack -State $script:GameState
+            $recoveryItems = @(Get-LWInventoryRecoveryItems -Type 'backpack')
+        }
+        'herbpouch' {
+            $hasContainer = Test-LWStateHasHerbPouch -State $script:GameState
+            $recoveryItems = @(Get-LWInventoryRecoveryItems -Type 'herbpouch')
+        }
+        'weapon' {
+            $recoveryItems = @(Get-LWInventoryRecoveryItems -Type 'weapon')
+        }
+        'special' {
+            $recoveryItems = @(Get-LWInventoryRecoveryItems -Type 'special')
+        }
+    }
+
+    $slots = @()
+    if ($null -ne $capacity) {
+        for ($slot = 1; $slot -le [int]$capacity; $slot++) {
+            $displayText = [string](Get-LWInventorySlotDisplayText -Type $Type -Slot $slot -Items $items)
+            $slots += [pscustomobject]@{
+                Number      = $slot
+                DisplayText = $displayText
+                Empty       = ($displayText -eq '(empty)')
+                Unavailable = ($displayText -eq '(unavailable)')
+            }
+        }
+    }
+
+    return [ordered]@{
+        Type          = $Type
+        Label         = Get-LWInventoryTypeLabel -Type $Type
+        Items         = @($items)
+        Count         = @($items).Count
+        Capacity      = $capacity
+        Used          = $used
+        HasContainer  = [bool]$hasContainer
+        Slots         = @($slots)
+        RecoveryItems = @($recoveryItems)
+        RecoveryCount = @($recoveryItems).Count
+    }
+}
+
 function Get-LWWebStateSnapshot {
     $stage = 'screen metadata'
     try {
@@ -1258,6 +1345,11 @@ function Get-LWWebStateSnapshot {
         $inventory = $script:GameState.Inventory
         $character = $script:GameState.Character
         $combat = $script:GameState.Combat
+        $weaponSection = Get-LWWebInventorySectionSnapshot -Type 'weapon'
+        $backpackSection = Get-LWWebInventorySectionSnapshot -Type 'backpack'
+        $specialSection = Get-LWWebInventorySectionSnapshot -Type 'special'
+        $pocketSection = Get-LWWebInventorySectionSnapshot -Type 'pocket'
+        $herbPouchSection = Get-LWWebInventorySectionSnapshot -Type 'herbpouch'
 
         $stage = 'active state payload'
         return [ordered]@{
@@ -1302,6 +1394,19 @@ function Get-LWWebStateSnapshot {
                 HasBackpack        = [bool]$inventory.HasBackpack
                 HasHerbPouch       = [bool]$inventory.HasHerbPouch
                 QuiverArrows       = if ((Test-LWPropertyExists -Object $inventory -Name 'QuiverArrows') -and $null -ne $inventory.QuiverArrows) { [int]$inventory.QuiverArrows } else { 0 }
+                Sections           = [ordered]@{
+                    weapon    = $weaponSection
+                    backpack  = $backpackSection
+                    special   = $specialSection
+                    pocket    = $pocketSection
+                    herbpouch = $herbPouchSection
+                }
+                RecoveryStash      = [ordered]@{
+                    weapon    = @($weaponSection.RecoveryItems)
+                    backpack  = @($backpackSection.RecoveryItems)
+                    special   = @($specialSection.RecoveryItems)
+                    herbpouch = @($herbPouchSection.RecoveryItems)
+                }
             }
             combat           = [ordered]@{
                 Active                        = [bool]$combat.Active
@@ -1444,6 +1549,158 @@ function Invoke-LWWebRequest {
 
             Add-LWNote -Text $noteText
             return 'Note added.'
+        }
+        'inventoryAdd' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            $typeText = if ((Test-LWPropertyExists -Object $Request -Name 'type') -and -not [string]::IsNullOrWhiteSpace([string]$Request.type)) { [string]$Request.type } else { '' }
+            $type = Resolve-LWInventoryType -Value $typeText
+            if ($null -eq $type -or $type -eq 'pocket') {
+                throw 'Type must be weapon, backpack, herbpouch, or special.'
+            }
+
+            $name = if ((Test-LWPropertyExists -Object $Request -Name 'name') -and -not [string]::IsNullOrWhiteSpace([string]$Request.name)) { [string]$Request.name } else { '' }
+            if ([string]::IsNullOrWhiteSpace($name)) {
+                throw 'Item name is required.'
+            }
+
+            $quantity = if ((Test-LWPropertyExists -Object $Request -Name 'quantity') -and $null -ne $Request.quantity) { [int]$Request.quantity } else { 1 }
+            if ($quantity -lt 1) {
+                throw 'Quantity must be at least 1.'
+            }
+            if ($type -eq 'special' -and $quantity -gt 1) {
+                throw 'Special Items cannot be stacked. Add them one at a time.'
+            }
+
+            Add-LWInventoryItem -Type $type -Name $name.Trim() -Quantity $quantity
+            return ("Added {0} x {1} to {2}." -f $quantity, $name.Trim(), $type)
+        }
+        'inventoryDrop' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            $typeText = if ((Test-LWPropertyExists -Object $Request -Name 'type') -and -not [string]::IsNullOrWhiteSpace([string]$Request.type)) { [string]$Request.type } else { '' }
+            $type = Resolve-LWInventoryType -Value $typeText
+            if ($null -eq $type) {
+                throw 'Type must be weapon, backpack, pocket, herbpouch, or special.'
+            }
+
+            $removeAll = [bool]((Test-LWPropertyExists -Object $Request -Name 'all') -and $Request.all)
+            if ($removeAll) {
+                if (@(Get-LWInventoryItems -Type $type).Count -eq 0) {
+                    throw ("{0} is empty." -f (Get-LWInventoryTypeLabel -Type $type))
+                }
+                Remove-LWInventorySection -Type $type
+                return ("Removed all items from {0}." -f $type)
+            }
+
+            $slot = if ((Test-LWPropertyExists -Object $Request -Name 'slot') -and $null -ne $Request.slot) { [int]$Request.slot } else { 0 }
+            if ($slot -lt 1) {
+                throw 'A slot number of 1 or higher is required, or choose all.'
+            }
+
+            if ($type -eq 'pocket') {
+                $pocketItems = @(Get-LWInventoryItems -Type 'pocket')
+                if ($pocketItems.Count -eq 0) {
+                    throw 'Pocket Items is empty.'
+                }
+                if ($slot -gt $pocketItems.Count) {
+                    throw ("Pocket Items slot must be between 1 and {0}." -f $pocketItems.Count)
+                }
+            }
+            else {
+                $section = Get-LWWebInventorySectionSnapshot -Type $type
+                if ($slot -gt @($section.Slots).Count) {
+                    throw ("{0} slot must be between 1 and {1}." -f $section.Label, @($section.Slots).Count)
+                }
+
+                $slotEntry = @($section.Slots)[$slot - 1]
+                if ([bool]$slotEntry.Empty -or [bool]$slotEntry.Unavailable) {
+                    throw ("{0} slot {1} is not available to drop." -f $section.Label, $slot)
+                }
+            }
+
+            Remove-LWInventoryItemBySlot -Type $type -Slot $slot
+            return ("Removed slot {0} from {1}." -f $slot, $type)
+        }
+        'inventoryRecover' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            $selection = if ((Test-LWPropertyExists -Object $Request -Name 'selection') -and -not [string]::IsNullOrWhiteSpace([string]$Request.selection)) { [string]$Request.selection } else { '' }
+            if ([string]::IsNullOrWhiteSpace($selection)) {
+                throw 'Choose weapon, backpack, herbpouch, special, or all.'
+            }
+
+            if ($selection.Trim().ToLowerInvariant() -eq 'all') {
+                $recoverableTypes = @('weapon', 'backpack', 'herbpouch', 'special') | Where-Object { @(Get-LWInventoryRecoveryItems -Type $_).Count -gt 0 }
+                if (@($recoverableTypes).Count -eq 0) {
+                    throw 'No saved inventory stash is available.'
+                }
+                foreach ($recoverType in @($recoverableTypes)) {
+                    if (-not (Test-LWInventoryRecoveryFits -Type $recoverType)) {
+                        throw ("{0} does not have enough room to recover its saved items." -f (Get-LWInventoryTypeLabel -Type $recoverType))
+                    }
+                }
+                Restore-LWAllInventorySections
+                return 'Recovered all saved inventory sections.'
+            }
+
+            $type = Resolve-LWInventoryType -Value $selection
+            if ($null -eq $type -or $type -eq 'pocket') {
+                throw 'Type must be weapon, backpack, herbpouch, special, or all.'
+            }
+            if (@(Get-LWInventoryRecoveryItems -Type $type).Count -eq 0) {
+                throw ("No saved {0} stash is available." -f (Get-LWInventoryTypeLabel -Type $type))
+            }
+            if (-not (Test-LWInventoryRecoveryFits -Type $type)) {
+                throw ("{0} does not have enough room to recover the saved items." -f (Get-LWInventoryTypeLabel -Type $type))
+            }
+
+            Restore-LWInventorySection -Type $type
+            return ("Recovered saved {0} items." -f $type)
+        }
+        'adjustGold' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            if (-not (Test-LWPropertyExists -Object $Request -Name 'delta') -or $null -eq $Request.delta) {
+                throw 'A gold delta is required.'
+            }
+
+            Update-LWGold -Delta ([int]$Request.delta)
+            return 'Gold updated.'
+        }
+        'adjustEndurance' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            if (-not (Test-LWPropertyExists -Object $Request -Name 'delta') -or $null -eq $Request.delta) {
+                throw 'An END delta is required.'
+            }
+
+            Update-LWEndurance -Delta ([int]$Request.delta)
+            return 'Endurance updated.'
+        }
+        'useMeal' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            return (Start-LWWebUseMealFlow)
+        }
+        'usePotion' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+
+            return (Start-LWWebUsePotionFlow)
         }
         'removeNote' {
             if ($null -eq $script:GameState) {

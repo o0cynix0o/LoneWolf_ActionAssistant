@@ -261,27 +261,173 @@ function renderOverview(payload) {
   `;
 }
 
+function renderInventorySection(section) {
+  if (!section) {
+    return '';
+  }
+
+  const slots = safeArray(section.Slots);
+  const items = safeArray(section.Items);
+  const recoveryItems = safeArray(section.RecoveryItems);
+  const hasCapacity = section.Capacity !== null && section.Capacity !== undefined;
+
+  return `
+    <article class="panel">
+      <h2>${text(section.Label, 'Inventory')}</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Used</span><strong>${text(section.Used, '0')}${hasCapacity ? ` / ${text(section.Capacity, '0')}` : ''}</strong></div>
+        <div class="kv"><span>Items</span><strong>${text(section.Count, '0')}</strong></div>
+        <div class="kv"><span>Container</span><strong>${section.HasContainer === false ? 'Unavailable' : 'Ready'}</strong></div>
+        <div class="kv"><span>Recovery Stash</span><strong>${text(section.RecoveryCount, '0')}</strong></div>
+      </div>
+      ${slots.length ? `
+        <div class="slot-list">
+          ${slots.map((slot) => `
+            <div class="slot-row ${slot.Unavailable ? 'slot-row-muted' : ''}">
+              <strong>Slot ${slot.Number}</strong>
+              <span>${text(slot.DisplayText, '(empty)')}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="inventory-list">
+          ${items.length ? items.map((item, index) => `<span class="pill">${index + 1}. ${item}</span>`).join(' ') : '<p class="muted">(empty)</p>'}
+        </div>
+      `}
+      ${recoveryItems.length ? `
+        <div class="stash-block">
+          <p class="muted">Recovery stash</p>
+          <div class="inventory-list">
+            ${recoveryItems.map((item) => `<span class="pill subtle-pill">${item}</span>`).join(' ')}
+          </div>
+        </div>
+      ` : ''}
+    </article>
+  `;
+}
+
 function renderInventory(payload) {
+  const inventory = payload.inventory || {};
   const sections = [
-    ['Weapons', safeArray(payload.inventory?.Weapons)],
-    ['Backpack', safeArray(payload.inventory?.BackpackItems)],
-    ['Special', safeArray(payload.inventory?.SpecialItems)],
-    ['Pocket', safeArray(payload.inventory?.PocketSpecialItems)],
-    ['Herb Pouch', safeArray(payload.inventory?.HerbPouchItems)],
-  ];
+    inventory.Sections?.weapon,
+    inventory.Sections?.backpack,
+    inventory.Sections?.special,
+    inventory.Sections?.pocket,
+    inventory.Sections?.herbpouch,
+  ].filter(Boolean);
 
   return `
     <section class="panel">
+      <h2>Resources</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Gold</span><strong>${text(inventory.GoldCrowns, '0')}</strong></div>
+        <div class="kv"><span>END</span><strong>${text(payload.character?.EnduranceCurrent, '0')} / ${text(payload.character?.EnduranceMax, '0')}</strong></div>
+        <div class="kv"><span>Quiver</span><strong>${text(inventory.QuiverArrows, '0')} arrow${Number(inventory.QuiverArrows || 0) === 1 ? '' : 's'}</strong></div>
+        <div class="kv"><span>Backpack</span><strong>${inventory.HasBackpack ? 'Carried' : 'Missing'}</strong></div>
+        <div class="kv"><span>Herb Pouch</span><strong>${inventory.HasHerbPouch ? 'Carried' : 'Missing'}</strong></div>
+        <div class="kv"><span>Save Path</span><strong>${text(payload.session?.SavePath, '(not set)')}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Quick Actions</h2>
+      <div class="inventory-actions-grid">
+        <form id="gold-form" class="flow-form inline-form">
+          <label class="flow-field">
+            <span>Gold change</span>
+            <input id="gold-delta-input" type="number" value="1" step="1" placeholder="+/- Gold">
+          </label>
+          <div class="flow-actions">
+            <button type="submit">Apply Gold</button>
+          </div>
+        </form>
+        <form id="endurance-form" class="flow-form inline-form">
+          <label class="flow-field">
+            <span>END change</span>
+            <input id="endurance-delta-input" type="number" value="-1" step="1" placeholder="+/- END">
+          </label>
+          <div class="flow-actions">
+            <button type="submit">Apply END</button>
+          </div>
+        </form>
+        <div class="panel action-panel">
+          <h2>Meals & Potions</h2>
+          <p class="muted">These buttons respect the same prompts and restrictions as the terminal app.</p>
+          <div class="flow-actions">
+            <button type="button" id="use-meal-btn">Use Meal</button>
+            <button type="button" id="use-potion-btn">Use Healing Potion</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Manage Inventory</h2>
+      <div class="inventory-actions-grid">
+        <form id="inventory-add-form" class="flow-form inline-form">
+          <div class="flow-grid">
+            <label class="flow-field">
+              <span>Add type</span>
+              <select id="inventory-add-type">
+                <option value="weapon">Weapon</option>
+                <option value="backpack">Backpack</option>
+                <option value="herbpouch">Herb Pouch</option>
+                <option value="special">Special</option>
+              </select>
+            </label>
+            <label class="flow-field">
+              <span>Quantity</span>
+              <input id="inventory-add-quantity" type="number" min="1" value="1">
+            </label>
+          </div>
+          <label class="flow-field">
+            <span>Item name</span>
+            <input id="inventory-add-name" type="text" placeholder="Meal, Bow, Fireseed, Rope">
+          </label>
+          <div class="flow-actions">
+            <button type="submit">Add Item</button>
+          </div>
+        </form>
+        <form id="inventory-drop-form" class="flow-form inline-form">
+          <div class="flow-grid">
+            <label class="flow-field">
+              <span>Drop type</span>
+              <select id="inventory-drop-type">
+                <option value="weapon">Weapon</option>
+                <option value="backpack">Backpack</option>
+                <option value="pocket">Pocket</option>
+                <option value="herbpouch">Herb Pouch</option>
+                <option value="special">Special</option>
+              </select>
+            </label>
+            <label class="flow-field">
+              <span>Slot or all</span>
+              <input id="inventory-drop-slot" type="text" placeholder="3 or all">
+            </label>
+          </div>
+          <div class="flow-actions">
+            <button type="submit">Drop Item</button>
+          </div>
+        </form>
+        <form id="inventory-recover-form" class="flow-form inline-form">
+          <label class="flow-field">
+            <span>Recover section</span>
+            <select id="inventory-recover-selection">
+              <option value="weapon">Weapons</option>
+              <option value="backpack">Backpack</option>
+              <option value="herbpouch">Herb Pouch</option>
+              <option value="special">Special</option>
+            </select>
+          </label>
+          <div class="flow-actions">
+            <button type="submit">Recover Section</button>
+            <button type="button" class="button-secondary" id="inventory-recover-all-btn">Recover All</button>
+          </div>
+        </form>
+      </div>
+    </section>
+    <section class="panel">
       <h2>Inventory</h2>
       <div class="inventory-grid">
-        ${sections.map(([title, items]) => `
-          <article class="panel">
-            <h2>${title}</h2>
-            <div class="inventory-list">
-              ${items.length ? items.map((item) => `<span class="pill">${item}</span>`).join(' ') : '<p class="muted">(empty)</p>'}
-            </div>
-          </article>
-        `).join('')}
+        ${sections.map((section) => renderInventorySection(section)).join('')}
       </div>
     </section>
   `;
@@ -851,6 +997,134 @@ function bindDynamicViewEvents(payload) {
       }
     });
   });
+
+  const goldForm = document.getElementById('gold-form');
+  if (goldForm) {
+    goldForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const rawValue = document.getElementById('gold-delta-input')?.value ?? '';
+      if (rawValue === '') {
+        setMessage('Enter a gold change first.', true);
+        return;
+      }
+      try {
+        const result = await apiAction({ action: 'adjustGold', delta: Number(rawValue) });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const enduranceForm = document.getElementById('endurance-form');
+  if (enduranceForm) {
+    enduranceForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const rawValue = document.getElementById('endurance-delta-input')?.value ?? '';
+      if (rawValue === '') {
+        setMessage('Enter an END change first.', true);
+        return;
+      }
+      try {
+        const result = await apiAction({ action: 'adjustEndurance', delta: Number(rawValue) });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const useMealButton = document.getElementById('use-meal-btn');
+  if (useMealButton) {
+    useMealButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'useMeal' });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const usePotionButton = document.getElementById('use-potion-btn');
+  if (usePotionButton) {
+    usePotionButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'usePotion' });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const inventoryAddForm = document.getElementById('inventory-add-form');
+  if (inventoryAddForm) {
+    inventoryAddForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const type = document.getElementById('inventory-add-type')?.value || 'backpack';
+      const name = document.getElementById('inventory-add-name')?.value?.trim() || '';
+      const quantity = Number(document.getElementById('inventory-add-quantity')?.value || 1);
+      if (!name) {
+        setMessage('Enter an item name first.', true);
+        return;
+      }
+      try {
+        const result = await apiAction({ action: 'inventoryAdd', type, name, quantity });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const inventoryDropForm = document.getElementById('inventory-drop-form');
+  if (inventoryDropForm) {
+    inventoryDropForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const type = document.getElementById('inventory-drop-type')?.value || 'backpack';
+      const rawSelection = document.getElementById('inventory-drop-slot')?.value?.trim() || '';
+      if (!rawSelection) {
+        setMessage('Enter a slot number or all.', true);
+        return;
+      }
+      try {
+        const payload = rawSelection.toLowerCase() === 'all'
+          ? { action: 'inventoryDrop', type, all: true }
+          : { action: 'inventoryDrop', type, slot: Number(rawSelection) };
+        const result = await apiAction(payload);
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const inventoryRecoverForm = document.getElementById('inventory-recover-form');
+  if (inventoryRecoverForm) {
+    inventoryRecoverForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const selection = document.getElementById('inventory-recover-selection')?.value || 'weapon';
+      try {
+        const result = await apiAction({ action: 'inventoryRecover', selection });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
+
+  const inventoryRecoverAllButton = document.getElementById('inventory-recover-all-btn');
+  if (inventoryRecoverAllButton) {
+    inventoryRecoverAllButton.addEventListener('click', async () => {
+      try {
+        const result = await apiAction({ action: 'inventoryRecover', selection: 'all' });
+        applyResponse(result);
+      } catch (error) {
+        handleActionError(error);
+      }
+    });
+  }
 
   const saveAsForm = document.getElementById('save-as-form');
   if (saveAsForm) {

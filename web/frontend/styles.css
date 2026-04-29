@@ -430,9 +430,66 @@ h1 {
   gap: 0.75rem;
 }
 
+.inventory-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
 .inventory-list {
   display: grid;
   gap: 0.4rem;
+}
+
+.inline-form {
+  align-content: start;
+}
+
+.action-panel {
+  margin-bottom: 0;
+}
+
+.slot-list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+}
+
+.slot-row,
+.stash-block {
+  padding: 0.6rem 0.65rem;
+  border: 1px solid rgba(103, 93, 57, 0.45);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.slot-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.slot-row strong {
+  color: var(--gold);
+}
+
+.slot-row span {
+  color: var(--ink);
+}
+
+.slot-row-muted span,
+.slot-row-muted strong {
+  color: var(--muted);
+}
+
+.stash-block {
+  margin-top: 0.8rem;
+}
+
+.stash-block .muted {
+  display: block;
+  margin-bottom: 0.45rem;
 }
 
 .pill {
@@ -571,6 +628,7 @@ h1 {
 
   .flow-grid,
   .compact-options,
+  .inventory-actions-grid,
   .inventory-grid,
   .kv-grid {
     grid-template-columns: 1fr;

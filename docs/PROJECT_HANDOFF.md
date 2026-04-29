@@ -68,10 +68,14 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - current browser-side live-play coverage now includes:
     - `Save Run` plus save-to-path and prompt-backed path selection in the Saves tab
     - direct note add/remove actions in the Notes tab
+    - slot-aware Inventory panels with live recovery-stash summaries
+    - direct Inventory tab actions for add, drop, and recover on supported inventory sections
+    - direct Gold / END adjustments plus prompt-backed `Use Meal` and `Use Healing Potion` controls
     - tracked combat start from the Combat tab
     - structured follow-up prompts for combat setup and save-path requests
     - active combat actions for round resolution, auto-resolve, evade, and stop
   - the web session host now preserves generated random rolls across prompt-backed combat replay so manual CRT follow-up prompts can resume safely without reroll drift
+  - the web session payload now exposes slot-aware inventory snapshots for Weapons, Backpack, Special Items, Pocket Items, and Herb Pouch so the browser surface is no longer guessing from raw arrays
   - this slice has been verified both by talking directly to `web/lw_api_session.ps1` and through the local HTTP server in `web/app_server.py`
   - same-book section-page navigation inside the reader iframe now pushes section changes back into the app state instead of only changing the displayed book page
 - latest `main` Book `7` startup/save hotfix:

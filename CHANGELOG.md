@@ -33,6 +33,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - prompt-backed combat flows now preserve generated random rolls across follow-up answers so manual CRT prompts can resume safely instead of rerolling during replay
   - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
 - fixed tracked reader navigation so same-book section-page links inside the browser reader now update the app's current section instead of only changing the iframe page
+- expanded the tracked web scaffold Inventory tab into a real in-run management surface:
+  - added direct structured web actions for inventory add, slot-aware drop, and recovery-stash restore flows
+  - added browser-side Gold and END adjustment controls plus prompt-backed `Use Meal` and `Use Healing Potion` actions
+  - the web session payload now includes slot-aware inventory section snapshots and live recovery-stash summaries so the browser can render the same inventory shape the engine is enforcing
+  - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
 - added difficulty-based between-book END restoration:
   - `Story` and `Easy` now restore `ENDURANCE` to full when a new book begins
   - `Normal` now keeps the source-text current-`ENDURANCE` carryover between books

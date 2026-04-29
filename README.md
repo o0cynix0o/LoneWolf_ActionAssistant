@@ -150,6 +150,12 @@ Current web-scaffold coverage includes:
 - browser-side note controls:
   - add note directly from the Notes tab
   - remove existing notes without dropping back to command text
+- browser-side inventory and resource controls:
+  - slot-aware inventory panels for Weapons, Backpack, Special Items, Pocket Items, and Herb Pouch
+  - direct add, drop, and recover actions for supported inventory sections
+  - live recovery-stash summaries for recoverable gear
+  - direct Gold and END adjustments from the Inventory tab
+  - `Use Meal` and `Use Healing Potion` actions, including prompt-backed follow-up answers when the engine needs more input
 - first live-play combat controls:
   - tracked combat start from the Combat tab
   - structured pending prompts for combat setup follow-up questions
