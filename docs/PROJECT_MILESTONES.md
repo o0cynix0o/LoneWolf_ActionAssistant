@@ -708,6 +708,20 @@ Current checkpoint:
   - startup-equipment prompt payloads now carry their readable context text too,
     so Book `6` / `7` starting-gear flows keep their live option list in the
     browser
+  - the tracked browser shell now includes browser-native `Disciplines`,
+    `Modes`, `Combat Log`, and `Help` tabs instead of leaving those screens as
+    safe-command-only fallbacks
+  - the web session payload now exposes structured discipline catalogs,
+    selected Kai/Magnakai state, Weaponmastery picks, lore-circle status,
+    run-mode definitions, current achievement pools, safe-command help, and
+    detailed active/archive combat-log snapshots
+  - combat-log round payloads now stay array-shaped even for one-round fights,
+    so browser rendering can treat archived fights consistently
+  - web parity surface validation is now tracked and green in both shells plus
+    the local HTTP server:
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
+    - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
 
 ## Tracking Rules
 

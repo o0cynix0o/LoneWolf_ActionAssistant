@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- expanded the tracked web scaffold parity surface beyond the core play tabs:
+  - added browser-native `Disciplines`, `Modes`, `Combat Log`, and `Help` tabs
+  - the web session payload now exposes structured discipline catalogs, selected Kai/Magnakai state, Weaponmastery picks, lore-circle status, run-mode definitions, current achievement pools, safe-command help, and detailed active/archive combat-log snapshots
+  - combat-log round payloads now stay array-shaped even for one-round fights, so browser rendering no longer has to guess around singleton JSON
+  - added a repeatable web parity surface smoke at `testing/tmp/web-parity-surface-smoke.ps1`
+  - validated the new surface in both shells and through the local HTTP server:
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
+    - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
 - upgraded the tracked browser flow surface so the remaining prompt-heavy gameplay steps render with more web-native guidance instead of looking like raw terminal replay:
   - the web session payload now tags pending prompts with lightweight prompt kinds such as `makeRoomConfirm`, `safekeepingMenu`, and `startingGearChoice`
   - browser-side prompt rendering now uses that metadata to show inventory-pressure and safekeeping companion panels, plus direct `Open Inventory Tab` shortcuts where the player needs to make room or manage carried items

@@ -101,6 +101,13 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - prompt-backed browser flows now also expose lightweight prompt-kind metadata so the frontend can distinguish inventory-pressure, safekeeping, and structured choice-table prompts
   - the browser prompt surface now uses that metadata to render guided companion panels, stacked quick-pick actions, and direct `Open Inventory Tab` shortcuts instead of leaning so heavily on raw pasted prompt text
   - startup-equipment prompt payloads now carry their readable context text through the tracked flow too, so Book `6` / `7` starting-gear prompts keep their live option list in the browser
+  - the tracked browser shell now also includes browser-native `Disciplines`, `Modes`, `Combat Log`, and `Help` tabs instead of leaving those surfaces behind safe-command-only fallbacks
+  - the web session payload now exposes structured discipline catalogs, selected Kai/Magnakai state, Weaponmastery picks, lore-circle status, run-mode definitions, current achievement pools, safe-command help, and detailed active/archive combat-log snapshots
+  - combat-log round payloads now stay array-shaped even for one-round fights, so browser rendering can handle archived fights consistently
+  - the new web parity surface smoke is tracked at `testing/tmp/web-parity-surface-smoke.ps1` and has green artifacts:
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_SURFACE_SMOKE_PS51.txt`
+    - `testing/logs/WEB_HTTP_SURFACE_SMOKE.txt`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

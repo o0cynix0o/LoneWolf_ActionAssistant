@@ -1,6 +1,6 @@
 # Lone Wolf Terminal - Agent Handoff
 
-Last updated: 2026-04-22
+Last updated: 2026-04-29
 
 ## What This File Is For
 
@@ -31,6 +31,7 @@ For deeper project state, workflow details, and local report locations, use:
 - Kai ruleset support is complete through Books `1-5`
 - released Magnakai support is live through Book `6`
 - current `main` also contains validated local Book `7` / `Castle Death` support plus recent Book `6` DE stabilization
+- current `main` also contains the first tracked M6 web-GUI migration scaffold under `web/`, with browser-native setup, saves, inventory, combat, stats, campaign, achievements, death recovery, disciplines, modes, combat log, and help surfaces backed by the PowerShell session/HTTP JSON path
 - M1 modular refactor is complete and pushed
 - Core modules live under:
   - `modules/core/`
@@ -58,10 +59,11 @@ That old framing is stale.
 
 The highest-value work now is:
 
-1. post-release stabilization across the recent `main` surface, especially Book `6` sections `2`, `17`, `98`, `158/293`, `170`, and `297`
-2. validating and hardening current `main` Book `7` startup, choice, combat, achievement, route, and difficulty behavior
-3. keeping repo docs/workflow current
-4. preparing the eventual Book `7+` release/expansion cleanly
+1. continuing M6 web GUI parity work: remaining structured prompt edge cases, deeper API/UI parity harnesses, cross-platform launch/packaging hardening, and web-first release docs
+2. post-release stabilization across the recent `main` surface, especially Book `6` sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`
+3. validating and hardening current `main` Book `7` startup, choice, combat, achievement, route, and difficulty behavior
+4. keeping repo docs/workflow current
+5. preparing the eventual Book `7+` release/expansion cleanly
 
 Combat is already a shipped system.
 It still gets polish and bug fixes, but it is not the defining unfinished milestone anymore.
@@ -153,6 +155,7 @@ Meaning:
 ## Good Next Steps
 
 - continue live playtesting across the released Books `1-6` surface and current `main` Book `7` coverage
+- continue M6 parity work from the browser scaffold, especially full-flow validation and cross-platform hardening
 - patch DE differences as they appear, especially in the recent Book `6` stabilization paths
 - keep `PROJECT_HANDOFF.md` and milestone docs current
 - keep branch/release wording explicit when public docs are updated

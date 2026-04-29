@@ -899,6 +899,11 @@ h1 {
   margin-bottom: 0.55rem;
 }
 
+.selected-row {
+  border-color: var(--gold);
+  background: rgba(212, 176, 88, 0.1);
+}
+
 .history-row strong,
 .save-row strong,
 .note-row strong {
@@ -917,6 +922,25 @@ h1 {
   gap: 0.45rem;
   margin-top: 0.5rem;
   flex-wrap: wrap;
+}
+
+.compact-kv-grid {
+  margin-top: 0.65rem;
+}
+
+.combat-log-entry .kv strong {
+  overflow-wrap: anywhere;
+}
+
+.round-log-list {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(103, 93, 57, 0.45);
+}
+
+.command-reference-row strong {
+  font-family: Consolas, "Courier New", monospace;
+  color: var(--gold);
 }
 
 .message-bar {

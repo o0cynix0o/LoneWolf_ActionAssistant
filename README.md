@@ -146,6 +146,10 @@ Current web-scaffold coverage includes:
   - `Stats`
   - `Campaign`
   - `Achievements`
+  - `Disciplines`
+  - `Modes`
+  - `Combat Log`
+  - `Help`
 - browser-native death and recovery surface:
   - the Overview now renders a dedicated death panel whenever the engine enters the `death` screen
   - rewind can now be triggered directly from the browser without falling back to command text
@@ -167,6 +171,9 @@ Current web-scaffold coverage includes:
   - current-book stats now render from the live engine summary instead of the raw `CurrentBookStats` object
   - campaign review now has a browser-native screen for run status, totals, milestones, weapon trends, and tracked-book history
   - achievements now have a browser-native screen for current-book targets, recent unlocks, and per-book totals
+  - disciplines now render from structured Kai/Magnakai catalogs, selected discipline state, Weaponmastery picks, and lore-circle progress
+  - modes now render current difficulty, permadeath, integrity, achievement pools, and difficulty rule definitions
+  - combat logs now render active and archived fight records with round details
 - browser-side inventory and resource controls:
   - slot-aware inventory panels for Weapons, Backpack, Special Items, Pocket Items, and Herb Pouch
   - direct add, drop, and recover actions for supported inventory sections

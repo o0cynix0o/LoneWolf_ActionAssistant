@@ -211,26 +211,33 @@ Existing validation categories that matter to the migration include:
 
 These should be preserved and extended, not replaced by ad hoc browser testing.
 
-## Initial M6 Gap List
+## Current M6 Gap List
 
 The web migration still needs explicit implementation work for:
 
-- structured pending-choice modeling
-- browser-safe inventory workflows
-- browser-safe startup/setup workflows
-- real API contract coverage for combat and save flows
+- complete structured pending-choice modeling for remaining shop, loot,
+  payment, section-choice, make-room, safekeeping, and transition edge cases
+- deeper API/UI parity harnesses for full setup, save/load, combat, inventory,
+  death, transition, achievement, and book-automation flows
 - cross-platform launcher and packaging hardening
-- UI parity for campaign/achievement-heavy views
+- browser polish and parity review for long combat archives, history-heavy
+  runs, and book-complete/campaign-heavy views
+- web-first release documentation and validation workflow updates
 
 ## Current M6 Kickoff Deliverables
 
-The first tracked migration slice should establish:
+The tracked migration slice has established:
 
 - this parity inventory
 - the formal migration plan
 - a repo-tracked local web scaffold
 - a real PowerShell-session-to-HTTP adapter path
 - a browser shell that reads state from JSON instead of terminal streaming
+- browser-driven setup, saves, notes, inventory/resource controls, combat,
+  book-complete continuation, stats, campaign review, achievements, death
+  recovery, disciplines, modes, combat log, and help surfaces
+- first repeatable web parity surface validation in both shells plus the local
+  HTTP server
 
 That does not complete parity, but it does establish the correct direction for
 the rest of the work.

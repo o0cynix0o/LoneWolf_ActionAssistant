@@ -194,9 +194,13 @@ function getTabForScreen(screenName) {
   switch (String(screenName || '').toLowerCase()) {
     case 'death':
     case 'sheet':
-    case 'disciplines':
-    case 'help':
       return 'overview';
+    case 'disciplines':
+      return 'disciplines';
+    case 'modes':
+      return 'modes';
+    case 'help':
+      return 'help';
     case 'inventory':
       return 'inventory';
     case 'stats':
@@ -206,8 +210,9 @@ function getTabForScreen(screenName) {
     case 'achievements':
       return 'achievements';
     case 'combat':
-    case 'combatlog':
       return 'combat';
+    case 'combatlog':
+      return 'combatlog';
     case 'history':
       return 'history';
     case 'notes':
@@ -393,6 +398,93 @@ function renderDisciplineGroup(title, disciplines, tone = '') {
         </div>
       ` : '<p class="muted">(none)</p>'}
     </div>
+  `;
+}
+
+function renderDisciplineDefinitionList(title, entries) {
+  const list = safeArray(entries);
+  return `
+    <section class="panel">
+      <h2>${escapeHtml(title)}</h2>
+      ${list.length ? list.map((entry) => `
+        <article class="history-row ${entry.Selected ? 'selected-row' : ''}">
+          <strong>${escapeHtml(text(entry.Name))}</strong>
+          <div class="history-meta">${entry.Selected ? 'Selected' : 'Available'}</div>
+          <div class="history-meta">${escapeHtml(text(entry.Effect, 'No discipline note available.'))}</div>
+        </article>
+      `).join('') : '<p class="muted">(none)</p>'}
+    </section>
+  `;
+}
+
+function renderDisciplines(payload) {
+  const disciplines = payload.disciplines || {};
+  const selectedKai = safeArray(disciplines.Kai).filter((entry) => entry.Selected);
+  const selectedMagnakai = safeArray(disciplines.Magnakai).filter((entry) => entry.Selected);
+  const loreCircles = safeArray(disciplines.LoreCircles);
+  const weaponmasteryWeapons = safeArray(disciplines.WeaponmasteryWeapons);
+  const improvedDisciplines = safeArray(disciplines.ImprovedDisciplines);
+
+  return `
+    <section class="panel">
+      <h2>Current Disciplines</h2>
+      <div class="discipline-groups">
+        ${renderDisciplineGroup('Kai', selectedKai.map((entry) => entry.Name), 'kai')}
+        ${renderDisciplineGroup('Magnakai', selectedMagnakai.map((entry) => entry.Name), 'magnakai')}
+      </div>
+      <div class="kv-grid">
+        <div class="kv"><span>Weaponskill</span><strong>${text(disciplines.WeaponskillWeapon, '(none)')}</strong></div>
+        <div class="kv"><span>Weaponmastery</span><strong>${weaponmasteryWeapons.length ? weaponmasteryWeapons.map((item) => escapeHtml(text(item))).join(', ') : '(none)'}</strong></div>
+        <div class="kv"><span>Improved</span><strong>${improvedDisciplines.length ? improvedDisciplines.map((item) => escapeHtml(text(item))).join(', ') : '(none)'}</strong></div>
+        <div class="kv"><span>Lore Circles</span><strong>${safeArray(disciplines.LoreCirclesCompleted).map((item) => escapeHtml(text(item))).join(', ') || '(none)'}</strong></div>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Lore Circles</h2>
+      <div class="book-track-grid">
+        ${loreCircles.length ? loreCircles.map((circle) => `
+          <article class="book-track-card ${circle.Completed ? 'selected-row' : ''}">
+            <strong>${escapeHtml(text(circle.Name))}</strong>
+            <div class="history-meta">CS +${text(circle.CombatSkillBonus, '0')} | END +${text(circle.EnduranceBonus, '0')} | ${circle.Completed ? 'Complete' : 'Incomplete'}</div>
+            <div class="history-meta">Requires ${safeArray(circle.Disciplines).map((item) => escapeHtml(text(item))).join(', ') || '(none)'}</div>
+            ${safeArray(circle.MissingDisciplines).length ? `<div class="history-meta">Missing ${safeArray(circle.MissingDisciplines).map((item) => escapeHtml(text(item))).join(', ')}</div>` : ''}
+          </article>
+        `).join('') : '<p class="muted">No lore-circle definitions are available.</p>'}
+      </div>
+    </section>
+    <section class="panel-grid">
+      ${renderDisciplineDefinitionList('Kai Discipline Notes', disciplines.Kai)}
+      ${renderDisciplineDefinitionList('Magnakai Discipline Notes', disciplines.Magnakai)}
+    </section>
+  `;
+}
+
+function renderModes(payload) {
+  const modes = payload.modes || {};
+  const definitions = safeArray(modes.Definitions);
+  const achievementPools = safeArray(modes.AchievementPools);
+
+  return `
+    <section class="panel">
+      <h2>Run Mode</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Difficulty</span><strong>${text(modes.Difficulty, 'Normal')}</strong></div>
+        <div class="kv"><span>Permadeath</span><strong>${modes.PermadeathEnabled ? 'On' : 'Off'}</strong></div>
+        <div class="kv"><span>Integrity</span><strong>${text(modes.IntegrityState, modes.HasState ? '(unknown)' : '(no run)')}</strong></div>
+        <div class="kv"><span>Achievement Pools</span><strong>${achievementPools.join(', ') || '(none)'}</strong></div>
+      </div>
+      ${modes.IntegrityNote ? `<p class="muted">${escapeHtml(modes.IntegrityNote)}</p>` : ''}
+    </section>
+    <section class="panel">
+      <h2>Difficulty Rules</h2>
+      ${definitions.length ? definitions.map((entry) => `
+        <article class="history-row ${entry.Current ? 'selected-row' : ''}">
+          <strong>${escapeHtml(text(entry.Name))}</strong>
+          <div class="history-meta">${escapeHtml(text(entry.Description, ''))}</div>
+          <div class="history-meta">${escapeHtml(text(entry.AchievementNote, ''))} | Permadeath ${entry.PermadeathAllowed ? 'allowed' : 'disabled'}</div>
+        </article>
+      `).join('') : '<p class="muted">No difficulty definitions are available.</p>'}
+    </section>
   `;
 }
 
@@ -948,6 +1040,76 @@ function renderCombat(payload) {
   `;
 }
 
+function renderCombatLogRounds(rounds) {
+  const entries = safeArray(rounds);
+  if (!entries.length) {
+    return '<p class="muted">No rounds recorded.</p>';
+  }
+
+  return entries.map((round) => `
+    <div class="history-meta">
+      Round ${text(round.Round, '?')} | Roll ${text(round.Roll, '?')} | Ratio ${text(round.Ratio, '?')} | Enemy Loss ${text(round.EnemyLoss, '0')} | Player Loss ${text(round.PlayerLoss, '0')}
+    </div>
+  `).join('');
+}
+
+function renderCombatLogEntry(entry, { expanded = false } = {}) {
+  const rounds = safeArray(entry.Log);
+  const visibleRounds = expanded ? rounds : rounds.slice(-4);
+  const bookLabel = entry.BookNumber
+    ? `Book ${entry.BookNumber}${entry.BookTitle ? ` - ${entry.BookTitle}` : ''}`
+    : 'Book ?';
+  const sourceLabel = entry.Source === 'active' ? 'Active Fight' : `Archive #${text(entry.Index, '?')}`;
+
+  return `
+    <article class="history-row combat-log-entry">
+      <strong>${escapeHtml(text(entry.EnemyName, 'Unknown Enemy'))}</strong>
+      <div class="history-meta">${escapeHtml(sourceLabel)} | ${escapeHtml(text(entry.Outcome, 'Unknown'))} | ${escapeHtml(bookLabel)} ${entry.Section ? `| Section ${entry.Section}` : ''}</div>
+      <div class="kv-grid compact-kv-grid">
+        <div class="kv"><span>Weapon</span><strong>${escapeHtml(text(entry.Weapon, '(none)'))}</strong></div>
+        <div class="kv"><span>Mode</span><strong>${escapeHtml(text(entry.Mode, '(default)'))}</strong></div>
+        <div class="kv"><span>Rounds</span><strong>${text(entry.RoundCount, '0')}</strong></div>
+        <div class="kv"><span>Ratio</span><strong>${entry.CombatRatio === null || entry.CombatRatio === undefined ? '?' : text(entry.CombatRatio)}</strong></div>
+        <div class="kv"><span>Player END</span><strong>${text(entry.PlayerEnd, '0')}${entry.PlayerEnduranceMax ? ` / ${entry.PlayerEnduranceMax}` : ''}</strong></div>
+        <div class="kv"><span>Enemy END</span><strong>${text(entry.EnemyEnd, '0')}${entry.EnemyEnduranceMax ? ` / ${entry.EnemyEnduranceMax}` : ''}</strong></div>
+        <div class="kv"><span>Mindblast</span><strong>${entry.Mindblast ? 'On' : 'Off'}</strong></div>
+        <div class="kv"><span>Evade</span><strong>${entry.CanEvade ? 'Available' : 'No'}</strong></div>
+      </div>
+      ${safeArray(entry.Notes).length ? `<div class="history-meta">${safeArray(entry.Notes).map((note) => escapeHtml(text(note))).join(' | ')}</div>` : ''}
+      <div class="round-log-list">
+        ${renderCombatLogRounds(visibleRounds)}
+        ${!expanded && rounds.length > visibleRounds.length ? `<div class="history-meta">Showing last ${visibleRounds.length} of ${rounds.length} rounds.</div>` : ''}
+      </div>
+    </article>
+  `;
+}
+
+function renderCombatLog(payload) {
+  const combatLog = payload.combatLog || {};
+  const activeEntry = combatLog.Active || null;
+  const entries = safeArray(combatLog.Entries).slice().reverse();
+
+  return `
+    <section class="panel">
+      <h2>Combat Log</h2>
+      <div class="kv-grid">
+        <div class="kv"><span>Archived Fights</span><strong>${text(combatLog.Count, '0')}</strong></div>
+        <div class="kv"><span>Active Fight</span><strong>${activeEntry ? text(activeEntry.EnemyName, 'In progress') : '(none)'}</strong></div>
+      </div>
+    </section>
+    ${activeEntry ? `
+      <section class="panel">
+        <h2>Active Fight Record</h2>
+        ${renderCombatLogEntry(activeEntry, { expanded: true })}
+      </section>
+    ` : ''}
+    <section class="panel">
+      <h2>Archived Fights</h2>
+      ${entries.length ? entries.map((entry) => renderCombatLogEntry(entry)).join('') : '<p class="muted">No archived combat records yet.</p>'}
+    </section>
+  `;
+}
+
 function renderSaves(payload) {
   const saves = safeArray(payload.saves);
   const currentSavePath = text(payload.session?.SavePath, '');
@@ -1039,6 +1201,30 @@ function renderNotes(payload) {
           </div>
         </article>
       `).join('') : '<p class="muted">No notes recorded.</p>'}
+    </section>
+  `;
+}
+
+function renderHelp(payload) {
+  const help = payload.help || {};
+  const primaryCommands = safeArray(help.PrimaryCommands);
+  const safeCommands = safeArray(help.SafeCommands);
+
+  return `
+    <section class="panel">
+      <h2>Command Reference</h2>
+      ${primaryCommands.length ? primaryCommands.map((entry) => `
+        <article class="history-row command-reference-row">
+          <strong>${escapeHtml(text(entry.Label))}</strong>
+          <div class="history-meta">${escapeHtml(text(entry.Value, ''))}</div>
+        </article>
+      `).join('') : '<p class="muted">No command reference is available.</p>'}
+    </section>
+    <section class="panel">
+      <h2>Safe Web Commands</h2>
+      <div class="chip-cloud">
+        ${safeCommands.length ? safeCommands.map((command) => `<span class="pill subtle-pill">${escapeHtml(text(command))}</span>`).join('') : '<p class="muted">(none)</p>'}
+      </div>
     </section>
   `;
 }
@@ -1694,13 +1880,29 @@ function renderView() {
     ? 'overview'
     : state.activeTab;
   if (!payload.session?.HasState) {
-    elements.view.innerHTML = `
-      <section class="panel">
-        <h2>No Active Run</h2>
-        <p class="muted">Load your last save, start a new run, or keep the reader open on the library while the web migration keeps growing into a full play surface.</p>
-      </section>
-      ${renderSaves(payload)}
-    `;
+    switch (state.activeTab) {
+      case 'disciplines':
+        elements.view.innerHTML = renderDisciplines(payload);
+        break;
+      case 'modes':
+        elements.view.innerHTML = renderModes(payload);
+        break;
+      case 'help':
+        elements.view.innerHTML = renderHelp(payload);
+        break;
+      case 'saves':
+        elements.view.innerHTML = renderSaves(payload);
+        break;
+      default:
+        elements.view.innerHTML = `
+          <section class="panel">
+            <h2>No Active Run</h2>
+            <p class="muted">Load your last save, start a new run, or keep the reader open on the library while the web migration keeps growing into a full play surface.</p>
+          </section>
+          ${renderSaves(payload)}
+        `;
+        break;
+    }
   } else if (currentScreen === 'bookcomplete') {
     elements.view.innerHTML = renderBookComplete(payload);
   } else {
@@ -1717,8 +1919,17 @@ function renderView() {
       case 'achievements':
         elements.view.innerHTML = renderAchievements(payload);
         break;
+      case 'disciplines':
+        elements.view.innerHTML = renderDisciplines(payload);
+        break;
+      case 'modes':
+        elements.view.innerHTML = renderModes(payload);
+        break;
       case 'combat':
         elements.view.innerHTML = renderCombat(payload);
+        break;
+      case 'combatlog':
+        elements.view.innerHTML = renderCombatLog(payload);
         break;
       case 'saves':
         elements.view.innerHTML = renderSaves(payload);
@@ -1728,6 +1939,9 @@ function renderView() {
         break;
       case 'notes':
         elements.view.innerHTML = renderNotes(payload);
+        break;
+      case 'help':
+        elements.view.innerHTML = renderHelp(payload);
         break;
       default:
         elements.view.innerHTML = currentScreen === 'death' ? renderDeath(payload) : renderOverview(payload);

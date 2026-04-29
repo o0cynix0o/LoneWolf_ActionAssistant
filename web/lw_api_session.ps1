@@ -781,6 +781,212 @@ function Get-LWWebAchievementSnapshot {
     }
 }
 
+function Convert-LWWebDisciplineDefinition {
+    param(
+        [Parameter(Mandatory = $true)][object]$Definition,
+        [string[]]$SelectedNames = @()
+    )
+
+    $name = if ($Definition -is [string]) {
+        [string]$Definition
+    }
+    elseif (Test-LWPropertyExists -Object $Definition -Name 'Name') {
+        [string]$Definition.Name
+    }
+    else {
+        [string]$Definition
+    }
+
+    $effect = ''
+    if ($Definition -isnot [string]) {
+        if ((Test-LWPropertyExists -Object $Definition -Name 'Effect') -and -not [string]::IsNullOrWhiteSpace([string]$Definition.Effect)) {
+            $effect = [string]$Definition.Effect
+        }
+        elseif ((Test-LWPropertyExists -Object $Definition -Name 'Description') -and -not [string]::IsNullOrWhiteSpace([string]$Definition.Description)) {
+            $effect = [string]$Definition.Description
+        }
+    }
+
+    return [ordered]@{
+        Name     = $name
+        Effect   = $effect
+        Selected = [bool]($SelectedNames -contains $name)
+    }
+}
+
+function Get-LWWebDisciplineSnapshot {
+    $kaiSelected = @()
+    $magnakaiSelected = @()
+    $weaponskillWeapon = ''
+    $weaponmasteryWeapons = @()
+    $completedLoreCircles = @()
+    $improvedDisciplines = @()
+
+    if ($null -ne $script:GameState -and $null -ne $script:GameState.Character) {
+        $character = $script:GameState.Character
+        $kaiSelected = if ((Test-LWPropertyExists -Object $character -Name 'Disciplines') -and $null -ne $character.Disciplines) { @($character.Disciplines | ForEach-Object { [string]$_ }) } else { @() }
+        $magnakaiSelected = if ((Test-LWPropertyExists -Object $character -Name 'MagnakaiDisciplines') -and $null -ne $character.MagnakaiDisciplines) { @($character.MagnakaiDisciplines | ForEach-Object { [string]$_ }) } else { @() }
+        $weaponskillWeapon = if ((Test-LWPropertyExists -Object $character -Name 'WeaponskillWeapon') -and -not [string]::IsNullOrWhiteSpace([string]$character.WeaponskillWeapon)) { [string]$character.WeaponskillWeapon } else { '' }
+        $weaponmasteryWeapons = if ((Test-LWPropertyExists -Object $character -Name 'WeaponmasteryWeapons') -and $null -ne $character.WeaponmasteryWeapons) { @($character.WeaponmasteryWeapons | ForEach-Object { [string]$_ }) } else { @() }
+        $completedLoreCircles = if ((Test-LWPropertyExists -Object $character -Name 'LoreCirclesCompleted') -and $null -ne $character.LoreCirclesCompleted) { @($character.LoreCirclesCompleted | ForEach-Object { [string]$_ }) } else { @() }
+        $improvedDisciplines = if ((Test-LWPropertyExists -Object $character -Name 'ImprovedDisciplines') -and $null -ne $character.ImprovedDisciplines) { @($character.ImprovedDisciplines | ForEach-Object { [string]$_ }) } else { @() }
+    }
+
+    $kaiDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'KaiDisciplines') -and $null -ne $script:GameData.KaiDisciplines) { @($script:GameData.KaiDisciplines) } else { @() }
+    $magnakaiDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiDisciplines') -and $null -ne $script:GameData.MagnakaiDisciplines) { @($script:GameData.MagnakaiDisciplines) } else { @() }
+    $loreCircleDefinitions = if ($null -ne $script:GameData -and (Test-LWPropertyExists -Object $script:GameData -Name 'MagnakaiLoreCircles') -and $null -ne $script:GameData.MagnakaiLoreCircles) { @($script:GameData.MagnakaiLoreCircles) } else { @() }
+
+    return [ordered]@{
+        Kai                   = @($kaiDefinitions | ForEach-Object { Convert-LWWebDisciplineDefinition -Definition $_ -SelectedNames $kaiSelected })
+        Magnakai              = @($magnakaiDefinitions | ForEach-Object { Convert-LWWebDisciplineDefinition -Definition $_ -SelectedNames $magnakaiSelected })
+        SelectedKai           = @($kaiSelected)
+        SelectedMagnakai      = @($magnakaiSelected)
+        WeaponskillWeapon     = $weaponskillWeapon
+        WeaponmasteryWeapons  = @($weaponmasteryWeapons)
+        ImprovedDisciplines   = @($improvedDisciplines)
+        LoreCirclesCompleted  = @($completedLoreCircles)
+        LoreCircles           = @(
+            foreach ($definition in @($loreCircleDefinitions | Sort-Object @{ Expression = { Get-LWLoreCircleDisplayOrder -Name ([string]$_.Name) } }, @{ Expression = { [string]$_.Name } })) {
+                $required = if ((Test-LWPropertyExists -Object $definition -Name 'Disciplines') -and $null -ne $definition.Disciplines) { @($definition.Disciplines | ForEach-Object { [string]$_ }) } else { @() }
+                [ordered]@{
+                    Name               = if ((Test-LWPropertyExists -Object $definition -Name 'Name') -and -not [string]::IsNullOrWhiteSpace([string]$definition.Name)) { [string]$definition.Name } else { '' }
+                    Disciplines        = @($required)
+                    MissingDisciplines = @($required | Where-Object { $magnakaiSelected -notcontains $_ })
+                    CombatSkillBonus   = if ((Test-LWPropertyExists -Object $definition -Name 'CombatSkillBonus') -and $null -ne $definition.CombatSkillBonus) { [int]$definition.CombatSkillBonus } else { 0 }
+                    EnduranceBonus     = if ((Test-LWPropertyExists -Object $definition -Name 'EnduranceBonus') -and $null -ne $definition.EnduranceBonus) { [int]$definition.EnduranceBonus } else { 0 }
+                    Completed          = [bool]($completedLoreCircles -contains [string]$definition.Name)
+                }
+            }
+        )
+    }
+}
+
+function Get-LWWebModeSnapshot {
+    $hasState = ($null -ne $script:GameState)
+    $difficulty = if ($hasState) { [string](Get-LWCurrentDifficulty) } else { 'Normal' }
+    $permadeath = if ($hasState) { [bool](Test-LWPermadeathEnabled) } else { $false }
+    $integrityState = ''
+    $integrityNote = ''
+
+    if ($hasState -and (Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and $null -ne $script:GameState.Run) {
+        $integrityState = if ((Test-LWPropertyExists -Object $script:GameState.Run -Name 'IntegrityState') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityState)) { [string]$script:GameState.Run.IntegrityState } else { '' }
+        $integrityNote = if ((Test-LWPropertyExists -Object $script:GameState.Run -Name 'IntegrityNote') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.IntegrityNote)) { [string]$script:GameState.Run.IntegrityNote } else { '' }
+    }
+
+    return [ordered]@{
+        HasState          = [bool]$hasState
+        Difficulty        = $difficulty
+        PermadeathEnabled = $permadeath
+        IntegrityState    = $integrityState
+        IntegrityNote     = $integrityNote
+        AchievementPools  = if ($hasState) { @(Get-LWModeAchievementPools) } else { @('Universal', 'Combat', 'Exploration') }
+        Definitions       = @(
+            foreach ($definition in @(Get-LWDifficultyDefinitions)) {
+                [ordered]@{
+                    Name              = [string]$definition.Name
+                    Description       = [string]$definition.Description
+                    AchievementNote   = [string]$definition.AchievementNote
+                    PermadeathAllowed = [bool]$definition.PermadeathAllowed
+                    Current           = ([string]$definition.Name -eq $difficulty)
+                }
+            }
+        )
+    }
+}
+
+function Convert-LWWebCombatLogEntry {
+    param(
+        [Parameter(Mandatory = $true)][object]$Entry,
+        [int]$Index = 0,
+        [string]$Source = 'archive'
+    )
+
+    $roundLog = @()
+    if ((Test-LWPropertyExists -Object $Entry -Name 'Log') -and $null -ne $Entry.Log) {
+        $roundLog = @(
+            foreach ($round in @($Entry.Log)) {
+                if ($null -ne $round) {
+                    Copy-LWWebValue -Value $round
+                }
+            }
+        )
+    }
+
+    return [ordered]@{
+        Index                     = $Index
+        Source                    = $Source
+        EnemyName                 = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyName') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.EnemyName)) { [string]$Entry.EnemyName } else { '' }
+        Outcome                   = if ((Test-LWPropertyExists -Object $Entry -Name 'Outcome') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Outcome)) { [string]$Entry.Outcome } else { '' }
+        BookNumber                = if ((Test-LWPropertyExists -Object $Entry -Name 'BookNumber') -and $null -ne $Entry.BookNumber) { [int]$Entry.BookNumber } else { $null }
+        BookTitle                 = if ((Test-LWPropertyExists -Object $Entry -Name 'BookTitle') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.BookTitle)) { [string]$Entry.BookTitle } else { '' }
+        Section                   = if ((Test-LWPropertyExists -Object $Entry -Name 'Section') -and $null -ne $Entry.Section) { [int]$Entry.Section } else { $null }
+        RoundCount                = if ((Test-LWPropertyExists -Object $Entry -Name 'RoundCount') -and $null -ne $Entry.RoundCount) { [int]$Entry.RoundCount } else { @($Entry.Log).Count }
+        PlayerEnd                 = if ((Test-LWPropertyExists -Object $Entry -Name 'PlayerEnd') -and $null -ne $Entry.PlayerEnd) { [int]$Entry.PlayerEnd } else { 0 }
+        PlayerEnduranceMax        = if ((Test-LWPropertyExists -Object $Entry -Name 'PlayerEnduranceMax') -and $null -ne $Entry.PlayerEnduranceMax) { [int]$Entry.PlayerEnduranceMax } else { $null }
+        EnemyEnd                  = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyEnd') -and $null -ne $Entry.EnemyEnd) { [int]$Entry.EnemyEnd } else { 0 }
+        EnemyEnduranceMax         = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyEnduranceMax') -and $null -ne $Entry.EnemyEnduranceMax) { [int]$Entry.EnemyEnduranceMax } else { $null }
+        Weapon                    = if ((Test-LWPropertyExists -Object $Entry -Name 'Weapon') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Weapon)) { [string]$Entry.Weapon } else { '' }
+        Mode                      = if ((Test-LWPropertyExists -Object $Entry -Name 'Mode') -and -not [string]::IsNullOrWhiteSpace([string]$Entry.Mode)) { [string]$Entry.Mode } else { '' }
+        Mindblast                 = [bool]((Test-LWPropertyExists -Object $Entry -Name 'Mindblast') -and [bool]$Entry.Mindblast)
+        CanEvade                  = [bool]((Test-LWPropertyExists -Object $Entry -Name 'CanEvade') -and [bool]$Entry.CanEvade)
+        PlayerCombatSkill         = if ((Test-LWPropertyExists -Object $Entry -Name 'PlayerCombatSkill') -and $null -ne $Entry.PlayerCombatSkill) { [int]$Entry.PlayerCombatSkill } else { $null }
+        EnemyCombatSkill          = if ((Test-LWPropertyExists -Object $Entry -Name 'EnemyCombatSkill') -and $null -ne $Entry.EnemyCombatSkill) { [int]$Entry.EnemyCombatSkill } else { $null }
+        CombatRatio               = if ((Test-LWPropertyExists -Object $Entry -Name 'CombatRatio') -and $null -ne $Entry.CombatRatio) { [int]$Entry.CombatRatio } else { $null }
+        Notes                     = if ((Test-LWPropertyExists -Object $Entry -Name 'Notes') -and $null -ne $Entry.Notes) { @($Entry.Notes) } else { @() }
+        Log                       = @($roundLog)
+    }
+}
+
+function Get-LWWebCombatLogSnapshot {
+    if ($null -eq $script:GameState) {
+        return $null
+    }
+
+    $activeEntry = Get-LWCurrentCombatLogEntry
+    $history = @($script:GameState.History)
+    $entries = @()
+    for ($i = 0; $i -lt $history.Count; $i++) {
+        $entries += (Convert-LWWebCombatLogEntry -Entry $history[$i] -Index ($i + 1) -Source 'archive')
+    }
+
+    return [ordered]@{
+        Active  = if ($null -ne $activeEntry) { Convert-LWWebCombatLogEntry -Entry $activeEntry -Index 0 -Source 'active' } else { $null }
+        Entries = @($entries)
+        Recent  = @($entries | Select-Object -Last 12)
+        Count   = [int]$entries.Count
+    }
+}
+
+function Get-LWWebHelpSnapshot {
+    return [ordered]@{
+        PrimaryCommands = @(
+            [ordered]@{ Label = 'sheet'; Value = 'Return to the character sheet.' },
+            [ordered]@{ Label = 'inventory'; Value = 'Open inventory and resources.' },
+            [ordered]@{ Label = 'section <n>'; Value = 'Move to a numbered section.' },
+            [ordered]@{ Label = 'combat status'; Value = 'Open current combat state.' },
+            [ordered]@{ Label = 'combat log'; Value = 'Open detailed combat records.' },
+            [ordered]@{ Label = 'save'; Value = 'Save the current run.' },
+            [ordered]@{ Label = 'load'; Value = 'Load a saved run.' },
+            [ordered]@{ Label = 'modes'; Value = 'Review difficulty and permadeath state.' }
+        )
+        SafeCommands    = @(
+            'sheet',
+            'inventory',
+            'notes',
+            'history',
+            'help',
+            'disciplines',
+            'modes',
+            'stats',
+            'campaign',
+            'achievements',
+            'combat status',
+            'combat log',
+            'set <section>'
+        )
+    }
+}
+
 function Get-LWWebOptionEntries {
     param(
         [Parameter(Mandatory = $true)][object[]]$Items,
@@ -1916,8 +2122,12 @@ function Get-LWWebStateSnapshot {
                 saves            = @(Get-LWWebSaveEntries)
                 campaign         = $null
                 death            = $null
+                disciplines       = Get-LWWebDisciplineSnapshot
+                modes             = Get-LWWebModeSnapshot
+                combatLog         = $null
+                help              = Get-LWWebHelpSnapshot
                 pendingFlow      = $pendingFlow
-                availableScreens = @('welcome', 'sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'bookcomplete', 'help')
+                availableScreens = @('welcome', 'sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'modes', 'bookcomplete', 'help')
             }
         }
 
@@ -2012,15 +2222,21 @@ function Get-LWWebStateSnapshot {
             campaign         = Get-LWWebCampaignSnapshot
             death            = Get-LWWebDeathSnapshot
             achievements     = Get-LWWebAchievementSnapshot
+            disciplines      = Get-LWWebDisciplineSnapshot
+            modes            = Get-LWWebModeSnapshot
+            combatLog        = Get-LWWebCombatLogSnapshot
+            help             = Get-LWWebHelpSnapshot
             saves            = @(Get-LWWebSaveEntries)
             pendingFlow      = $pendingFlow
-            availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'death', 'bookcomplete', 'help')
+            availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'modes', 'death', 'bookcomplete', 'help')
             safeCommands     = @(
                 'sheet',
                 'inventory',
                 'notes',
                 'history',
                 'help',
+                'disciplines',
+                'modes',
                 'stats',
                 'campaign',
                 'achievements',
@@ -2070,7 +2286,7 @@ function Test-LWWebSafeCommand {
     }
 
     return (
-        $trimmed -match '^(sheet|inv|inventory|notes|history|help|disciplines)$' -or
+        $trimmed -match '^(sheet|inv|inventory|notes|history|help|disciplines|modes)$' -or
         $trimmed -match '^stats(\s+(overview|combat|survival))?$' -or
         $trimmed -match '^campaign(\s+(overview|books|combat|survival|milestones))?$' -or
         $trimmed -match '^achievements(\s+(overview|recent|unlocked|locked|progress|planned))?$' -or
