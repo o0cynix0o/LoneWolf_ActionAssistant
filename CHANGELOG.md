@@ -6,6 +6,10 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- hardened Book `7` section `335` confiscation:
+  - the section now reports the exact Weapons and weapon-like Special Items stashed for later recovery
+  - flagged saves that still have confiscatable gear are repaired by stashing the gear without repeating the ENDURANCE loss
+  - web parity automation now verifies the section strips Weapons, removes the Sommerswerd, records the recovery stash, and stays prompt-free
 - improved the local web launcher shutdown path:
   - `Start-LoneWolfWeb.ps1` and `Start-LoneWolfWeb.sh` now keep the terminal open with a press-Enter shutdown prompt
   - the web server now exposes a graceful local shutdown path that closes the long-lived PowerShell engine session before the HTTP process exits

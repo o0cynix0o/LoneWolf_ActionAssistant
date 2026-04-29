@@ -379,23 +379,7 @@ function Invoke-LWMagnakaiBookSevenWeaponConfiscation {
         [int]$EnduranceLoss = 0
     )
 
-    if (Test-LWStoryAchievementFlag -Name $FlagName) {
-        return
-    }
-
-    if ($EnduranceLoss -gt 0) {
-        [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName ("{0}LossApplied" -f $FlagName) -Delta (-1 * $EnduranceLoss) -MessagePrefix $Reason -FatalCause ("The ordeal at section {0} reduced your Endurance to zero." -f [int]$script:GameState.CurrentSection))
-    }
-    else {
-        Write-LWInfo $Reason
-    }
-
     $weapons = @(Get-LWInventoryItems -Type 'weapon')
-    if (@($weapons).Count -gt 0) {
-        Save-LWInventoryRecoveryEntry -Type 'weapon' -Items @($weapons)
-        Set-LWInventoryItems -Type 'weapon' -Items @()
-    }
-
     $weaponLikeSpecials = @(
         foreach ($group in @((Get-LWBookSevenWeaponLikeSpecialItemNames))) {
             foreach ($item in @($script:GameState.Inventory.SpecialItems)) {
@@ -407,11 +391,33 @@ function Invoke-LWMagnakaiBookSevenWeaponConfiscation {
     )
     $weaponLikeSpecials = @($weaponLikeSpecials | Select-Object -Unique)
 
+    $alreadyApplied = Test-LWStoryAchievementFlag -Name $FlagName
+    if ($alreadyApplied -and @($weapons).Count -eq 0 -and @($weaponLikeSpecials).Count -eq 0) {
+        return
+    }
+
+    if ($alreadyApplied) {
+        Write-LWWarn ("Section {0}: confiscation was already marked as handled, but carried confiscatable gear remains. Stashing it now." -f [int]$script:GameState.CurrentSection)
+    }
+    elseif ($EnduranceLoss -gt 0) {
+        [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName ("{0}LossApplied" -f $FlagName) -Delta (-1 * $EnduranceLoss) -MessagePrefix $Reason -FatalCause ("The ordeal at section {0} reduced your Endurance to zero." -f [int]$script:GameState.CurrentSection))
+    }
+    else {
+        Write-LWInfo $Reason
+    }
+
+    if (@($weapons).Count -gt 0) {
+        Save-LWInventoryRecoveryEntry -Type 'weapon' -Items @($weapons)
+        Set-LWInventoryItems -Type 'weapon' -Items @()
+        Write-LWInfo ("Section {0}: stashed Weapons for later recovery: {1}." -f [int]$script:GameState.CurrentSection, (Format-LWList -Items @($weapons)))
+    }
+
     if (@($weaponLikeSpecials).Count -gt 0) {
         Save-LWInventoryRecoveryEntry -Type 'special' -Items @($weaponLikeSpecials)
         foreach ($item in @($weaponLikeSpecials)) {
             [void](Remove-LWInventoryItemSilently -Type 'special' -Name ([string]$item) -Quantity 1)
         }
+        Write-LWInfo ("Section {0}: stashed weapon-like Special Items for later recovery: {1}." -f [int]$script:GameState.CurrentSection, (Format-LWList -Items @($weaponLikeSpecials)))
     }
 
     Set-LWStoryAchievementFlag -Name $FlagName
