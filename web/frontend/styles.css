@@ -474,6 +474,52 @@ h1 {
   gap: 0.4rem;
 }
 
+.discipline-groups {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.discipline-group {
+  padding: 0.8rem;
+  border: 1px solid rgba(103, 93, 57, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.discipline-group h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+
+.discipline-group-kai h3 {
+  color: #b9dba2;
+}
+
+.discipline-group-magnakai h3 {
+  color: #9ccde3;
+}
+
+.discipline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.discipline-chip {
+  display: block;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid rgba(103, 93, 57, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  font-size: 0.88rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
 .inline-form {
   align-content: start;
 }
@@ -664,6 +710,16 @@ h1 {
   .inventory-actions-grid,
   .inventory-grid,
   .kv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .discipline-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .discipline-grid {
     grid-template-columns: 1fr;
   }
 }

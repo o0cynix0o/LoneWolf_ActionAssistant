@@ -38,6 +38,8 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - added browser-side Gold and END adjustment controls plus prompt-backed `Use Meal` and `Use Healing Potion` actions
   - the web session payload now includes slot-aware inventory section snapshots and live recovery-stash summaries so the browser can render the same inventory shape the engine is enforcing
   - this slice was verified both against the direct long-lived PowerShell session host and through the local HTTP server
+- reorganized the tracked web Overview sheet discipline panel by ruleset so Kai and Magnakai now render as separate grouped sections instead of a single flat list
+- compacted the tracked web Overview discipline display into a multi-column chip grid so individual disciplines no longer waste a full row of vertical space
 - tightened the default desktop web split so the reader pane gives less empty margin around book text and the app pane gets more working room
 - extended the tracked web scaffold into the first prompt-backed book-transition surface:
   - fixed the `continueBook` flow so browser-side Book Complete continuation can enter the next-book setup path instead of failing before the first prompt

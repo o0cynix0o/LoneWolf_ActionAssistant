@@ -247,12 +247,25 @@ function renderSummaryCards(payload) {
   `).join('');
 }
 
+function renderDisciplineGroup(title, disciplines, tone = '') {
+  const list = safeArray(disciplines);
+  const toneClass = tone ? ` discipline-group-${tone}` : '';
+  return `
+    <div class="discipline-group${toneClass}">
+      <h3>${escapeHtml(title)}</h3>
+      ${list.length ? `
+        <div class="discipline-grid">
+          ${list.map((item) => `<span class="discipline-chip">${escapeHtml(item)}</span>`).join('')}
+        </div>
+      ` : '<p class="muted">(none)</p>'}
+    </div>
+  `;
+}
+
 function renderOverview(payload) {
   const campaign = payload.campaign || null;
-  const disciplines = [
-    ...safeArray(payload.character?.Disciplines),
-    ...safeArray(payload.character?.MagnakaiDisciplines),
-  ];
+  const kaiDisciplines = safeArray(payload.character?.Disciplines);
+  const magnakaiDisciplines = safeArray(payload.character?.MagnakaiDisciplines);
 
   return `
     <section class="panel">
@@ -266,9 +279,12 @@ function renderOverview(payload) {
     </section>
     <section class="panel">
       <h2>Disciplines</h2>
-      <div class="inventory-list">
-        ${disciplines.length ? disciplines.map((item) => `<span class="pill">${item}</span>`).join(' ') : '<p class="muted">(none recorded)</p>'}
-      </div>
+      ${(kaiDisciplines.length || magnakaiDisciplines.length) ? `
+        <div class="discipline-groups">
+          ${renderDisciplineGroup('Kai', kaiDisciplines, 'kai')}
+          ${renderDisciplineGroup('Magnakai', magnakaiDisciplines, 'magnakai')}
+        </div>
+      ` : '<p class="muted">(none recorded)</p>'}
     </section>
     <section class="panel">
       <h2>Campaign Snapshot</h2>

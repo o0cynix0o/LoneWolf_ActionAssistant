@@ -86,6 +86,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - current quick-pick context now also covers the Book `6` / `7` starting-gear prompts instead of dropping to a bare `Book X choice #n` text box
   - loading a `.bak-...` recovery save no longer rewrites the default `last save` pointer; backup loads now stay detached until the player saves them manually
   - the local web bootstrap now skips stale backup pointers and falls back to the newest normal `.json` save when needed
+  - the main web Overview sheet now groups disciplines by ruleset, with separate Kai and Magnakai sections instead of one flat mixed list
+  - the web discipline panel now uses a compact multi-column chip grid so overview sheets stop wasting a full row per discipline
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
