@@ -740,6 +740,15 @@ Current checkpoint:
     in both shells:
     - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS7.txt`
     - `testing/logs/WEB_PARITY_DEATH_SMOKE_PS51.txt`
+  - web parity transition validation now covers Book Complete -> `continueBook`
+    -> prompt-backed Book `6` to `7` continuation, including Magnakai
+    discipline, Weaponmastery, safekeeping, starting-gear payloads, and final
+    carried-state assertions in both shells:
+    - `testing/logs/WEB_PARITY_TRANSITION_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_TRANSITION_SMOKE_PS51.txt`
+  - transition prompt context now keeps singleton Special Item lists array-shaped
+    under strict mode and labels safekeeping with the real target book during
+    `continueBook`
 
 ## Tracking Rules
 

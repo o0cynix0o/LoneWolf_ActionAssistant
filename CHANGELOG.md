@@ -6,6 +6,15 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- added repeatable web book-transition parity validation for M6:
+  - `testing/tmp/web-parity-transition-smoke.ps1` builds a disposable completed Book `6` save, enters the browser-side Book Complete screen, triggers `continueBook`, and drives the prompt-backed transition into Book `7`
+  - the transition smoke verifies that Magnakai discipline, Weaponmastery, safekeeping, and starting-gear prompt payloads stay readable and web-safe during the handoff
+  - the final Book `7` state is checked for a living section `1` start, preserved carried Special Items, preserved safekeeping storage, cleared old Backpack / Herb Pouch contents, appended discipline / Weaponmastery picks, and the expected `Power-Key`
+  - fixed transition prompt context hardening found by the smoke: singleton Special Item arrays now stay array-shaped under strict mode, and the safekeeping prompt labels the real target book instead of advancing one book too far
+  - validated the transition smoke in both shells, with the broader web flow smoke rerun as a regression guard:
+    - `testing/logs/WEB_PARITY_TRANSITION_SMOKE_PS7.txt`
+    - `testing/logs/WEB_PARITY_TRANSITION_SMOKE_PS51.txt`
+    - `testing/logs/WEB_PARITY_FLOW_SMOKE_PS7.txt`
 - added repeatable web death/recovery parity validation for M6:
   - `testing/tmp/web-parity-death-smoke.ps1` creates a disposable run, advances to a rewindable checkpoint, saves to a sandbox path, forces an ENDURANCE death through the web action layer, verifies the death snapshot/review payloads, and rewinds back to a living section
   - the death smoke preserves the pre-existing local `data/last-save.txt` pointer after using its sandbox save

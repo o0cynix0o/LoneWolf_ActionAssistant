@@ -217,9 +217,9 @@ The web migration still needs explicit implementation work for:
 
 - complete structured pending-choice modeling for remaining shop, loot,
   payment, section-choice, make-room, safekeeping, and transition edge cases
-- deeper API/UI parity harnesses for transition, achievement, book-automation,
-  and browser-DOM flows now that local flow coverage exists for setup,
-  save/load, inventory recovery, combat, and death/recovery
+- deeper API/UI parity harnesses for achievement, book-automation, and
+  browser-DOM flows now that local flow coverage exists for setup, save/load,
+  inventory recovery, combat, death/recovery, and book transition
 - cross-platform launcher and packaging hardening
 - browser polish and parity review for long combat archives, history-heavy
   runs, and book-complete/campaign-heavy views
@@ -244,6 +244,10 @@ The tracked migration slice has established:
   tab payloads in both shells
 - first repeatable web parity death/recovery validation for ENDURANCE death,
   dead-state review payloads, and browser-action rewind in both shells
+- first repeatable web parity book-transition validation for Book Complete ->
+  `continueBook` -> Book `6` to `7` continuation, including discipline,
+  Weaponmastery, safekeeping, starting-gear payloads, and carried-state checks in
+  both shells
 
 That does not complete parity, but it does establish the correct direction for
 the rest of the work.

@@ -1402,7 +1402,7 @@ function Get-LWWebPendingContextText {
     $screenData = if ($null -ne $script:LWUi) { $script:LWUi.ScreenData } else { $null }
 
     if ($screenName -eq 'disciplineselect' -and $null -ne $screenData) {
-        $available = if (Test-LWPropertyExists -Object $screenData -Name 'Available') { @($screenData.Available) } else { @() }
+        $available = @(if (Test-LWPropertyExists -Object $screenData -Name 'Available') { $screenData.Available })
         $count = if (Test-LWPropertyExists -Object $screenData -Name 'Count') { [int]$screenData.Count } else { 1 }
         $ruleSetName = if ((Test-LWPropertyExists -Object $screenData -Name 'RuleSet') -and -not [string]::IsNullOrWhiteSpace([string]$screenData.RuleSet)) { [string]$screenData.RuleSet } else { 'Kai' }
         $lines = @(
@@ -1428,12 +1428,10 @@ function Get-LWWebPendingContextText {
 
     if ($promptText -match '^Choose\s+(\d+)\s+mastered weapon number\(s\) separated by commas$') {
         $count = [int]$matches[1]
-        $exclude = if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'WeaponmasteryWeapons')) {
-            @($script:GameState.Character.WeaponmasteryWeapons | ForEach-Object { [string]$_ })
+        $exclude = @(if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'WeaponmasteryWeapons')) {
+                $script:GameState.Character.WeaponmasteryWeapons | ForEach-Object { [string]$_ }
         }
-        else {
-            @()
-        }
+        )
         $available = @(Get-LWMagnakaiWeaponmasteryOptions | Where-Object { $exclude -notcontains [string]$_ })
         $lines = @('Weaponmastery', '')
         for ($i = 0; $i -lt $available.Count; $i++) {
@@ -1446,12 +1444,10 @@ function Get-LWWebPendingContextText {
 
     if ([string]$Flow.Type -eq 'continueBook' -and $promptText -match '^Enter\s+(\d+)\s+number\(s\) separated by commas$') {
         $count = [int]$matches[1]
-        $exclude = if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'MagnakaiDisciplines')) {
-            @($script:GameState.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ })
+        $exclude = @(if ($null -ne $script:GameState.Character -and (Test-LWPropertyExists -Object $script:GameState.Character -Name 'MagnakaiDisciplines')) {
+                $script:GameState.Character.MagnakaiDisciplines | ForEach-Object { [string]$_ }
         }
-        else {
-            @()
-        }
+        )
         $available = @($script:GameData.MagnakaiDisciplines | Where-Object { $exclude -notcontains [string]$_.Name })
         $lines = @('Choose Magnakai Discipline', '')
         for ($i = 0; $i -lt $available.Count; $i++) {
@@ -1465,13 +1461,21 @@ function Get-LWWebPendingContextText {
     }
 
     if ($promptText -eq 'Safekeeping choice') {
-        $bookNumber = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 0 }
-        $nextBook = if ($bookNumber -gt 0) { $bookNumber + 1 } else { 0 }
-        $continueLabel = if ($nextBook -gt 0) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { 'the next book' }
-        $carriedItems = if ($null -ne $script:GameState.Inventory) { @($script:GameState.Inventory.SpecialItems) } else { @() }
-        $storedItems = if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { @($script:GameState.Storage.SafekeepingSpecialItems) } else { @() }
+        $currentBookNumber = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.BookNumber) { [int]$script:GameState.Character.BookNumber } else { 0 }
+        $targetBookNumber = if ([string]$Flow.Type -eq 'continueBook' -and $null -ne $Flow.Data -and (Test-LWPropertyExists -Object $Flow.Data -Name 'BookNumber') -and [int]$Flow.Data.BookNumber -gt 0) {
+            [int]$Flow.Data.BookNumber
+        }
+        elseif ($currentBookNumber -gt 0) {
+            $currentBookNumber + 1
+        }
+        else {
+            0
+        }
+        $continueLabel = if ($targetBookNumber -gt 0) { Format-LWBookLabel -BookNumber $targetBookNumber -IncludePrefix } else { 'the next book' }
+        $carriedItems = @(if ($null -ne $script:GameState.Inventory) { $script:GameState.Inventory.SpecialItems })
+        $storedItems = @(if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { $script:GameState.Storage.SafekeepingSpecialItems })
         $lines = @(
-            ('Book {0} Safekeeping' -f $nextBook),
+            ('Book {0} Safekeeping' -f $targetBookNumber),
             '',
             ('Carried Special Items: {0}' -f $(if ($carriedItems.Count -gt 0) { $carriedItems -join ', ' } else { '(none)' })),
             ('Safekeeping: {0}' -f $(if ($storedItems.Count -gt 0) { $storedItems -join ', ' } else { '(none)' })),
@@ -1489,7 +1493,7 @@ function Get-LWWebPendingContextText {
     }
 
     if ($promptText -eq 'Safekeep which Special Item') {
-        $available = if ($null -ne $script:GameState.Inventory) { @($script:GameState.Inventory.SpecialItems) } else { @() }
+        $available = @(if ($null -ne $script:GameState.Inventory) { $script:GameState.Inventory.SpecialItems })
         $lines = @('Choose carried Special Items to leave in safekeeping', '')
         for ($i = 0; $i -lt $available.Count; $i++) {
             $lines += ("{0}. {1}" -f ($i + 1), [string]$available[$i])
@@ -1499,7 +1503,7 @@ function Get-LWWebPendingContextText {
     }
 
     if ($promptText -eq 'Reclaim which Special Item') {
-        $available = if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { @($script:GameState.Storage.SafekeepingSpecialItems) } else { @() }
+        $available = @(if ($null -ne $script:GameState.Storage -and (Test-LWPropertyExists -Object $script:GameState.Storage -Name 'SafekeepingSpecialItems')) { $script:GameState.Storage.SafekeepingSpecialItems })
         $lines = @('Reclaim stored Special Items', '')
         for ($i = 0; $i -lt $available.Count; $i++) {
             $lines += ("{0}. {1}" -f ($i + 1), [string]$available[$i])
