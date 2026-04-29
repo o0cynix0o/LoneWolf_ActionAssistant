@@ -346,6 +346,10 @@ function renderOverview(payload) {
   const campaign = payload.campaign || null;
   const kaiDisciplines = safeArray(payload.character?.Disciplines);
   const magnakaiDisciplines = safeArray(payload.character?.MagnakaiDisciplines);
+  const sectionsVisited = campaign?.SectionsVisited ?? campaign?.TotalSectionsVisited ?? 0;
+  const victories = campaign?.Victories ?? campaign?.TotalVictories ?? 0;
+  const deaths = campaign?.Deaths ?? campaign?.TotalDeaths ?? 0;
+  const rewindsUsed = campaign?.RewindsUsed ?? campaign?.TotalRewindsUsed ?? 0;
 
   return `
     <section class="panel">
@@ -372,10 +376,10 @@ function renderOverview(payload) {
         <div class="kv-grid">
           <div class="kv"><span>Difficulty</span><strong>${text(campaign.Difficulty)}</strong></div>
           <div class="kv"><span>Permadeath</span><strong>${campaign.PermadeathEnabled ? 'On' : 'Off'}</strong></div>
-          <div class="kv"><span>Sections Visited</span><strong>${text(campaign.SectionsVisited, '0')}</strong></div>
+          <div class="kv"><span>Sections Visited</span><strong>${text(sectionsVisited, '0')}</strong></div>
           <div class="kv"><span>Run Style</span><strong>${text(campaign.RunStyle)}</strong></div>
-          <div class="kv"><span>Victories</span><strong>${text(campaign.Victories, '0')}</strong></div>
-          <div class="kv"><span>Deaths / Rewinds</span><strong>${text(campaign.Deaths, '0')} / ${text(campaign.RewindsUsed, '0')}</strong></div>
+          <div class="kv"><span>Victories</span><strong>${text(victories, '0')}</strong></div>
+          <div class="kv"><span>Deaths / Rewinds</span><strong>${text(deaths, '0')} / ${text(rewindsUsed, '0')}</strong></div>
         </div>
       ` : '<p class="muted">No campaign summary is available until a run is loaded.</p>'}
     </section>

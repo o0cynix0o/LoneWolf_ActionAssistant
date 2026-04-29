@@ -91,6 +91,8 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - the tracked browser shell now includes browser-native `Stats`, `Campaign`, and `Achievements` tabs instead of forcing the run-review surfaces back through command text
   - the web session payload now exposes the live current-book stats summary and a structured achievement snapshot with current-book entries, recent unlocks, and per-book totals
   - backend `stats`, `campaign`, and `achievements` screen changes now sync back into the browser tab state, so safe commands and screen shortcuts land on the matching review tab instead of leaving the browser on stale content
+  - the Campaign tab hotfix now sends the full engine campaign summary instead of the older lightweight web stub, so browser-side campaign review once again has tracked-book history and recent achievement data to render
+  - the Overview campaign snapshot was adjusted to tolerate the richer campaign payload without losing its quick `Sections / Victories / Deaths / Rewinds` summary rows
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save

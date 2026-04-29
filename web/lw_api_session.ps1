@@ -599,54 +599,7 @@ function Get-LWWebCampaignSnapshot {
         return $null
     }
 
-    $completedBooks = if ($null -ne $script:GameState.Character -and $null -ne $script:GameState.Character.CompletedBooks) {
-        @($script:GameState.Character.CompletedBooks)
-    }
-    else {
-        @()
-    }
-
-    $difficulty = if (
-        (Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and
-        $null -ne $script:GameState.Run -and
-        (Test-LWPropertyExists -Object $script:GameState.Run -Name 'Difficulty') -and
-        -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Run.Difficulty)
-    ) {
-        [string]$script:GameState.Run.Difficulty
-    }
-    else {
-        'Normal'
-    }
-
-    $permadeathEnabled = (
-        (Test-LWPropertyExists -Object $script:GameState -Name 'Run') -and
-        $null -ne $script:GameState.Run -and
-        (Test-LWPropertyExists -Object $script:GameState.Run -Name 'Permadeath') -and
-        [bool]$script:GameState.Run.Permadeath
-    )
-
-    $currentBookStats = if ($null -ne $script:GameState.CurrentBookStats) { $script:GameState.CurrentBookStats } else { $null }
-
-    return [ordered]@{
-        CharacterName     = if ($null -ne $script:GameState.Character) { [string]$script:GameState.Character.Name } else { '' }
-        Difficulty        = $difficulty
-        PermadeathEnabled = [bool]$permadeathEnabled
-        CurrentBookLabel  = ("Book {0} - {1}" -f ([int]$script:GameState.Character.BookNumber), (Get-LWBookTitle -BookNumber ([int]$script:GameState.Character.BookNumber)))
-        CurrentSection    = [int]$script:GameState.CurrentSection
-        CompletedBooks    = @($completedBooks)
-        CombatCount       = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'CombatCount')) { [int]$currentBookStats.CombatCount } else { 0 }
-        Victories         = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'Victories')) { [int]$currentBookStats.Victories } else { 0 }
-        Defeats           = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'Defeats')) { [int]$currentBookStats.Defeats } else { 0 }
-        Evades            = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'Evades')) { [int]$currentBookStats.Evades } else { 0 }
-        Deaths            = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'CombatDeaths')) { [int]$currentBookStats.CombatDeaths } else { 0 }
-        RewindsUsed       = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'RewindsUsed')) { [int]$currentBookStats.RewindsUsed } else { 0 }
-        BooksCompleted    = @($completedBooks).Count
-        SectionsVisited   = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'SectionsVisited')) { [int]$currentBookStats.SectionsVisited } else { 0 }
-        CurrentGold       = [int]$script:GameState.Inventory.GoldCrowns
-        CurrentEndurance  = [int]$script:GameState.Character.EnduranceCurrent
-        EnduranceMax      = [int]$script:GameState.Character.EnduranceMax
-        RunStyle          = if ($null -ne $currentBookStats -and (Test-LWPropertyExists -Object $currentBookStats -Name 'PartialTracking') -and [bool]$currentBookStats.PartialTracking) { 'Partial Tracking' } else { 'Tracked Run' }
-    }
+    return (Copy-LWWebValue (Get-LWCampaignSummary))
 }
 
 function Get-LWWebAchievementEntrySnapshot {

@@ -12,6 +12,10 @@ This file is meant to summarize shipped behavior at release time, not every inte
   - the web session payload now exposes a structured achievement snapshot with current-book entries, recent unlocks, and per-book totals
   - backend screen changes to `stats`, `campaign`, and `achievements` now sync back into the browser tab state instead of leaving the frontend parked on an older tab
   - verified against the live local HTTP server by switching the active session through `stats`, `campaign`, and `achievements` and checking the rendered browser DOM
+- fixed the browser-side Campaign tab payload mismatch:
+  - the web session now sends the full engine campaign summary instead of the older lightweight campaign stub
+  - browser-side campaign review now receives tracked-book history and recent achievement data, so the Campaign tab no longer renders as a mostly empty shell
+  - the Overview campaign snapshot now reads the richer campaign payload without regressing its quick summary rows
 - began the tracked web-GUI and cross-platform migration scaffold:
   - added the formal migration plan in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
   - added the Phase `0` parity inventory in `docs/WEB_PARITY_INVENTORY.md`
