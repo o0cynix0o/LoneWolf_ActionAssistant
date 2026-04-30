@@ -6,6 +6,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- suppressed the web server's duplicate startup URL when launched through the web launcher scripts
 - removed the redundant web Achievement Overview visible-progress tile; current-book progress now lives in the detailed Current Book Targets panel
 - hardened Book `7` section `335` confiscation:
   - the section now strips all carried gear into the hidden confiscated-equipment store, leaving the browser Inventory tab empty while Zahda has your belongings

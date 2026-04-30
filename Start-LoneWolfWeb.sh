@@ -81,7 +81,7 @@ printf 'URL: %s\n\n' "$URL"
 printf 'Press Enter in this window to stop the web server.\n\n'
 
 cd "$APPDIR"
-"$PYTHON_BIN" "$APPDIR/web/app_server.py" --host "$HOST" --port "$PORT" &
+"$PYTHON_BIN" "$APPDIR/web/app_server.py" --host "$HOST" --port "$PORT" --quiet &
 SERVER_PID=$!
 
 read _ || true

@@ -232,10 +232,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Lone Wolf web migration scaffold")
     parser.add_argument("--host", default="localhost")
     parser.add_argument("--port", type=int, default=int(os.environ.get("LONEWOLF_HTTP_PORT", "8797")))
+    parser.add_argument("--quiet", action="store_true", help="Do not print the startup URL.")
     args = parser.parse_args()
 
     server = ThreadingHTTPServer((args.host, args.port), LoneWolfHandler)
-    print(f"Lone Wolf web app: http://{args.host}:{args.port}", flush=True)
+    if not args.quiet:
+        print(f"Lone Wolf web app: http://{args.host}:{args.port}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

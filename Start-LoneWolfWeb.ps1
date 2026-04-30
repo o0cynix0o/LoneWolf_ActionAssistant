@@ -66,7 +66,7 @@ $serverProcess = $null
 try {
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $startInfo.FileName = [string]$pythonCommand.Source
-    $startInfo.Arguments = ('"{0}" --host "{1}" --port {2}' -f $serverScript, $ListenHost, $Port)
+    $startInfo.Arguments = ('"{0}" --host "{1}" --port {2} --quiet' -f $serverScript, $ListenHost, $Port)
     $startInfo.WorkingDirectory = [string]$root
     $startInfo.UseShellExecute = $false
     $startInfo.CreateNoWindow = $false
