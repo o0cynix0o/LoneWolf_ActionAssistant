@@ -1066,8 +1066,25 @@ function renderInventorySection(section) {
   `;
 }
 
+function countInventoryItems(value) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => item !== null && item !== undefined && String(item).trim() !== '').length;
+  }
+  return value === null || value === undefined || String(value).trim() === '' ? 0 : 1;
+}
+
 function renderInventory(payload) {
   const inventory = payload.inventory || {};
+  const confiscated = inventory.Confiscated || {};
+  const hasStoryConfiscated = Boolean(confiscated.HasAny);
+  const storyRecoveryCounts = [
+    { label: 'Weapons', count: countInventoryItems(confiscated.Weapons) },
+    { label: 'Backpack', count: countInventoryItems(confiscated.BackpackItems) },
+    { label: 'Herb Pouch', count: countInventoryItems(confiscated.HerbPouchItems) },
+    { label: 'Special', count: countInventoryItems(confiscated.SpecialItems) },
+    { label: 'Pocket', count: countInventoryItems(confiscated.PocketSpecialItems) },
+  ];
+  const storyRecoveryItemCount = storyRecoveryCounts.reduce((sum, entry) => sum + entry.count, 0);
   const sections = [
     inventory.Sections?.weapon,
     inventory.Sections?.backpack,
@@ -1101,6 +1118,19 @@ function renderInventory(payload) {
         <div class="kv"><span>Save Path</span><strong>${text(payload.session?.SavePath, '(not set)')}</strong></div>
       </div>
     </section>
+    ${hasStoryConfiscated ? `
+      <section class="panel">
+        <h2>Story Recovery</h2>
+        <div class="kv-grid">
+          <div class="kv"><span>Status</span><strong>Saved</strong></div>
+          <div class="kv"><span>Source</span><strong>Book ${text(confiscated.BookNumber, '?')} Section ${text(confiscated.Section, '?')}</strong></div>
+          <div class="kv"><span>Groups</span><strong>${storyRecoveryCounts.filter((entry) => entry.count > 0).length}</strong></div>
+          <div class="kv"><span>Items</span><strong>${storyRecoveryItemCount}</strong></div>
+          <div class="kv"><span>Gold</span><strong>${text(confiscated.GoldCrowns, '0')}</strong></div>
+          <div class="kv"><span>Herb Pouch</span><strong>${confiscated.HasHerbPouch ? 'Saved' : 'None'}</strong></div>
+        </div>
+      </section>
+    ` : ''}
     <section class="panel">
       <h2>Quick Actions</h2>
       <div class="inventory-actions-grid">
@@ -1193,7 +1223,7 @@ function renderInventory(payload) {
             <button type="submit"${recoveryDisabledAttribute}>Recover Section</button>
             <button type="button" class="button-secondary" id="inventory-recover-all-btn"${recoveryDisabledAttribute}>Recover All</button>
           </div>
-          ${hasRecoveryStash ? '' : '<p class="muted">No recovery stash is available.</p>'}
+          ${hasRecoveryStash ? '' : `<p class="muted">${hasStoryConfiscated ? 'No manual recovery stash is available. Story-confiscated gear is saved separately.' : 'No recovery stash is available.'}</p>`}
         </form>
       </div>
     </section>
