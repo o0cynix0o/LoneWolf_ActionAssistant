@@ -8,7 +8,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 - restored the web Combat tab life meters:
   - active browser combats now expose the same player/endurance pool and combat-ratio breakdown used by the terminal combat screen
-  - the web UI renders side-by-side Lone Wolf and enemy END bars with the old CLI-style meter text for quick readback
+  - the web UI renders side-by-side Lone Wolf and enemy END bars with numeric END readouts
   - browser screen routing now lands on the Combat tab when the engine reports the combat screen
   - active-combat state shape is hardened so older/incomplete saves get the current potion/bow restriction defaults before rendering
   - the web flow and browser-DOM smokes now lock the combat meter payload and rendered markup

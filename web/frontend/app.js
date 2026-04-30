@@ -1208,13 +1208,6 @@ function getCombatMeterPercent(current, max) {
   return Math.max(0, Math.min(100, (clampedCurrent / safeMax) * 100));
 }
 
-function getCombatMeterText(current, max, width = 18) {
-  const safeMax = Math.max(1, numberOrFallback(max, 0));
-  const clampedCurrent = Math.max(0, Math.min(numberOrFallback(current, 0), safeMax));
-  const filled = Math.max(0, Math.min(width, Math.round((clampedCurrent / safeMax) * width)));
-  return `[${'#'.repeat(filled)}${'-'.repeat(width - filled)}]`;
-}
-
 function getCombatMeterTone(current, max) {
   const percent = getCombatMeterPercent(current, max);
   if (percent <= 25) {
@@ -1232,7 +1225,6 @@ function renderCombatMeterCard({ label, current, max, combatSkill, enduranceLabe
   const clampedCurrent = Math.max(0, Math.min(currentValue, Math.max(maxValue, 0)));
   const percent = getCombatMeterPercent(currentValue, maxValue);
   const tone = getCombatMeterTone(currentValue, maxValue);
-  const meterText = getCombatMeterText(currentValue, maxValue);
   const ariaMax = Math.max(1, maxValue);
 
   return `
@@ -1248,7 +1240,6 @@ function renderCombatMeterCard({ label, current, max, combatSkill, enduranceLabe
       <div class="combat-meter-track" role="meter" aria-label="${escapeHtml(text(label))} endurance" aria-valuemin="0" aria-valuemax="${escapeHtml(String(ariaMax))}" aria-valuenow="${escapeHtml(String(clampedCurrent))}">
         <div class="combat-meter-fill ${tone}" style="width: ${percent.toFixed(2)}%"></div>
       </div>
-      <div class="combat-meter-text">${escapeHtml(meterText)}</div>
       ${note ? `<div class="combat-meter-note">${escapeHtml(note)}</div>` : ''}
     </article>
   `;

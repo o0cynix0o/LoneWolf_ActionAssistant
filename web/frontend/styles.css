@@ -800,14 +800,6 @@ h1 {
   background: linear-gradient(90deg, #8e3e35, var(--danger));
 }
 
-.combat-meter-text {
-  margin-top: 0.35rem;
-  color: var(--muted);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 0.82rem;
-  overflow-wrap: anywhere;
-}
-
 .combat-meter-note {
   margin-top: 0.35rem;
   color: var(--muted);

@@ -326,9 +326,10 @@ try {
     Assert-WebDomSmoke -Condition ($combatDom.Contains('Life Meters')) -Message ("Browser DOM did not render the combat life meter panel. DOM preview: {0}" -f $combatDomPreview)
     Assert-WebDomSmoke -Condition ($combatDom.Contains('Meter Dummy')) -Message 'Browser DOM did not render the active combat enemy name.'
     Assert-WebDomSmoke -Condition ($combatDom.Contains('combat-meter-card')) -Message 'Browser DOM did not include combat meter card markup.'
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('combat-meter-fill')) -Message 'Browser DOM did not render the combat meter bar.'
     Assert-WebDomSmoke -Condition ($combatDom.Contains('27 / 30')) -Message 'Browser DOM did not render the player END meter value.'
     Assert-WebDomSmoke -Condition ($combatDom.Contains('12 / 20')) -Message 'Browser DOM did not render the enemy END meter value.'
-    Assert-WebDomSmoke -Condition ($combatDom.Contains('[################--]')) -Message 'Browser DOM did not render the player CLI-style meter text.'
+    Assert-WebDomSmoke -Condition (-not $combatDom.Contains('[################--]')) -Message 'Browser DOM should not render the old CLI-style meter text.'
 
     '[PASS] Web browser DOM smoke'
 }
