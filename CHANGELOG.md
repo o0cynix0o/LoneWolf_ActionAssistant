@@ -6,7 +6,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
-- fixed the web Achievement Overview visible-progress cell so current-book achievement progress renders as names and readable progress text instead of object placeholders
+- removed the redundant web Achievement Overview visible-progress tile; current-book progress now lives in the detailed Current Book Targets panel
 - hardened Book `7` section `335` confiscation:
   - the section now strips all carried gear into the hidden confiscated-equipment store, leaving the browser Inventory tab empty while Zahda has your belongings
   - flagged saves that still have carried gear are repaired by stashing the gear without repeating the ENDURANCE loss

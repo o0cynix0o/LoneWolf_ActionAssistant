@@ -638,39 +638,6 @@ h1 {
   color: var(--ink);
 }
 
-.achievement-progress-summary {
-  display: grid;
-  gap: 0.42rem;
-  margin-top: 0.35rem;
-}
-
-.achievement-progress-row {
-  display: grid;
-  gap: 0.08rem;
-}
-
-.achievement-progress-summary strong {
-  display: block;
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--ink);
-}
-
-.achievement-progress-summary span {
-  display: block;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  color: var(--paper);
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.achievement-progress-summary em {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-style: normal;
-}
-
 .inventory-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
