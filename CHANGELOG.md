@@ -6,7 +6,7 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
-- bumped the current app/package version to `0.9.0` for the completed web-GUI milestone and final hardening before `1.0.0`
+- bumped the current pre-release app/package version to `0.9.0` for the completed web-GUI milestone and final hardening before the first release-ready `1.0.0` build
 - suppressed the web server's duplicate startup URL when launched through the web launcher scripts
 - removed the redundant web Achievement Overview visible-progress tile; current-book progress now lives in the detailed Current Book Targets panel
 - hardened Book `7` section `335` confiscation:

@@ -128,8 +128,10 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\testing\tmp\we
 
 M4 portable packaging is complete and remains the current release workflow.
 
-The portable zip remains the correct public-release format for the current
-`v0.9.0` app/package version, including the M6 web scaffold and launchers.
+The portable zip remains the correct packaging format for local hardening builds
+and future public releases. Current `v0.9.0` packages include the M6 web
+scaffold and launchers, but they are pre-release hardening artifacts; the app is
+not release-ready until `v1.0.0`.
 
 ## Future Packaging Options
 

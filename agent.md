@@ -16,7 +16,7 @@ For deeper project state, workflow details, and local report locations, use:
 
 ## Current Reality
 
-- App version: `0.9.0`
+- App version: `0.9.0` pre-release hardening
 - Main script: `lonewolf.ps1`
 - `main` is the public release branch
 - `main` is the operational source of truth for current recovery and stabilization work

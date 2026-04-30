@@ -1,6 +1,6 @@
 # Lone Wolf Action Assistant
 
-A PowerShell terminal companion for the **Lone Wolf** gamebooks. Current `main` is stamped as app/package version `v0.9.0` for the completed web-GUI milestone and final hardening before `v1.0.0`. The latest tagged public release remains `v0.8.0`.
+A PowerShell terminal companion for the **Lone Wolf** gamebooks. Current `main` is stamped as pre-release app/package version `v0.9.0` for the completed web-GUI milestone and final hardening before `v1.0.0`. It is not release-ready until `v1.0.0`; the latest tagged public release remains `v0.8.0`.
 
 This project is built to act like a digital Action Chart and play aid, not a replacement for the books. It handles the bookkeeping that tends to slow play down: character state, inventory, combat math, saves, notes, healing, book progression, stats, and achievements.
 
@@ -92,10 +92,10 @@ source-accurate fallback.
 
 ## Release Status
 
-- Current app/package version on `main`: `v0.9.0`
+- Current pre-release app/package version on `main`: `v0.9.0`
 - Latest tagged public release: `v0.8.0`
 - Current `main` coverage: Kai Books `1-5` plus Magnakai Books `6-7`
-- M6 web-GUI / cross-platform migration is complete on `main` and in final hardening before `v1.0.0`
+- M6 web-GUI / cross-platform migration is complete on `main`, but the app remains in final hardening and is not release-ready until `v1.0.0`
 - Current `main` Book `6` stabilization work includes sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`, plus the OG source-language follow-up slice at sections `16`, `27`, `96`, `137`, `165`, `169`, `205`, `211`, `248`, `273`, `295`, `316`, `318`, and `328`
 - [CHANGELOG.md](./CHANGELOG.md) tracks both public release history and current `Unreleased` main-branch work
 
@@ -115,7 +115,7 @@ source-accurate fallback.
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
 - Latest tagged public release: `v0.8.0`
-- Current `main` status: `v0.9.0` web-GUI milestone hardening with Book `7` / `Castle Death` support plus recent Book `6` DE and OG-source stabilization work
+- Current `main` status: `v0.9.0` pre-release web-GUI milestone hardening with Book `7` / `Castle Death` support plus recent Book `6` DE and OG-source stabilization work
 - [CHANGELOG.md](./CHANGELOG.md) tracks public release history and current unreleased `main` work
 
 ## Requirements
