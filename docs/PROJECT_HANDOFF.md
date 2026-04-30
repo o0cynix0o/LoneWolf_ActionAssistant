@@ -4,9 +4,9 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 
 ## Current Project State
 
-- App version: `0.8.0`
+- App version: `0.9.0`
 - Main script: `lonewolf.ps1`
-- Latest public release on `main`: `v0.8.0`
+- Latest tagged public release on `main`: `v0.8.0`
 - `main` remains the public release branch
 - current working branch is `main`
 - `main` is the operational source of truth for recovery and stabilization work
@@ -55,7 +55,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M5 Book `6` automation catch-up is complete on `main`
 - M6 web GUI and cross-platform migration is complete on `main` under the
   current validation policy
-- current stabilization work on `main` is architecture hardening cleanup, recent Book `6` DE support, and Book `7` validation after the `0.8.0` release
+- current stabilization work on `main` is `0.9.0` web-GUI milestone hardening, architecture cleanup, recent Book `6` DE support, and Book `7` validation before `1.0.0`
 - the formal migration plan for a web-GUI-first, cross-platform future now lives in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
 - the Phase `0` parity inventory for that migration now lives in `docs/WEB_PARITY_INVENTORY.md`
 - the initial tracked web scaffold now lives under `web/` with a PowerShell engine session host, a Python HTTP server, a browser frontend shell, and `Start-LoneWolfWeb.ps1`

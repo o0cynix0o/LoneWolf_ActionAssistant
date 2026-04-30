@@ -1,13 +1,12 @@
 # Lone Wolf Action Assistant
 
-A PowerShell terminal companion for the **Lone Wolf** gamebooks. The latest public release (`v0.8.0`) supports the full Kai sequence plus the first Magnakai book, and current `main` also carries unreleased Book `7` / `Castle Death` support plus recent Book `6` Definitive Edition stabilization work.
+A PowerShell terminal companion for the **Lone Wolf** gamebooks. Current `main` is stamped as app/package version `v0.9.0` for the completed web-GUI milestone and final hardening before `v1.0.0`. The latest tagged public release remains `v0.8.0`.
 
 This project is built to act like a digital Action Chart and play aid, not a replacement for the books. It handles the bookkeeping that tends to slow play down: character state, inventory, combat math, saves, notes, healing, book progression, stats, and achievements.
 
-Current `main` also includes the first tracked web-migration scaffold: a local
-browser UI shell backed by a Python HTTP server and a PowerShell engine session
-adapter, with the CLI still preserved as the source-accurate fallback while
-parity work continues.
+Current `main` includes the local browser GUI backed by a Python HTTP server and
+a PowerShell engine session adapter, with the CLI still preserved as the
+source-accurate fallback.
 
 ## What It Does
 
@@ -93,17 +92,18 @@ parity work continues.
 
 ## Release Status
 
-- Latest public release: `v0.8.0`
-- Released coverage: Kai Books `1-5` plus released Magnakai Book `6` support
-- Current `main` also includes unreleased Book `7` / `Castle Death` support
+- Current app/package version on `main`: `v0.9.0`
+- Latest tagged public release: `v0.8.0`
+- Current `main` coverage: Kai Books `1-5` plus Magnakai Books `6-7`
+- M6 web-GUI / cross-platform migration is complete on `main` and in final hardening before `v1.0.0`
 - Current `main` Book `6` stabilization work includes sections `2`, `17`, `98`, `158/293`, `170`, `275`, and `297`, plus the OG source-language follow-up slice at sections `16`, `27`, `96`, `137`, `165`, `169`, `205`, `211`, `248`, `273`, `295`, `316`, `318`, and `328`
 - [CHANGELOG.md](./CHANGELOG.md) tracks both public release history and current `Unreleased` main-branch work
 
 ## Scope
 
 - Focused on the Kai sequence plus current **Magnakai** support
-- Public release coverage currently reaches Book `6`
-- Current `main` also includes a local Book `7` / `Castle Death` implementation under stabilization
+- Current `main` coverage reaches Book `7` / `Castle Death`
+- The latest tagged public release covers through Book `6`
 - Intended for use alongside the books
 - Does **not** include book text
 - Designed to stay flexible when book-specific exceptions come up
@@ -114,8 +114,8 @@ parity work continues.
 - GitHub issues now use issue forms for bugs, DE differences, rule gaps, UX notes, and audit/build requests
 - GitHub milestones track the top-level roadmap
 - The GitHub Project board `Lone Wolf Tracker` is used for day-to-day issue triage
-- Current public release: `v0.8.0`
-- Current `main` status: local Book `7` / `Castle Death` support plus recent Book `6` DE and OG-source stabilization work
+- Latest tagged public release: `v0.8.0`
+- Current `main` status: `v0.9.0` web-GUI milestone hardening with Book `7` / `Castle Death` support plus recent Book `6` DE and OG-source stabilization work
 - [CHANGELOG.md](./CHANGELOG.md) tracks public release history and current unreleased `main` work
 
 ## Requirements

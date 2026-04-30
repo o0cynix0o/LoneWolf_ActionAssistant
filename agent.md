@@ -1,6 +1,6 @@
 # Lone Wolf Terminal - Agent Handoff
 
-Last updated: 2026-04-29
+Last updated: 2026-04-30
 
 ## What This File Is For
 
@@ -16,7 +16,7 @@ For deeper project state, workflow details, and local report locations, use:
 
 ## Current Reality
 
-- App version: `0.8.0`
+- App version: `0.9.0`
 - Main script: `lonewolf.ps1`
 - `main` is the public release branch
 - `main` is the operational source of truth for current recovery and stabilization work
