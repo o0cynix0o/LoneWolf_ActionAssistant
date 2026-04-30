@@ -684,6 +684,152 @@ h1 {
   margin-top: 0.2rem;
 }
 
+.combat-meter-panel {
+  border-color: rgba(204, 107, 90, 0.5);
+}
+
+.combat-meter-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.combat-meter-title-row h2 {
+  margin: 0;
+}
+
+.combat-meter-ratio {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.combat-meter-ratio span {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.combat-meter-ratio strong {
+  color: var(--gold);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 1rem;
+}
+
+.combat-meter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.combat-meter-card {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid rgba(103, 93, 57, 0.58);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.combat-meter-header,
+.combat-meter-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.combat-meter-header h3 {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.combat-meter-cs {
+  flex: 0 0 auto;
+  color: #8fd0e6;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.9rem;
+}
+
+.combat-meter-meta {
+  margin-top: 0.5rem;
+  color: var(--muted);
+}
+
+.combat-meter-meta span {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
+.combat-meter-meta strong {
+  color: var(--ink);
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.combat-meter-track {
+  height: 0.72rem;
+  margin-top: 0.45rem;
+  overflow: hidden;
+  border: 1px solid rgba(103, 93, 57, 0.6);
+  border-radius: 999px;
+  background: #0e140e;
+}
+
+.combat-meter-fill {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  transition: width 160ms ease;
+}
+
+.combat-meter-fill.meter-good {
+  background: linear-gradient(90deg, #5f9d57, var(--success));
+}
+
+.combat-meter-fill.meter-warning {
+  background: linear-gradient(90deg, #b29345, var(--gold));
+}
+
+.combat-meter-fill.meter-danger {
+  background: linear-gradient(90deg, #8e3e35, var(--danger));
+}
+
+.combat-meter-text {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.combat-meter-note {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.combat-meter-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.combat-meter-notes span {
+  padding: 0.18rem 0.5rem;
+  border: 1px solid rgba(103, 93, 57, 0.48);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(12, 17, 12, 0.42);
+  font-size: 0.78rem;
+}
+
 .completion-actions {
   margin-top: 0.95rem;
 }
@@ -1209,6 +1355,7 @@ h1 {
   .book-track-grid,
   .achievement-grid,
   .book-total-grid,
+  .combat-meter-grid,
   .inventory-actions-grid,
   .inventory-grid,
   .kv-grid {
@@ -1231,8 +1378,13 @@ h1 {
   }
 
   .detail-row,
+  .combat-meter-title-row,
   .achievement-card-header {
     flex-direction: column;
+  }
+
+  .combat-meter-title-row {
+    align-items: flex-start;
   }
 
   .detail-row strong {

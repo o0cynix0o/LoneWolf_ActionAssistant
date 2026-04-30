@@ -3324,6 +3324,8 @@ function New-LWCombatState {
         UsePlayerTargetEndurance = $false
         PlayerTargetEnduranceCurrent = 0
         PlayerTargetEnduranceMax = 0
+        CombatPotionsAllowed     = $true
+        BowRestricted            = $false
         SuppressShieldCombatSkillBonus = $false
         PlayerEnduranceLossMultiplier = 1
         PlayerCombatSkillModifier = 0

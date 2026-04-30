@@ -79,6 +79,16 @@ function New-WebDomSourceSave {
     $state.Inventory.SpecialItems = @('Book of the Magnakai')
     $state.Inventory.PocketSpecialItems = @('Diamond')
     $state.Inventory.GoldCrowns = 17
+    $state.Combat.Active = $true
+    $state.Combat.EnemyName = 'Meter Dummy'
+    $state.Combat.EnemyCombatSkill = 16
+    $state.Combat.EnemyEnduranceCurrent = 12
+    $state.Combat.EnemyEnduranceMax = 20
+    $state.Combat.EquippedWeapon = 'Sword'
+    $state.Combat.UseMindblast = $true
+    $state.Combat.MindblastCombatSkillBonus = 2
+    $state.Combat.CanEvade = $true
+    $state.Combat.Log = @()
     $state.Run = New-LWRunState -Difficulty 'Normal' -Permadeath:$false
     $state.Settings.SavePath = [string]$sourceSavePath
     $state.Settings.AutoSave = $false
@@ -274,6 +284,11 @@ try {
     $loadResponse = Invoke-RestMethod -Method Post -Uri "$baseUrl/api/action" -ContentType 'application/json' -Body (@{ action = 'loadGame'; path = [string]$sourceSavePath } | ConvertTo-Json -Compress)
     Assert-WebDomSmoke -Condition ([bool]$loadResponse.ok) -Message 'Could not load the DOM smoke source save through the API.'
     Assert-WebDomSmoke -Condition ([int]$loadResponse.payload.character.BookNumber -eq 7) -Message 'DOM smoke source save should load as Book 7.'
+    Assert-WebDomSmoke -Condition ([bool]$loadResponse.payload.combat.Active) -Message 'DOM smoke source save should include active combat.'
+    Assert-WebDomSmoke -Condition ([int]$loadResponse.payload.combat.PlayerEnduranceCurrent -eq 27) -Message 'Combat payload did not expose player END current.'
+    Assert-WebDomSmoke -Condition ([int]$loadResponse.payload.combat.PlayerEnduranceMax -eq 30) -Message 'Combat payload did not expose player END max.'
+    Assert-WebDomSmoke -Condition ([int]$loadResponse.payload.combat.EnemyEnduranceCurrent -eq 12) -Message 'Combat payload did not expose enemy END current.'
+    Assert-WebDomSmoke -Condition ([int]$loadResponse.payload.combat.EnemyEnduranceMax -eq 20) -Message 'Combat payload did not expose enemy END max.'
 
     $screenResponse = Invoke-RestMethod -Method Post -Uri "$baseUrl/api/action" -ContentType 'application/json' -Body (@{ action = 'showScreen'; name = 'achievements' } | ConvertTo-Json -Compress)
     Assert-WebDomSmoke -Condition ([bool]$screenResponse.ok) -Message 'Could not switch the server session to achievements before DOM capture.'
@@ -302,6 +317,18 @@ try {
     Assert-WebDomSmoke -Condition ($dom.Contains('Current Book Progress')) -Message 'Browser DOM did not render the achievements tab content.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Snake Eyes')) -Message 'Browser DOM did not render the unlocked achievement name.'
     Assert-WebDomSmoke -Condition ($dom.Contains('achievement-card')) -Message 'Browser DOM did not include achievement card markup.'
+
+    $combatScreenResponse = Invoke-RestMethod -Method Post -Uri "$baseUrl/api/action" -ContentType 'application/json' -Body (@{ action = 'showScreen'; name = 'combat' } | ConvertTo-Json -Compress)
+    Assert-WebDomSmoke -Condition ([bool]$combatScreenResponse.ok) -Message 'Could not switch the server session to combat before DOM capture.'
+
+    $combatDom = Invoke-ChromeDumpDom -ChromePath $chromePath -Url "$baseUrl/"
+    $combatDomPreview = if ($combatDom.Length -gt 500) { $combatDom.Substring(0, 500) } else { $combatDom }
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('Life Meters')) -Message ("Browser DOM did not render the combat life meter panel. DOM preview: {0}" -f $combatDomPreview)
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('Meter Dummy')) -Message 'Browser DOM did not render the active combat enemy name.'
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('combat-meter-card')) -Message 'Browser DOM did not include combat meter card markup.'
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('27 / 30')) -Message 'Browser DOM did not render the player END meter value.'
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('12 / 20')) -Message 'Browser DOM did not render the enemy END meter value.'
+    Assert-WebDomSmoke -Condition ($combatDom.Contains('[################--]')) -Message 'Browser DOM did not render the player CLI-style meter text.'
 
     '[PASS] Web browser DOM smoke'
 }

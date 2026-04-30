@@ -819,6 +819,12 @@ function Invoke-LWCoreNormalizeState {
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'SuppressShieldCombatSkillBonus') -or $null -eq $State.Combat.SuppressShieldCombatSkillBonus) {
             $State.Combat | Add-Member -Force -NotePropertyName SuppressShieldCombatSkillBonus -NotePropertyValue $false
         }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'CombatPotionsAllowed') -or $null -eq $State.Combat.CombatPotionsAllowed) {
+            $State.Combat | Add-Member -Force -NotePropertyName CombatPotionsAllowed -NotePropertyValue $true
+        }
+        if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'BowRestricted') -or $null -eq $State.Combat.BowRestricted) {
+            $State.Combat | Add-Member -Force -NotePropertyName BowRestricted -NotePropertyValue $false
+        }
         if (-not (Test-LWPropertyExists -Object $State.Combat -Name 'PlayerCombatSkillModifier')) {
             $State.Combat | Add-Member -Force -NotePropertyName PlayerCombatSkillModifier -NotePropertyValue 0
         }

@@ -270,6 +270,11 @@ try {
     $combatReady = Complete-CombatSetupPrompts -Process $session -Response $combatStart
     Assert-WebFlowSmoke -Condition ([bool]$combatReady.payload.combat.Active) -Message 'Combat did not become active after setup prompts.'
     Assert-WebFlowSmoke -Condition ([string]$combatReady.payload.combat.EnemyName -eq 'Training Dummy') -Message 'Combat enemy name did not persist.'
+    Assert-WebFlowSmoke -Condition ([int]$combatReady.payload.combat.PlayerEnduranceCurrent -gt 0) -Message 'Active combat payload is missing player END current.'
+    Assert-WebFlowSmoke -Condition ([int]$combatReady.payload.combat.PlayerEnduranceMax -ge [int]$combatReady.payload.combat.PlayerEnduranceCurrent) -Message 'Active combat payload has an invalid player END meter range.'
+    Assert-WebFlowSmoke -Condition ([int]$combatReady.payload.combat.EnemyEnduranceCurrent -eq 1 -and [int]$combatReady.payload.combat.EnemyEnduranceMax -eq 1) -Message 'Active combat payload is missing enemy END meter values.'
+    Assert-WebFlowSmoke -Condition ([int]$combatReady.payload.combat.PlayerCombatSkill -gt 0) -Message 'Active combat payload is missing player Combat Skill.'
+    Assert-WebFlowSmoke -Condition ([int]$combatReady.payload.combat.CombatRatio -eq ([int]$combatReady.payload.combat.PlayerCombatSkill - [int]$combatReady.payload.combat.EnemyCombatSkillEffective)) -Message 'Active combat payload did not expose the computed combat ratio.'
 
     $combatAuto = Invoke-WebApiAction -Process $session -Request @{ action = 'combatAuto' }
     $combatDone = Complete-CombatAutoPrompts -Process $session -Response $combatAuto

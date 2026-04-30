@@ -1193,13 +1193,123 @@ function renderInventory(payload) {
   `;
 }
 
+function numberOrFallback(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function getCombatMeterPercent(current, max) {
+  const safeMax = Math.max(0, numberOrFallback(max, 0));
+  if (safeMax <= 0) {
+    return 0;
+  }
+
+  const clampedCurrent = Math.max(0, Math.min(numberOrFallback(current, 0), safeMax));
+  return Math.max(0, Math.min(100, (clampedCurrent / safeMax) * 100));
+}
+
+function getCombatMeterText(current, max, width = 18) {
+  const safeMax = Math.max(1, numberOrFallback(max, 0));
+  const clampedCurrent = Math.max(0, Math.min(numberOrFallback(current, 0), safeMax));
+  const filled = Math.max(0, Math.min(width, Math.round((clampedCurrent / safeMax) * width)));
+  return `[${'#'.repeat(filled)}${'-'.repeat(width - filled)}]`;
+}
+
+function getCombatMeterTone(current, max) {
+  const percent = getCombatMeterPercent(current, max);
+  if (percent <= 25) {
+    return 'meter-danger';
+  }
+  if (percent <= 50) {
+    return 'meter-warning';
+  }
+  return 'meter-good';
+}
+
+function renderCombatMeterCard({ label, current, max, combatSkill, enduranceLabel = 'END', note = '' }) {
+  const currentValue = numberOrFallback(current, 0);
+  const maxValue = numberOrFallback(max, 0);
+  const clampedCurrent = Math.max(0, Math.min(currentValue, Math.max(maxValue, 0)));
+  const percent = getCombatMeterPercent(currentValue, maxValue);
+  const tone = getCombatMeterTone(currentValue, maxValue);
+  const meterText = getCombatMeterText(currentValue, maxValue);
+  const ariaMax = Math.max(1, maxValue);
+
+  return `
+    <article class="combat-meter-card">
+      <div class="combat-meter-header">
+        <h3>${escapeHtml(text(label))}</h3>
+        <span class="combat-meter-cs">CS ${escapeHtml(text(combatSkill, '0'))}</span>
+      </div>
+      <div class="combat-meter-meta">
+        <span>${escapeHtml(text(enduranceLabel, 'END'))}</span>
+        <strong>${escapeHtml(String(currentValue))} / ${escapeHtml(String(maxValue))}</strong>
+      </div>
+      <div class="combat-meter-track" role="meter" aria-label="${escapeHtml(text(label))} endurance" aria-valuemin="0" aria-valuemax="${escapeHtml(String(ariaMax))}" aria-valuenow="${escapeHtml(String(clampedCurrent))}">
+        <div class="combat-meter-fill ${tone}" style="width: ${percent.toFixed(2)}%"></div>
+      </div>
+      <div class="combat-meter-text">${escapeHtml(meterText)}</div>
+      ${note ? `<div class="combat-meter-note">${escapeHtml(note)}</div>` : ''}
+    </article>
+  `;
+}
+
+function renderCombatDuelMeters(payload, combat) {
+  const character = payload.character || {};
+  const enemyName = text(combat.EnemyName, 'Enemy');
+  const ratio = combat.CombatRatio === null || combat.CombatRatio === undefined
+    ? '?'
+    : formatSignedNumber(combat.CombatRatio);
+  const notes = safeArray(combat.CombatNotes)
+    .map((note) => String(note || '').trim())
+    .filter(Boolean);
+  const playerNotes = [];
+  if (combat.PlayerUsesTargetEndurance) {
+    playerNotes.push('Target points combat');
+  }
+  if (numberOrFallback(combat.PlayerEnduranceCombatBonus, 0) !== 0) {
+    playerNotes.push(`${formatSignedNumber(combat.PlayerEnduranceCombatBonus)} combat END`);
+  }
+
+  return `
+    <section class="panel combat-meter-panel">
+      <div class="combat-meter-title-row">
+        <h2>Life Meters</h2>
+        <div class="combat-meter-ratio"><span>Combat Ratio</span><strong>${escapeHtml(ratio)}</strong></div>
+      </div>
+      <div class="combat-meter-grid">
+        ${renderCombatMeterCard({
+          label: 'Lone Wolf',
+          current: combat.PlayerEnduranceCurrent ?? character.EnduranceCurrent,
+          max: combat.PlayerEnduranceMax ?? character.EnduranceMax,
+          combatSkill: combat.PlayerCombatSkill ?? character.CombatSkillBase,
+          enduranceLabel: combat.PlayerEnduranceLabel || 'END',
+          note: playerNotes.join(' | '),
+        })}
+        ${renderCombatMeterCard({
+          label: enemyName,
+          current: combat.EnemyEnduranceCurrent,
+          max: combat.EnemyEnduranceMax,
+          combatSkill: combat.EnemyCombatSkillEffective ?? combat.EnemyCombatSkill,
+        })}
+      </div>
+      ${notes.length ? `<div class="combat-meter-notes">${notes.map((note) => `<span>${escapeHtml(note)}</span>`).join('')}</div>` : ''}
+    </section>
+  `;
+}
+
 function renderCombat(payload) {
   const combat = payload.combat || {};
   const active = Boolean(combat.Active);
   const rounds = safeArray(combat.Log).slice(-8);
+  const playerEndurance = `${text(combat.PlayerEnduranceCurrent ?? payload.character?.EnduranceCurrent, '0')} / ${text(combat.PlayerEnduranceMax ?? payload.character?.EnduranceMax, '0')}`;
+  const enemyCombatSkill = combat.EnemyCombatSkillEffective ?? combat.EnemyCombatSkill;
   const rows = [
     ['Enemy', text(combat.EnemyName)],
-    ['Enemy CS', text(combat.EnemyCombatSkill, '0')],
+    ['Player CS', text(combat.PlayerCombatSkill ?? payload.character?.CombatSkillBase, '0')],
+    ['Enemy CS', text(enemyCombatSkill, '0')],
+    ['Combat Ratio', active ? formatSignedNumber(combat.CombatRatio) : '(none)'],
+    ['Lone Wolf END', playerEndurance],
     ['Enemy END', `${text(combat.EnemyEnduranceCurrent, '0')} / ${text(combat.EnemyEnduranceMax, '0')}`],
     ['Weapon', text(combat.EquippedWeapon)],
     ['Mindblast', combat.UseMindblast ? 'On' : 'Off'],
@@ -1241,11 +1351,12 @@ function renderCombat(payload) {
         </form>
       `}
     </section>
+    ${active ? renderCombatDuelMeters(payload, combat) : ''}
     <section class="panel">
       <h2>Combat</h2>
       <div class="kv-grid">
         <div class="kv"><span>Status</span><strong>${active ? 'Active' : 'Inactive'}</strong></div>
-        ${rows.map(([label, value]) => `<div class="kv"><span>${label}</span><strong>${value}</strong></div>`).join('')}
+        ${rows.map(([label, value]) => `<div class="kv"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('')}
       </div>
     </section>
     <section class="panel">
@@ -2501,7 +2612,7 @@ function applyResponse(response) {
   const mappedTab = getTabForScreen(currentScreen);
   if (currentScreen === 'death' && currentScreen !== previousScreen) {
     state.activeTab = 'overview';
-  } else if (mappedTab && ['stats', 'campaign', 'achievements'].includes(currentScreen) && currentScreen !== previousScreen) {
+  } else if (mappedTab && currentScreen !== previousScreen) {
     state.activeTab = mappedTab;
   }
   elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.9.0')}`;
