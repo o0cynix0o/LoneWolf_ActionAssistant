@@ -270,6 +270,32 @@ function renderNamedCountCloud(items, emptyLabel = '(none)') {
   `;
 }
 
+function renderAchievementProgressSummary(items) {
+  const entries = safeArray(items)
+    .map((entry) => ({
+      name: text(entry?.Name, 'Progress'),
+      progress: text(entry?.Progress, ''),
+    }))
+    .filter((entry) => entry.progress.trim());
+
+  if (!entries.length) {
+    return '<strong>None active</strong>';
+  }
+
+  const visibleEntries = entries.slice(0, 4);
+  return `
+    <div class="achievement-progress-summary">
+      ${visibleEntries.map((entry) => `
+        <div class="achievement-progress-row">
+          <strong>${escapeHtml(entry.name)}</strong>
+          <span>${escapeHtml(entry.progress)}</span>
+        </div>
+      `).join('')}
+      ${entries.length > visibleEntries.length ? `<em>+${entries.length - visibleEntries.length} more in Current Book Targets</em>` : ''}
+    </div>
+  `;
+}
+
 function getUniqueCampaignBookEntries(bookEntries) {
   const byBook = new Map();
   safeArray(bookEntries).forEach((entry) => {
@@ -828,6 +854,7 @@ function renderAchievements(payload) {
   }
 
   const currentBookEntries = safeArray(achievements.CurrentBookEntries);
+  const currentBookProgress = safeArray(achievements.CurrentBookProgress);
   const recentUnlocks = safeArray(achievements.RecentUnlocks);
   const bookTotals = safeArray(achievements.BookTotals);
 
@@ -838,7 +865,7 @@ function renderAchievements(payload) {
         <div class="kv"><span>Current Book</span><strong>Book ${text(achievements.CurrentBookNumber, '?')} - ${text(achievements.CurrentBookTitle, 'Unknown')}</strong></div>
         <div class="kv"><span>Current Book Progress</span><strong>${text(achievements.CurrentBookUnlocked, '0')} / ${text(achievements.CurrentBookAvailable, '0')}</strong></div>
         <div class="kv"><span>Current Book Total</span><strong>${text(achievements.CurrentBookTotal, '0')}</strong></div>
-        <div class="kv"><span>Visible Progress</span><strong>${text(achievements.CurrentBookProgress)}</strong></div>
+        <div class="kv"><span>Visible Progress</span>${renderAchievementProgressSummary(currentBookProgress)}</div>
         <div class="kv"><span>Run Unlocked</span><strong>${text(achievements.UnlockedCount, '0')} / ${text(achievements.AvailableCount, '0')}</strong></div>
         <div class="kv"><span>Profile Unlocked</span><strong>${text(achievements.ProfileUnlockedCount, '0')} / ${text(achievements.ProfileAvailableCount, '0')}</strong></div>
       </div>
