@@ -735,8 +735,16 @@ function Invoke-LWKaiCombatScenarioRules {
     }
 }
 
+function Invoke-LWKaiCombatPsychicAttackRules {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][hashtable]$Scenario
+    )
+}
+
 Export-ModuleMember -Function `
     Get-LWKaiCombatEncounterProfile, `
-    Invoke-LWKaiCombatScenarioRules
+    Invoke-LWKaiCombatScenarioRules, `
+    Invoke-LWKaiCombatPsychicAttackRules
 
 

@@ -285,6 +285,12 @@ function Invoke-LWMagnakaiCombatScenarioRules {
                 $Scenario.VictoryResolutionNote = 'Section 221 result: victory sends you to 271.'
                 return
             }
+            233 {
+                $Scenario.VictoryResolutionSection = 209
+                $Scenario.VictoryResolutionNote = 'Section 233 result: victory sends you to 209.'
+                Write-LWInfo 'Book 7 section 233: Oudagorg is especially susceptible to Mindblast and Psi-surge.'
+                return
+            }
             235 {
                 if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
                     $Scenario.EnemyImmune = $true
@@ -680,8 +686,28 @@ function Invoke-LWMagnakaiCombatScenarioRules {
     }
 }
 
+function Invoke-LWMagnakaiCombatPsychicAttackRules {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][hashtable]$Scenario
+    )
+
+    if ([int]$State.Character.BookNumber -eq 7 -and
+        [int]$State.CurrentSection -eq 233 -and
+        (Test-LWPropertyExists -Object $Scenario -Name 'UseMindblast') -and
+        [bool]$Scenario.UseMindblast) {
+        $psychicAttackLabel = if ((Test-LWPropertyExists -Object $Scenario -Name 'PsychicAttackMode') -and -not [string]::IsNullOrWhiteSpace([string]$Scenario.PsychicAttackMode)) { [string]$Scenario.PsychicAttackMode } else { 'psychic attack' }
+        $suppressMessages = ((Test-LWPropertyExists -Object $Scenario -Name 'SuppressMessages') -and [bool]$Scenario.SuppressMessages)
+        $Scenario.DoubleEnemyEnduranceLoss = $true
+        if (-not $suppressMessages) {
+            Write-LWInfo ("Book 7 section 233: {0} doubles all ENDURANCE loss sustained by Oudagorg." -f $psychicAttackLabel)
+        }
+    }
+}
+
 Export-ModuleMember -Function `
     Get-LWMagnakaiCombatEncounterProfile, `
-    Invoke-LWMagnakaiCombatScenarioRules
+    Invoke-LWMagnakaiCombatScenarioRules, `
+    Invoke-LWMagnakaiCombatPsychicAttackRules
 
 

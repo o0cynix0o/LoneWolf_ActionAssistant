@@ -335,6 +335,8 @@ function Invoke-LWCoreStartCombat {
             SommerswerdSuppressed            = $sommerswerdSuppressed
             AttemptKnockout                  = $attemptKnockout
             EquippedWeapon                   = $equippedWeapon
+            UseMindblast                     = $false
+            PsychicAttackMode                = 'Mindblast'
         }
         Invoke-LWRuleSetCombatScenarioRules -State $script:GameState -Scenario $combatScenario
         $enemyImmune = [bool]$combatScenario.EnemyImmune
@@ -427,6 +429,11 @@ function Invoke-LWCoreStartCombat {
                 }
             }
         }
+
+        $combatScenario.UseMindblast = $useMindblast
+        $combatScenario.PsychicAttackMode = $psychicAttackMode
+        Invoke-LWRuleSetCombatPsychicAttackRules -State $script:GameState -Scenario $combatScenario
+        $doubleEnemyEnduranceLoss = [bool]$combatScenario.DoubleEnemyEnduranceLoss
 
         if (-not $useQuickDefaults) {
             if (Read-LWYesNo -Prompt 'Any manual Combat Skill modifiers for this fight?' -Default $false) {
@@ -786,6 +793,33 @@ function Get-LWCombatPlayerEndurancePool {
     }
 }
 
+function Test-LWCombatDoubleEnemyEnduranceLossActive {
+    param([Parameter(Mandatory = $true)][object]$State)
+    Set-LWModuleContext -Context (Get-LWModuleContext)
+
+    if ($null -eq $State -or $null -eq $State.Combat) {
+        return $false
+    }
+
+    if ((Test-LWPropertyExists -Object $State.Combat -Name 'DoubleEnemyEnduranceLoss') -and [bool]$State.Combat.DoubleEnemyEnduranceLoss) {
+        return $true
+    }
+
+    $ruleCommand = Get-Command -Name 'Invoke-LWRuleSetCombatPsychicAttackRules' -ErrorAction SilentlyContinue
+    if ($null -eq $ruleCommand) {
+        return $false
+    }
+
+    $doubleLossScenario = @{
+        UseMindblast             = ((Test-LWPropertyExists -Object $State.Combat -Name 'UseMindblast') -and [bool]$State.Combat.UseMindblast)
+        PsychicAttackMode        = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PsychicAttackMode') -and -not [string]::IsNullOrWhiteSpace([string]$State.Combat.PsychicAttackMode)) { [string]$State.Combat.PsychicAttackMode } else { 'Mindblast' }
+        DoubleEnemyEnduranceLoss = $false
+        SuppressMessages         = $true
+    }
+    & $ruleCommand -State $State -Scenario $doubleLossScenario
+    return [bool]$doubleLossScenario.DoubleEnemyEnduranceLoss
+}
+
 function Get-LWCombatBreakdownFromState {
     param([Parameter(Mandatory = $true)][object]$State)
     Set-LWModuleContext -Context (Get-LWModuleContext)
@@ -1006,6 +1040,9 @@ function Get-LWCombatBreakdownFromState {
     $playerLossMultiplier = if ((Test-LWPropertyExists -Object $State.Combat -Name 'PlayerEnduranceLossMultiplier') -and $null -ne $State.Combat.PlayerEnduranceLossMultiplier) { [Math]::Max(1, [int]$State.Combat.PlayerEnduranceLossMultiplier) } else { 1 }
     if ($playerLossMultiplier -gt 1) {
         $notes += ("Lone Wolf END loss x{0}" -f $playerLossMultiplier)
+    }
+    if (Test-LWCombatDoubleEnemyEnduranceLossActive -State $State) {
+        $notes += 'Enemy END loss x2'
     }
 
     if ([bool]$State.Combat.CanEvade) {
@@ -1824,7 +1861,8 @@ function Resolve-LWCombatRound {
             $messages += "Sommerswerd doubles damage against undead: enemy loses $enemyLossApplied instead of $baseEnemyLoss."
         }
     }
-    if ($enemyLossApplied -gt 0 -and (Test-LWPropertyExists -Object $State.Combat -Name 'DoubleEnemyEnduranceLoss') -and [bool]$State.Combat.DoubleEnemyEnduranceLoss) {
+    $doubleEnemyEnduranceLossActive = Test-LWCombatDoubleEnemyEnduranceLossActive -State $State
+    if ($enemyLossApplied -gt 0 -and $doubleEnemyEnduranceLossActive) {
         $doubledLoss = [Math]::Min([int]$State.Combat.EnemyEnduranceCurrent, ($enemyLossApplied * 2))
         if ($doubledLoss -gt $enemyLossApplied) {
             $messages += "Special rule doubles the enemy's ENDURANCE loss to $doubledLoss."

@@ -135,6 +135,18 @@ function Invoke-LWRuleSetCombatScenarioRules {
     }
 }
 
+function Invoke-LWRuleSetCombatPsychicAttackRules {
+    param(
+        [Parameter(Mandatory = $true)][object]$State,
+        [Parameter(Mandatory = $true)][hashtable]$Scenario
+    )
+
+    switch ((Get-LWActiveRuleSetName -State $State).ToLowerInvariant()) {
+        'kai' { Invoke-LWKaiCombatPsychicAttackRules -State $State -Scenario $Scenario; return }
+        'magnakai' { Invoke-LWMagnakaiCombatPsychicAttackRules -State $State -Scenario $Scenario; return }
+    }
+}
+
 function Get-LWBookSectionContextAchievementIds {
     param([int]$BookNumber)
 
@@ -161,6 +173,7 @@ Export-ModuleMember -Function `
     Invoke-LWRuleSetStartingEquipment, `
     Get-LWRuleSetCombatEncounterProfile, `
     Invoke-LWRuleSetCombatScenarioRules, `
+    Invoke-LWRuleSetCombatPsychicAttackRules, `
     Get-LWBookSectionContextAchievementIds
 
 function Add-LWDiscipline {

@@ -6,6 +6,12 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- fixed Book `7` section `233` combat automation:
+  - victory now routes to section `209`
+  - Oudagorg now doubles enemy ENDURANCE loss only when Mindblast or Psi-surge is actually used
+  - already-started section `233` combats missing the stored doubling flag are handled at round resolution
+  - the combat breakdown notes now show the active enemy ENDURANCE loss multiplier
+  - added a focused section `233` smoke for the psychic-attack damage rule
 - restored the web Combat tab life meters:
   - active browser combats now expose the same player/endurance pool and combat-ratio breakdown used by the terminal combat screen
   - the web UI renders side-by-side Lone Wolf and enemy END bars with numeric END readouts
