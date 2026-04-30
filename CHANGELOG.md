@@ -6,6 +6,11 @@ This file is meant to summarize shipped behavior at release time, not every inte
 
 ## Unreleased
 
+- improved web command-surface parity:
+  - the Help tab now exposes runnable safe-command button groups and labels terminal-only commands explicitly
+  - safe-command metadata now includes `roll`, stats/campaign/achievement subviews, and combat review commands from one backend list
+  - the browser now renders recent engine notifications as visible command results
+  - added `testing/tmp/web-command-parity-smoke.ps1` to lock the safe-command metadata, subview routing, and roll-result notification path
 - bumped the current pre-release app/package version to `0.9.0` for the completed web-GUI milestone and final hardening before the first release-ready `1.0.0` build
 - suppressed the web server's duplicate startup URL when launched through the web launcher scripts
 - removed the redundant web Achievement Overview visible-progress tile; current-book progress now lives in the detailed Current Book Targets panel

@@ -292,6 +292,8 @@ try {
 
     Assert-WebDomSmoke -Condition ($dom.Contains('Lone Wolf Web Assistant')) -Message ("Browser DOM did not include the web app shell. DOM preview: {0}" -f $domPreview)
     Assert-WebDomSmoke -Condition ($dom.Contains('Roll Command')) -Message 'Browser DOM did not render the roll command panel.'
+    Assert-WebDomSmoke -Condition ($dom.Contains('Command Results')) -Message 'Browser DOM did not render the command result notification panel.'
+    Assert-WebDomSmoke -Condition ($dom.Contains('Achievement Commands')) -Message 'Browser DOM did not render achievement command buttons.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Last Roll')) -Message 'Browser DOM did not render the roll panel result label.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Random Number Table roll')) -Message 'Browser DOM did not render the latest roll result inside the roll panel.'
     Assert-WebDomSmoke -Condition ($dom.Contains('No section-specific random-number rule')) -Message 'Browser DOM did not render the current roll context text.'

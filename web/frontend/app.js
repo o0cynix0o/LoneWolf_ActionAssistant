@@ -44,6 +44,7 @@ const elements = {
   readerFrame: document.getElementById('reader-frame'),
   summaryGrid: document.getElementById('summary-grid'),
   flowHost: document.getElementById('flow-host'),
+  notificationHost: document.getElementById('notification-host'),
   view: document.getElementById('view'),
   messageBar: document.getElementById('message-bar'),
   tabbar: document.getElementById('tabbar'),
@@ -270,6 +271,67 @@ function renderNamedCountCloud(items, emptyLabel = '(none)') {
   `;
 }
 
+function renderCommandButtonGroup(group) {
+  const commands = safeArray(group?.Commands);
+  if (!commands.length) {
+    return '';
+  }
+
+  return `
+    <div class="command-button-group">
+      <h3>${escapeHtml(text(group?.Title, 'Commands'))}</h3>
+      <div class="command-button-grid">
+        ${commands.map((entry) => `
+          <button type="button" class="button-secondary command-button" data-safe-command="${escapeHtml(text(entry.Command, ''))}" title="${escapeHtml(text(entry.Description, text(entry.Command, '')))}">
+            ${escapeHtml(text(entry.Label, entry.Command))}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderCommandButtonGroups(groups) {
+  const entries = safeArray(groups);
+  if (!entries.length) {
+    return '<p class="muted">No command buttons are available.</p>';
+  }
+
+  return `<div class="command-button-groups">${entries.map((group) => renderCommandButtonGroup(group)).join('')}</div>`;
+}
+
+function renderCommandShortcutPanel(title, commands) {
+  const entries = safeArray(commands);
+  return `
+    <section class="panel command-shortcut-panel">
+      <h2>${escapeHtml(title)}</h2>
+      ${entries.length ? `
+        <div class="command-button-grid">
+          ${entries.map((entry) => `
+            <button type="button" class="button-secondary command-button" data-safe-command="${escapeHtml(text(entry.Command, ''))}" title="${escapeHtml(text(entry.Description, text(entry.Command, '')))}">
+              ${escapeHtml(text(entry.Label, entry.Command))}
+            </button>
+          `).join('')}
+        </div>
+      ` : '<p class="muted">No command shortcuts are available.</p>'}
+    </section>
+  `;
+}
+
+function renderCliOnlyCommands(entries) {
+  const commands = safeArray(entries);
+  if (!commands.length) {
+    return '<p class="muted">No terminal-only command notes are available.</p>';
+  }
+
+  return commands.map((entry) => `
+    <article class="history-row command-reference-row">
+      <strong>${escapeHtml(text(entry.Label))}</strong>
+      <div class="history-meta">${escapeHtml(text(entry.Reason, 'Not exposed as a browser action yet.'))}</div>
+    </article>
+  `).join('');
+}
+
 function getUniqueCampaignBookEntries(bookEntries) {
   const byBook = new Map();
   safeArray(bookEntries).forEach((entry) => {
@@ -388,7 +450,7 @@ function renderSummaryCards(payload) {
     cards.push(['Session', 'No active run']);
     cards.push(['Screen', text(payload?.session?.CurrentScreen, 'welcome')]);
     cards.push(['Saves', String(safeArray(payload?.saves).length)]);
-    cards.push(['Engine', text(payload?.app?.Version, '0.8.0')]);
+    cards.push(['Engine', text(payload?.app?.Version, '0.9.0')]);
     cards.push(['Mode', payload?.pendingFlow?.Active ? 'Setup Flow' : 'Welcome']);
   }
 
@@ -398,6 +460,56 @@ function renderSummaryCards(payload) {
       <strong>${value}</strong>
     </article>
   `).join('');
+}
+
+function getNotificationMessage(notification) {
+  if (typeof notification === 'string') {
+    return notification;
+  }
+  return text(notification?.Message, '');
+}
+
+function getNotificationLevel(notification) {
+  if (typeof notification === 'string') {
+    return 'info';
+  }
+  return text(notification?.Level, 'info').toLowerCase();
+}
+
+function renderNotifications(payload) {
+  if (!elements.notificationHost) {
+    return;
+  }
+
+  const notifications = safeArray(payload?.session?.Notifications)
+    .map((notification) => ({
+      level: getNotificationLevel(notification),
+      message: getNotificationMessage(notification),
+    }))
+    .filter((entry) => entry.message.trim())
+    .slice(-5);
+
+  if (!notifications.length) {
+    elements.notificationHost.classList.add('hidden');
+    elements.notificationHost.innerHTML = '';
+    return;
+  }
+
+  elements.notificationHost.classList.remove('hidden');
+  elements.notificationHost.innerHTML = `
+    <div class="notification-header">
+      <span>Command Results</span>
+      <strong>${notifications.length}</strong>
+    </div>
+    <div class="notification-list">
+      ${notifications.map((entry) => `
+        <div class="notification-row notification-${escapeHtml(entry.level)}">
+          <span>${escapeHtml(entry.level)}</span>
+          <strong>${escapeHtml(entry.message)}</strong>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
 
 function renderRollPanel(payload) {
@@ -633,6 +745,11 @@ function renderStats(payload) {
   }
 
   return `
+    ${renderCommandShortcutPanel('Stats Commands', [
+      { Label: 'Overview', Command: 'stats', Description: 'Show current-book summary.' },
+      { Label: 'Combat', Command: 'stats combat', Description: 'Run the stats combat command.' },
+      { Label: 'Survival', Command: 'stats survival', Description: 'Run the stats survival command.' },
+    ])}
     <section class="panel">
       <h2>Current Book Summary</h2>
       <div class="kv-grid">
@@ -719,6 +836,13 @@ function renderCampaign(payload) {
   const recentAchievements = safeArray(campaign.RecentAchievements);
 
   return `
+    ${renderCommandShortcutPanel('Campaign Commands', [
+      { Label: 'Overview', Command: 'campaign', Description: 'Show whole-run overview.' },
+      { Label: 'Books', Command: 'campaign books', Description: 'Show book-by-book status.' },
+      { Label: 'Combat', Command: 'campaign combat', Description: 'Show run-wide combat totals.' },
+      { Label: 'Survival', Command: 'campaign survival', Description: 'Show run-wide survival totals.' },
+      { Label: 'Milestones', Command: 'campaign milestones', Description: 'Show achievements and highlights.' },
+    ])}
     <section class="panel">
       <h2>Campaign Overview</h2>
       <div class="kv-grid">
@@ -832,6 +956,14 @@ function renderAchievements(payload) {
   const bookTotals = safeArray(achievements.BookTotals);
 
   return `
+    ${renderCommandShortcutPanel('Achievement Commands', [
+      { Label: 'Overview', Command: 'achievements', Description: 'Show achievement overview.' },
+      { Label: 'Recent', Command: 'achievements recent', Description: 'Show recent unlocks.' },
+      { Label: 'Unlocked', Command: 'achievements unlocked', Description: 'Show unlocked achievements.' },
+      { Label: 'Locked', Command: 'achievements locked', Description: 'Show locked achievement slots.' },
+      { Label: 'Progress', Command: 'achievements progress', Description: 'Show tracked milestone progress.' },
+      { Label: 'Planned', Command: 'achievements planned', Description: 'Show planned achievement entries.' },
+    ])}
     <section class="panel">
       <h2>Achievement Overview</h2>
       <div class="kv-grid">
@@ -1297,6 +1429,8 @@ function renderHelp(payload) {
   const help = payload.help || {};
   const primaryCommands = safeArray(help.PrimaryCommands);
   const safeCommands = safeArray(help.SafeCommands);
+  const safeCommandGroups = safeArray(help.SafeCommandGroups);
+  const cliOnlyCommands = safeArray(help.CliOnlyCommands);
 
   return `
     <section class="panel">
@@ -1309,10 +1443,18 @@ function renderHelp(payload) {
       `).join('') : '<p class="muted">No command reference is available.</p>'}
     </section>
     <section class="panel">
+      <h2>Command Buttons</h2>
+      ${renderCommandButtonGroups(safeCommandGroups)}
+    </section>
+    <section class="panel">
       <h2>Safe Web Commands</h2>
       <div class="chip-cloud">
         ${safeCommands.length ? safeCommands.map((command) => `<span class="pill subtle-pill">${escapeHtml(text(command))}</span>`).join('') : '<p class="muted">(none)</p>'}
       </div>
+    </section>
+    <section class="panel">
+      <h2>Terminal-Only Commands</h2>
+      ${renderCliOnlyCommands(cliOnlyCommands)}
     </section>
   `;
 }
@@ -2330,6 +2472,8 @@ function bindDynamicViewEvents(payload) {
       }
     });
   });
+
+  bindSafeCommandButtons(elements.view);
 }
 
 function syncReader(payload) {
@@ -2360,10 +2504,11 @@ function applyResponse(response) {
   } else if (mappedTab && ['stats', 'campaign', 'achievements'].includes(currentScreen) && currentScreen !== previousScreen) {
     state.activeTab = mappedTab;
   }
-  elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.8.0')}`;
+  elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.9.0')}`;
   elements.saveGameBtn.disabled = !response.payload?.session?.HasState;
   syncActiveTabButtons();
   renderSummaryCards(response.payload);
+  renderNotifications(response.payload);
   renderRollPanel(response.payload);
   renderPendingFlow(response.payload);
   syncReader(response.payload);
@@ -2376,6 +2521,35 @@ function handleActionError(error) {
     applyResponse(error.responseData);
   }
   setMessage(error.message || 'Action failed.', true);
+}
+
+async function runSafeCommand(command) {
+  const trimmed = String(command || '').trim();
+  if (!trimmed) {
+    setMessage('Command button is missing its command text.', true);
+    return;
+  }
+
+  try {
+    const response = await apiAction({ action: 'safeCommand', command: trimmed });
+    state.followCurrent = /^set\s+/i.test(trimmed);
+    applyResponse(response);
+  } catch (error) {
+    handleActionError(error);
+  }
+}
+
+function bindSafeCommandButtons(root = document) {
+  root.querySelectorAll('[data-safe-command]').forEach((button) => {
+    if (button.dataset.safeCommandBound === 'true') {
+      return;
+    }
+
+    button.dataset.safeCommandBound = 'true';
+    button.addEventListener('click', async () => {
+      await runSafeCommand(button.dataset.safeCommand || '');
+    });
+  });
 }
 
 async function refreshState() {
@@ -2407,18 +2581,7 @@ function attachEvents() {
     });
   });
 
-  document.querySelectorAll('[data-safe-command]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      try {
-        const command = button.dataset.safeCommand || '';
-        const response = await apiAction({ action: 'safeCommand', command });
-        state.followCurrent = command.startsWith('set ');
-        applyResponse(response);
-      } catch (error) {
-        handleActionError(error);
-      }
-    });
-  });
+  bindSafeCommandButtons(document);
 
   document.querySelector('[data-action="open-library"]').addEventListener('click', () => {
     state.followCurrent = false;

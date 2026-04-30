@@ -969,33 +969,138 @@ function Get-LWWebCombatLogSnapshot {
     }
 }
 
+function Get-LWWebSafeCommandList {
+    return @(
+        'sheet',
+        'inventory',
+        'notes',
+        'history',
+        'help',
+        'disciplines',
+        'modes',
+        'stats',
+        'stats combat',
+        'stats survival',
+        'campaign',
+        'campaign books',
+        'campaign combat',
+        'campaign survival',
+        'campaign milestones',
+        'achievements',
+        'achievements recent',
+        'achievements unlocked',
+        'achievements locked',
+        'achievements progress',
+        'achievements planned',
+        'roll',
+        'combat status',
+        'combat log',
+        'set <section>'
+    )
+}
+
+function New-LWWebCommandButton {
+    param(
+        [Parameter(Mandatory = $true)][string]$Label,
+        [Parameter(Mandatory = $true)][string]$Command,
+        [string]$Description = ''
+    )
+
+    return [ordered]@{
+        Label       = $Label
+        Command     = $Command
+        Description = $Description
+    }
+}
+
+function Get-LWWebSafeCommandGroups {
+    return @(
+        [ordered]@{
+            Title    = 'Navigation'
+            Commands = @(
+                (New-LWWebCommandButton -Label 'Sheet' -Command 'sheet' -Description 'Return to the character sheet.'),
+                (New-LWWebCommandButton -Label 'Inventory' -Command 'inventory' -Description 'Open inventory and resources.'),
+                (New-LWWebCommandButton -Label 'Disciplines' -Command 'disciplines' -Description 'Review Kai and Magnakai abilities.'),
+                (New-LWWebCommandButton -Label 'Notes' -Command 'notes' -Description 'Open run notes.'),
+                (New-LWWebCommandButton -Label 'History' -Command 'history' -Description 'Review recent combat history.'),
+                (New-LWWebCommandButton -Label 'Modes' -Command 'modes' -Description 'Review difficulty, permadeath, and combat mode.'),
+                (New-LWWebCommandButton -Label 'Help' -Command 'help' -Description 'Open this command reference.')
+            )
+        },
+        [ordered]@{
+            Title    = 'Stats'
+            Commands = @(
+                (New-LWWebCommandButton -Label 'Overview' -Command 'stats' -Description 'Show current-book summary.'),
+                (New-LWWebCommandButton -Label 'Combat' -Command 'stats combat' -Description 'Show current-book combat totals.'),
+                (New-LWWebCommandButton -Label 'Survival' -Command 'stats survival' -Description 'Show current-book survival totals.')
+            )
+        },
+        [ordered]@{
+            Title    = 'Campaign'
+            Commands = @(
+                (New-LWWebCommandButton -Label 'Overview' -Command 'campaign' -Description 'Show whole-run overview.'),
+                (New-LWWebCommandButton -Label 'Books' -Command 'campaign books' -Description 'Show book-by-book status.'),
+                (New-LWWebCommandButton -Label 'Combat' -Command 'campaign combat' -Description 'Show run-wide combat totals.'),
+                (New-LWWebCommandButton -Label 'Survival' -Command 'campaign survival' -Description 'Show run-wide survival totals.'),
+                (New-LWWebCommandButton -Label 'Milestones' -Command 'campaign milestones' -Description 'Show achievements and highlights.')
+            )
+        },
+        [ordered]@{
+            Title    = 'Achievements'
+            Commands = @(
+                (New-LWWebCommandButton -Label 'Overview' -Command 'achievements' -Description 'Show achievement overview.'),
+                (New-LWWebCommandButton -Label 'Recent' -Command 'achievements recent' -Description 'Show recent unlocks.'),
+                (New-LWWebCommandButton -Label 'Unlocked' -Command 'achievements unlocked' -Description 'Show unlocked achievements.'),
+                (New-LWWebCommandButton -Label 'Locked' -Command 'achievements locked' -Description 'Show locked achievement slots.'),
+                (New-LWWebCommandButton -Label 'Progress' -Command 'achievements progress' -Description 'Show tracked milestone progress.'),
+                (New-LWWebCommandButton -Label 'Planned' -Command 'achievements planned' -Description 'Show planned achievement entries.')
+            )
+        },
+        [ordered]@{
+            Title    = 'Combat And Randomness'
+            Commands = @(
+                (New-LWWebCommandButton -Label 'Roll' -Command 'roll' -Description 'Roll the Random Number Table for the current section.'),
+                (New-LWWebCommandButton -Label 'Combat Status' -Command 'combat status' -Description 'Open the current combat state.'),
+                (New-LWWebCommandButton -Label 'Combat Log' -Command 'combat log' -Description 'Open active and archived combat records.')
+            )
+        }
+    )
+}
+
+function Get-LWWebCliOnlyCommands {
+    return @(
+        [ordered]@{ Label = 'newrun'; Reason = 'Use New Game for browser setup until the new-run profile flow is converted.' },
+        [ordered]@{ Label = 'difficulty / permadeath'; Reason = 'Run settings are chosen through setup and locked after the run starts.' },
+        [ordered]@{ Label = 'mode manual|data'; Reason = 'Combat-mode mutation is still terminal-only.' },
+        [ordered]@{ Label = 'discipline add'; Reason = 'Manual discipline repair still needs a prompt-backed browser flow.' },
+        [ordered]@{ Label = 'complete'; Reason = 'Book completion is driven by section automation and the Book Complete screen.' },
+        [ordered]@{ Label = 'healcheck'; Reason = 'Healing is applied through section automation; manual trigger remains terminal-only.' },
+        [ordered]@{ Label = 'die / fail'; Reason = 'Manual terminal death/failure shortcuts are not exposed in the browser.' },
+        [ordered]@{ Label = 'setcs / setend / setmaxend'; Reason = 'Manual stat override controls are not exposed in the browser.' },
+        [ordered]@{ Label = 'arrow / arrows'; Reason = 'Quiver mutation is not exposed in the browser yet.' },
+        [ordered]@{ Label = 'fight'; Reason = 'Use the Combat tab Start Combat plus Auto Resolve buttons.' },
+        [ordered]@{ Label = 'combat potion'; Reason = 'Combat potion use still needs a browser combat-round prompt flow.' },
+        [ordered]@{ Label = 'combat log [n|all|book n]'; Reason = 'The browser shows active and archived fights, but exact archive filters are not exposed yet.' },
+        [ordered]@{ Label = 'quit / exit'; Reason = 'Close the browser tab or stop the local web server from the launcher terminal.' }
+    )
+}
+
 function Get-LWWebHelpSnapshot {
     return [ordered]@{
-        PrimaryCommands = @(
+        PrimaryCommands   = @(
             [ordered]@{ Label = 'sheet'; Value = 'Return to the character sheet.' },
             [ordered]@{ Label = 'inventory'; Value = 'Open inventory and resources.' },
             [ordered]@{ Label = 'section <n>'; Value = 'Move to a numbered section.' },
+            [ordered]@{ Label = 'roll'; Value = 'Roll the Random Number Table for the current section.' },
             [ordered]@{ Label = 'combat status'; Value = 'Open current combat state.' },
             [ordered]@{ Label = 'combat log'; Value = 'Open detailed combat records.' },
             [ordered]@{ Label = 'save'; Value = 'Save the current run.' },
             [ordered]@{ Label = 'load'; Value = 'Load a saved run.' },
             [ordered]@{ Label = 'modes'; Value = 'Review difficulty and permadeath state.' }
         )
-        SafeCommands    = @(
-            'sheet',
-            'inventory',
-            'notes',
-            'history',
-            'help',
-            'disciplines',
-            'modes',
-            'stats',
-            'campaign',
-            'achievements',
-            'combat status',
-            'combat log',
-            'set <section>'
-        )
+        SafeCommands      = @(Get-LWWebSafeCommandList)
+        SafeCommandGroups = @(Get-LWWebSafeCommandGroups)
+        CliOnlyCommands   = @(Get-LWWebCliOnlyCommands)
     }
 }
 
@@ -2465,22 +2570,7 @@ function Get-LWWebStateSnapshot {
             saves            = @(Get-LWWebSaveEntries)
             pendingFlow      = $pendingFlow
             availableScreens = @('sheet', 'inventory', 'disciplines', 'notes', 'history', 'stats', 'campaign', 'achievements', 'combat', 'combatlog', 'modes', 'death', 'bookcomplete', 'help')
-            safeCommands     = @(
-                'sheet',
-                'inventory',
-                'notes',
-                'history',
-                'help',
-                'disciplines',
-                'modes',
-                'stats',
-                'campaign',
-                'achievements',
-                'roll',
-                'combat status',
-                'combat log',
-                'set <section>'
-            )
+            safeCommands     = @(Get-LWWebSafeCommandList)
         }
     }
     catch {
