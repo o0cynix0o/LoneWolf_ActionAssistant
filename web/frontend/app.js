@@ -1075,6 +1075,19 @@ function renderInventory(payload) {
     inventory.Sections?.pocket,
     inventory.Sections?.herbpouch,
   ].filter(Boolean);
+  const recoverySectionOptions = [
+    { type: 'weapon', label: 'Weapons', section: inventory.Sections?.weapon },
+    { type: 'backpack', label: 'Backpack', section: inventory.Sections?.backpack },
+    { type: 'herbpouch', label: 'Herb Pouch', section: inventory.Sections?.herbpouch },
+    { type: 'special', label: 'Special', section: inventory.Sections?.special },
+  ].map((entry) => ({
+    ...entry,
+    count: Number(entry.section?.RecoveryCount || 0),
+  }));
+  const firstRecoverableType = recoverySectionOptions.find((entry) => entry.count > 0)?.type || 'weapon';
+  const totalRecoveryCount = recoverySectionOptions.reduce((sum, entry) => sum + entry.count, 0);
+  const hasRecoveryStash = totalRecoveryCount > 0;
+  const recoveryDisabledAttribute = hasRecoveryStash ? '' : ' disabled';
 
   return `
     <section class="panel">
@@ -1170,17 +1183,17 @@ function renderInventory(payload) {
         <form id="inventory-recover-form" class="flow-form inline-form">
           <label class="flow-field">
             <span>Recover section</span>
-            <select id="inventory-recover-selection">
-              <option value="weapon">Weapons</option>
-              <option value="backpack">Backpack</option>
-              <option value="herbpouch">Herb Pouch</option>
-              <option value="special">Special</option>
+            <select id="inventory-recover-selection"${recoveryDisabledAttribute}>
+              ${recoverySectionOptions.map((entry) => `
+                <option value="${entry.type}"${entry.count <= 0 ? ' disabled' : ''}${entry.type === firstRecoverableType ? ' selected' : ''}>${entry.label}${entry.count > 0 ? ` (${entry.count})` : ' (empty)'}</option>
+              `).join('')}
             </select>
           </label>
           <div class="flow-actions">
-            <button type="submit">Recover Section</button>
-            <button type="button" class="button-secondary" id="inventory-recover-all-btn">Recover All</button>
+            <button type="submit"${recoveryDisabledAttribute}>Recover Section</button>
+            <button type="button" class="button-secondary" id="inventory-recover-all-btn"${recoveryDisabledAttribute}>Recover All</button>
           </div>
+          ${hasRecoveryStash ? '' : '<p class="muted">No recovery stash is available.</p>'}
         </form>
       </div>
     </section>
