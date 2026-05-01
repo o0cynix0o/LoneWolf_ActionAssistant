@@ -73,6 +73,12 @@ Invoke-LWSectionEntryRules
 Assert-True -Condition ([int]$script:GameState.Inventory.GoldCrowns -eq 5) -Message 'Section 16 did not convert 20 Lune into 5 Gold Crowns.'
 
 Reset-BookEightSmokeState
+$script:GameState.CurrentSection = 202
+Set-LWStoryAchievementFlag -Name 'Book8LodestoneClaimed'
+Invoke-LWSectionEntryRules
+Assert-True -Condition (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Lodestone') -Type 'special'))) -Message 'Section 202 did not add the Lodestone when the visit flag was already set.'
+
+Reset-BookEightSmokeState
 $script:GameState.CurrentSection = 105
 $script:GameState.Inventory.BackpackItems = @('Meal')
 Invoke-LWSectionEntryRules

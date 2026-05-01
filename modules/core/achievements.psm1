@@ -910,7 +910,6 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         if (@(7, 16, 59) | Where-Object { $visitedSections -contains $_ }) { Set-LWStoryAchievementFlag -Name 'Book8ConundrumSolved' }
         if ($visitedSections -contains 7) { Set-LWStoryAchievementFlag -Name 'Book8SilverBoxRoute' }
         if ($visitedSections -contains 100) { Set-LWStoryAchievementFlag -Name 'Book8OhridoLorestoneClaimed' }
-        if ($visitedSections -contains 202) { Set-LWStoryAchievementFlag -Name 'Book8LodestoneClaimed' }
         if ($visitedSections -contains 267 -or $visitedSections -contains 350) { Set-LWStoryAchievementFlag -Name 'Book8LevitronEscapeRoute' }
         if ($visitedSections -contains 281) { Set-LWStoryAchievementFlag -Name 'Book8JungleHorrorFailureSeen' }
         if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Pass')) {

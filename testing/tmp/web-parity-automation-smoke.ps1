@@ -105,7 +105,8 @@ function New-WebAutomationStateSave {
     param(
         [Parameter(Mandatory = $true)][int]$BookNumber,
         [Parameter(Mandatory = $true)][string]$Path,
-        [switch]$FullBackpack
+        [switch]$FullBackpack,
+        [switch]$FullSpecialItems
     )
 
     New-Item -ItemType Directory -Path (Split-Path -Parent $Path) -Force | Out-Null
@@ -159,6 +160,23 @@ function New-WebAutomationStateSave {
         [void](TryAdd-LWInventoryItemSilently -Type 'backpack' -Name $item)
     }
 
+    if ($FullSpecialItems) {
+        $state.Inventory.SpecialItems = @(
+            'Book of the Magnakai',
+            'Shield',
+            'Helmet',
+            'Chainmail Waistcoat',
+            'Padded Leather Waistcoat',
+            'Bronin Sleeve-shield',
+            'Silver Helm',
+            'Jewelled Mace',
+            'Map of Varetta',
+            'Map of Tekaro',
+            'Silver Bow of Duadon',
+            'Cess'
+        )
+    }
+
     if ($BookNumber -eq 7) {
         $state.Conditions.BookSixDECuringOption = 3
         [void](Grant-LWHerbPouch)
@@ -188,9 +206,11 @@ function Restore-LastSavePointer {
 $book6SavePath = Join-Path $testSaveRoot ("web-parity-automation-book6-{0}.json" -f $PID)
 $book7SavePath = Join-Path $testSaveRoot ("web-parity-automation-book7-{0}.json" -f $PID)
 $book7FullSavePath = Join-Path $testSaveRoot ("web-parity-automation-book7-full-{0}.json" -f $PID)
+$book8FullSpecialSavePath = Join-Path $testSaveRoot ("web-parity-automation-book8-full-special-{0}.json" -f $PID)
 New-WebAutomationStateSave -BookNumber 6 -Path $book6SavePath
 New-WebAutomationStateSave -BookNumber 7 -Path $book7SavePath
 New-WebAutomationStateSave -BookNumber 7 -Path $book7FullSavePath -FullBackpack
+New-WebAutomationStateSave -BookNumber 8 -Path $book8FullSpecialSavePath -FullSpecialItems
 
 $session = Start-WebApiSession
 try {
@@ -275,6 +295,19 @@ try {
 
     $cancelled = Invoke-WebApiAction -Process $session -Request @{ action = 'cancelFlow' }
     Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $cancelled)) -Message 'cancelFlow did not clear the make-room prompt.'
+
+    $loadedFullBook8 = Invoke-WebApiAction -Process $session -Request @{ action = 'loadGame'; path = [string]$book8FullSpecialSavePath }
+    Assert-WebAutomationSmoke -Condition ([int]$loadedFullBook8.payload.character.BookNumber -eq 8) -Message 'Book 8 full-Special automation source did not load.'
+    Assert-WebAutomationSmoke -Condition (@($loadedFullBook8.payload.inventory.SpecialItems).Count -eq 12) -Message 'Book 8 full-Special automation source did not load with 12 Special Items.'
+
+    $lodestonePrompt = Invoke-WebApiAction -Process $session -Request @{ action = 'setSection'; section = 202 }
+    [void](Assert-PendingPrompt -Response $lodestonePrompt -ExpectedPrompt 'Section 202 discard Special Item' -ExpectedKind 'choiceMenu' -ContextContains @('Lodestone Pickup', 'Choose one Special Item to discard', '1. Book of the Magnakai'))
+
+    $lodestoneDone = Invoke-WebApiAction -Process $session -Request @{ action = 'submitFlow'; data = @{ response = 1 } }
+    Assert-WebAutomationSmoke -Condition ($null -eq (Get-PendingFlow -Response $lodestoneDone)) -Message 'Book 8 section 202 Lodestone discard prompt did not complete.'
+    Assert-WebAutomationSmoke -Condition ((@($lodestoneDone.payload.inventory.SpecialItems) -contains 'Lodestone')) -Message 'Book 8 section 202 did not add Lodestone after discarding a Special Item.'
+    Assert-WebAutomationSmoke -Condition (-not (@($lodestoneDone.payload.inventory.SpecialItems) -contains 'Book of the Magnakai')) -Message 'Book 8 section 202 did not discard the selected Special Item.'
+    Assert-WebAutomationSmoke -Condition (@($lodestoneDone.payload.inventory.SpecialItems).Count -eq 12) -Message 'Book 8 section 202 should leave Special Items at the 12-item cap after the Lodestone exchange.'
 
     '[PASS] Web parity automation smoke'
 }

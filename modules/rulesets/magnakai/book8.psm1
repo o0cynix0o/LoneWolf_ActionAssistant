@@ -137,11 +137,68 @@ function Add-LWBookEightSpecialItem {
     param(
         [Parameter(Mandatory = $true)][string]$Name,
         [string]$FlagName = '',
-        [string]$SuccessMessage = ''
+        [string]$SuccessMessage = '',
+        [switch]$RequireDiscardIfFull,
+        [string]$DiscardPromptLabel = ''
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($FlagName) -and (Test-LWStoryAchievementFlag -Name $FlagName)) {
+    $existing = Get-LWMatchingStateInventoryItem -State $script:GameState -Names @($Name) -Type 'special'
+    if (-not [string]::IsNullOrWhiteSpace($existing)) {
+        if (-not [string]::IsNullOrWhiteSpace($FlagName)) {
+            Set-LWStoryAchievementFlag -Name $FlagName
+        }
         return $true
+    }
+
+    if (-not $RequireDiscardIfFull -and -not [string]::IsNullOrWhiteSpace($FlagName) -and (Test-LWStoryAchievementFlag -Name $FlagName)) {
+        return $true
+    }
+
+    if ($RequireDiscardIfFull) {
+        $specialItems = @(Get-LWInventoryItems -Type 'special')
+        $capacity = Get-LWInventoryTypeCapacity -Type 'special'
+        $usedCapacity = Get-LWInventoryUsedCapacity -Type 'special' -Items $specialItems
+        if ($null -ne $capacity -and $usedCapacity -ge [int]$capacity -and $specialItems.Count -gt 0) {
+            $label = if ([string]::IsNullOrWhiteSpace($DiscardPromptLabel)) { ("Discard which Special Item for {0}" -f $Name) } else { $DiscardPromptLabel }
+            $webContextCommand = Get-Command -Name 'Set-LWWebPendingContextOverride' -CommandType Function -ErrorAction SilentlyContinue
+            if ($null -ne $webContextCommand) {
+                $lines = @(
+                    ("{0} Pickup" -f $Name),
+                    '',
+                    ("Your Special Items are full. Choose one Special Item to discard in favour of {0}:" -f $Name),
+                    ''
+                )
+                for ($i = 0; $i -lt $specialItems.Count; $i++) {
+                    $lines += ("{0}. {1}" -f ($i + 1), [string]$specialItems[$i])
+                }
+                & $webContextCommand (($lines -join "`n").Trim())
+            }
+
+            while ($true) {
+                Write-LWPanelHeader -Title ("{0} Pickup" -f $Name) -AccentColor 'DarkYellow'
+                Write-LWSubtle ("  Your Special Items are full. Discard one in favour of {0}." -f $Name)
+                Show-LWInventorySlotsSection -Type 'special'
+                $discardIndex = Read-LWInt -Prompt $label -Default 1 -Min 1 -Max $specialItems.Count -NoRefresh
+                $discarded = [string]$specialItems[$discardIndex - 1]
+                if ((Remove-LWInventoryItemSilently -Type 'special' -Name $discarded -Quantity 1) -le 0) {
+                    Write-LWWarn ("Could not discard {0}. Choose again." -f $discarded)
+                    $specialItems = @(Get-LWInventoryItems -Type 'special')
+                    continue
+                }
+
+                if (TryAdd-LWInventoryItemSilently -Type 'special' -Name $Name -Quantity 1) {
+                    if (-not [string]::IsNullOrWhiteSpace($FlagName)) {
+                        Set-LWStoryAchievementFlag -Name $FlagName
+                    }
+                    Write-LWInfo ("Discarded {0}; {1} added to Special Items." -f $discarded, $Name)
+                    return $true
+                }
+
+                [void](TryAdd-LWInventoryItemSilently -Type 'special' -Name $discarded -Quantity 1)
+                Write-LWWarn ("No room to add {0} automatically. Make room and add it manually if you are keeping it." -f $Name)
+                return $false
+            }
+        }
     }
 
     if (TryAdd-LWInventoryItemSilently -Type 'special' -Name $Name -Quantity 1) {
@@ -585,7 +642,6 @@ function Invoke-LWMagnakaiBookEightStorySectionAchievementTriggers {
         16 { Set-LWStoryAchievementFlag -Name 'Book8ConundrumSolved' }
         59 { Set-LWStoryAchievementFlag -Name 'Book8ConundrumSolved' }
         100 { Set-LWStoryAchievementFlag -Name 'Book8OhridoLorestoneClaimed' }
-        202 { Set-LWStoryAchievementFlag -Name 'Book8LodestoneClaimed' }
         267 { Set-LWStoryAchievementFlag -Name 'Book8LevitronEscapeRoute' }
         281 { Set-LWStoryAchievementFlag -Name 'Book8JungleHorrorFailureSeen' }
         350 { Set-LWStoryAchievementFlag -Name 'Book8LevitronEscapeRoute' }
@@ -757,7 +813,7 @@ function Invoke-LWMagnakaiBookEightSectionEntryRules {
             Invoke-LWBookFourChoiceTable -Title 'Section 201 Chamber Loot' -PromptLabel 'Section 201 choice' -ContextLabel 'Section 201' -Choices (Get-LWMagnakaiBookEightSection201ChoiceDefinitions) -Intro 'Section 201: take any useful gear before leaving the chamber.'
         }
         202 {
-            [void](Add-LWBookEightSpecialItem -Name 'Lodestone' -FlagName 'Book8LodestoneClaimed' -SuccessMessage 'Section 202: Lodestone added to Special Items.')
+            [void](Add-LWBookEightSpecialItem -Name 'Lodestone' -FlagName 'Book8LodestoneClaimed' -SuccessMessage 'Section 202: Lodestone added to Special Items.' -RequireDiscardIfFull -DiscardPromptLabel 'Section 202 discard Special Item')
         }
         226 {
             [void](Invoke-LWBookFourSectionEnduranceDelta -FlagName 'Book8Section226ColdDamageApplied' -Delta -3 -MessagePrefix 'Section 226: the cold night drains your strength.' -FatalCause 'The cold at section 226 reduced your Endurance to zero.')
