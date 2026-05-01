@@ -1101,6 +1101,7 @@ function Get-LWWebSafeCommandList {
         'achievements progress',
         'achievements planned',
         'roll',
+        'gold +/-n',
         'arrows +/-n',
         'combat status',
         'combat log',
@@ -1176,6 +1177,8 @@ function Get-LWWebSafeCommandGroups {
         [ordered]@{
             Title    = 'Inventory Resources'
             Commands = @(
+                (New-LWWebCommandButton -Label 'Spend 10 Gold' -Command 'gold -10' -Description 'Spend 10 Gold Crowns for a fare or fee.'),
+                (New-LWWebCommandButton -Label 'Add Gold' -Command 'gold +1' -Description 'Add 1 Gold Crown after a reward.'),
                 (New-LWWebCommandButton -Label 'Spend Arrow' -Command 'arrows -1' -Description 'Spend one arrow from your quiver.'),
                 (New-LWWebCommandButton -Label 'Fill Arrows' -Command 'arrows +12' -Description 'Refill arrows up to your quiver capacity.')
             )
@@ -2789,6 +2792,7 @@ function Test-LWWebSafeCommand {
         $trimmed -match '^campaign(\s+(overview|books|combat|survival|milestones))?$' -or
         $trimmed -match '^achievements(\s+(overview|recent|unlocked|locked|progress|planned))?$' -or
         $trimmed -match '^roll$' -or
+        $trimmed -match '^gold\s+[+-]?\d+$' -or
         $trimmed -match '^(arrow|arrows)\s+[+-]?\d+$' -or
         $trimmed -match '^combat\s+(status|log)$' -or
         $trimmed -match '^set\s+\d+$'

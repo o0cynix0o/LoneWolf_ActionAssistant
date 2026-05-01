@@ -182,6 +182,9 @@ try {
         Assert-WebCommandParitySmoke -Condition ($safeCommands -contains $command) -Message "Safe command list is missing $command."
         Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains $command) -Message "Command button groups are missing $command."
     }
+    Assert-WebCommandParitySmoke -Condition ($safeCommands -contains 'gold +/-n') -Message 'Safe command list is missing gold +/-n.'
+    Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains 'gold -10') -Message 'Command button groups are missing gold -10.'
+    Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains 'gold +1') -Message 'Command button groups are missing gold +1.'
     Assert-WebCommandParitySmoke -Condition ($safeCommands -contains 'arrows +/-n') -Message 'Safe command list is missing arrows +/-n.'
     Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains 'arrows -1') -Message 'Command button groups are missing arrows -1.'
     Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains 'arrows +12') -Message 'Command button groups are missing arrows +12.'
@@ -209,6 +212,9 @@ try {
 
     $arrows = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'arrows +12' }
     Assert-WebCommandParitySmoke -Condition ([int]$arrows.payload.inventory.QuiverArrows -eq 12) -Message 'arrows +12 did not fill the Large Quiver.'
+
+    $gold = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'gold -10' }
+    Assert-WebCommandParitySmoke -Condition ([int]$gold.payload.inventory.GoldCrowns -eq 7) -Message 'gold -10 did not spend 10 Gold Crowns.'
 
     $bookComplete = Invoke-WebApiAction -Process $session -Request @{ action = 'completeBook' }
     Assert-WebCommandParitySmoke -Condition ([string]$bookComplete.payload.session.CurrentScreen -eq 'bookcomplete') -Message 'completeBook did not open the book complete screen.'
