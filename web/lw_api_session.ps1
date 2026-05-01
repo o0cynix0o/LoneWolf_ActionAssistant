@@ -1767,12 +1767,13 @@ function Get-LWWebPendingContextText {
         return ($lines -join "`n").Trim()
     }
 
-    if ($promptText -match '^Book\s+(6|7)\s+choice\s+#(\d+)$') {
+    if ($promptText -match '^Book\s+(6|7|8)\s+choice\s+#(\d+)$') {
         $bookNumber = [int]$matches[1]
         $promptNumber = [int]$matches[2]
         $choices = switch ($bookNumber) {
             6 { @(Get-LWMagnakaiBookSixStartingChoices) }
             7 { @(Get-LWMagnakaiBookSevenStartingChoices) }
+            8 { @(Get-LWMagnakaiBookEightStartingChoices) }
             default { @() }
         }
         if ($choices.Count -gt 0) {
@@ -1828,7 +1829,7 @@ function Get-LWWebPendingPromptKind {
         'Reclaim which Special Item' { return 'safekeepingReclaim' }
     }
 
-    if ($promptText -match '^Book\s+(6|7)\s+choice\s+#(\d+)$') {
+    if ($promptText -match '^Book\s+(6|7|8)\s+choice\s+#(\d+)$') {
         return 'startingGearChoice'
     }
     if ($promptText -match '^Choose\s+\d+\s+mastered weapon number\(s\) separated by commas$') {

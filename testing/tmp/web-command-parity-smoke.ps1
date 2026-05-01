@@ -5,6 +5,7 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $sessionScript = Join-Path $repoRoot 'web\lw_api_session.ps1'
 $testSaveRoot = Join-Path $repoRoot 'testing\saves'
 $sourceSavePath = Join-Path $testSaveRoot ("web-command-parity-source-{0}.json" -f $PID)
+$bookEightSourceSavePath = Join-Path $testSaveRoot ("web-book-eight-choice-source-{0}.json" -f $PID)
 $lastSaveFile = Join-Path $repoRoot 'data\last-save.txt'
 $hadLastSave = Test-Path -LiteralPath $lastSaveFile
 $previousLastSave = if ($hadLastSave) { Get-Content -LiteralPath $lastSaveFile -Raw } else { $null }
@@ -64,6 +65,39 @@ function New-WebCommandParitySourceSave {
         New-Item -ItemType Directory -Path $lastSaveDir -Force | Out-Null
     }
     Set-Content -LiteralPath $lastSaveFile -Value ([string]$sourceSavePath) -Encoding UTF8
+}
+
+function New-WebBookEightStartingGearSourceSave {
+    New-Item -ItemType Directory -Path $testSaveRoot -Force | Out-Null
+
+    $state = New-LWDefaultState
+    $state.RuleSet = 'Magnakai'
+    $state.CurrentSection = 350
+    $state.Character.Name = 'Web Book Eight Choice'
+    $state.Character.BookNumber = 7
+    $state.Character.CombatSkillBase = 21
+    $state.Character.EnduranceCurrent = 28
+    $state.Character.EnduranceMax = 30
+    $state.Character.CompletedBooks = @(1, 2, 3, 4, 5, 6, 7)
+    $state.Character.LegacyKaiComplete = $true
+    $state.Character.MagnakaiRank = 5
+    $state.Character.MagnakaiDisciplines = @('Weaponmastery', 'Curing', 'Nexus', 'Animal Control', 'Psi-screen')
+    $state.Character.WeaponmasteryWeapons = @('Sword', 'Bow', 'Warhammer', 'Dagger', 'Mace')
+    $state.Inventory.Weapons = @('Sword')
+    $state.Inventory.BackpackItems = @()
+    $state.Inventory.SpecialItems = @()
+    $state.Inventory.PocketSpecialItems = @()
+    $state.Inventory.GoldCrowns = 11
+    $state.Run = New-LWRunState -Difficulty 'Normal' -Permadeath:$false
+    $state.Settings.SavePath = [string]$bookEightSourceSavePath
+    $state.Settings.AutoSave = $false
+    $state.CurrentBookStats = New-LWBookStats -BookNumber 7 -StartSection 1
+
+    Set-LWHostGameState -State $state | Out-Null
+    [void](Sync-LWRunIntegrityState -State $state -Reseal)
+
+    $json = $state | ConvertTo-Json -Depth 40
+    Set-Content -LiteralPath $bookEightSourceSavePath -Value $json -Encoding UTF8
 }
 
 function Restore-LastSavePointer {
@@ -136,6 +170,7 @@ function Get-WebCommandTexts {
 }
 
 New-WebCommandParitySourceSave
+New-WebBookEightStartingGearSourceSave
 $session = Start-WebApiSession
 try {
     $state = Invoke-WebApiAction -Process $session -Request @{ action = 'state' }
@@ -189,6 +224,18 @@ try {
     Assert-WebCommandParitySmoke -Condition ($null -ne $continueBook.payload.pendingFlow) -Message 'continueBook from Book 7 should start a prompt-backed transition.'
     Assert-WebCommandParitySmoke -Condition ([string]$continueBook.payload.pendingFlow.Type -eq 'continueBook') -Message 'Book 7 continueBook did not start the continueBook flow.'
 
+    $bookEightSource = Invoke-WebApiAction -Process $session -Request @{ action = 'loadGame'; path = [string]$bookEightSourceSavePath }
+    Assert-WebCommandParitySmoke -Condition ([string]$bookEightSource.payload.character.Name -eq 'Web Book Eight Choice') -Message 'Book 8 starting gear source save did not load.'
+    [void](Invoke-WebApiAction -Process $session -Request @{ action = 'showScreen'; name = 'bookcomplete' })
+    $bookEightChoice = Invoke-WebApiAction -Process $session -Request @{ action = 'continueBook' }
+    Assert-WebCommandParitySmoke -Condition ($null -ne $bookEightChoice.payload.pendingFlow) -Message 'Book 8 transition should pause for starting gear.'
+    Assert-WebCommandParitySmoke -Condition ([string]$bookEightChoice.payload.pendingFlow.PromptKind -eq 'startingGearChoice') -Message 'Book 8 starting gear prompt should be classified as startingGearChoice.'
+    Assert-WebCommandParitySmoke -Condition ([string]$bookEightChoice.payload.pendingFlow.Prompt.Prompt -eq 'Book 8 choice #1') -Message 'Book 8 starting gear prompt label is wrong.'
+    $bookEightContext = [string]$bookEightChoice.payload.pendingFlow.ContextText
+    foreach ($needle in @('Book 8 Starting Gear', '1. Sword', '3. Quiver', '10. 3 Fireseeds', '11. Review inventory / make room', '0. Done choosing')) {
+        Assert-WebCommandParitySmoke -Condition ($bookEightContext.Contains($needle)) -Message "Book 8 starting gear context did not include '$needle'."
+    }
+
     '[PASS] Web command parity smoke'
 }
 finally {
@@ -208,5 +255,8 @@ finally {
     Restore-LastSavePointer
     if (Test-Path -LiteralPath $sourceSavePath) {
         Remove-Item -LiteralPath $sourceSavePath -Force
+    }
+    if (Test-Path -LiteralPath $bookEightSourceSavePath) {
+        Remove-Item -LiteralPath $bookEightSourceSavePath -Force
     }
 }
