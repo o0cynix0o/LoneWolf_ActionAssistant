@@ -2016,7 +2016,7 @@ function renderFlowPromptCompanion(flow, payload, promptKind, quickChoices) {
       return `
         <section class="flow-support-block">
           <h3>Quick Picks</h3>
-          <p class="muted">Choose directly from the live options below instead of typing the entry by hand.</p>
+          <p class="muted">Click an option to fill the answer, then press Continue to confirm it.</p>
           ${renderFlowChoiceButtons(quickChoices, { stacked: true })}
           ${inventoryRequiredKinds.has(promptKind) || quickChoices.some((choice) => /inventory|make room|drop/i.test(choice.label) || String(choice.value).toUpperCase() === 'D')
             ? inventoryShortcut
@@ -2214,17 +2214,24 @@ function collectFlowPayload(flow) {
 }
 
 function bindFlowEvents(flow) {
-  const submitPromptChoice = async (choiceValue) => {
+  const selectPromptChoice = (choiceValue) => {
     const prompt = flow?.Prompt || null;
-    let response = choiceValue;
     if (prompt?.PromptType === 'yesno') {
-      response = ['y', 'yes', 'true', '1'].includes(String(choiceValue).trim().toLowerCase());
-    } else if (prompt?.PromptType === 'int') {
-      response = Number(choiceValue);
+      const wantedValue = ['y', 'yes', 'true', '1'].includes(String(choiceValue).trim().toLowerCase()) ? 'yes' : 'no';
+      const radio = document.querySelector(`input[name="flow-prompt-value"][value="${wantedValue}"]`);
+      if (radio) {
+        radio.checked = true;
+      }
+      setMessage(`Selected ${wantedValue}. Press Continue to confirm.`);
+      return;
     }
 
-    const result = await apiAction({ action: 'submitFlow', data: { response } });
-    applyResponse(result);
+    const input = document.getElementById('flow-prompt-value');
+    if (input) {
+      input.value = String(choiceValue);
+      input.focus();
+    }
+    setMessage(`Selected ${choiceValue}. Press Continue to confirm.`);
   };
 
   const form = document.getElementById('flow-form');
@@ -2252,12 +2259,8 @@ function bindFlowEvents(flow) {
   });
 
   document.querySelectorAll('[data-flow-prompt-choice]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      try {
-        await submitPromptChoice(button.getAttribute('data-flow-prompt-choice') || '');
-      } catch (error) {
-        handleActionError(error);
-      }
+    button.addEventListener('click', () => {
+      selectPromptChoice(button.getAttribute('data-flow-prompt-choice') || '');
     });
   });
 
