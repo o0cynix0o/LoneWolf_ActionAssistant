@@ -155,7 +155,7 @@ function inferFlowPromptKind(flow) {
       break;
   }
 
-  if (/^Book\s+(6|7)\s+choice\s+#\d+$/i.test(promptText)) {
+  if (/^Book\s+(6|7|8)\s+choice\s+#\d+$/i.test(promptText)) {
     return 'startingGearChoice';
   }
   if (/^Choose\s+\d+\s+mastered weapon number\(s\) separated by commas$/i.test(promptText)) {
@@ -210,6 +210,7 @@ function getTabForScreen(screenName) {
   switch (String(screenName || '').toLowerCase()) {
     case 'death':
     case 'sheet':
+    case 'bookcomplete':
       return 'overview';
     case 'disciplines':
       return 'disciplines';
@@ -2279,7 +2280,7 @@ function renderView() {
         `;
         break;
     }
-  } else if (currentScreen === 'bookcomplete') {
+  } else if (currentScreen === 'bookcomplete' && effectiveTab === 'overview') {
     elements.view.innerHTML = renderBookComplete(payload);
   } else {
     switch (effectiveTab) {
