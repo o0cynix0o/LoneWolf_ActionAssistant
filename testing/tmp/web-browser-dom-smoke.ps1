@@ -306,8 +306,6 @@ try {
     $domPreview = if ($dom.Length -gt 500) { $dom.Substring(0, 500) } else { $dom }
 
     Assert-WebDomSmoke -Condition ($dom.Contains('Lone Wolf Action Assistant')) -Message ("Browser DOM did not include the web app shell. DOM preview: {0}" -f $domPreview)
-    Assert-WebDomSmoke -Condition ($dom.Contains('reader-companion')) -Message 'Browser DOM did not include the reader companion toolbar.'
-    Assert-WebDomSmoke -Condition ($dom.Contains('reader-rail')) -Message 'Browser DOM did not include the reader rail container.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Roll Command')) -Message 'Browser DOM did not render the roll command panel.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Command Results')) -Message 'Browser DOM did not render the command result notification panel.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Achievement Commands')) -Message 'Browser DOM did not render achievement command buttons.'

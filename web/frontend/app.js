@@ -40,12 +40,8 @@ const FOLDER_TO_BOOK = {
 
 const elements = {
   statusLine: document.getElementById('status-line'),
-  readerPane: document.querySelector('.reader-pane'),
-  readerToolbar: document.querySelector('.reader-toolbar'),
   readerTitle: document.getElementById('reader-title'),
   readerFrame: document.getElementById('reader-frame'),
-  readerCompanion: null,
-  readerRail: null,
   summaryGrid: document.getElementById('summary-grid'),
   flowHost: document.getElementById('flow-host'),
   notificationHost: document.getElementById('notification-host'),
@@ -540,125 +536,6 @@ function renderNotifications(payload) {
       `).join('')}
     </div>
   `;
-}
-
-function ensureReaderCompanion() {
-  if (!elements.readerToolbar || !elements.readerPane) {
-    return null;
-  }
-
-  if (!elements.readerCompanion) {
-    const companion = document.createElement('div');
-    companion.id = 'reader-companion';
-    companion.className = 'reader-companion';
-    companion.setAttribute('aria-label', 'Reader quick status');
-    elements.readerToolbar.insertBefore(companion, elements.readerTitle);
-    elements.readerCompanion = companion;
-  }
-
-  if (!elements.readerRail) {
-    const rail = document.createElement('aside');
-    rail.id = 'reader-rail';
-    rail.className = 'reader-rail';
-    rail.setAttribute('aria-label', 'Reader companion');
-    elements.readerPane.appendChild(rail);
-    elements.readerRail = rail;
-  }
-
-  return {
-    companion: elements.readerCompanion,
-    rail: elements.readerRail,
-  };
-}
-
-function updateReaderRailFit() {
-  if (!elements.readerPane) {
-    return;
-  }
-
-  const hasState = Boolean(state.payload?.session?.HasState);
-  const paneWidth = elements.readerPane.getBoundingClientRect().width;
-  elements.readerPane.classList.toggle('reader-rail-ready', hasState && paneWidth >= 1080);
-}
-
-function renderReaderCompanion(payload) {
-  const nodes = ensureReaderCompanion();
-  if (!nodes) {
-    return;
-  }
-
-  const hasState = Boolean(payload?.session?.HasState);
-  if (!hasState) {
-    nodes.companion.innerHTML = '<span class="reader-companion-empty">Load a run for reader tools</span>';
-    nodes.rail.innerHTML = '';
-    updateReaderRailFit();
-    return;
-  }
-
-  const roll = payload?.randomNumber || {};
-  const pending = Boolean(payload?.pendingFlow?.Active || roll.PendingFlowActive);
-  const canRoll = Boolean(roll.CanRoll && !pending);
-  const bookNumber = roll.BookNumber || payload?.reader?.BookNumber;
-  const section = roll.Section || payload?.reader?.Section;
-  const currentEndurance = text(payload?.character?.EnduranceCurrent, '0');
-  const maxEndurance = text(payload?.character?.EnduranceMax, '0');
-  const gold = text(payload?.inventory?.GoldCrowns, '0');
-  const arrows = text(payload?.inventory?.QuiverArrows, '0');
-  const weapons = safeArray(payload?.inventory?.Weapons);
-  const specialCount = safeArray(payload?.inventory?.SpecialItems).length;
-  const recentRollMessages = getRecentRollMessages(payload);
-  const lastRoll = recentRollMessages.length ? recentRollMessages[recentRollMessages.length - 1] : '';
-  const modifier = formatSignedNumber(roll.Modifier || 0);
-  const statusLabel = pending ? 'Prompt' : (payload?.combat?.Active ? 'Combat' : 'Ready');
-  const notifications = safeArray(payload?.session?.Notifications)
-    .map((notification) => getNotificationMessage(notification))
-    .filter((message) => message.trim())
-    .slice(-3);
-
-  nodes.companion.innerHTML = `
-    <span class="reader-chip"><span>END</span><strong>${escapeHtml(currentEndurance)} / ${escapeHtml(maxEndurance)}</strong></span>
-    <span class="reader-chip optional-reader-chip"><span>Gold</span><strong>${escapeHtml(gold)}</strong></span>
-    <span class="reader-chip optional-reader-chip"><span>Arrows</span><strong>${escapeHtml(arrows)}</strong></span>
-    <span class="reader-chip state-reader-chip"><span>Status</span><strong>${escapeHtml(statusLabel)}</strong></span>
-    <button type="button" class="reader-roll-button" data-safe-command="roll" ${canRoll ? '' : 'disabled'}>Roll</button>
-  `;
-
-  nodes.rail.innerHTML = `
-    <div class="reader-rail-header">
-      <span>Reader Rail</span>
-      <strong>Book ${escapeHtml(text(bookNumber, '?'))} | ${escapeHtml(text(section, '?'))}</strong>
-    </div>
-    <div class="reader-rail-grid">
-      <div><span>END</span><strong>${escapeHtml(currentEndurance)} / ${escapeHtml(maxEndurance)}</strong></div>
-      <div><span>Gold</span><strong>${escapeHtml(gold)}</strong></div>
-      <div><span>Arrows</span><strong>${escapeHtml(arrows)}</strong></div>
-      <div><span>Special</span><strong>${escapeHtml(String(specialCount))} / 12</strong></div>
-    </div>
-    <div class="reader-rail-block">
-      <span>Weapon</span>
-      <strong>${escapeHtml(weapons.length ? weapons.join(', ') : 'Unarmed')}</strong>
-    </div>
-    <div class="reader-rail-block">
-      <span>Roll</span>
-      <button type="button" data-safe-command="roll" ${canRoll ? '' : 'disabled'}>Roll</button>
-      <p>${pending ? 'Finish the current prompt before rolling.' : escapeHtml(text(roll.Description, 'No section-specific random-number rule is registered.'))}</p>
-      <div class="reader-rail-tags">
-        <span>Modifier ${escapeHtml(modifier)}</span>
-        ${roll.ZeroCountsAsTen ? '<span>0 counts as 10</span>' : ''}
-      </div>
-      ${lastRoll ? `<p class="reader-rail-last">${escapeHtml(lastRoll)}</p>` : ''}
-    </div>
-    <div class="reader-rail-block">
-      <span>Recent</span>
-      ${notifications.length
-        ? `<ul>${notifications.map((message) => `<li>${escapeHtml(message)}</li>`).join('')}</ul>`
-        : '<p>No recent command results.</p>'}
-    </div>
-  `;
-
-  bindSafeCommandButtons(nodes.companion);
-  bindSafeCommandButtons(nodes.rail);
-  updateReaderRailFit();
 }
 
 function renderRollPanel(payload) {
@@ -2810,7 +2687,6 @@ function applyResponse(response) {
   renderSummaryCards(response.payload);
   renderNotifications(response.payload);
   renderRollPanel(response.payload);
-  renderReaderCompanion(response.payload);
   renderPendingFlow(response.payload);
   syncReader(response.payload);
   renderView();
@@ -2900,13 +2776,6 @@ function attachEvents() {
   elements.readerFrame.addEventListener('load', () => {
     void handleReaderNavigation();
   });
-
-  if (window.ResizeObserver && elements.readerPane) {
-    const readerResizeObserver = new ResizeObserver(updateReaderRailFit);
-    readerResizeObserver.observe(elements.readerPane);
-  } else {
-    window.addEventListener('resize', updateReaderRailFit);
-  }
 
   document.querySelector('[data-action="reload-state"]').addEventListener('click', refreshState);
 
