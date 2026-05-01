@@ -86,6 +86,13 @@ Assert-True -Condition ([int]$script:GameState.Inventory.GoldCrowns -eq 21) -Mes
 Assert-True -Condition (Test-LWStoryAchievementFlag -Name 'Book8Section299BargeFarePaid') -Message 'Section 299 -> 266 did not mark the barge fare flag.'
 
 Reset-BookEightSmokeState
+$script:GameState.CurrentSection = 299
+$script:GameState.Inventory.GoldCrowns = 31
+Set-LWStoryAchievementFlag -Name 'Book8Section299BargeFarePaid'
+Set-LWSection -Section 266
+Assert-True -Condition ([int]$script:GameState.Inventory.GoldCrowns -eq 21) -Message 'Section 299 -> 266 skipped the fare when the old fare flag was already set.'
+
+Reset-BookEightSmokeState
 $script:GameState.CurrentSection = 105
 $script:GameState.Inventory.BackpackItems = @('Meal')
 Invoke-LWSectionEntryRules

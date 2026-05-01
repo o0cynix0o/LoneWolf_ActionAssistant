@@ -316,10 +316,6 @@ function Invoke-LWMagnakaiBookEightGoldPayment {
 
     Set-LWModuleContext -Context (Get-LWModuleContext)
 
-    if (Test-LWStoryAchievementFlag -Name $FlagName) {
-        return $true
-    }
-
     if ([int]$script:GameState.Inventory.GoldCrowns -lt $Amount) {
         Write-LWWarn ("{0}: this route costs {1} Gold Crown{2}, but only {3} are recorded." -f $ContextLabel, $Amount, $(if ($Amount -eq 1) { '' } else { 's' }), [int]$script:GameState.Inventory.GoldCrowns)
         return $false

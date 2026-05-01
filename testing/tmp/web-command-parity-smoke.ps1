@@ -6,6 +6,7 @@ $sessionScript = Join-Path $repoRoot 'web\lw_api_session.ps1'
 $testSaveRoot = Join-Path $repoRoot 'testing\saves'
 $sourceSavePath = Join-Path $testSaveRoot ("web-command-parity-source-{0}.json" -f $PID)
 $bookEightSourceSavePath = Join-Path $testSaveRoot ("web-book-eight-choice-source-{0}.json" -f $PID)
+$bookEightFareSourceSavePath = Join-Path $testSaveRoot ("web-book-eight-fare-source-{0}.json" -f $PID)
 $lastSaveFile = Join-Path $repoRoot 'data\last-save.txt'
 $hadLastSave = Test-Path -LiteralPath $lastSaveFile
 $previousLastSave = if ($hadLastSave) { Get-Content -LiteralPath $lastSaveFile -Raw } else { $null }
@@ -100,6 +101,37 @@ function New-WebBookEightStartingGearSourceSave {
     Set-Content -LiteralPath $bookEightSourceSavePath -Value $json -Encoding UTF8
 }
 
+function New-WebBookEightFareSourceSave {
+    New-Item -ItemType Directory -Path $testSaveRoot -Force | Out-Null
+
+    $state = New-LWDefaultState
+    $state.RuleSet = 'Magnakai'
+    $state.CurrentSection = 299
+    $state.Character.Name = 'Web Book Eight Fare'
+    $state.Character.BookNumber = 8
+    $state.Character.CombatSkillBase = 21
+    $state.Character.EnduranceCurrent = 28
+    $state.Character.EnduranceMax = 30
+    $state.Character.CompletedBooks = @(1, 2, 3, 4, 5, 6, 7)
+    $state.Character.LegacyKaiComplete = $true
+    $state.Character.MagnakaiRank = 5
+    $state.Character.MagnakaiDisciplines = @('Weaponmastery', 'Curing', 'Nexus', 'Animal Control', 'Psi-screen')
+    $state.Character.WeaponmasteryWeapons = @('Sword', 'Bow', 'Warhammer', 'Dagger', 'Mace')
+    $state.Inventory.GoldCrowns = 31
+    $state.Run = New-LWRunState -Difficulty 'Normal' -Permadeath:$false
+    $state.Settings.SavePath = [string]$bookEightFareSourceSavePath
+    $state.Settings.AutoSave = $false
+    $state.CurrentBookStats = New-LWBookStats -BookNumber 8 -StartSection 1
+
+    Set-LWHostGameState -State $state | Out-Null
+    Add-LWBookSectionVisit -Section 299
+    Set-LWStoryAchievementFlag -Name 'Book8Section299BargeFarePaid'
+    [void](Sync-LWRunIntegrityState -State $state -Reseal)
+
+    $json = $state | ConvertTo-Json -Depth 40
+    Set-Content -LiteralPath $bookEightFareSourceSavePath -Value $json -Encoding UTF8
+}
+
 function Restore-LastSavePointer {
     if ($hadLastSave) {
         $directory = Split-Path -Parent $lastSaveFile
@@ -171,6 +203,7 @@ function Get-WebCommandTexts {
 
 New-WebCommandParitySourceSave
 New-WebBookEightStartingGearSourceSave
+New-WebBookEightFareSourceSave
 $session = Start-WebApiSession
 try {
     $state = Invoke-WebApiAction -Process $session -Request @{ action = 'state' }
@@ -216,6 +249,16 @@ try {
     $gold = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'gold -10' }
     Assert-WebCommandParitySmoke -Condition ([int]$gold.payload.inventory.GoldCrowns -eq 7) -Message 'gold -10 did not spend 10 Gold Crowns.'
 
+    Set-Content -LiteralPath $lastSaveFile -Value ([string]$bookEightFareSourceSavePath) -Encoding UTF8
+    $fareLoaded = Invoke-WebApiAction -Process $session -Request @{ action = 'loadLastSave' }
+    Assert-WebCommandParitySmoke -Condition ([int]$fareLoaded.payload.reader.Section -eq 299) -Message 'Book 8 fare source save did not load at section 299.'
+    Assert-WebCommandParitySmoke -Condition ([int]$fareLoaded.payload.inventory.GoldCrowns -eq 31) -Message 'Book 8 fare source save did not start with 31 Gold Crowns.'
+    $fareMoved = Invoke-WebApiAction -Process $session -Request @{ action = 'setSection'; section = 266 }
+    Assert-WebCommandParitySmoke -Condition ([int]$fareMoved.payload.reader.Section -eq 266) -Message 'Book 8 fare route did not move to section 266.'
+    Assert-WebCommandParitySmoke -Condition ([int]$fareMoved.payload.inventory.GoldCrowns -eq 21) -Message 'Book 8 section 299 -> 266 did not spend 10 Gold Crowns through the web API.'
+
+    Set-Content -LiteralPath $lastSaveFile -Value ([string]$sourceSavePath) -Encoding UTF8
+    $loaded = Invoke-WebApiAction -Process $session -Request @{ action = 'loadLastSave' }
     $bookComplete = Invoke-WebApiAction -Process $session -Request @{ action = 'completeBook' }
     Assert-WebCommandParitySmoke -Condition ([string]$bookComplete.payload.session.CurrentScreen -eq 'bookcomplete') -Message 'completeBook did not open the book complete screen.'
     Assert-WebCommandParitySmoke -Condition (@($bookComplete.payload.character.CompletedBooks) -contains 7) -Message 'completeBook did not mark Book 7 complete.'
