@@ -867,6 +867,8 @@ function Advance-LWCompletedBookTransition {
 }
 
 function Complete-LWBook {
+    param([switch]$DeferTransition)
+
     if (-not (Test-LWHasState)) {
         Write-LWWarn 'No active character. Use new or load first.'
         return
@@ -907,6 +909,12 @@ function Complete-LWBook {
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
         Clear-LWDeathState
         Write-LWInfo ("Book {0} complete. The current Magnakai campaign is now complete." -f $currentBook)
+        Invoke-LWMaybeAutosave
+        return
+    }
+
+    if ($DeferTransition) {
+        Write-LWInfo ("Book {0} complete. Continue to {1} from the Book Complete screen." -f $currentBook, $nextBookLabel)
         Invoke-LWMaybeAutosave
         return
     }

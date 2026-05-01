@@ -42,7 +42,8 @@ function New-WebCommandParitySourceSave {
     $state.Character.WeaponmasteryWeapons = @('Sword', 'Bow', 'Warhammer', 'Dagger')
     $state.Inventory.Weapons = @('Sword', 'Bow')
     $state.Inventory.BackpackItems = @('Meal', 'Rope')
-    $state.Inventory.SpecialItems = @('Book of the Magnakai')
+    $state.Inventory.SpecialItems = @('Book of the Magnakai', 'Large Quiver')
+    $state.Inventory.QuiverArrows = 0
     $state.Inventory.GoldCrowns = 17
     $state.Run = New-LWRunState -Difficulty 'Normal' -Permadeath:$false
     $state.Settings.SavePath = [string]$sourceSavePath
@@ -146,6 +147,10 @@ try {
         Assert-WebCommandParitySmoke -Condition ($safeCommands -contains $command) -Message "Safe command list is missing $command."
         Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains $command) -Message "Command button groups are missing $command."
     }
+    Assert-WebCommandParitySmoke -Condition ($safeCommands -contains 'arrows +/-n') -Message 'Safe command list is missing arrows +/-n.'
+    Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains 'arrows -1') -Message 'Command button groups are missing arrows -1.'
+    Assert-WebCommandParitySmoke -Condition ($buttonCommands -contains 'arrows +12') -Message 'Command button groups are missing arrows +12.'
+    Assert-WebCommandParitySmoke -Condition (-not ($cliOnly -contains 'arrow / arrows')) -Message 'Arrow commands should no longer be marked CLI-only.'
     Assert-WebCommandParitySmoke -Condition ($cliOnly -contains 'setcs / setend / setmaxend') -Message 'CLI-only command notes are missing manual stat overrides.'
 
     $loaded = Invoke-WebApiAction -Process $session -Request @{ action = 'loadLastSave' }
@@ -166,6 +171,23 @@ try {
     $roll = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'roll' }
     $rollNotifications = @($roll.payload.session.Notifications | ForEach-Object { [string]$_.Message })
     Assert-WebCommandParitySmoke -Condition (($rollNotifications -join "`n").Contains('Random Number Table roll')) -Message 'roll did not return a visible random-number notification.'
+
+    $arrows = Invoke-WebApiAction -Process $session -Request @{ action = 'safeCommand'; command = 'arrows +12' }
+    Assert-WebCommandParitySmoke -Condition ([int]$arrows.payload.inventory.QuiverArrows -eq 12) -Message 'arrows +12 did not fill the Large Quiver.'
+
+    $bookComplete = Invoke-WebApiAction -Process $session -Request @{ action = 'completeBook' }
+    Assert-WebCommandParitySmoke -Condition ([string]$bookComplete.payload.session.CurrentScreen -eq 'bookcomplete') -Message 'completeBook did not open the book complete screen.'
+    Assert-WebCommandParitySmoke -Condition (@($bookComplete.payload.character.CompletedBooks) -contains 7) -Message 'completeBook did not mark Book 7 complete.'
+    Assert-WebCommandParitySmoke -Condition ([string]$bookComplete.payload.session.ScreenData.ContinueToBookLabel -match 'Book 8') -Message 'completeBook did not offer Book 8 continuation.'
+
+    [void](Invoke-WebApiAction -Process $session -Request @{ action = 'showScreen'; name = 'sheet' })
+    $reopenedBookComplete = Invoke-WebApiAction -Process $session -Request @{ action = 'completeBook' }
+    Assert-WebCommandParitySmoke -Condition ([string]$reopenedBookComplete.payload.session.CurrentScreen -eq 'bookcomplete') -Message 'completeBook did not reopen an already-completed book screen.'
+    Assert-WebCommandParitySmoke -Condition ([string]$reopenedBookComplete.payload.session.ScreenData.ContinueToBookLabel -match 'Book 8') -Message 'Reopened book complete screen did not offer Book 8 continuation.'
+
+    $continueBook = Invoke-WebApiAction -Process $session -Request @{ action = 'continueBook' }
+    Assert-WebCommandParitySmoke -Condition ($null -ne $continueBook.payload.pendingFlow) -Message 'continueBook from Book 7 should start a prompt-backed transition.'
+    Assert-WebCommandParitySmoke -Condition ([string]$continueBook.payload.pendingFlow.Type -eq 'continueBook') -Message 'Book 7 continueBook did not start the continueBook flow.'
 
     '[PASS] Web command parity smoke'
 }

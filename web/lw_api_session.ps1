@@ -993,6 +993,7 @@ function Get-LWWebSafeCommandList {
         'achievements progress',
         'achievements planned',
         'roll',
+        'arrows +/-n',
         'combat status',
         'combat log',
         'set <section>'
@@ -1063,6 +1064,13 @@ function Get-LWWebSafeCommandGroups {
                 (New-LWWebCommandButton -Label 'Combat Status' -Command 'combat status' -Description 'Open the current combat state.'),
                 (New-LWWebCommandButton -Label 'Combat Log' -Command 'combat log' -Description 'Open active and archived combat records.')
             )
+        },
+        [ordered]@{
+            Title    = 'Inventory Resources'
+            Commands = @(
+                (New-LWWebCommandButton -Label 'Spend Arrow' -Command 'arrows -1' -Description 'Spend one arrow from your quiver.'),
+                (New-LWWebCommandButton -Label 'Fill Arrows' -Command 'arrows +12' -Description 'Refill arrows up to your quiver capacity.')
+            )
         }
     )
 }
@@ -1073,11 +1081,10 @@ function Get-LWWebCliOnlyCommands {
         [ordered]@{ Label = 'difficulty / permadeath'; Reason = 'Run settings are chosen through setup and locked after the run starts.' },
         [ordered]@{ Label = 'mode manual|data'; Reason = 'Combat-mode mutation is still terminal-only.' },
         [ordered]@{ Label = 'discipline add'; Reason = 'Manual discipline repair still needs a prompt-backed browser flow.' },
-        [ordered]@{ Label = 'complete'; Reason = 'Book completion is driven by section automation and the Book Complete screen.' },
+        [ordered]@{ Label = 'complete'; Reason = 'Use the browser Complete Book button to mark the current book complete.' },
         [ordered]@{ Label = 'healcheck'; Reason = 'Healing is applied through section automation; manual trigger remains terminal-only.' },
         [ordered]@{ Label = 'die / fail'; Reason = 'Manual terminal death/failure shortcuts are not exposed in the browser.' },
         [ordered]@{ Label = 'setcs / setend / setmaxend'; Reason = 'Manual stat override controls are not exposed in the browser.' },
-        [ordered]@{ Label = 'arrow / arrows'; Reason = 'Quiver mutation is not exposed in the browser yet.' },
         [ordered]@{ Label = 'fight'; Reason = 'Use the Combat tab Start Combat plus Auto Resolve buttons.' },
         [ordered]@{ Label = 'combat potion'; Reason = 'Combat potion use still needs a browser combat-round prompt flow.' },
         [ordered]@{ Label = 'combat log [n|all|book n]'; Reason = 'The browser shows active and archived fights, but exact archive filters are not exposed yet.' },
@@ -1092,6 +1099,7 @@ function Get-LWWebHelpSnapshot {
             [ordered]@{ Label = 'inventory'; Value = 'Open inventory and resources.' },
             [ordered]@{ Label = 'section <n>'; Value = 'Move to a numbered section.' },
             [ordered]@{ Label = 'roll'; Value = 'Roll the Random Number Table for the current section.' },
+            [ordered]@{ Label = 'arrows +/-n'; Value = 'Spend or refill quiver arrows.' },
             [ordered]@{ Label = 'combat status'; Value = 'Open current combat state.' },
             [ordered]@{ Label = 'combat log'; Value = 'Open detailed combat records.' },
             [ordered]@{ Label = 'save'; Value = 'Save the current run.' },
@@ -2004,6 +2012,39 @@ function Start-LWWebContinueBookFlow {
         })
 }
 
+function Show-LWWebBookCompleteScreen {
+    param([Parameter(Mandatory = $true)][int]$BookNumber)
+
+    $bookSummary = $null
+    foreach ($entry in @($script:GameState.BookHistory)) {
+        if ($null -ne $entry -and (Test-LWPropertyExists -Object $entry -Name 'BookNumber') -and [int]$entry.BookNumber -eq $BookNumber) {
+            $bookSummary = $entry
+        }
+    }
+    if ($null -eq $bookSummary) {
+        $bookSummary = New-LWBookHistoryEntry -Stats (Ensure-LWCurrentBookStats)
+    }
+
+    $nextBookLabel = if ($BookNumber -lt 8) { Format-LWBookLabel -BookNumber ($BookNumber + 1) -IncludePrefix } else { '' }
+    $completionSnapshot = [pscustomobject]@{
+        RuleSet          = [string]$script:GameState.RuleSet
+        Difficulty       = Get-LWCurrentDifficulty
+        RunIntegrityState = [string]$script:GameState.Run.IntegrityState
+        CombatMode       = [string]$script:GameState.Settings.CombatMode
+        GoldCrowns       = [int]$script:GameState.Inventory.GoldCrowns
+        EnduranceCurrent = [int]$script:GameState.Character.EnduranceCurrent
+        EnduranceMax     = [int]$script:GameState.Character.EnduranceMax
+        NotesCount       = @($script:GameState.Character.Notes).Count
+    }
+
+    Set-LWScreen -Name 'bookcomplete' -Data ([pscustomobject]@{
+            Summary             = $bookSummary
+            CharacterName       = $script:GameState.Character.Name
+            Snapshot            = $completionSnapshot
+            ContinueToBookLabel = $nextBookLabel
+        })
+}
+
 function Start-LWWebUseMealFlow {
     if ($null -ne $script:LWWebFlow) {
         throw 'Finish or cancel the current web flow first.'
@@ -2637,6 +2678,7 @@ function Test-LWWebSafeCommand {
         $trimmed -match '^campaign(\s+(overview|books|combat|survival|milestones))?$' -or
         $trimmed -match '^achievements(\s+(overview|recent|unlocked|locked|progress|planned))?$' -or
         $trimmed -match '^roll$' -or
+        $trimmed -match '^(arrow|arrows)\s+[+-]?\d+$' -or
         $trimmed -match '^combat\s+(status|log)$' -or
         $trimmed -match '^set\s+\d+$'
     )
@@ -2975,6 +3017,26 @@ function Invoke-LWWebRequest {
             }
             return ("Ran command: {0}" -f $trimmedCommand)
         }
+        'completeBook' {
+            if ($null -eq $script:GameState) {
+                throw 'No active run is loaded.'
+            }
+            if ($null -ne $script:LWWebFlow) {
+                throw 'Finish or cancel the current web flow first.'
+            }
+            if ([string]$script:LWUi.CurrentScreen -eq 'bookcomplete') {
+                throw 'The current book is already on the book complete screen.'
+            }
+
+            $currentBook = [int]$script:GameState.Character.BookNumber
+            if (@($script:GameState.Character.CompletedBooks) -contains $currentBook) {
+                Show-LWWebBookCompleteScreen -BookNumber $currentBook
+                return ("Showing Book {0} complete screen." -f $currentBook)
+            }
+
+            Complete-LWBook -DeferTransition
+            return ("Marked Book {0} complete." -f $currentBook)
+        }
         'continueBook' {
             if ($null -eq $script:GameState) {
                 throw 'No active run is loaded.'
@@ -2982,8 +3044,8 @@ function Invoke-LWWebRequest {
             if ([string]$script:LWUi.CurrentScreen -ne 'bookcomplete') {
                 throw 'Book continuation is only available from the book complete screen.'
             }
-            if ([int]$script:GameState.Character.BookNumber -ge 7) {
-                throw 'The current Magnakai campaign is already complete.'
+            if ([int]$script:GameState.Character.BookNumber -ge 8) {
+                throw 'The current supported Magnakai campaign is already complete.'
             }
 
             return (Start-LWWebContinueBookFlow)

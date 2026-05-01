@@ -58,6 +58,7 @@ const elements = {
   newGameBtn: document.getElementById('new-game-btn'),
   loadLastSaveBtn: document.getElementById('load-last-save-btn'),
   saveGameBtn: document.getElementById('save-game-btn'),
+  completeBookBtn: document.getElementById('complete-book-btn'),
 };
 
 async function apiState() {
@@ -2650,7 +2651,9 @@ function applyResponse(response) {
     state.activeTab = mappedTab;
   }
   elements.statusLine.textContent = `Screen: ${text(response.payload?.session?.CurrentScreen, 'welcome')} | Engine ${text(response.payload?.app?.Version, '0.9.0')}`;
-  elements.saveGameBtn.disabled = !response.payload?.session?.HasState;
+  const hasState = Boolean(response.payload?.session?.HasState);
+  elements.saveGameBtn.disabled = !hasState;
+  elements.completeBookBtn.disabled = !hasState || currentScreen === 'bookcomplete' || currentScreen === 'death';
   syncActiveTabButtons();
   renderSummaryCards(response.payload);
   renderNotifications(response.payload);
@@ -2768,6 +2771,15 @@ function attachEvents() {
   elements.saveGameBtn.addEventListener('click', async () => {
     try {
       const response = await apiAction({ action: 'saveGame' });
+      applyResponse(response);
+    } catch (error) {
+      handleActionError(error);
+    }
+  });
+
+  elements.completeBookBtn.addEventListener('click', async () => {
+    try {
+      const response = await apiAction({ action: 'completeBook' });
       applyResponse(response);
     } catch (error) {
       handleActionError(error);
