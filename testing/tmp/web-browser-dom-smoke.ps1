@@ -298,14 +298,16 @@ try {
     Assert-WebDomSmoke -Condition (($rollNotifications -join "`n").Contains('Random Number Table roll')) -Message 'Roll command did not return a random-number notification before DOM capture.'
 
     $rootHtml = [string](Invoke-RestMethod -Method Get -Uri "$baseUrl/" -TimeoutSec 5)
-    Assert-WebDomSmoke -Condition ($rootHtml.Contains('Lone Wolf Web Assistant')) -Message 'The web server root did not return the frontend shell.'
+    Assert-WebDomSmoke -Condition ($rootHtml.Contains('Lone Wolf Action Assistant')) -Message 'The web server root did not return the frontend shell.'
 
     $chromePath = Get-ChromePath
     New-Item -ItemType Directory -Path $chromeUserDataDir -Force | Out-Null
     $dom = Invoke-ChromeDumpDom -ChromePath $chromePath -Url "$baseUrl/"
     $domPreview = if ($dom.Length -gt 500) { $dom.Substring(0, 500) } else { $dom }
 
-    Assert-WebDomSmoke -Condition ($dom.Contains('Lone Wolf Web Assistant')) -Message ("Browser DOM did not include the web app shell. DOM preview: {0}" -f $domPreview)
+    Assert-WebDomSmoke -Condition ($dom.Contains('Lone Wolf Action Assistant')) -Message ("Browser DOM did not include the web app shell. DOM preview: {0}" -f $domPreview)
+    Assert-WebDomSmoke -Condition ($dom.Contains('reader-companion')) -Message 'Browser DOM did not include the reader companion toolbar.'
+    Assert-WebDomSmoke -Condition ($dom.Contains('reader-rail')) -Message 'Browser DOM did not include the reader rail container.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Roll Command')) -Message 'Browser DOM did not render the roll command panel.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Command Results')) -Message 'Browser DOM did not render the command result notification panel.'
     Assert-WebDomSmoke -Condition ($dom.Contains('Achievement Commands')) -Message 'Browser DOM did not render achievement command buttons.'

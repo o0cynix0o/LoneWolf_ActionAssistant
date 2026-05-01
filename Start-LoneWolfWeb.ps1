@@ -56,7 +56,7 @@ if (-not $NoBrowser) {
 }
 
 Write-Host ""
-Write-Host "Lone Wolf web scaffold" -ForegroundColor Yellow
+Write-Host "Lone Wolf Action Assistant" -ForegroundColor Yellow
 Write-Host "URL: $url" -ForegroundColor Green
 Write-Host "Press Enter in this window to stop the web server." -ForegroundColor DarkGray
 Write-Host ""
