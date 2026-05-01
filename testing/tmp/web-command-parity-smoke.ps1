@@ -231,6 +231,8 @@ try {
     Assert-WebCommandParitySmoke -Condition ($null -ne $bookEightChoice.payload.pendingFlow) -Message 'Book 8 transition should pause for starting gear.'
     Assert-WebCommandParitySmoke -Condition ([string]$bookEightChoice.payload.pendingFlow.PromptKind -eq 'startingGearChoice') -Message 'Book 8 starting gear prompt should be classified as startingGearChoice.'
     Assert-WebCommandParitySmoke -Condition ([string]$bookEightChoice.payload.pendingFlow.Prompt.Prompt -eq 'Book 8 choice #1') -Message 'Book 8 starting gear prompt label is wrong.'
+    Assert-WebCommandParitySmoke -Condition ([string]$bookEightChoice.payload.reader.Url -eq '/books/lw/08tjoh/equipmnt.htm') -Message 'Book 8 starting gear should sync the reader to the Equipment page.'
+    Assert-WebCommandParitySmoke -Condition ([string]$bookEightChoice.payload.reader.LocationLabel -eq 'Equipment') -Message 'Book 8 starting gear should label the reader as Equipment.'
     $bookEightContext = [string]$bookEightChoice.payload.pendingFlow.ContextText
     foreach ($needle in @('Book 8 Starting Gear', '1. Sword', '3. Quiver', '10. 3 Fireseeds', '11. Review inventory / make room', '0. Done choosing')) {
         Assert-WebCommandParitySmoke -Condition ($bookEightContext.Contains($needle)) -Message "Book 8 starting gear context did not include '$needle'."

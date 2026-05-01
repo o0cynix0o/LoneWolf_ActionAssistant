@@ -552,6 +552,114 @@ function Get-LWWebReaderUrl {
     return ('/books/{0}/sect{1}.htm' -f $folders[$BookNumber], $Section)
 }
 
+function Get-LWWebBookPageUrl {
+    param(
+        [int]$BookNumber,
+        [Parameter(Mandatory = $true)][string]$PageName,
+        [string]$Fragment = ''
+    )
+
+    if ($BookNumber -le 0 -or [string]::IsNullOrWhiteSpace($PageName)) {
+        return '/web/frontend/library.html'
+    }
+
+    $folders = Get-LWWebBookFolders
+    if (-not $folders.ContainsKey($BookNumber)) {
+        return '/web/frontend/library.html'
+    }
+
+    $safePageName = Split-Path -Leaf $PageName
+    $url = ('/books/{0}/{1}' -f $folders[$BookNumber], $safePageName)
+    if (-not [string]::IsNullOrWhiteSpace($Fragment)) {
+        $url += ('#{0}' -f $Fragment.TrimStart('#'))
+    }
+
+    return $url
+}
+
+function Get-LWWebReaderTarget {
+    param(
+        [int]$BookNumber,
+        [int]$Section,
+        [object]$PendingFlow = $null
+    )
+
+    $targetBook = $BookNumber
+    $targetSection = $Section
+    $url = Get-LWWebReaderUrl -BookNumber $targetBook -Section $targetSection
+    $locationLabel = if ($targetSection -gt 0) { "Section $targetSection" } else { 'Library' }
+
+    if ($null -ne $script:LWWebFlow -and $null -ne $PendingFlow) {
+        $flowType = Get-LWWebOptionalString -Object $script:LWWebFlow -Name 'Type'
+        $flowStep = Get-LWWebOptionalString -Object $script:LWWebFlow -Name 'Step'
+        $flowBook = if ($null -ne $script:LWWebFlow.Data -and
+            (Test-LWPropertyExists -Object $script:LWWebFlow.Data -Name 'BookNumber') -and
+            [int]$script:LWWebFlow.Data.BookNumber -gt 0) {
+            [int]$script:LWWebFlow.Data.BookNumber
+        }
+        else {
+            $targetBook
+        }
+        $promptKind = Get-LWWebOptionalString -Object $PendingFlow -Name 'PromptKind'
+
+        if ($flowType -eq 'continueBook' -or ($flowType -eq 'newGame' -and $flowStep -eq 'startupEquipment')) {
+            $targetBook = $flowBook
+            switch ($promptKind) {
+                'disciplineChoice' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'discplnz.htm'
+                    $locationLabel = 'Magnakai Disciplines'
+                }
+                'weaponmasteryChoice' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'discplnz.htm' -Fragment 'wpnmstry'
+                    $locationLabel = 'Weaponmastery'
+                }
+                'safekeepingMenu' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm' -Fragment 'howmuch'
+                    $locationLabel = 'Equipment Capacity'
+                }
+                'safekeepingStore' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm' -Fragment 'howmuch'
+                    $locationLabel = 'Equipment Capacity'
+                }
+                'safekeepingReclaim' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm' -Fragment 'howmuch'
+                    $locationLabel = 'Equipment Capacity'
+                }
+                'makeRoomConfirm' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm' -Fragment 'howmuch'
+                    $locationLabel = 'Equipment Capacity'
+                }
+                'inventoryManageStart' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm' -Fragment 'howmuch'
+                    $locationLabel = 'Equipment Capacity'
+                }
+                'inventoryManageContinue' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm' -Fragment 'howmuch'
+                    $locationLabel = 'Equipment Capacity'
+                }
+                'startingGearChoice' {
+                    $url = Get-LWWebBookPageUrl -BookNumber $targetBook -PageName 'equipmnt.htm'
+                    $locationLabel = 'Equipment'
+                }
+                default {
+                    if ($targetBook -gt 0 -and $targetSection -gt 0) {
+                        $url = Get-LWWebReaderUrl -BookNumber $targetBook -Section $targetSection
+                        $locationLabel = "Section $targetSection"
+                    }
+                }
+            }
+        }
+    }
+
+    return [ordered]@{
+        BookNumber    = $targetBook
+        BookTitle     = if ($targetBook -gt 0) { [string](Get-LWBookTitle -BookNumber $targetBook) } else { '' }
+        Section       = $targetSection
+        Url           = $url
+        LocationLabel = $locationLabel
+    }
+}
+
 function Get-LWWebSaveEntries {
     return @(
         foreach ($entry in @(Get-LWSaveCatalog)) {
@@ -2495,7 +2603,8 @@ function Get-LWWebStateSnapshot {
             [int]$script:LWWebFlow.Data.Section -gt 0) {
             $readerSection = [int]$script:LWWebFlow.Data.Section
         }
-        $bookTitle = [string](Get-LWBookTitle -BookNumber $bookNumber)
+        $readerTarget = Get-LWWebReaderTarget -BookNumber $bookNumber -Section $readerSection -PendingFlow $pendingFlow
+        $bookTitle = if (-not [string]::IsNullOrWhiteSpace([string]$readerTarget.BookTitle)) { [string]$readerTarget.BookTitle } else { [string](Get-LWBookTitle -BookNumber $bookNumber) }
         $inventory = $script:GameState.Inventory
         $character = $script:GameState.Character
         $combat = $script:GameState.Combat
@@ -2538,10 +2647,11 @@ function Get-LWWebStateSnapshot {
                 SavePath      = if ((Test-LWPropertyExists -Object $script:GameState.Settings -Name 'SavePath') -and -not [string]::IsNullOrWhiteSpace([string]$script:GameState.Settings.SavePath)) { [string]$script:GameState.Settings.SavePath } else { '' }
             }
             reader           = [ordered]@{
-                BookNumber = $bookNumber
-                BookTitle  = $bookTitle
-                Section    = $readerSection
-                Url        = Get-LWWebReaderUrl -BookNumber $bookNumber -Section $readerSection
+                BookNumber    = [int]$readerTarget.BookNumber
+                BookTitle     = $bookTitle
+                Section       = $readerTarget.Section
+                Url           = [string]$readerTarget.Url
+                LocationLabel = [string]$readerTarget.LocationLabel
             }
             character        = [ordered]@{
                 Name                 = if ($null -ne $character -and -not [string]::IsNullOrWhiteSpace([string]$character.Name)) { [string]$character.Name } else { '' }

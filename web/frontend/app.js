@@ -359,18 +359,30 @@ function getReaderPageInfo() {
       return { type: 'library', url: url.pathname };
     }
 
-    const match = url.pathname.match(/^\/books\/lw\/([^/]+)\/sect(\d+)\.htm$/i);
-    if (!match) {
+    const sectionMatch = url.pathname.match(/^\/books\/lw\/([^/]+)\/sect(\d+)\.htm$/i);
+    if (sectionMatch) {
+      const folder = sectionMatch[1].toLowerCase();
+      return {
+        type: 'section',
+        url: url.pathname,
+        folder,
+        bookNumber: FOLDER_TO_BOOK[folder] || null,
+        section: Number(sectionMatch[2]),
+      };
+    }
+
+    const pageMatch = url.pathname.match(/^\/books\/lw\/([^/]+)\/([^/]+\.htm)$/i);
+    if (!pageMatch) {
       return { type: 'other', url: url.pathname };
     }
 
-    const folder = match[1].toLowerCase();
+    const folder = pageMatch[1].toLowerCase();
     return {
-      type: 'section',
+      type: 'bookPage',
       url: url.pathname,
       folder,
       bookNumber: FOLDER_TO_BOOK[folder] || null,
-      section: Number(match[2]),
+      page: pageMatch[2].toLowerCase(),
     };
   } catch (_error) {
     return null;
@@ -386,6 +398,18 @@ function updateReaderTitleFromPageInfo(info) {
     if (!state.payload?.session?.HasState) {
       elements.readerTitle.textContent = 'Reader Home';
     }
+    return;
+  }
+
+  if (info.type === 'bookPage') {
+    const payload = state.payload;
+    const activeBookNumber = Number(payload?.reader?.BookNumber || 0);
+    const activeBookTitle = payload?.reader?.BookTitle || '';
+    const locationLabel = payload?.reader?.LocationLabel || info.page;
+    const title = info.bookNumber === activeBookNumber && activeBookTitle
+      ? `Book ${info.bookNumber} - ${activeBookTitle} | ${locationLabel}`
+      : `Book ${text(info.bookNumber, '?')} | ${locationLabel}`;
+    elements.readerTitle.textContent = title;
     return;
   }
 
@@ -445,7 +469,7 @@ function renderSummaryCards(payload) {
   if (payload?.session?.HasState) {
     cards.push(['Character', text(payload.character?.Name)]);
     cards.push(['Book', `Book ${payload.reader?.BookNumber} - ${text(payload.reader?.BookTitle, 'Unknown')}`]);
-    cards.push(['Section', text(payload.reader?.Section)]);
+    cards.push(['Section', text(payload.reader?.LocationLabel || payload.reader?.Section)]);
     cards.push(['END', `${text(payload.character?.EnduranceCurrent, '0')} / ${text(payload.character?.EnduranceMax, '0')}`]);
     cards.push(['Gold', text(payload.inventory?.GoldCrowns, '0')]);
   } else {
@@ -2625,8 +2649,9 @@ function bindDynamicViewEvents(payload) {
 
 function syncReader(payload) {
   const url = payload?.reader?.Url || '/web/frontend/library.html';
+  const locationLabel = payload?.reader?.LocationLabel || `Section ${text(payload.reader?.Section, '?')}`;
   elements.readerTitle.textContent = payload?.session?.HasState
-    ? `Book ${payload.reader.BookNumber} - ${text(payload.reader.BookTitle)} | Section ${text(payload.reader.Section)}`
+    ? `Book ${payload.reader.BookNumber} - ${text(payload.reader.BookTitle)} | ${text(locationLabel)}`
     : 'Reader Home';
 
   const current = elements.readerFrame.getAttribute('src');
