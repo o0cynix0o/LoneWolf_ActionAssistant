@@ -433,6 +433,8 @@ function Invoke-LWCoreStartCombat {
         $combatScenario.UseMindblast = $useMindblast
         $combatScenario.PsychicAttackMode = $psychicAttackMode
         Invoke-LWRuleSetCombatPsychicAttackRules -State $script:GameState -Scenario $combatScenario
+        $playerMod = [int]$combatScenario.PlayerMod
+        $mindblastCombatSkillBonus = [int]$combatScenario.MindblastCombatSkillBonus
         $doubleEnemyEnduranceLoss = [bool]$combatScenario.DoubleEnemyEnduranceLoss
 
         if (-not $useQuickDefaults) {

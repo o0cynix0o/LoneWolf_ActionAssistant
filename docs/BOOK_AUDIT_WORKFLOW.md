@@ -8,6 +8,7 @@ Use this when the task is:
 - map the routes
 - find missing items
 - find missing rules and one-off exceptions
+- create structured automation ledgers
 - propose route/exploration/story achievements
 - draft or update player-facing strategy-guide material
 - write repeatable local reports
@@ -64,11 +65,15 @@ See also:
 
 For each book, the audit should usually produce:
 
+- `BOOKX_AUTOMATION_LEDGER.md`
 - `BOOKX_ENDINGS_AND_ROUTE_FAMILIES.md`
 - `BOOKX_RULES_AND_ITEMS_AUDIT.md`
+- `BOOKX_COMBAT_AND_RANDOM_AUDIT.md`
 - `BOOKX_ACHIEVEMENT_CANDIDATES.md`
 
 These are local working reports and normally stay in `testing/logs/`.
+
+`BOOKX_AUTOMATION_LEDGER.md` is the build handoff. It should be structured enough that implementation can work from it without re-reading the whole book.
 
 ## Expected Public Tracking Outputs
 
@@ -124,7 +129,69 @@ Identify:
 
 The goal is not to enumerate every tiny branch first. The goal is to understand the meaningful route families and the terminal outcomes.
 
-### 3. Audit Missing Rules And Items
+### 3. Run A Mechanical Text Sweep
+
+Before relying on memory from the read-through, run a machine-assisted sweep over every `sect*.htm` for automation language.
+
+Useful search terms include:
+
+- `lose`
+- `gain`
+- `erase`
+- `add`
+- `restore`
+- `deduct`
+- `discard`
+- `eat a Meal`
+- `Random Number Table`
+- `if you possess`
+- `if you have`
+- `unless you have`
+- `Combat Skill`
+- `ENDURANCE`
+- `turn to`
+
+Treat the sweep as a candidate generator, not as truth. The human audit must still confirm context, timing, and whether the text describes an actual state change.
+
+Record candidate sections in the automation ledger with:
+
+- section
+- source cue
+- suspected rule type
+- whether the cue was confirmed, rejected, or needs follow-up
+
+### 4. Build The Section Automation Ledger
+
+Create one row per candidate automation section.
+
+Recommended columns:
+
+- section
+- trigger timing
+- rule type
+- preconditions
+- state change
+- prompt needed
+- legal prompt values or choices
+- web-safe payload needed
+- current app support
+- acceptance test needed
+- status
+
+Use consistent trigger timing labels:
+
+- on entry before text
+- on entry after text
+- after combat
+- after random roll
+- after prompt choice
+- after inventory choice
+- after book transition
+- manual only
+
+This ledger is the main guardrail against missed build work. It should capture not just what the rule does, but when the player should see it happen.
+
+### 5. Audit Missing Rules And Items
 
 Scan for high-value automation candidates:
 
@@ -142,7 +209,59 @@ Mark each candidate as one of:
 - missing
 - better left manual for now
 
-### 4. Compare Against The App
+Create a dedicated inventory delta table for:
+
+- pickups
+- losses
+- forced drops
+- confiscation and recovery
+- safekeeping
+- gold gains or losses
+- backpack, quiver, and herb pouch changes
+- container gain/loss
+- weapon-like Special Items
+- items with slot or capacity exceptions
+
+### 6. Audit Combat Exceptions
+
+Create a combat exception table for every combat found in the book.
+
+Recommended columns:
+
+- section
+- enemy name
+- enemy Combat Skill
+- enemy ENDURANCE
+- psychic rules
+- weapon restrictions
+- endurance multipliers
+- evade rules
+- auto-win or auto-loss conditions
+- post-combat state changes
+- current app support
+- acceptance test needed
+
+### 7. Audit Random Number And Prompt Flows
+
+Create a random-number and prompt table for every roll or structured choice that should be supported by automation or the web UI.
+
+Recommended columns:
+
+- section
+- prompt label
+- visible option text
+- legal values
+- random number modifier
+- zero-counts-as-ten behavior
+- result mapping
+- state changes
+- web context text needed
+- current app support
+- acceptance test needed
+
+This table should make unclear browser prompts visible before build work starts.
+
+### 8. Compare Against The App
 
 Check the current script and docs so the audit distinguishes:
 
@@ -152,7 +271,7 @@ Check the current script and docs so the audit distinguishes:
 
 This avoids duplicate work and keeps the report honest.
 
-### 5. Draft Achievement Candidates
+### 9. Draft Achievement Candidates
 
 Propose a first batch of:
 
@@ -167,12 +286,14 @@ Good achievement candidates are:
 - triggerable from reliable state
 - not dependent on large copied book text
 
-### 6. Write The Reports
+### 10. Write The Reports
 
 Summarize:
 
 - endings and route families
+- the automation ledger
 - missing rules/items
+- combat and random-number exceptions
 - top implementation candidates
 - achievement candidates
 
@@ -180,17 +301,18 @@ These reports should be enough for a later chat to continue without re-reading t
 
 They should also leave enough route understanding behind to support a later strategy-guide draft without having to re-audit the whole book from scratch.
 
-### 7. Propose The Top Build Candidates
+### 11. Propose The Top Build Candidates
 
 Before implementation, summarize:
 
 - the best missing rules to automate
 - the best achievement batch to add
 - any assumptions or ambiguities
+- the build-ready acceptance checks for each proposed automation
 
 If a rule is unclear or too one-off, prefer calling that out instead of forcing premature automation.
 
-### 8. Implement Approved Findings
+### 12. Implement Approved Findings
 
 If the user approves build-out:
 
@@ -201,7 +323,7 @@ If the user approves build-out:
 
 Prefer integrating with existing helpers instead of inventing one-off branches when possible.
 
-### 9. Draft Or Update The Strategy Guide
+### 13. Draft Or Update The Strategy Guide
 
 If the book is implemented, materially expanded, or route coverage changed enough to affect players:
 
@@ -212,7 +334,7 @@ If the book is implemented, materially expanded, or route coverage changed enoug
 
 Strategy-guide creation is part of book closeout, not a nice-to-have follow-up.
 
-### 10. Validate In Both Shells
+### 14. Validate In Both Shells
 
 Always run parse or targeted validation in:
 
@@ -221,7 +343,13 @@ Always run parse or targeted validation in:
 
 Where useful, add small harness checks for the new rules.
 
-### 11. Commit And Push
+For build work, each automated ledger row should either have:
+
+- a passing targeted harness
+- coverage in a broader route/combat/transition smoke
+- a written reason it remains manual
+
+### 15. Commit And Push
 
 For Lone Wolf, completed work should normally be:
 

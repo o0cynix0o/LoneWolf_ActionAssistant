@@ -252,7 +252,7 @@ function Get-LWBookNumberFromTitle {
         return $null
     }
 
-    for ($bookNumber = 1; $bookNumber -le 5; $bookNumber++) {
+    for ($bookNumber = 1; $bookNumber -le 28; $bookNumber++) {
         if ((Get-LWBookTitle -BookNumber $bookNumber) -ieq $Title) {
             return $bookNumber
         }

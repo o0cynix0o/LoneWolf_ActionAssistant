@@ -37,7 +37,7 @@ function Resolve-LWMagnakaiRestrictedWeapon {
 function Get-LWMagnakaiCombatEncounterProfile {
     param([Parameter(Mandatory = $true)][object]$State)
 
-    if ($null -eq $State.Character -or [int]$State.Character.BookNumber -lt 6 -or [int]$State.Character.BookNumber -gt 7) {
+    if ($null -eq $State.Character -or [int]$State.Character.BookNumber -lt 6 -or [int]$State.Character.BookNumber -gt 8) {
         return $null
     }
 
@@ -93,8 +93,109 @@ function Get-LWMagnakaiCombatEncounterProfile {
             }
         }
     }
+    elseif ([int]$State.Character.BookNumber -eq 8) {
+        switch ([int]$State.CurrentSection) {
+            8 { return [pscustomobject]@{ EnemyName = 'Vordaks'; EnemyCombatSkill = 28; EnemyEndurance = 40 } }
+            13 { return [pscustomobject]@{ EnemyName = 'Vordak 1 of 2'; EnemyCombatSkill = 22; EnemyEndurance = 28 } }
+            30 { return [pscustomobject]@{ EnemyName = 'Gnaag Helghast'; EnemyCombatSkill = 34; EnemyEndurance = 48 } }
+            38 { return [pscustomobject]@{ EnemyName = 'Ghagrim'; EnemyCombatSkill = 23; EnemyEndurance = 38 } }
+            40 { return [pscustomobject]@{ EnemyName = 'Bourn the Bowyer'; EnemyCombatSkill = 19; EnemyEndurance = 24 } }
+            41 { return [pscustomobject]@{ EnemyName = 'Monks of the Sword'; EnemyCombatSkill = 22; EnemyEndurance = 31 } }
+            47 { return [pscustomobject]@{ EnemyName = 'Gnaag Helghast'; EnemyCombatSkill = 28; EnemyEndurance = 40 } }
+            52 { return [pscustomobject]@{ EnemyName = 'Taan-spider'; EnemyCombatSkill = 18; EnemyEndurance = 52 } }
+            74 { return [pscustomobject]@{ EnemyName = 'Korkuna'; EnemyCombatSkill = 20; EnemyEndurance = 36 } }
+            88 { return [pscustomobject]@{ EnemyName = 'Drakkarim Horselords'; EnemyCombatSkill = 24; EnemyEndurance = 30 } }
+            101 { return [pscustomobject]@{ EnemyName = 'Vordaks'; EnemyCombatSkill = 23; EnemyEndurance = 30 } }
+            106 { return [pscustomobject]@{ EnemyName = 'Monks of the Sword'; EnemyCombatSkill = 22; EnemyEndurance = 29 } }
+            110 { return [pscustomobject]@{ EnemyName = 'Monks of the Sword'; EnemyCombatSkill = 25; EnemyEndurance = 45 } }
+            155 { return [pscustomobject]@{ EnemyName = 'Silver Swamp Python'; EnemyCombatSkill = 20; EnemyEndurance = 60 } }
+            159 { return [pscustomobject]@{ EnemyName = 'Kezoor'; EnemyCombatSkill = 28; EnemyEndurance = 45 } }
+            162 { return [pscustomobject]@{ EnemyName = 'Drakkarim Horselord'; EnemyCombatSkill = 22; EnemyEndurance = 28 } }
+            164 { return [pscustomobject]@{ EnemyName = 'Monks of the Sword'; EnemyCombatSkill = 22; EnemyEndurance = 36 } }
+            169 { return [pscustomobject]@{ EnemyName = 'Vordak'; EnemyCombatSkill = 18; EnemyEndurance = 26 } }
+            183 { return [pscustomobject]@{ EnemyName = 'Gnaag Helghast'; EnemyCombatSkill = 34; EnemyEndurance = 48 } }
+            199 { return [pscustomobject]@{ EnemyName = 'Kezoor'; EnemyCombatSkill = 26; EnemyEndurance = 43 } }
+            205 { return [pscustomobject]@{ EnemyName = 'Ghagrim'; EnemyCombatSkill = 23; EnemyEndurance = 38 } }
+            231 { return [pscustomobject]@{ EnemyName = 'Monks of the Sword'; EnemyCombatSkill = 22; EnemyEndurance = 36 } }
+            233 { return [pscustomobject]@{ EnemyName = 'Rogue Miner'; EnemyCombatSkill = 17; EnemyEndurance = 25 } }
+            241 { return [pscustomobject]@{ EnemyName = 'Hunting Dogs'; EnemyCombatSkill = 15; EnemyEndurance = 25 } }
+            251 { return [pscustomobject]@{ EnemyName = 'Bourn the Bowyer'; EnemyCombatSkill = 19; EnemyEndurance = 24 } }
+            252 { return [pscustomobject]@{ EnemyName = 'Xlorg'; EnemyCombatSkill = 22; EnemyEndurance = 30 } }
+            257 { return [pscustomobject]@{ EnemyName = 'Boran'; EnemyCombatSkill = 20; EnemyEndurance = 29 } }
+            265 { return [pscustomobject]@{ EnemyName = 'Xlorg'; EnemyCombatSkill = 22; EnemyEndurance = 30 } }
+            287 { return [pscustomobject]@{ EnemyName = 'Vordak 1 of 2'; EnemyCombatSkill = 22; EnemyEndurance = 28 } }
+            298 { return [pscustomobject]@{ EnemyName = 'Rogue Miner'; EnemyCombatSkill = 17; EnemyEndurance = 25 } }
+            305 { return [pscustomobject]@{ EnemyName = 'Hunting Dogs'; EnemyCombatSkill = 15; EnemyEndurance = 25 } }
+            308 { return [pscustomobject]@{ EnemyName = 'Gnaag Helghast'; EnemyCombatSkill = 38; EnemyEndurance = 48 } }
+            313 { return [pscustomobject]@{ EnemyName = 'Xlorg'; EnemyCombatSkill = 23; EnemyEndurance = 32 } }
+            323 { return [pscustomobject]@{ EnemyName = 'Monks of the Sword'; EnemyCombatSkill = 24; EnemyEndurance = 42 } }
+            333 { return [pscustomobject]@{ EnemyName = 'Anapheg'; EnemyCombatSkill = 18; EnemyEndurance = 50 } }
+            339 { return [pscustomobject]@{ EnemyName = 'Rahgu'; EnemyCombatSkill = 23; EnemyEndurance = 33 } }
+            346 { return [pscustomobject]@{ EnemyName = 'Ghagrim'; EnemyCombatSkill = 23; EnemyEndurance = 38 } }
+        }
+    }
 
     return $null
+}
+
+function Test-LWMagnakaiBookEightHasPrimateRank {
+    param([object]$State = $script:GameState)
+
+    return ($null -ne $State -and $null -ne $State.Character -and [int]$State.Character.MagnakaiRank -ge 4)
+}
+
+function Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge {
+    param([Parameter(Mandatory = $true)][hashtable]$Scenario)
+
+    if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-surge')) {
+        $Scenario.EnemyImmune = $true
+    }
+}
+
+function Set-LWMagnakaiBookEightHelghastRules {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Scenario,
+        [Parameter(Mandatory = $true)][int]$VictorySection,
+        [switch]$SommerswerdDoubleDamage,
+        [switch]$IgnoreEnemyLossFirstRound
+    )
+
+    Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge -Scenario $Scenario
+    if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-screen')) {
+        $Scenario.EnemyUsesMindforce = $true
+        $Scenario.MindforceLossPerRound = 2
+    }
+    if (@(Get-LWStateCompletedLoreCircles -State $script:GameState) -contains 'Spirit') {
+        $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 2
+        Write-LWInfo 'Book 8 Helghast fight: Lore-circle of the Spirit grants +2 Combat Skill.'
+    }
+    if ($SommerswerdDoubleDamage -and (Test-LWWeaponIsSommerswerd -Weapon ([string]$Scenario.EquippedWeapon))) {
+        $Scenario.DoubleEnemyEnduranceLoss = $true
+    }
+    if ($IgnoreEnemyLossFirstRound) {
+        $Scenario.IgnoreEnemyEnduranceLossRounds = 1
+    }
+    $Scenario.VictoryResolutionSection = $VictorySection
+    $Scenario.VictoryResolutionNote = ("Book 8 section {0} result: victory sends you to {1}." -f [int]$script:GameState.CurrentSection, $VictorySection)
+    Write-LWInfo 'Book 8 Helghast fight: immune to Mindblast but not Psi-surge; Psi-screen blocks the 2 ENDURANCE per-round Mindforce loss.'
+}
+
+function Set-LWMagnakaiBookEightVordakRules {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Scenario,
+        [Nullable[int]]$VictorySection = $null
+    )
+
+    $Scenario.EnemyUndead = $true
+    Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge -Scenario $Scenario
+    if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-screen')) {
+        $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 2
+    }
+    if ($null -ne $VictorySection) {
+        $Scenario.VictoryResolutionSection = [int]$VictorySection
+        $Scenario.VictoryResolutionNote = ("Book 8 section {0} result: victory sends you to {1}." -f [int]$script:GameState.CurrentSection, [int]$VictorySection)
+    }
+    Write-LWInfo 'Book 8 Vordak fight: undead, immune to Mindblast but not Psi-surge; Psi-screen avoids the psychic penalty where listed.'
 }
 
 function Invoke-LWMagnakaiCombatScenarioRules {
@@ -109,7 +210,7 @@ function Invoke-LWMagnakaiCombatScenarioRules {
     $enemyName = [string]$Scenario.EnemyName
 
     $bookNumber = [int]$script:GameState.Character.BookNumber
-    if ($bookNumber -lt 6 -or $bookNumber -gt 7) {
+    if ($bookNumber -lt 6 -or $bookNumber -gt 8) {
         return
     }
 
@@ -395,6 +496,276 @@ function Invoke-LWMagnakaiCombatScenarioRules {
                 $Scenario.VictoryResolutionSection = 158
                 $Scenario.VictoryResolutionNote = 'Section 325 result: victory sends you to 158.'
                 Write-LWInfo 'Book 7 section 325: lack of air inflicts 2 ENDURANCE loss every round of combat.'
+                return
+            }
+        }
+    }
+
+    if ($bookNumber -eq 8) {
+        switch ([int]$script:GameState.CurrentSection) {
+            8 {
+                Set-LWMagnakaiBookEightVordakRules -Scenario $Scenario -VictorySection 202
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 3
+                    Write-LWInfo 'Book 8 section 8: without Animal Control, deduct 3 Combat Skill.'
+                }
+                return
+            }
+            13 {
+                Set-LWMagnakaiBookEightVordakRules -Scenario $Scenario
+                $Scenario.VictoryWithinRoundsSection = 79
+                $Scenario.VictoryWithinRoundsMax = 6
+                $Scenario.VictoryWithinRoundsNote = 'Book 8 section 13 result: if both Vordaks are beaten within 6 rounds, turn to 79.'
+                $Scenario.OngoingFailureAfterRoundsSection = 158
+                $Scenario.OngoingFailureAfterRoundsThreshold = 6
+                $Scenario.OngoingFailureAfterRoundsNote = 'Book 8 section 13 result: if the combat reaches round 7, stop and turn to 158.'
+                Write-LWWarn 'Book 8 section 13 has two sequential Vordaks. This setup starts Vordak 1; start a second combat manually for Vordak 2 if needed.'
+                return
+            }
+            30 {
+                Set-LWMagnakaiBookEightHelghastRules -Scenario $Scenario -VictorySection 268 -SommerswerdDoubleDamage
+                return
+            }
+            { @(38, 205, 346) -contains $_ } {
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 309
+                $Scenario.EvadeResolutionNote = ("Book 8 section {0} result: after 3 rounds you may evade to 309." -f [int]$script:GameState.CurrentSection)
+                $Scenario.VictoryResolutionSection = 9
+                $Scenario.VictoryResolutionNote = ("Book 8 section {0} result: victory sends you to 9." -f [int]$script:GameState.CurrentSection)
+                return
+            }
+            40 {
+                $Scenario.VictoryResolutionSection = 87
+                $Scenario.VictoryResolutionNote = 'Book 8 section 40 result: victory sends you to 87.'
+                return
+            }
+            41 {
+                $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 5
+                $Scenario.VictoryResolutionSection = 106
+                $Scenario.VictoryResolutionNote = 'Book 8 section 41 result: victory sends you to 106.'
+                Write-LWInfo 'Book 8 section 41: Paido fights beside you and grants +5 Combat Skill.'
+                return
+            }
+            47 {
+                Set-LWMagnakaiBookEightHelghastRules -Scenario $Scenario -VictorySection 195
+                return
+            }
+            52 {
+                $Scenario.PlayerEnduranceLossMultiplier = 2
+                $Scenario.VictoryResolutionSection = 129
+                $Scenario.VictoryResolutionNote = 'Book 8 section 52 result: victory sends you to 129.'
+                Write-LWInfo 'Book 8 section 52: venom doubles Lone Wolf ENDURANCE losses; psychic attack bonuses are tripled if enabled.'
+                return
+            }
+            74 {
+                $Scenario.EnemyImmune = $true
+                $Scenario.EquippedWeapon = $null
+                $Scenario.SommerswerdSuppressed = $true
+                $Scenario.SuppressShieldCombatSkillBonus = $true
+                $Scenario.CombatPotionsAllowed = $false
+                $projectedSkill = [int]$script:GameState.Character.CombatSkillBase - 4
+                $projectedSkill += Get-LWStateBroninSleeveShieldCombatSkillBonus -State $script:GameState
+                $projectedSkill += Get-LWStateSilverHelmCombatSkillBonus -State $script:GameState
+                $Scenario.PlayerMod = [int]$Scenario.PlayerMod + (15 - $projectedSkill)
+                $Scenario.VictoryResolutionSection = 254
+                $Scenario.VictoryResolutionNote = 'Book 8 section 74 result: surviving the psychic combat sends you to 254.'
+                Write-LWInfo 'Book 8 section 74: psychic combat fixes current Combat Skill at 15; weapons, Special Items, and Backpack Items are unusable.'
+                return
+            }
+            88 {
+                if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 2
+                    Write-LWInfo 'Book 8 section 88: Animal Control grants +2 Combat Skill from horseback.'
+                }
+                $Scenario.VictoryResolutionSection = 144
+                $Scenario.VictoryResolutionNote = 'Book 8 section 88 result: victory sends you to 144.'
+                return
+            }
+            101 {
+                Set-LWMagnakaiBookEightVordakRules -Scenario $Scenario -VictorySection 202
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 3
+                    Write-LWInfo 'Book 8 section 101: without Animal Control, deduct 3 Combat Skill.'
+                }
+                return
+            }
+            106 {
+                if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 2
+                    Write-LWInfo 'Book 8 section 106: Animal Control grants +2 Combat Skill from horseback.'
+                }
+                $Scenario.VictoryResolutionSection = 247
+                $Scenario.VictoryResolutionNote = 'Book 8 section 106 result: victory sends you to 247.'
+                return
+            }
+            110 {
+                Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge -Scenario $Scenario
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 191
+                $Scenario.EvadeResolutionNote = 'Book 8 section 110 result: after 3 rounds you may pull through the hatch to 191.'
+                $Scenario.VictoryResolutionSection = 293
+                $Scenario.VictoryResolutionNote = 'Book 8 section 110 result: victory sends you to 293.'
+                Write-LWInfo 'Book 8 section 110: frenzied monks are immune to Mindblast but not Psi-surge.'
+                return
+            }
+            155 {
+                $Scenario.BowRestricted = $true
+                $Scenario.EquippedWeapon = Resolve-LWCoreRestrictedBowWeapon -State $script:GameState -EquippedWeapon ([string]$Scenario.EquippedWeapon) -SectionLabel 'Book 8 section 155'
+                if (-not ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Curing') -and (Test-LWMagnakaiBookEightHasPrimateRank -State $script:GameState))) {
+                    $Scenario.PlayerEnduranceLossMultiplier = 2
+                    Write-LWInfo 'Book 8 section 155: without Curing at Primate rank, the python doubles Lone Wolf ENDURANCE loss.'
+                }
+                $Scenario.VictoryResolutionSection = 62
+                $Scenario.VictoryResolutionNote = 'Book 8 section 155 result: victory sends you to 62.'
+                return
+            }
+            { @(159, 199) -contains $_ } {
+                $Scenario.EnemyImmune = $true
+                $Scenario.RestoreHalfEnduranceLossOnVictory = $true
+                $Scenario.VictoryResolutionSection = 46
+                $Scenario.VictoryResolutionNote = ("Book 8 section {0} result: victory sends you to 46." -f [int]$script:GameState.CurrentSection)
+                Write-LWInfo 'Book 8 Kezoor fight: immune to Mindblast and Psi-surge; Paido takes half your ENDURANCE losses, restored after victory.'
+                return
+            }
+            162 {
+                if (Test-LWStateHasDiscipline -State $script:GameState -Name 'Animal Control') {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 2
+                    Write-LWInfo 'Book 8 section 162: Animal Control grants +2 Combat Skill from horseback.'
+                }
+                $Scenario.VictoryResolutionSection = 144
+                $Scenario.VictoryResolutionNote = 'Book 8 section 162 result: victory sends you to 144.'
+                return
+            }
+            { @(164, 231) -contains $_ } {
+                $Scenario.VictoryResolutionSection = 328
+                $Scenario.VictoryResolutionNote = ("Book 8 section {0} result: victory sends you to 328." -f [int]$script:GameState.CurrentSection)
+                return
+            }
+            169 {
+                Set-LWMagnakaiBookEightVordakRules -Scenario $Scenario -VictorySection 337
+                $Scenario.EquippedWeapon = $null
+                $Scenario.SommerswerdSuppressed = $true
+                Write-LWInfo 'Book 8 section 169: you are unarmed for this combat; your dropped weapon remains recoverable after victory.'
+                return
+            }
+            183 {
+                Set-LWMagnakaiBookEightHelghastRules -Scenario $Scenario -VictorySection 268 -IgnoreEnemyLossFirstRound
+                return
+            }
+            233 {
+                $Scenario.VictoryResolutionSection = 321
+                $Scenario.VictoryResolutionNote = 'Book 8 section 233 result: victory sends you to 321.'
+                return
+            }
+            { @(241, 305) -contains $_ } {
+                $Scenario.VictoryResolutionSection = 231
+                $Scenario.VictoryResolutionNote = ("Book 8 section {0} result: victory sends you to 231." -f [int]$script:GameState.CurrentSection)
+                return
+            }
+            251 {
+                $Scenario.IgnorePlayerEnduranceLossRounds = 1
+                $Scenario.VictoryResolutionSection = 87
+                $Scenario.VictoryResolutionNote = 'Book 8 section 251 result: victory sends you to 87.'
+                Write-LWInfo 'Book 8 section 251: ignore Lone Wolf ENDURANCE loss in the first round.'
+                return
+            }
+            { @(252, 323) -contains $_ } {
+                if (-not [string]::IsNullOrWhiteSpace([string]$Scenario.EquippedWeapon)) {
+                    $Scenario.DeferredEquippedWeapon = [string]$Scenario.EquippedWeapon
+                    $Scenario.EquipDeferredWeaponAfterRound = 2
+                    $Scenario.EquippedWeapon = $null
+                }
+                if ([int]$script:GameState.CurrentSection -eq 323) {
+                    Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge -Scenario $Scenario
+                    $Scenario.CanEvade = $true
+                    $Scenario.EvadeAvailableAfterRound = 3
+                    $Scenario.EvadeResolutionSection = 191
+                    $Scenario.EvadeResolutionNote = 'Book 8 section 323 result: after 3 rounds you may pull through the hatch to 191.'
+                    $Scenario.VictoryResolutionSection = 293
+                    $Scenario.VictoryResolutionNote = 'Book 8 section 323 result: victory sends you to 293.'
+                }
+                else {
+                    $Scenario.VictoryResolutionSection = 313
+                    $Scenario.VictoryResolutionNote = 'Book 8 section 252 result: victory sends you to 313.'
+                }
+                Write-LWInfo ("Book 8 section {0}: you fight unarmed for the first two rounds." -f [int]$script:GameState.CurrentSection)
+                return
+            }
+            257 {
+                Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge -Scenario $Scenario
+                $Scenario.VictoryWithinRoundsSection = 12
+                $Scenario.VictoryWithinRoundsMax = 2
+                $Scenario.VictoryWithinRoundsNote = 'Book 8 section 257 result: killing Boran within 2 rounds sends you to 12.'
+                $Scenario.OngoingFailureAfterRoundsSection = 163
+                $Scenario.OngoingFailureAfterRoundsThreshold = 2
+                $Scenario.OngoingFailureAfterRoundsNote = 'Book 8 section 257 result: if both combatants live after 2 rounds, stop and turn to 163.'
+                Write-LWInfo 'Book 8 section 257: Boran is immune to Mindblast but not Psi-surge.'
+                return
+            }
+            265 {
+                $Scenario.CanEvade = $false
+                $Scenario.VictoryResolutionSection = 313
+                $Scenario.VictoryResolutionNote = 'Book 8 section 265 result: victory sends you to 313.'
+                return
+            }
+            287 {
+                Set-LWMagnakaiBookEightVordakRules -Scenario $Scenario
+                $Scenario.VictoryWithinRoundsSection = 79
+                $Scenario.VictoryWithinRoundsMax = 6
+                $Scenario.VictoryWithinRoundsNote = 'Book 8 section 287 result: if both Vordaks are beaten within 6 rounds, turn to 79.'
+                $Scenario.OngoingFailureAfterRoundsSection = 158
+                $Scenario.OngoingFailureAfterRoundsThreshold = 6
+                $Scenario.OngoingFailureAfterRoundsNote = 'Book 8 section 287 result: if the combat reaches round 7, stop and turn to 158.'
+                Write-LWWarn 'Book 8 section 287 has two sequential Vordaks. This setup starts Vordak 1; start a second combat manually for Vordak 2 if needed.'
+                return
+            }
+            298 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 3
+                    $Scenario.PlayerModRounds = 2
+                    Write-LWInfo 'Book 8 section 298: without Huntmastery, deduct 3 Combat Skill for the first two rounds.'
+                }
+                $Scenario.VictoryResolutionSection = 321
+                $Scenario.VictoryResolutionNote = 'Book 8 section 298 result: victory sends you to 321.'
+                return
+            }
+            308 {
+                Set-LWMagnakaiBookEightHelghastRules -Scenario $Scenario -VictorySection 195 -SommerswerdDoubleDamage
+                return
+            }
+            313 {
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Huntmastery')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 4
+                    Write-LWInfo 'Book 8 section 313: without Huntmastery, deduct 4 Combat Skill.'
+                }
+                $Scenario.VictoryResolutionSection = 160
+                $Scenario.VictoryResolutionNote = 'Book 8 section 313 result: victory sends you to 160.'
+                return
+            }
+            333 {
+                Set-LWMagnakaiBookEightMindblastImmuneUnlessPsiSurge -Scenario $Scenario
+                if (-not (Test-LWStateHasDiscipline -State $script:GameState -Name 'Psi-screen')) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 2
+                    Write-LWInfo 'Book 8 section 333: without Psi-screen, deduct 2 Combat Skill.'
+                }
+                $Scenario.VictoryResolutionSection = 197
+                $Scenario.VictoryResolutionNote = 'Book 8 section 333 result: victory sends you to 197.'
+                return
+            }
+            339 {
+                $Scenario.EnemyImmune = $true
+                if (-not ((Test-LWStateHasDiscipline -State $script:GameState -Name 'Nexus') -and (Test-LWMagnakaiBookEightHasPrimateRank -State $script:GameState))) {
+                    $Scenario.PlayerMod = [int]$Scenario.PlayerMod - 8
+                    Write-LWInfo 'Book 8 section 339: without Nexus at Primate rank, marsh gas deducts 8 Combat Skill.'
+                }
+                $Scenario.CanEvade = $true
+                $Scenario.EvadeAvailableAfterRound = 3
+                $Scenario.EvadeResolutionSection = 48
+                $Scenario.EvadeResolutionNote = 'Book 8 section 339 result: after 3 rounds you may evade to 48.'
+                $Scenario.VictoryResolutionSection = 344
+                $Scenario.VictoryResolutionNote = 'Book 8 section 339 result: victory sends you to 344.'
                 return
             }
         }
@@ -701,6 +1072,23 @@ function Invoke-LWMagnakaiCombatPsychicAttackRules {
         $Scenario.DoubleEnemyEnduranceLoss = $true
         if (-not $suppressMessages) {
             Write-LWInfo ("Book 7 section 233: {0} doubles all ENDURANCE loss sustained by Oudagorg." -f $psychicAttackLabel)
+        }
+    }
+
+    if ([int]$State.Character.BookNumber -eq 8 -and
+        [int]$State.CurrentSection -eq 52 -and
+        (Test-LWPropertyExists -Object $Scenario -Name 'UseMindblast') -and
+        [bool]$Scenario.UseMindblast) {
+        $psychicAttackLabel = if ((Test-LWPropertyExists -Object $Scenario -Name 'PsychicAttackMode') -and -not [string]::IsNullOrWhiteSpace([string]$Scenario.PsychicAttackMode)) { [string]$Scenario.PsychicAttackMode } else { 'psychic attack' }
+        $suppressMessages = ((Test-LWPropertyExists -Object $Scenario -Name 'SuppressMessages') -and [bool]$Scenario.SuppressMessages)
+        if ($psychicAttackLabel -ieq 'Psi-surge') {
+            $Scenario.PlayerMod = [int]$Scenario.PlayerMod + 8
+        }
+        else {
+            $Scenario.MindblastCombatSkillBonus = 6
+        }
+        if (-not $suppressMessages) {
+            Write-LWInfo ("Book 8 section 52: {0} bonuses are tripled against the Taan-spider." -f $psychicAttackLabel)
         }
     }
 }

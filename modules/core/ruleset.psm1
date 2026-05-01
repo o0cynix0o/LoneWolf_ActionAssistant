@@ -158,6 +158,7 @@ function Get-LWBookSectionContextAchievementIds {
         5 { return @(Get-LWBookFiveSectionContextAchievementIds) }
         6 { return @(Get-LWBookSixSectionContextAchievementIds) }
         7 { return @(Get-LWBookSevenSectionContextAchievementIds) }
+        8 { return @(Get-LWBookEightSectionContextAchievementIds) }
         default { return @() }
     }
 }

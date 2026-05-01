@@ -43,6 +43,7 @@ $script:LWKaiCombatModulePath = Join-Path $script:LWBootstrapRoot 'modules\rules
 $script:LWKaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\kai\kai.psm1'
 $script:LWMagnakaiBook6ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\book6.psm1'
 $script:LWMagnakaiBook7ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\book7.psm1'
+$script:LWMagnakaiBook8ModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\book8.psm1'
 $script:LWMagnakaiCombatModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\combat.psm1'
 $script:LWMagnakaiRulesetModulePath = Join-Path $script:LWBootstrapRoot 'modules\rulesets\magnakai\magnakai.psm1'
 foreach ($modulePath in @(
@@ -66,6 +67,7 @@ foreach ($modulePath in @(
         $script:LWKaiRulesetModulePath,
         $script:LWMagnakaiBook6ModulePath,
         $script:LWMagnakaiBook7ModulePath,
+        $script:LWMagnakaiBook8ModulePath,
         $script:LWMagnakaiCombatModulePath,
         $script:LWMagnakaiRulesetModulePath,
         $script:LWRulesetCoreModulePath
@@ -778,7 +780,7 @@ function Advance-LWCompletedBookTransition {
     }
 
     $currentBook = [int]$script:GameState.Character.BookNumber
-    if ($currentBook -ge 7) {
+    if ($currentBook -ge 8) {
         Write-LWWarn 'The current Magnakai campaign is already complete.'
         return
     }
@@ -857,6 +859,9 @@ function Advance-LWCompletedBookTransition {
     elseif ($nextBook -eq 7) {
         Apply-LWBookSevenStartingEquipment -CarryExistingGear
     }
+    elseif ($nextBook -eq 8) {
+        Apply-LWBookEightStartingEquipment -CarryExistingGear
+    }
 
     Invoke-LWMaybeAutosave
 }
@@ -871,7 +876,7 @@ function Complete-LWBook {
     $stats = Ensure-LWCurrentBookStats
     $bookSummary = New-LWBookHistoryEntry -Stats $stats
     $nextBook = $currentBook + 1
-    $nextBookLabel = if ($currentBook -lt 7) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { '' }
+    $nextBookLabel = if ($currentBook -lt 8) { Format-LWBookLabel -BookNumber $nextBook -IncludePrefix } else { '' }
     $completionSnapshot = [pscustomobject]@{
         RuleSet          = [string]$script:GameState.RuleSet
         Difficulty       = Get-LWCurrentDifficulty
@@ -896,7 +901,7 @@ function Complete-LWBook {
             ContinueToBookLabel = $nextBookLabel
         })
 
-    if ($currentBook -ge 7) {
+    if ($currentBook -ge 8) {
         $script:GameState.Run.Status = 'Completed'
         $script:GameState.Run.CompletedOn = (Get-Date).ToString('o')
         $script:GameState.Character.EnduranceCurrent = $script:GameState.Character.EnduranceMax
@@ -1046,7 +1051,7 @@ function Start-LWNewGameCore {
     Set-LWScreen -Name 'sheet'
 
     $name = Read-LWText -Prompt 'Character name' -Default $defaultName
-    $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1 -Max 7
+    $bookNumber = Read-LWInt -Prompt 'Current book number' -Default 1 -Min 1 -Max 8
     $startSection = Read-LWInt -Prompt 'Starting section' -Default 1 -Min 1
 
     $csRoll = Get-LWRandomDigit
@@ -1110,6 +1115,9 @@ function Start-LWNewGameCore {
     }
     elseif ($bookNumber -eq 7) {
         Apply-LWBookSevenStartingEquipment
+    }
+    elseif ($bookNumber -eq 8) {
+        Apply-LWBookEightStartingEquipment
     }
     $script:GameState.SectionHadCombat = $false
     $script:GameState.SectionHealingResolved = $false
@@ -1528,6 +1536,33 @@ function Normalize-LWState {
         }
     }
 
+    $book8PassClaimed = (
+        (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book8PassClaimed') -and
+        [bool]$normalized.Achievements.StoryFlags.Book8PassClaimed
+    )
+    $hasBook8Pass = (
+        (Test-LWStateHasPocketSpecialItem -State $normalized -Names @('Pass')) -or
+        (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $normalized -Names @('Pass') -Type 'special')))
+    )
+    if ($currentBookNumber -eq 8 -and [int]$normalized.CurrentSection -eq 1 -and -not $hasBook8Pass) {
+        if ($null -eq $normalized.Inventory.PocketSpecialItems) {
+            $normalized.Inventory.PocketSpecialItems = @()
+        }
+
+        $normalized.Inventory.PocketSpecialItems = @(Normalize-LWInventoryItemCollection -Type 'special' -Items (@($normalized.Inventory.PocketSpecialItems) + @('Pass')))
+
+        $book8PassClaimed = $false
+    }
+
+    if ($currentBookNumber -eq 8 -and [int]$normalized.CurrentSection -eq 1 -and -not $book8PassClaimed) {
+        if (-not (Test-LWPropertyExists -Object $normalized.Achievements.StoryFlags -Name 'Book8PassClaimed')) {
+            $normalized.Achievements.StoryFlags | Add-Member -Force -NotePropertyName 'Book8PassClaimed' -NotePropertyValue $true
+        }
+        else {
+            $normalized.Achievements.StoryFlags.Book8PassClaimed = $true
+        }
+    }
+
     return (Sync-LWStateRefactorMetadata -State $normalized)
 }
 
@@ -1554,6 +1589,7 @@ function Load-LWGame {
             switch ([int]$script:GameState.Character.BookNumber) {
                 6 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
                 7 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSevenInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
+                8 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookEightInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
             }
             if (-not [string]::IsNullOrWhiteSpace($magnakaiInstantDeathCause)) {
                 Invoke-LWInstantDeath -Cause $magnakaiInstantDeathCause
@@ -1576,6 +1612,7 @@ function Load-LWGameInteractive {
             switch ([int]$script:GameState.Character.BookNumber) {
                 6 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSixInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
                 7 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookSevenInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
+                8 { $magnakaiInstantDeathCause = Get-LWMagnakaiBookEightInstantDeathCause -Section ([int]$script:GameState.CurrentSection) }
             }
             if (-not [string]::IsNullOrWhiteSpace($magnakaiInstantDeathCause)) {
                 Invoke-LWInstantDeath -Cause $magnakaiInstantDeathCause
@@ -1673,6 +1710,12 @@ function Apply-LWBookSevenStartingEquipment {
     param([switch]$CarryExistingGear)
 
     Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 7 -CarryExistingGear:$CarryExistingGear
+}
+
+function Apply-LWBookEightStartingEquipment {
+    param([switch]$CarryExistingGear)
+
+    Invoke-LWRuleSetStartingEquipment -State $script:GameState -BookNumber 8 -CarryExistingGear:$CarryExistingGear
 }
 
 function Publish-LWScriptFunctionsToSession {

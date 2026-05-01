@@ -38,10 +38,10 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - optional `Permadeath`
 - Tamper-evident run integrity
 - released rule support across Books `1-6`
-- current `main` also contains local rule support across Books `1-7`
+- current `main` also contains local rule support across Books `1-8`
 - Transition-only Special Item safekeeping beginning at the Book `4` -> `5` handoff and continuing on later book-to-book transitions
 - Project Aon baseline catch-up complete across Books 1-5, plus released Book 6 / Magnakai support
-- Book `7` / `Castle Death` is now implemented locally in the Magnakai ruleset on current `main` and validated to the agreed build bar
+- Book `7` / `Castle Death` and Book `8` / `The Jungle of Horrors` are now implemented locally in the Magnakai ruleset on current `main` and validated to the agreed build bar
 - The Kai ruleset campaign is complete through Book `5`, and released Magnakai Book `6` support is part of the public build
 - GitHub repo, wiki, and issue tracker workflow already in use
 - GitHub labels, issue forms, and milestones are now live
@@ -55,7 +55,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
 - M5 Book `6` automation catch-up is complete on `main`
 - M6 web GUI and cross-platform migration is complete on `main` under the
   current validation policy
-- current stabilization work on `main` is `0.9.0` pre-release web-GUI milestone hardening, architecture cleanup, recent Book `6` DE support, and Book `7` validation before the first release-ready `1.0.0` build
+- current stabilization work on `main` is `0.9.0` pre-release web-GUI milestone hardening, architecture cleanup, recent Book `6` DE support, Book `7` validation, and Book `8` audit/build hardening before the first release-ready `1.0.0` build
 - the formal migration plan for a web-GUI-first, cross-platform future now lives in `docs/WEB_GUI_CROSS_PLATFORM_PLAN.md`
 - the Phase `0` parity inventory for that migration now lives in `docs/WEB_PARITY_INVENTORY.md`
 - the initial tracked web scaffold now lives under `web/` with a PowerShell engine session host, a Python HTTP server, a browser frontend shell, and `Start-LoneWolfWeb.ps1`
@@ -147,8 +147,22 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
     - the older portable release validator also passes after adding the web
       scaffold to the package:
       - `testing/logs/RELEASE_VALIDATE_M6_CLOSEOUT_PS7.txt`
-    - the portable package now includes `web/`, `Start-LoneWolfWeb.ps1`,
+  - the portable package now includes `web/`, `Start-LoneWolfWeb.ps1`,
       generated `Start-LoneWolfWeb.cmd`, and POSIX `Start-LoneWolfWeb.sh`
+- latest `main` Book `8` audit/build:
+  - local source audit now covers `books/lw/08tjoh` / `The Jungle of Horrors`, with sweep artifact `testing/tmp/book8_source_sweep.json`
+  - Book `8` rule support now includes startup gear/gold, mandatory `Pass`, Conundrum route rewards, meal requirements, section damage/recovery, Grey Crystal Ring/Lodestone/Giak Scroll/Flask/Map handling, gold payments, riddle penalty, and Book `8` completion
+  - Book `8` combat support now covers Vordaks, Helghasts, Korkuna, Kezoor, Taan-spider venom/psychic modifiers, swamp hazard fights, and the major route-result notes
+  - Book `8` random-number contexts now cover all audited roll sections, including section `86` where zero counts as ten for the Grey Crystal Ring backlash
+  - current known manual/watch areas are documented: the section `168` Bowyery Lune shop, optional Special Item sales at `139`, later Flask of Larnuma draught use, and the two sequential Vordak fights at `13` and `287`
+  - local Book `8` validation is tracked at `testing/tmp/book8-rules-smoke.ps1` and currently passes in both PowerShell `7` and Windows PowerShell `5.1`
+  - local audit reports now exist at:
+    - `testing/logs/BOOK8_ENDINGS_AND_ROUTE_FAMILIES_20260430.md`
+    - `testing/logs/BOOK8_AUTOMATION_LEDGER_20260430.md`
+    - `testing/logs/BOOK8_RULES_AND_ITEMS_AUDIT_20260430.md`
+    - `testing/logs/BOOK8_COMBAT_AND_RANDOM_AUDIT_20260430.md`
+    - `testing/logs/BOOK8_ACHIEVEMENT_CANDIDATES_20260430.md`
+  - wiki strategy-guide closeout now includes `Book-8-Strategy-Guide`, and the support matrix / strategy index / stats pages now reference current `main` support through Book `8`
 - latest `main` Book `7` startup/save hotfix:
   - Book `7` startup now guarantees the section `1` `Power-key` is granted into Pocket Items before the opening setup can leave the player stranded on section `1` without it
   - load normalization now repairs missing `Power-key` state for both older and current-format Book `7` section `1` saves, then marks `Book7PowerKeyClaimed` so the corrected key persists on the next save
@@ -162,7 +176,7 @@ This file is the durable handoff for the Lone Wolf Action Assistant. It is meant
   - this matches the original Magnakai Weaponmastery progression text instead of forcing a full `4`-weapon re-pick during the Book `6` -> `7` handoff
   - the Book `7` startup smoke now explicitly verifies that the original mastered set survives the transition and that exactly one new mastery is appended
 - latest `main` future-transfer rules fix:
-  - future carried-over starts for Books `2-7` now follow the source-text rule that old `Backpack Items` do not carry between adventures during the Kai and Magnakai series
+  - future carried-over starts for Books `2-8` now follow the source-text rule that old `Backpack Items` do not carry between adventures during the Kai and Magnakai series
   - app-level `Pocket Items` are now also cleared on those future transfers instead of lingering indefinitely across books
   - the fix is forward-only for local play: existing saves are left as-is, but future book-to-book transfers now clear old `Backpack Items` and `Pocket Items` before the new book's starting-equipment picks begin
   - Book `6` -> `7` transitions now also clear old `Herb Pouch` contents and the carried `Herb Pouch` state so Book `6` potion storage does not bleed into Book `7`
@@ -748,6 +762,37 @@ Local reports:
 - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS7.txt`
 - `testing/logs/BOOK7_DIFFICULTY_SMOKE_PS51.txt`
 
+### Book 8
+
+- Implemented locally on current `main`
+- not yet represented as a tagged public release
+- support now includes:
+  - Book `8` startup, carry-forward, starting-gold, and mandatory `Pass` handling
+  - section-entry automation for meals, damage, recovery, gold, item gains/losses, and route penalties
+  - Conundrum route rewards, Grey Crystal Ring exchange, Lodestone, Silver Box, Giak Scroll, and Map of Tharro support
+  - random-number helpers for all audited Book `8` roll sections
+  - combat profiles and special-combat hooks for the major Book `8` enemy/rule families
+  - completion, route, item, and failure achievements
+- current wiki state now also includes:
+  - `Strategy-Guide`
+  - `Book-8-Strategy-Guide`
+- current local validation on `main` is green in both shells for:
+  - Book `8` entry rewards
+  - meal consumption
+  - Grey Crystal Ring backlash
+  - riddle penalty loss
+  - section `233` combat profile
+  - section `52` Taan-spider scenario and psychic modifiers
+
+Local reports:
+
+- `testing/logs/BOOK8_ENDINGS_AND_ROUTE_FAMILIES_20260430.md`
+- `testing/logs/BOOK8_AUTOMATION_LEDGER_20260430.md`
+- `testing/logs/BOOK8_RULES_AND_ITEMS_AUDIT_20260430.md`
+- `testing/logs/BOOK8_COMBAT_AND_RANDOM_AUDIT_20260430.md`
+- `testing/logs/BOOK8_ACHIEVEMENT_CANDIDATES_20260430.md`
+- `testing/tmp/book8-rules-smoke.ps1`
+
 ## Existing Playtest Coverage
 
 Local reports already exist for:
@@ -759,6 +804,7 @@ Local reports already exist for:
 - Book 5 targeted validation and Books 1-5 campaign smoke
 - Book 6 targeted validation and Magnakai transition smoke on `main`
 - Book 7 startup/choice/combat/achievement/random/endgame/difficulty smoke on current `main`
+- Book 8 targeted rules/combat/random smoke on current `main`
 - fresh-character Books `1-6` full-campaign mode coverage
 - synthetic sample Book `5` -> `6` route-matrix coverage
 - current sample save/load/failure/permadeath smoke
@@ -944,11 +990,11 @@ Crash logging exists via `data/error.log`, but the preferred workflow is still t
 
 ## Good Next Steps
 
-- Continue live playtesting across the released Books `1-6` surface and the current `main` Book `7` paths, and patch DE-specific rule differences
-- Keep the Book `7` strategy guide current as live playtesting sharpens the best routes
+- Continue live playtesting across the released Books `1-6` surface and the current `main` Book `7-8` paths, and patch DE-specific rule differences
+- Keep the Book `7` and Book `8` strategy guides current as live playtesting sharpens the best routes
 - Use the new strategy-guide style guide as the template when Book `1` and later guide rewrites happen
 - Deepen Book `6` route reporting and strategy support as more play data comes in
-- Plan the next post-Book `7` Magnakai audit once the current `main` Book `7` surface feels stable
+- Plan the next post-Book `8` Magnakai audit once the current `main` Book `8` surface feels stable
 - Keep the handoff docs and strategy-guide workflow in sync as new books become implemented
 - Treat M6 as complete; next web work is post-M6 live-play hardening, long-run browser polish, and non-Windows launch validation when those environments are available
 

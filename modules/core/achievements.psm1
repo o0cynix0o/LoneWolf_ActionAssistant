@@ -244,6 +244,19 @@ function New-LWStoryAchievementFlags {
         Book7CastleDeathFailureSeen = $false
         Book7TendrilSevered         = $false
         Book7HotTunnelSurvived      = $false
+        Book8PassClaimed            = $false
+        Book8ConundrumSolved        = $false
+        Book8SilverBoxRoute         = $false
+        Book8SilverBoxClaimed       = $false
+        Book8LodestoneClaimed       = $false
+        Book8GreyCrystalRingClaimed = $false
+        Book8Section242ExchangeMade = $false
+        Book8MapOfTharroClaimed     = $false
+        Book8GiakScrollClaimed      = $false
+        Book8FlaskOfLarnumaClaimed  = $false
+        Book8OhridoLorestoneClaimed = $false
+        Book8LevitronEscapeRoute    = $false
+        Book8JungleHorrorFailureSeen = $false
     }
 }
 
@@ -420,7 +433,16 @@ function Get-LWAchievementDefinitions {
         (New-LWAchievementDefinition -Id 'up_the_blue_beam' -Name 'Up the Blue Beam' -Category 'Journey' -Description 'Finish Book 7 through the blue-beam pursuit route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'throne_of_fire' -Name 'Throne of Fire' -Category 'Journey' -Description 'Finish Book 7 through the direct throne duel route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
         (New-LWAchievementDefinition -Id 'out_through_the_ash' -Name 'Out Through the Ash' -Category 'Journey' -Description 'Finish Book 7 through the lower-level escape route.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
-        (New-LWAchievementDefinition -Id 'castle_death' -Name 'Castle Death' -Category 'Journey' -Description 'Reach the signature failure ending at section 349 in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
+        (New-LWAchievementDefinition -Id 'castle_death' -Name 'Castle Death' -Category 'Journey' -Description 'Reach the signature failure ending at section 349 in Book 7.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'book_eight_complete' -Name 'Book Eight Complete' -Category 'Journey' -Description 'Complete Book 8.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'jungle_lorestone_bearer' -Name 'Jungle Lorestone Bearer' -Category 'Legend' -Description 'Carry a single character through the full Books 1-8 sequence.' -Backfill:$true -ModePool 'Universal'),
+        (New-LWAchievementDefinition -Id 'conundrum_conqueror' -Name 'Conundrum Conqueror' -Category 'Journey' -Description 'Solve Count Conundrum''s riddle chain in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'lodestone_bearer_book8' -Name 'Lodestone Bearer' -Category 'Journey' -Description 'Claim the Lodestone in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'grey_area' -Name 'Grey Area' -Category 'Journey' -Description 'Claim the Grey Crystal Ring in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'ohrido_lorestone' -Name 'Ohrido Lorestone' -Category 'Journey' -Description 'Reach the Lorestone of Ohrido in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'silver_box_prize' -Name 'Silver Box Prize' -Category 'Journey' -Description 'Win and keep Count Conundrum''s Silver Box in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'levitron_lifeline' -Name 'Levitron Lifeline' -Category 'Journey' -Description 'Escape the Danarg by Levitron in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true),
+        (New-LWAchievementDefinition -Id 'jungle_horror' -Name 'Jungle Horror' -Category 'Journey' -Description 'Reach the poisonous failure ending at section 281 in Book 8.' -Backfill:$true -ModePool 'Exploration' -Hidden:$true)
     )
 
     $definitionsById = @{}
@@ -509,6 +531,12 @@ function Ensure-LWAchievementState {
     }
 
     foreach ($propertyName in @('Book7PowerKeyClaimed', 'Book7PlatinumAmuletClaimed', 'Book7SabitoIdentified', 'Book7DiamondClaimed', 'Book7Snake123ClueSeen', 'Book7SilverWhistleClaimed', 'Book7SilverWhistleRoute', 'Book7GoldKeyClaimed', 'Book7GoldKeyUsed', 'Book7KasinWarningHeard', 'Book7SecretPassageLearned', 'Book7JettyBoatLoreLearned', 'Book7TavigMet', 'Book7TavigRescueAttempted', 'Book7TavigSavedBriefly', 'Book7TavigWarningHeard', 'Book7WestJettyLanding', 'Book7EastBayLanding', 'Book7ZakhanRiddleSolved', 'Book7ZahdaBlueBeamPursuit', 'Book7BlueBeamRoute', 'Book7ZahdaDirectDuel', 'Book7ThroneOfFireRoute', 'Book7LorestoneTubeEscape', 'Book7LorestoneTransporterEscape', 'Book7LowerLevelSafeEscape', 'Book7OutThroughTheAshRoute', 'Book7CastleDeathSeen', 'Book7CastleDeathFailureSeen', 'Book7TendrilSevered', 'Book7HotTunnelSurvived')) {
+        if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
+            $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
+        }
+    }
+
+    foreach ($propertyName in @('Book8PassClaimed', 'Book8ConundrumSolved', 'Book8SilverBoxRoute', 'Book8SilverBoxClaimed', 'Book8LodestoneClaimed', 'Book8GreyCrystalRingClaimed', 'Book8Section242ExchangeMade', 'Book8MapOfTharroClaimed', 'Book8GiakScrollClaimed', 'Book8FlaskOfLarnumaClaimed', 'Book8OhridoLorestoneClaimed', 'Book8LevitronEscapeRoute', 'Book8JungleHorrorFailureSeen')) {
         if (-not (Test-LWPropertyExists -Object $State.Achievements.StoryFlags -Name $propertyName) -or $null -eq $State.Achievements.StoryFlags.$propertyName) {
             $State.Achievements.StoryFlags | Add-Member -Force -NotePropertyName $propertyName -NotePropertyValue $false
         }
@@ -874,6 +902,34 @@ function Rebuild-LWStoryAchievementFlagsFromState {
         }
         if ((Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Power-key', 'Power Key')) -or (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Power-key', 'Power Key') -Type 'special')))) {
             Set-LWStoryAchievementFlag -Name 'Book7PowerKeyClaimed'
+        }
+    }
+
+    if ([int]$script:GameState.Character.BookNumber -ge 8) {
+        if ($visitedSections -contains 1) { Set-LWStoryAchievementFlag -Name 'Book8PassClaimed' }
+        if (@(7, 16, 59) | Where-Object { $visitedSections -contains $_ }) { Set-LWStoryAchievementFlag -Name 'Book8ConundrumSolved' }
+        if ($visitedSections -contains 7) { Set-LWStoryAchievementFlag -Name 'Book8SilverBoxRoute' }
+        if ($visitedSections -contains 100) { Set-LWStoryAchievementFlag -Name 'Book8OhridoLorestoneClaimed' }
+        if ($visitedSections -contains 202) { Set-LWStoryAchievementFlag -Name 'Book8LodestoneClaimed' }
+        if ($visitedSections -contains 267 -or $visitedSections -contains 350) { Set-LWStoryAchievementFlag -Name 'Book8LevitronEscapeRoute' }
+        if ($visitedSections -contains 281) { Set-LWStoryAchievementFlag -Name 'Book8JungleHorrorFailureSeen' }
+        if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Pass')) {
+            Set-LWStoryAchievementFlag -Name 'Book8PassClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Silver Box') -Type 'backpack'))) {
+            Set-LWStoryAchievementFlag -Name 'Book8SilverBoxClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Lodestone') -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book8LodestoneClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Grey Crystal Ring', 'Gray Crystal Ring') -Type 'special'))) {
+            Set-LWStoryAchievementFlag -Name 'Book8GreyCrystalRingClaimed'
+        }
+        if (-not [string]::IsNullOrWhiteSpace((Get-LWMatchingStateInventoryItem -State $script:GameState -Names @('Map of Tharro') -Type 'backpack'))) {
+            Set-LWStoryAchievementFlag -Name 'Book8MapOfTharroClaimed'
+        }
+        if (Test-LWStateHasPocketSpecialItem -State $script:GameState -Names @('Giak Scroll', 'Scroll')) {
+            Set-LWStoryAchievementFlag -Name 'Book8GiakScrollClaimed'
         }
     }
 }
@@ -2022,6 +2078,15 @@ function Test-LWAchievementSatisfied {
         'throne_of_fire' { return ((@($script:GameState.Character.CompletedBooks) -contains 7) -and (Test-LWAchievementStoryFlag -Name 'Book7ThroneOfFireRoute' -EvaluationContext $EvaluationContext)) }
         'out_through_the_ash' { return ((@($script:GameState.Character.CompletedBooks) -contains 7) -and (Test-LWAchievementStoryFlag -Name 'Book7OutThroughTheAshRoute' -EvaluationContext $EvaluationContext)) }
         'castle_death' { return (Test-LWAchievementStoryFlag -Name 'Book7CastleDeathFailureSeen' -EvaluationContext $EvaluationContext) }
+        'book_eight_complete' { return (@($script:GameState.Character.CompletedBooks) -contains 8) }
+        'jungle_lorestone_bearer' { return ((@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6, 7, 8 })).Count -ge 8) }
+        'conundrum_conqueror' { return (Test-LWAchievementStoryFlag -Name 'Book8ConundrumSolved' -EvaluationContext $EvaluationContext) }
+        'lodestone_bearer_book8' { return (Test-LWAchievementStoryFlag -Name 'Book8LodestoneClaimed' -EvaluationContext $EvaluationContext) }
+        'grey_area' { return (Test-LWAchievementStoryFlag -Name 'Book8GreyCrystalRingClaimed' -EvaluationContext $EvaluationContext) }
+        'ohrido_lorestone' { return (Test-LWAchievementStoryFlag -Name 'Book8OhridoLorestoneClaimed' -EvaluationContext $EvaluationContext) }
+        'silver_box_prize' { return ((Test-LWAchievementStoryFlag -Name 'Book8SilverBoxRoute' -EvaluationContext $EvaluationContext) -and (Test-LWAchievementStoryFlag -Name 'Book8SilverBoxClaimed' -EvaluationContext $EvaluationContext)) }
+        'levitron_lifeline' { return ((@($script:GameState.Character.CompletedBooks) -contains 8) -and (Test-LWAchievementStoryFlag -Name 'Book8LevitronEscapeRoute' -EvaluationContext $EvaluationContext)) }
+        'jungle_horror' { return (Test-LWAchievementStoryFlag -Name 'Book8JungleHorrorFailureSeen' -EvaluationContext $EvaluationContext) }
         default { return $false }
     }
 }
@@ -2162,6 +2227,15 @@ function Get-LWAchievementProgressText {
         'throne_of_fire' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7ThroneOfFireRoute') { 'direct duel route found; finish Book 7' } else { 'finish Book 7 through the direct throne duel route' }) }
         'out_through_the_ash' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7OutThroughTheAshRoute') { 'lower-level escape route found; finish Book 7' } else { 'finish Book 7 through the lower-level escape route' }) }
         'castle_death' { return $(if (Test-LWStoryAchievementFlag -Name 'Book7CastleDeathFailureSeen') { 'signature failure ending reached' } else { 'reach the signature failure ending at section 349 in Book 7' }) }
+        'book_eight_complete' { return $(if (@($script:GameState.Character.CompletedBooks) -contains 8) { 'Book 8 complete' } else { 'complete Book 8' }) }
+        'jungle_lorestone_bearer' { return ("completed books {0}/8" -f (@(@($script:GameState.Character.CompletedBooks) | Where-Object { $_ -in 1, 2, 3, 4, 5, 6, 7, 8 })).Count) }
+        'conundrum_conqueror' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8ConundrumSolved') { 'Count Conundrum defeated' } else { 'solve Count Conundrum''s riddle chain in Book 8' }) }
+        'lodestone_bearer_book8' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8LodestoneClaimed') { 'Lodestone claimed' } else { 'claim the Lodestone in Book 8' }) }
+        'grey_area' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8GreyCrystalRingClaimed') { 'Grey Crystal Ring claimed' } else { 'claim the Grey Crystal Ring in Book 8' }) }
+        'ohrido_lorestone' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8OhridoLorestoneClaimed') { 'Lorestone of Ohrido reached' } else { 'reach the Lorestone of Ohrido in Book 8' }) }
+        'silver_box_prize' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8SilverBoxClaimed') { 'Silver Box kept' } else { 'win and keep Count Conundrum''s Silver Box' }) }
+        'levitron_lifeline' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8LevitronEscapeRoute') { 'Levitron escape route found; finish Book 8' } else { 'finish Book 8 through the Levitron escape route' }) }
+        'jungle_horror' { return $(if (Test-LWStoryAchievementFlag -Name 'Book8JungleHorrorFailureSeen') { 'poisonous failure ending reached' } else { 'reach the poisonous failure ending at section 281 in Book 8' }) }
         default { return '' }
     }
 }
@@ -2275,6 +2349,7 @@ function Get-LWAchievementBookDisplayDefinitions {
         5 { 'book_five_complete' }
         6 { 'book_six_complete' }
         7 { 'book_seven_complete' }
+        8 { 'book_eight_complete' }
         default { $null }
     }
 
@@ -2312,7 +2387,7 @@ function Get-LWAchievementBookIdMap {
     }
 
     $map = @{}
-    foreach ($bookNumber in @(1..7)) {
+    foreach ($bookNumber in @(1..8)) {
         foreach ($definition in @(Get-LWAchievementBookDisplayDefinitions -BookNumber $bookNumber)) {
             if ($null -eq $definition) {
                 continue
@@ -2342,7 +2417,8 @@ function Get-LWAchievementDisplayGroups {
         [pscustomobject]@{ Key = 'book4'; Title = 'Book 4'; BookNumber = 4; Items = (New-Object 'System.Collections.Generic.List[object]') },
         [pscustomobject]@{ Key = 'book5'; Title = 'Book 5'; BookNumber = 5; Items = (New-Object 'System.Collections.Generic.List[object]') },
         [pscustomobject]@{ Key = 'book6'; Title = 'Book 6'; BookNumber = 6; Items = (New-Object 'System.Collections.Generic.List[object]') },
-        [pscustomobject]@{ Key = 'book7'; Title = 'Book 7'; BookNumber = 7; Items = (New-Object 'System.Collections.Generic.List[object]') }
+        [pscustomobject]@{ Key = 'book7'; Title = 'Book 7'; BookNumber = 7; Items = (New-Object 'System.Collections.Generic.List[object]') },
+        [pscustomobject]@{ Key = 'book8'; Title = 'Book 8'; BookNumber = 8; Items = (New-Object 'System.Collections.Generic.List[object]') }
     )
     $groupsByKey = @{}
     foreach ($group in $groupDefinitions) {
